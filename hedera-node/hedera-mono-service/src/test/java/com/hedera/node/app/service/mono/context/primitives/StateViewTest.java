@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context.primitives;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
@@ -58,7 +59,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -805,7 +805,7 @@ class StateViewTest {
                 Hex.decode("033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         tokenAccount.setAccountKey(new JECDSASecp256k1Key(ecdsaKey));
-        final var expectedAddress = CommonUtils.hex(EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+        final var expectedAddress = CommonUtils.hex(recoverAddressFromPubKey(ecdsaKey));
 
         mockedStatic = mockStatic(StateView.class);
         mockedStatic

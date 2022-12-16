@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -250,12 +249,9 @@ class RecordCacheTest {
                                         .build()
                                         .toByteString())
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-        final var accessor =
-                PlatformTxnAccessor.from(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final var accessor = PlatformTxnAccessor.from(signedTxn.toByteArray());
 
         final var expirableTxnRecordBuilder =
                 ExpirableTxnRecord.newBuilder()

@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -259,7 +260,8 @@ public interface ContractsV_0_30Module {
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        return new EVM(
+                operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
     }
 
     @Provides

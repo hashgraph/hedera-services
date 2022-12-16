@@ -39,6 +39,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -52,36 +54,44 @@ import java.util.function.Function;
 public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     private final TxnAccessor delegate;
     private final PubKeyToSigBytes pubKeyToSigBytes;
-    private final com.swirlds.common.system.transaction.Transaction platformTxn;
+    private final List<TransactionSignature> cryptoSigs = new ArrayList<>();
 
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
     private RationalizedSigMeta sigMeta = null;
 
-    protected PlatformTxnAccessor(
-            final TxnAccessor delegate,
-            final com.swirlds.common.system.transaction.Transaction platformTxn) {
-        this.platformTxn = platformTxn;
+    protected PlatformTxnAccessor(final TxnAccessor delegate) {
         this.delegate = delegate;
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
-    public static PlatformTxnAccessor from(
-            final TxnAccessor delegate,
-            final com.swirlds.common.system.transaction.Transaction platformTxn) {
-        return new PlatformTxnAccessor(delegate, platformTxn);
+    public static PlatformTxnAccessor from(final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        return from(transaction.toByteArray());
     }
 
-    public static PlatformTxnAccessor from(
-            final com.swirlds.common.system.transaction.Transaction platformTxn)
+    public static PlatformTxnAccessor from(final byte[] contents)
             throws InvalidProtocolBufferException {
-        return new PlatformTxnAccessor(
-                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        return new PlatformTxnAccessor(SignedTxnAccessor.from(contents));
+    }
+
+    public static PlatformTxnAccessor from(final TxnAccessor accessor) {
+        return new PlatformTxnAccessor(accessor);
     }
 
     @Override
-    public com.swirlds.common.system.transaction.Transaction getPlatformTxn() {
-        return platformTxn;
+    public synchronized void addAllCryptoSigs(final List<TransactionSignature> signatures) {
+        cryptoSigs.addAll(signatures);
+    }
+
+    @Override
+    public synchronized void clearCryptoSigs() {
+        cryptoSigs.clear();
+    }
+
+    @Override
+    public synchronized List<TransactionSignature> getCryptoSigs() {
+        return cryptoSigs;
     }
 
     @Override
@@ -103,7 +113,6 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     public String toLoggableString() {
         return MoreObjects.toStringHelper(this)
                 .add("delegate", delegate.toLoggableString())
-                .add("platformTxn", platformTxn.toString())
                 .add("linkedRefs", linkedRefs)
                 .add("expandedSigStatus", expandedSigStatus)
                 .add("pubKeyToSigBytes", pubKeyToSigBytes.toString())
@@ -289,23 +298,23 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
-    public void setNumAutoCreations(final int numAutoCreations) {
-        delegate.setNumAutoCreations(numAutoCreations);
+    public void setNumImplicitCreations(final int numImplicitCreations) {
+        delegate.setNumImplicitCreations(numImplicitCreations);
     }
 
     @Override
-    public int getNumAutoCreations() {
-        return delegate.getNumAutoCreations();
+    public int getNumImplicitCreations() {
+        return delegate.getNumImplicitCreations();
     }
 
     @Override
-    public boolean areAutoCreationsCounted() {
-        return delegate.areAutoCreationsCounted();
+    public boolean areImplicitCreationsCounted() {
+        return delegate.areImplicitCreationsCounted();
     }
 
     @Override
-    public void countAutoCreationsWith(final AliasManager aliasManager) {
-        delegate.countAutoCreationsWith(aliasManager);
+    public void countImplicitCreationsWith(final AliasManager aliasManager) {
+        delegate.countImplicitCreationsWith(aliasManager);
     }
 
     @Override

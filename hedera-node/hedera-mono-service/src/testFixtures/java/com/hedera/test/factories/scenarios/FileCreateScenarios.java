@@ -16,14 +16,13 @@
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.FileCreateFactory.newSignedFileCreate;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum FileCreateScenarios implements TxnHandlingScenario {
     VANILLA_FILE_CREATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(from(newSignedFileCreate().get()));
+            return PlatformTxnAccessor.from(newSignedFileCreate().get());
         }
     }
 }

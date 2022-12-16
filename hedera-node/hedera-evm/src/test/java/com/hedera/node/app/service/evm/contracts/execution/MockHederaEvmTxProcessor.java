@@ -21,7 +21,7 @@ import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.Builder;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -61,7 +61,7 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(Code.EMPTY)
+                .code(CodeV0.EMPTY_CODE)
                 .build();
     }
 }

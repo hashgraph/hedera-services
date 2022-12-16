@@ -16,8 +16,7 @@
 package com.hedera.node.app.service.mono.txns;
 
 import com.swirlds.common.system.Round;
-import com.swirlds.common.system.transaction.Transaction;
-import java.time.Instant;
+import com.swirlds.common.system.transaction.ConsensusTransaction;
 
 /**
  * Defines a type that can delegate to the correct state transition, if any, implied by the given
@@ -35,8 +34,7 @@ public interface ProcessLogic {
      * @param round a round of consensus transactions
      */
     default void incorporateConsensus(final Round round) {
-        round.forEachEventTransaction(
-                (e, t) -> incorporateConsensusTxn(t, t.getConsensusTimestamp(), e.getCreatorId()));
+        round.forEachEventTransaction((e, t) -> incorporateConsensusTxn(t, e.getCreatorId()));
     }
 
     /**
@@ -44,9 +42,7 @@ public interface ProcessLogic {
      * the specified time.
      *
      * @param platformTxn the consensus transaction to incorporate.
-     * @param consensusTime the authoritative time of consensus.
      * @param submittingMember the id of the member that submitted the txn
      */
-    void incorporateConsensusTxn(
-            Transaction platformTxn, Instant consensusTime, long submittingMember);
+    void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember);
 }

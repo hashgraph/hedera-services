@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.fees.charging;
 
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -59,23 +58,21 @@ class TxnChargingPolicyAgentTest {
     private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
     private final PlatformTxnAccessor accessor =
             PlatformTxnAccessor.from(
-                    from(
-                            Transaction.newBuilder()
-                                    .setBodyBytes(
-                                            TransactionBody.newBuilder()
-                                                    .setTransactionID(
-                                                            TransactionID.newBuilder()
-                                                                    .setTransactionValidStart(
-                                                                            Timestamp.newBuilder()
-                                                                                    .setSeconds(
-                                                                                            1_234_567L)
-                                                                                    .build())
-                                                                    .setAccountID(
-                                                                            IdUtils.asAccount(
-                                                                                    "0.0.1234")))
-                                                    .build()
-                                                    .toByteString())
-                                    .build()));
+                    Transaction.newBuilder()
+                            .setBodyBytes(
+                                    TransactionBody.newBuilder()
+                                            .setTransactionID(
+                                                    TransactionID.newBuilder()
+                                                            .setTransactionValidStart(
+                                                                    Timestamp.newBuilder()
+                                                                            .setSeconds(1_234_567L)
+                                                                            .build())
+                                                            .setAccountID(
+                                                                    IdUtils.asAccount("0.0.1234")))
+                                            .build()
+                                            .toByteString())
+                            .build()
+                            .toByteArray());
 
     @Mock private StateView currentView;
     @Mock private FeeCalculator fees;

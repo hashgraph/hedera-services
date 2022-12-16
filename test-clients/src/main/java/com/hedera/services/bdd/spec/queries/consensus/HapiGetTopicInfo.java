@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
@@ -133,7 +133,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getTopicInfoQuery(spec, payment, false);
         response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         if (verboseLoggingOn) {
@@ -148,7 +148,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) {
+    protected void assertExpectationsGiven(HapiSpec spec) {
         ConsensusTopicInfo info = response.getConsensusGetTopicInfo().getTopicInfo();
         topicMemo.ifPresent(exp -> assertEquals(exp, info.getMemo(), "Bad memo!"));
         if (seqNoFn.isPresent()) {
@@ -199,14 +199,14 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTopicInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         return costFrom(response);
     }
 
-    private Query getTopicInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getTopicInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         ConsensusGetTopicInfoQuery topicGetInfo =
                 ConsensusGetTopicInfoQuery.newBuilder()
                         .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))

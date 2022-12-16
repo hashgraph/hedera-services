@@ -74,7 +74,7 @@ public final class HederaToPlatformSigOps {
             final SwirldsTxnAccessor txnAccessor,
             final SigRequirements sigReqs,
             final PubKeyToSigBytes pkToSigFn) {
-        txnAccessor.getPlatformTxn().clearSignatures();
+        txnAccessor.clearCryptoSigs();
         final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
         new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory)
                 .execute();

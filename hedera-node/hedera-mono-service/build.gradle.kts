@@ -26,6 +26,13 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
+
+    exclude("org.hamcrest", "hamcrest-core")
 }
 
 dependencies {
@@ -49,10 +56,12 @@ dependencies {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }
     implementation(libs.bundles.di)
+    implementation(libs.grpc.stub)
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
     implementation(libs.hapi)
+    implementation(libs.helidon.io.grpc)
     implementation(libs.headlong)
     implementation(
         variantOf(libs.netty.transport.native.epoll) {

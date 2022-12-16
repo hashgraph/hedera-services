@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.WILDCARD_OWNER;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -44,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -87,8 +88,6 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class WorldLedgers {
     private static final Logger log = LogManager.getLogger(WorldLedgers.class);
-    public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
-            ByteString.copyFrom(new byte[] {0x3a, 0x21});
 
     private final ContractAliases aliases;
     private final StaticEntityAccess staticEntityAccess;
@@ -375,9 +374,8 @@ public class WorldLedgers {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                final byte[] value =
-                        EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                if (value != null) {
+                final byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                if (value.length > 0) {
                     return Address.wrap(Bytes.wrap(value));
                 }
             }

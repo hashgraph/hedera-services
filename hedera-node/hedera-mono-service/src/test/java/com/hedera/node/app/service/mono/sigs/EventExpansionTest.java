@@ -37,7 +37,6 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,7 +114,7 @@ class EventExpansionTest {
                             final var consumer =
                                     (Consumer<Transaction>) invocationOnMock.getArgument(0);
                             for (int i = 0; i < n; i++) {
-                                consumer.accept(new SwirldTransaction());
+                                consumer.accept(null);
                             }
                             return null;
                         })

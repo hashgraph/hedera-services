@@ -15,16 +15,16 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CheckUnavailableNode extends HapiApiSuite {
+public class CheckUnavailableNode extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CheckUnavailableNode.class);
 
     public static void main(String... args) {
@@ -32,11 +32,11 @@ public class CheckUnavailableNode extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(checkUnavailableNode());
     }
 
-    private HapiApiSpec checkUnavailableNode() {
+    private HapiSpec checkUnavailableNode() {
         return defaultHapiSpec("CheckUnavailableNode")
                 .given()
                 .when()

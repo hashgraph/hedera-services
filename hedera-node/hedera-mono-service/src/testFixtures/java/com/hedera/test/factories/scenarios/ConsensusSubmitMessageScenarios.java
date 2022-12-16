@@ -16,7 +16,6 @@
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.ConsensusSubmitMessageFactory.newSignedConsensusSubmitMessage;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
@@ -24,13 +23,13 @@ public enum ConsensusSubmitMessageScenarios implements TxnHandlingScenario {
     CONSENSUS_SUBMIT_MESSAGE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get()));
+                    newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get());
         }
     },
     CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get()));
+                    newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get());
         }
     }
 }

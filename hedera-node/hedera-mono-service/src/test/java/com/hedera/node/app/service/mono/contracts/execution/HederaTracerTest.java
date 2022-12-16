@@ -46,6 +46,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
@@ -61,7 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaTracerTest {
 
-    private static final Code code = Code.createLegacyCode(Bytes.of(4), Hash.EMPTY);
+    private static final Code code = CodeFactory.createCode(Bytes.of(4), Hash.EMPTY, 0, false);
     private static final Wei value = Wei.of(1L);
     private static final long initialGas = 1000L;
     private static final Bytes input = Bytes.of("inputData".getBytes());
@@ -128,7 +130,7 @@ class HederaTracerTest {
         dequeMock.addFirst(topLevelMessageFrame);
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
-        given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
+        given(firstChildFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         final long initialGasChild = initialGas - 500L;
         given(firstChildFrame.getRemainingGas()).willReturn(initialGasChild);
@@ -170,7 +172,7 @@ class HederaTracerTest {
         given(topLevelMessageFrame.getCurrentOperation()).willReturn(mockOperation);
         given(topLevelMessageFrame.getCurrentOperation().getOpcode()).willReturn(0xF2);
         final var childFrame2 = mock(MessageFrame.class);
-        given(childFrame2.getCode()).willReturn(Code.EMPTY);
+        given(childFrame2.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(childFrame2.getType()).willReturn(Type.MESSAGE_CALL);
         given(childFrame2.getContractAddress()).willReturn(accountReceiver);
         given(childFrame2.getRemainingGas()).willReturn(500L);
@@ -300,7 +302,7 @@ class HederaTracerTest {
     void finalizesExceptionallyHaltedFrameWithInvalidAddressRecipientAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getCode()).willReturn(Code.EMPTY);
+        given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(accountReceiver);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
@@ -382,7 +384,7 @@ class HederaTracerTest {
     void finalizesPrecompileCallAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getCode()).willReturn(Code.EMPTY);
+        given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
@@ -413,7 +415,7 @@ class HederaTracerTest {
     void finalizesSystemPrecompileCallAsExpected() {
         // given
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
-        given(messageFrame.getCode()).willReturn(Code.EMPTY);
+        given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(messageFrame.getOriginatorAddress()).willReturn(originator);
         given(messageFrame.getContractAddress()).willReturn(contract);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
@@ -628,7 +630,7 @@ class HederaTracerTest {
         dequeMock.addFirst(messageFrame);
         final var firstChildFrame = mock(MessageFrame.class);
         given(firstChildFrame.getType()).willReturn(Type.CONTRACT_CREATION);
-        given(firstChildFrame.getCode()).willReturn(Code.EMPTY);
+        given(firstChildFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
         given(firstChildFrame.getContractAddress()).willReturn(accountReceiver);
         given(firstChildFrame.getRemainingGas()).willReturn(initialGas);
         given(firstChildFrame.getInputData()).willReturn(Bytes.EMPTY);

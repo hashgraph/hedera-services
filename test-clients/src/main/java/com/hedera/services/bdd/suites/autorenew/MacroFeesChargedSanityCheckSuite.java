@@ -19,7 +19,7 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.hapi.fees.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -42,10 +42,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccou
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Collections;
@@ -60,7 +60,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
+public class MacroFeesChargedSanityCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MacroFeesChargedSanityCheckSuite.class);
 
     public static void main(final String... args) {
@@ -68,7 +68,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 feesChargedMatchNumberOfRenewals(),
                 renewalCappedByAffordablePeriod(),
@@ -76,7 +76,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S125")
-    private HapiApiSpec renewalCappedByAffordablePeriod() {
+    private HapiSpec renewalCappedByAffordablePeriod() {
         final long briefAutoRenew = 10L;
         final long normalAutoRenew = THREE_MONTHS_IN_SECONDS;
         final long threeHoursInSeconds = 3 * 3600L;
@@ -142,7 +142,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec feesChargedMatchNumberOfRenewals() {
+    private HapiSpec feesChargedMatchNumberOfRenewals() {
         final long reqAutoRenew = 2L;
         final long startBalance = ONE_HUNDRED_HBARS;
         final var target = "czar";
@@ -215,7 +215,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
         return getTinybarsFromTinyCents(rate, nominalFee / FEE_DIVISOR_FACTOR);
     }
 
-    private Function<HapiApiSpec, OpProvider> getAnyOldXfers() {
+    private Function<HapiSpec, OpProvider> getAnyOldXfers() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -234,7 +234,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
     }
 
     private RenewalFeeComponents autoRenewFeesFor(
-            final HapiApiSpec spec, final ExtantCryptoContext extantCtx) {
+            final HapiSpec spec, final ExtantCryptoContext extantCtx) {
         @SuppressWarnings("java:S1874")
         final var prices =
                 spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList().stream()
@@ -254,7 +254,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
                 inTinybars(constantPrice, rates), inTinybars(variablePrice, rates));
     }
 
-    private HapiApiSpec macroFeesChargedSanityCheckSuiteCleanup() {
+    private HapiSpec macroFeesChargedSanityCheckSuiteCleanup() {
         return defaultHapiSpec("MacroFeesChargedSanityCheckSuiteCleanup")
                 .given()
                 .when()

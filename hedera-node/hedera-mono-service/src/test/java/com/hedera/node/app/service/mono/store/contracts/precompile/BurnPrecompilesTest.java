@@ -38,6 +38,8 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -114,6 +116,7 @@ class BurnPrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private BurnLogic burnLogic;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
@@ -189,6 +192,7 @@ class BurnPrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -446,7 +450,7 @@ class BurnPrecompilesTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        doCallRealMethod().when(frame).setRevertReason(any());
+        doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         burnPrecompile
                 .when(() -> decodeBurn(pretendArguments))
                 .thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
@@ -454,6 +458,9 @@ class BurnPrecompilesTest {
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
         assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never())
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);

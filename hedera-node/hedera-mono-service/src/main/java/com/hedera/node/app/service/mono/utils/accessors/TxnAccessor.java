@@ -115,13 +115,13 @@ public interface TxnAccessor {
     // Used only for CryptoTransfer
     CryptoTransferMeta availXferUsageMeta();
 
-    void setNumAutoCreations(int numAutoCreations);
+    void setNumImplicitCreations(int numImplicitCreations);
 
-    int getNumAutoCreations();
+    int getNumImplicitCreations();
 
-    boolean areAutoCreationsCounted();
+    boolean areImplicitCreationsCounted();
 
-    void countAutoCreationsWith(final AliasManager aliasManager);
+    void countImplicitCreationsWith(final AliasManager aliasManager);
 
     // Used only for EthereumTransaction
     EthTxData opEthTxData();

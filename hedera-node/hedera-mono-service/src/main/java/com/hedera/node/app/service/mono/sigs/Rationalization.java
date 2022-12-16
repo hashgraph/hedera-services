@@ -108,7 +108,7 @@ public class Rationalization {
         pkToSigFn.resetAllSigsToUnused();
         bodySigningFactory.resetFor(txnAccessor);
 
-        txnSigs = txnAccessor.getPlatformTxn().getSignatures();
+        txnSigs = txnAccessor.getCryptoSigs();
         realPayerSigs.clear();
         realOtherPartySigs.clear();
 

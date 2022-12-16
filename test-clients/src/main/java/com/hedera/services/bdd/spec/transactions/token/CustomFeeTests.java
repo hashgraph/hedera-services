@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.bui
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import java.util.List;
 import java.util.OptionalLong;
@@ -30,7 +30,7 @@ import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Assertions;
 
 public class CustomFeeTests {
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
             long amount, String collector) {
         return (spec, actual) -> {
             final var expected = CustomFeeSpecs.builtFixedHbar(amount, collector, false, spec);
@@ -38,7 +38,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHtsFeeInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> fixedHtsFeeInSchedule(
             long amount, String denom, String collector) {
         return (spec, actual) -> {
             final var expected = builtFixedHts(amount, denom, collector, false, spec);
@@ -46,7 +46,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> fractionalFeeInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> fractionalFeeInSchedule(
             long numerator,
             long denominator,
             long min,
@@ -68,7 +68,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
             long numerator, long denominator, String collector) {
         return (spec, actual) -> {
             final var expected =
@@ -77,7 +77,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithFallbackInHbarsInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithFallbackInHbarsInSchedule(
             long numerator, long denominator, long fallbackAmount, String collector) {
         return (spec, actual) -> {
             final var expected =
@@ -92,7 +92,7 @@ public class CustomFeeTests {
         };
     }
 
-    public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithFallbackInTokenInSchedule(
+    public static BiConsumer<HapiSpec, List<CustomFee>> royaltyFeeWithFallbackInTokenInSchedule(
             long numerator,
             long denominator,
             long fallbackAmount,

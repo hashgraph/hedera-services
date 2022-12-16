@@ -19,13 +19,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue1741Suite extends HapiApiSuite {
+public class Issue1741Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1741Suite.class);
 
     public static void main(String... args) {
@@ -33,15 +33,14 @@ public class Issue1741Suite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment());
     }
 
-    public static HapiApiSpec
-            queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
+    public static HapiSpec queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
         final long BALANCE = 1_000_000L;
 
-        return HapiApiSpec.defaultHapiSpec(
+        return HapiSpec.defaultHapiSpec(
                         "QueryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment")
                 .given(cryptoCreate("payer").balance(BALANCE))
                 .when()
