@@ -17,6 +17,7 @@ package com.hedera.node.app.service.contract;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,7 +35,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ContractCreateTransactionBody}
      * @return the metadata for the contract creation
      */
-    TransactionMetadata preHandleCreateContract(TransactionBody txn);
+    TransactionMetadata preHandleCreateContract(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractUpdate}
@@ -45,7 +46,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody}
      * @return the metadata for the contract update
      */
-    TransactionMetadata preHandleUpdateContract(TransactionBody txn);
+    TransactionMetadata preHandleUpdateContract(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractCall}
@@ -56,7 +57,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ContractCallTransactionBody}
      * @return the metadata for the contract call
      */
-    TransactionMetadata preHandleContractCall(TransactionBody txn);
+    TransactionMetadata preHandleContractCall(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ContractDelete}
@@ -67,7 +68,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody}
      * @return the metadata for the contract deletion
      */
-    TransactionMetadata preHandleDeleteContract(TransactionBody txn);
+    TransactionMetadata preHandleDeleteContract(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemDelete}
@@ -78,7 +79,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody} targeting a contract
      * @return the metadata for the system contract deletion
      */
-    TransactionMetadata preHandleSystemDelete(TransactionBody txn);
+    TransactionMetadata preHandleSystemDelete(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemUndelete}
@@ -89,7 +90,7 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody} targeting a contract
      * @return the metadata for the system contract un-deletion
      */
-    TransactionMetadata preHandleSystemUndelete(TransactionBody txn);
+    TransactionMetadata preHandleSystemUndelete(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -101,5 +102,5 @@ public interface ContractPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.EthereumTransactionBody}
      * @return the metadata for the Ethereum transaction
      */
-    TransactionMetadata preHandleCallEthereum(TransactionBody txn);
+    TransactionMetadata preHandleCallEthereum(TransactionBody txn, AccountID payer);
 }
