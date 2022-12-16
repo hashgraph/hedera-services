@@ -39,9 +39,6 @@ dependencies {
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
     implementation(libs.swirlds.common)
-    implementation(libs.swirlds.merkle)
-    implementation(libs.swirlds.virtualmap)
-    implementation(libs.swirlds.jasperdb)
 
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
