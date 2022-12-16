@@ -16,13 +16,13 @@
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /** A workflow for processing queries. */
 public interface QueryWorkflow {
     void handleQuery(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer);
+            @NonNull SessionContext session,
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull ByteBuffer responseBuffer);
 }

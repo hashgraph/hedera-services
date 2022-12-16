@@ -15,30 +15,36 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SysFileUploadSuite extends HapiApiSuite {
+public class SysFileUploadSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
 
     private static final int NOT_APPLICABLE = -1;
@@ -84,12 +90,12 @@ public class SysFileUploadSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
         return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
-    private HapiApiSpec uploadSysFiles() {
+    private HapiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
         final var isSpecial = isSpecialFile(sysFileId);
@@ -165,7 +171,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
                 Files.write(Paths.get(contentsLoc), contents.toByteArray());
             }
             return contents;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
         }
     }
@@ -189,18 +195,18 @@ public class SysFileUploadSuite extends HapiApiSuite {
     }
 
     private String hexedPrefixHash(final int prefixLen) {
-        byte[] hashSoFar =
-                com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf(
+        final byte[] hashSoFar =
+                com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf(
                         ByteStringUtils.unwrapUnsafelyIfPossible(
                                 uploadData.substring(0, prefixLen)));
         return CommonUtils.hex(hashSoFar);
     }
 
-    private ByteString specialFileContents(long num) {
+    private ByteString specialFileContents(final long num) {
         final var loc = Utils.specialFileLoc(srcDir, num);
         try {
             return ByteString.copyFrom(Files.readAllBytes(Paths.get(loc)));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new IllegalStateException("Cannot read update file @ '" + loc + "'!", e);
         }
     }

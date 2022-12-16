@@ -17,13 +17,14 @@ package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.virtual.annotations.StateSetter;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -31,14 +32,20 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -52,8 +59,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * able to deserialize itself from serialized forms from versions between {@link
  * SerializableDet#getMinimumSupportedVersion()} to {@link Versioned#getVersion()}.
  *
- * <p>A typical subclass (c.f., {@link
- * com.hedera.services.state.merkle.MerkleAccountStateSerdeTest}) will use a {@link
+ * <p>A typical subclass (c.f., {@link MerkleAccountStateSerdeTest}) will use a {@link
  * com.hedera.test.utils.SeededPropertySource} to create a collection of expected objects for each
  * supported version; likely via the {@code SelfSerializable}'s "many argument" constructor. It will
  * then keep hard-coded serialized forms that were created with each supported version, so this test
@@ -105,7 +111,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
      * @return how many test cases are available
      * @throws IllegalStateException if too few test cases are available
      */
-    protected int getNumTestCasesFor(int version) {
+    protected int getNumTestCasesFor(final int version) {
         return MIN_TEST_CASES_PER_VERSION;
     }
 
@@ -194,7 +200,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
                             + result
                             + " via "
                             + getter.getName());
-        } catch (IllegalAccessException | InvocationTargetException fatal) {
+        } catch (final IllegalAccessException | InvocationTargetException fatal) {
             throw new RuntimeException(fatal);
         }
     }
@@ -306,7 +312,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
         try {
             final var cons = noArgConstructorFor(type);
             return cons.newInstance();
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+        } catch (final InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException e) {
             throw new IllegalStateException(
                     "Could not instantiate " + type.getName() + " (is it a public class?)", e);
         }
@@ -315,7 +323,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     private static <R> Constructor<R> noArgConstructorFor(final Class<R> type) {
         try {
             return type.getConstructor();
-        } catch (NoSuchMethodException e) {
+        } catch (final NoSuchMethodException e) {
             throw new IllegalStateException(
                     "No zero-args constructor available for " + type.getName(), e);
         }

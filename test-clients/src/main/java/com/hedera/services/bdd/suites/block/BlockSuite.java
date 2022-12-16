@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.block;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
-public class BlockSuite extends HapiApiSuite {
+public class BlockSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(BlockSuite.class);
     public static final String LOG_NOW = "logNow";
@@ -52,14 +52,14 @@ public class BlockSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 blck001And002And003And004ReturnsCorrectBlockProperties(),
                 blck003ReturnsTimestampOfTheBlock());
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec blck003ReturnsTimestampOfTheBlock() {
+    private HapiSpec blck003ReturnsTimestampOfTheBlock() {
         final var contract = "EmitBlockTimestamp";
         final var firstCall = "firstCall";
         final var secondCall = "secondCall";
@@ -132,7 +132,7 @@ public class BlockSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec blck001And002And003And004ReturnsCorrectBlockProperties() {
+    private HapiSpec blck001And002And003And004ReturnsCorrectBlockProperties() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
         final var secondBlock = "secondBlock";

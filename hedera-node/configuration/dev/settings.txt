@@ -11,7 +11,6 @@ reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showDbStats,                                   0
 showInternalStats,                             1
-state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 state.signedStateKeep,                         10
 useLoopbackIp,                                 false

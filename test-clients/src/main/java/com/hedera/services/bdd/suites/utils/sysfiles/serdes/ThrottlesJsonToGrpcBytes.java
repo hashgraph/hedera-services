@@ -43,8 +43,8 @@ public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
         try {
             var defs = ThrottleDefinitions.parseFrom(bytes);
             var pojo =
-                    com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions.fromProto(
-                            defs);
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
+                            .fromProto(defs);
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(pojo);
         } catch (InvalidProtocolBufferException | JsonProcessingException e) {
             throw new IllegalArgumentException("Unusable raw throttle definitions!", e);
@@ -65,12 +65,13 @@ public class ThrottlesJsonToGrpcBytes implements SysFileSerde<String> {
         return pojo.toProto().toByteArray();
     }
 
-    private com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions toPojo(
+    private com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions toPojo(
             String styledFile) {
         try {
             return mapper.readValue(
                     styledFile,
-                    com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions.class);
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
+                            .class);
         } catch (Exception e) {
             throw new IllegalArgumentException("Unusable styled throttle definitions", e);
         }

@@ -15,18 +15,24 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenDeleteUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDeleteUsage;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,14 +43,14 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     static final Logger log = LogManager.getLogger(HapiTokenDelete.class);
 
     private boolean shouldPurge = false;
-    private String token;
+    private final String token;
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenDelete;
     }
 
-    public HapiTokenDelete(String token) {
+    public HapiTokenDelete(final String token) {
         this.token = token;
     }
 
@@ -59,22 +65,23 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenDelete, this::usageEstimate, txn, numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         return TokenDeleteUsage.newEstimate(
                         txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var tId = TxnUtils.asTokenId(token, spec);
-        TokenDeleteTransactionBody opBody =
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+        final var tId = TxnUtils.asTokenId(token, spec);
+        final TokenDeleteTransactionBody opBody =
                 spec.txns()
                         .<TokenDeleteTransactionBody, TokenDeleteTransactionBody.Builder>body(
                                 TokenDeleteTransactionBody.class,
@@ -85,23 +92,23 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getAdminKey(token));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::deleteToken;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (!shouldPurge || actualStatus != SUCCESS) {
             return;
         }
-        var registry = spec.registry();
+        final var registry = spec.registry();
         registry.forgetName(token);
         registry.forgetSymbol(token);
         registry.forgetTokenId(token);
@@ -131,7 +138,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
         return helper;
     }
 }

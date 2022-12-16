@@ -22,14 +22,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.common.base.MoreObjects;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.file.FileAppendMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.file.FileAppendMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -39,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +59,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     @Nullable private UploadProgress uploadProgress;
     private int appendNum;
 
-    public HapiFileAppend(String file) {
+    public HapiFileAppend(final String file) {
         this.file = file;
     }
 
@@ -70,32 +70,32 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
         return this;
     }
 
-    public HapiFileAppend alertingPre(Consumer<FileID> preCb) {
+    public HapiFileAppend alertingPre(final Consumer<FileID> preCb) {
         preAppendCb = Optional.of(preCb);
         return this;
     }
 
-    public HapiFileAppend alertingPost(Consumer<ResponseCodeEnum> postCb) {
+    public HapiFileAppend alertingPost(final Consumer<ResponseCodeEnum> postCb) {
         postAppendCb = Optional.of(postCb);
         return this;
     }
 
-    public HapiFileAppend content(byte[] data) {
+    public HapiFileAppend content(final byte[] data) {
         contents = Optional.of(data);
         return this;
     }
 
-    public HapiFileAppend content(String data) {
+    public HapiFileAppend content(final String data) {
         contents = Optional.of(data.getBytes());
         return this;
     }
 
-    public HapiFileAppend path(String to) {
+    public HapiFileAppend path(final String to) {
         path = Optional.of(to);
         return this;
     }
 
-    public HapiFileAppend contentFrom(Supplier<byte[]> more) {
+    public HapiFileAppend contentFrom(final Supplier<byte[]> more) {
         contentsSupplier = Optional.of(more);
         return this;
     }
@@ -106,14 +106,14 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         if (contentsSupplier.isPresent()) {
             contents = Optional.of(contentsSupplier.get().get());
         } else if (path.isPresent()) {
             contents = Optional.of(Files.toByteArray(new File(path.get())));
         }
-        var fid = TxnUtils.asFileId(file, spec);
-        FileAppendTransactionBody opBody =
+        final var fid = TxnUtils.asFileId(file, spec);
+        final FileAppendTransactionBody opBody =
                 spec.txns()
                         .<FileAppendTransactionBody, FileAppendTransactionBody.Builder>body(
                                 FileAppendTransactionBody.class,
@@ -127,31 +127,32 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::appendContent;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
-        var expiry =
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
+        final var expiry =
                 payer.isPresent()
                         ? currExpiry(file, spec, payerToUse(payer.get(), spec))
                         : currExpiry(file, spec);
-        FeeCalculator.ActivityMetrics metricsCalc =
+        final FeeCalculator.ActivityMetrics metricsCalc =
                 (txBody, sigUsage) -> usageEstimate(txBody, sigUsage, expiry.getSeconds());
         return spec.fees()
                 .forActivityBasedOp(HederaFunctionality.FileAppend, metricsCalc, txn, numPayerKeys);
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(file));
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(final HapiSpec spec) throws Throwable {
         postAppendCb.ifPresent(cb -> cb.accept(actualStatus));
         if (actualStatus == SUCCESS && uploadProgress != null) {
             uploadProgress.markFinished(appendNum);
@@ -168,18 +169,19 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
         return super.toStringHelper().add("fileName", file);
     }
 
-    private String payerToUse(String designated, HapiApiSpec spec) {
+    private String payerToUse(final String designated, final HapiSpec spec) {
         return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
     }
 
-    private boolean isPrivileged(String account, HapiApiSpec spec) {
+    private boolean isPrivileged(final String account, final HapiSpec spec) {
         return account.equals(spec.setup().addressBookControlName())
                 || account.equals(spec.setup().exchangeRatesControlName())
                 || account.equals(spec.setup().feeScheduleControlName())
                 || account.equals(spec.setup().strongControlName());
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo, long expiry) {
+    private FeeData usageEstimate(
+            final TransactionBody txn, final SigValueObj svo, final long expiry) {
         final var op = txn.getFileAppend();
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final var effectiveNow = txn.getTransactionID().getTransactionValidStart().getSeconds();

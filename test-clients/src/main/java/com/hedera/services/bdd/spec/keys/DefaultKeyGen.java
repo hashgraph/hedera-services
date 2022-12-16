@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.keys;
 
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,18 +41,18 @@ public enum DefaultKeyGen implements KeyGenerator {
         try {
             ecKpGenerator = KeyPairGenerator.getInstance("EC", BOUNCYCASTLE_PROVIDER);
             ecKpGenerator.initialize(ecSpec, new SecureRandom());
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException fatal) {
+        } catch (final NoSuchAlgorithmException | InvalidAlgorithmParameterException fatal) {
             throw new IllegalStateException(fatal);
         }
     }
 
     @Override
-    public Key genEd25519AndUpdateMap(Map<String, PrivateKey> mutablePkMap) {
+    public Key genEd25519AndUpdateMap(final Map<String, PrivateKey> mutablePkMap) {
         return genAndRememberEd25519Key(mutablePkMap);
     }
 
     @Override
-    public Key genEcdsaSecp256k1AndUpdate(Map<String, PrivateKey> mutablePkMap) {
+    public Key genEcdsaSecp256k1AndUpdate(final Map<String, PrivateKey> mutablePkMap) {
         final var kp = ecKpGenerator.generateKeyPair();
         final var encodedPk = kp.getPublic().getEncoded();
         final var rawPkCoords =

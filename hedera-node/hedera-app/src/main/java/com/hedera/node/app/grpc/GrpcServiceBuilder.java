@@ -18,6 +18,7 @@ package com.hedera.node.app.grpc;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import io.helidon.grpc.core.MarshallerSupplier;
 import io.helidon.grpc.server.ServiceDescriptor;
@@ -25,8 +26,6 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +44,10 @@ import org.slf4j.LoggerFactory;
  * com.hedera.node.app.workflows.query.QueryWorkflow}, so they can do the protobuf parsing. We do
  * this to segregate the code. This class is <strong>only</strong> responsible for the gRPC call,
  * the workflows are responsible for working with protobuf.
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
-@NotThreadSafe
 public final class GrpcServiceBuilder {
     /** Logger */
     private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceBuilder.class);
@@ -67,7 +68,7 @@ public final class GrpcServiceBuilder {
     private static final MarshallerSupplier MARSHALLER_SUPPLIER =
             new MarshallerSupplier() {
                 @Override
-                public <T> MethodDescriptor.Marshaller<T> get(Class<T> clazz) {
+                public <T> MethodDescriptor.Marshaller<T> get(final Class<T> clazz) {
                     //noinspection unchecked
                     return (MethodDescriptor.Marshaller<T>) NOOP_MARSHALLER;
                 }
@@ -101,9 +102,9 @@ public final class GrpcServiceBuilder {
      * @param queryWorkflow The workflow to use for handling all queries
      */
     public GrpcServiceBuilder(
-            @Nonnull String serviceName,
-            @Nonnull IngestWorkflow ingestWorkflow,
-            @Nonnull QueryWorkflow queryWorkflow) {
+            @NonNull final String serviceName,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow) {
         this.ingestWorkflow = Objects.requireNonNull(ingestWorkflow);
         this.queryWorkflow = Objects.requireNonNull(queryWorkflow);
         this.serviceName = Objects.requireNonNull(serviceName);
@@ -119,7 +120,7 @@ public final class GrpcServiceBuilder {
      * @param methodName The name of the transaction method. Cannot be null or blank.
      * @return A reference to the builder.
      */
-    public @Nonnull GrpcServiceBuilder transaction(@Nonnull String methodName) {
+    public @NonNull GrpcServiceBuilder transaction(@NonNull final String methodName) {
         if (Objects.requireNonNull(methodName).isBlank()) {
             throw new IllegalArgumentException("The gRPC method name cannot be blank");
         }
@@ -135,7 +136,7 @@ public final class GrpcServiceBuilder {
      * @param methodName The name of the query method. Cannot be null or blank.
      * @return A reference to the builder.
      */
-    public @Nonnull GrpcServiceBuilder query(@Nonnull String methodName) {
+    public @NonNull GrpcServiceBuilder query(@NonNull final String methodName) {
         if (Objects.requireNonNull(methodName).isBlank()) {
             throw new IllegalArgumentException("The gRPC method name cannot be blank");
         }
@@ -150,7 +151,7 @@ public final class GrpcServiceBuilder {
      *
      * @return a non-null {@link ServiceDescriptor}.
      */
-    public ServiceDescriptor build(Metrics metrics) {
+    public ServiceDescriptor build(final Metrics metrics) {
         final var builder = ServiceDescriptor.builder(null, serviceName);
         txMethodNames.forEach(
                 methodName -> {

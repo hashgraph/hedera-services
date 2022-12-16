@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
@@ -27,15 +27,16 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -90,44 +90,44 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<Boolean> freezeDefault = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Consumer<String>> createdIdObs = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
-    private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private Optional<Function<HapiSpec, String>> symbolFn = Optional.empty();
+    private Optional<Function<HapiSpec, String>> nameFn = Optional.empty();
+    private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenCreate;
     }
 
-    public HapiTokenCreate(String token) {
+    public HapiTokenCreate(final String token) {
         this.token = token;
     }
 
-    public void setTokenPrefix(String prefix) {
+    public void setTokenPrefix(final String prefix) {
         token = prefix + token;
     }
 
-    public HapiTokenCreate withCustom(Function<HapiApiSpec, CustomFee> supplier) {
+    public HapiTokenCreate withCustom(final Function<HapiSpec, CustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }
 
-    public HapiTokenCreate entityMemo(String memo) {
+    public HapiTokenCreate entityMemo(final String memo) {
         this.entityMemo = Optional.of(memo);
         return this;
     }
 
-    public HapiTokenCreate exposingCreatedIdTo(Consumer<String> obs) {
+    public HapiTokenCreate exposingCreatedIdTo(final Consumer<String> obs) {
         createdIdObs = Optional.of(obs);
         return this;
     }
 
-    public HapiTokenCreate tokenType(TokenType tokenType) {
+    public HapiTokenCreate tokenType(final TokenType tokenType) {
         this.tokenType = Optional.of(tokenType);
         return this;
     }
 
-    public HapiTokenCreate supplyType(TokenSupplyType supplyType) {
+    public HapiTokenCreate supplyType(final TokenSupplyType supplyType) {
         this.supplyType = Optional.of(supplyType);
         return this;
     }
@@ -142,97 +142,97 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
-    public HapiTokenCreate initialSupply(long initialSupply) {
+    public HapiTokenCreate initialSupply(final long initialSupply) {
         this.initialSupply = OptionalLong.of(initialSupply);
         return this;
     }
 
-    public HapiTokenCreate maxSupply(long maxSupply) {
+    public HapiTokenCreate maxSupply(final long maxSupply) {
         this.maxSupply = OptionalLong.of(maxSupply);
         return this;
     }
 
-    public HapiTokenCreate decimals(int decimals) {
+    public HapiTokenCreate decimals(final int decimals) {
         this.decimals = OptionalInt.of(decimals);
         return this;
     }
 
-    public HapiTokenCreate freezeDefault(boolean frozenByDefault) {
+    public HapiTokenCreate freezeDefault(final boolean frozenByDefault) {
         freezeDefault = Optional.of(frozenByDefault);
         return this;
     }
 
-    public HapiTokenCreate freezeKey(String name) {
+    public HapiTokenCreate freezeKey(final String name) {
         freezeKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate expiry(long at) {
+    public HapiTokenCreate expiry(final long at) {
         expiry = OptionalLong.of(at);
         return this;
     }
 
-    public HapiTokenCreate kycKey(String name) {
+    public HapiTokenCreate kycKey(final String name) {
         kycKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate wipeKey(String name) {
+    public HapiTokenCreate wipeKey(final String name) {
         wipeKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate supplyKey(String name) {
+    public HapiTokenCreate supplyKey(final String name) {
         supplyKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate feeScheduleKey(String name) {
+    public HapiTokenCreate feeScheduleKey(final String name) {
         feeScheduleKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate pauseKey(String name) {
+    public HapiTokenCreate pauseKey(final String name) {
         pauseKey = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate symbol(String symbol) {
+    public HapiTokenCreate symbol(final String symbol) {
         this.symbol = Optional.of(symbol);
         return this;
     }
 
-    public HapiTokenCreate symbol(Function<HapiApiSpec, String> symbolFn) {
+    public HapiTokenCreate symbol(final Function<HapiSpec, String> symbolFn) {
         this.symbolFn = Optional.of(symbolFn);
         return this;
     }
 
-    public HapiTokenCreate name(String name) {
+    public HapiTokenCreate name(final String name) {
         this.name = Optional.of(name);
         return this;
     }
 
-    public HapiTokenCreate name(Function<HapiApiSpec, String> nameFn) {
+    public HapiTokenCreate name(final Function<HapiSpec, String> nameFn) {
         this.nameFn = Optional.of(nameFn);
         return this;
     }
 
-    public HapiTokenCreate adminKey(String adminKeyName) {
+    public HapiTokenCreate adminKey(final String adminKeyName) {
         this.adminKey = Optional.of(adminKeyName);
         return this;
     }
 
-    public HapiTokenCreate treasury(String treasury) {
+    public HapiTokenCreate treasury(final String treasury) {
         this.treasury = Optional.of(treasury);
         return this;
     }
 
-    public HapiTokenCreate autoRenewAccount(String account) {
+    public HapiTokenCreate autoRenewAccount(final String account) {
         this.autoRenewAccount = Optional.of(account);
         return this;
     }
 
-    public HapiTokenCreate autoRenewPeriod(long secs) {
+    public HapiTokenCreate autoRenewPeriod(final long secs) {
         this.autoRenewPeriod = OptionalLong.of(secs);
         return this;
     }
@@ -243,7 +243,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
         return spec.fees()
                 .forActivityBasedOp(
@@ -256,7 +257,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
     private SubType getTxnSubType(final TransactionBody txn) {
         final var op = txn.getTokenCreation();
-        SubType chosenType;
+        final SubType chosenType;
         final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
         if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
             chosenType =
@@ -270,25 +271,25 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return chosenType;
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        UsageAccumulator accumulator = new UsageAccumulator();
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
+        final var accumulator = new UsageAccumulator();
         final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
         final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-        TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
+        final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
         tokenOpsUsage.tokenCreateUsage(
                 suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         if (symbolFn.isPresent()) {
             symbol = Optional.of(symbolFn.get().apply(spec));
         }
         if (nameFn.isPresent()) {
             name = Optional.of(nameFn.get().apply(spec));
         }
-        TokenCreateTransactionBody opBody =
+        final TokenCreateTransactionBody opBody =
                 spec.txns()
                         .<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
                                 TokenCreateTransactionBody.class,
@@ -313,9 +314,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     pauseKey.ifPresent(
                                             k -> b.setPauseKey(spec.registry().getKey(k)));
                                     if (autoRenewAccount.isPresent()) {
-                                        var id = TxnUtils.asId(autoRenewAccount.get(), spec);
+                                        final var id = TxnUtils.asId(autoRenewAccount.get(), spec);
                                         b.setAutoRenewAccount(id);
-                                        long secs =
+                                        final long secs =
                                                 autoRenewPeriod.orElse(
                                                         spec.setup()
                                                                 .defaultAutoRenewPeriod()
@@ -335,11 +336,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                                     kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
                                     treasury.ifPresent(
                                             a -> {
-                                                var treasuryId = TxnUtils.asId(a, spec);
+                                                final var treasuryId = TxnUtils.asId(a, spec);
                                                 b.setTreasury(treasuryId);
                                             });
                                     if (!feeScheduleSuppliers.isEmpty()) {
-                                        for (var supplier : feeScheduleSuppliers) {
+                                        for (final var supplier : feeScheduleSuppliers) {
                                             b.addCustomFees(supplier.apply(spec));
                                         }
                                     }
@@ -348,8 +349,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers =
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(
                         List.of(
                                 spec -> spec.registry().getKey(effectivePayer(spec)),
@@ -365,27 +366,27 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createToken;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
-        var registry = spec.registry();
+        final var registry = spec.registry();
         symbol.ifPresent(s -> registry.saveSymbol(token, s));
         name.ifPresent(s -> registry.saveName(token, s));
         registry.saveMemo(token, memo.orElse(""));
-        TokenID tokenID = lastReceipt.getTokenID();
+        final TokenID tokenID = lastReceipt.getTokenID();
         registry.saveTokenId(token, tokenID);
         registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
         createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(tokenID)));
 
         try {
-            var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
-            var op = submittedBody.getTokenCreation();
+            final var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
+            final var op = submittedBody.getTokenCreation();
             if (op.hasKycKey()) {
                 registry.saveKycKey(token, op.getKycKey());
             }
@@ -407,11 +408,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
             if (op.hasPauseKey()) {
                 registry.savePauseKey(token, op.getPauseKey());
             }
-        } catch (InvalidProtocolBufferException impossible) {
+        } catch (final InvalidProtocolBufferException impossible) {
         }
 
         if (advertiseCreation) {
-            String banner =
+            final String banner =
                     "\n\n"
                             + bannerWith(
                                     String.format(
@@ -432,7 +433,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
         Optional.ofNullable(lastReceipt)
                 .ifPresent(
                         receipt -> {

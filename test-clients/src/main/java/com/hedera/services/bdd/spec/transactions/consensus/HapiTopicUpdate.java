@@ -19,15 +19,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTimestamp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -37,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,46 +57,46 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     private Optional<Key> newSubmitKey = Optional.empty();
     private Optional<String> newAutoRenewAccount = Optional.empty();
 
-    public HapiTopicUpdate(String topic) {
+    public HapiTopicUpdate(final String topic) {
         this.topic = topic;
     }
 
-    public HapiTopicUpdate topicMemo(String s) {
+    public HapiTopicUpdate topicMemo(final String s) {
         topicMemo = Optional.of(s);
         return this;
     }
 
-    public HapiTopicUpdate adminKey(String name) {
+    public HapiTopicUpdate adminKey(final String name) {
         newAdminKeyName = Optional.of(name);
         return this;
     }
 
-    public HapiTopicUpdate adminKey(Key key) {
+    public HapiTopicUpdate adminKey(final Key key) {
         newAdminKey = Optional.of(key);
         return this;
     }
 
-    public HapiTopicUpdate submitKey(String name) {
+    public HapiTopicUpdate submitKey(final String name) {
         newSubmitKeyName = Optional.of(name);
         return this;
     }
 
-    public HapiTopicUpdate submitKey(Key key) {
+    public HapiTopicUpdate submitKey(final Key key) {
         newSubmitKey = Optional.of(key);
         return this;
     }
 
-    public HapiTopicUpdate expiry(long at) {
+    public HapiTopicUpdate expiry(final long at) {
         newExpiry = OptionalLong.of(at);
         return this;
     }
 
-    public HapiTopicUpdate autoRenewPeriod(long secs) {
+    public HapiTopicUpdate autoRenewPeriod(final long secs) {
         newAutoRenewPeriod = OptionalLong.of(secs);
         return this;
     }
 
-    public HapiTopicUpdate autoRenewAccountId(String id) {
+    public HapiTopicUpdate autoRenewAccountId(final String id) {
         newAutoRenewAccount = Optional.of(id);
         return this;
     }
@@ -112,7 +112,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
@@ -133,19 +133,19 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                     }
                 });
         try {
-            TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
+            final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
             spec.registry().saveTopicMeta(topic, txn.getConsensusUpdateTopic());
-        } catch (Exception impossible) {
+        } catch (final Exception impossible) {
             throw new IllegalStateException(impossible);
         }
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         newAdminKeyName.ifPresent(name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
         newSubmitKeyName.ifPresent(
                 name -> newSubmitKey = Optional.of(spec.registry().getKey(name)));
-        ConsensusUpdateTopicTransactionBody opBody =
+        final ConsensusUpdateTopicTransactionBody opBody =
                 spec.txns()
                         .<ConsensusUpdateTopicTransactionBody,
                                 ConsensusUpdateTopicTransactionBody.Builder>
@@ -168,8 +168,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(
                 spec -> {
@@ -193,23 +193,24 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         if (!spec.registry().hasTopicMeta(topic)) {
             return spec.fees().maxFeeTinyBars();
         } else {
             /* Lookup topic metadata saved during creation. */
-            long oldExpiry = spec.registry().getTopicExpiry(topic);
-            ConsensusCreateTopicTransactionBody oldMeta = spec.registry().getTopicMeta(topic);
+            final long oldExpiry = spec.registry().getTopicExpiry(topic);
+            final ConsensusCreateTopicTransactionBody oldMeta = spec.registry().getTopicMeta(topic);
 
             /* Computed the increase in RBS due to this update. */
             long tentativeRbsIncrease = 0;
             try {
-                TransactionBody updateTxn = CommonUtils.extractTransactionBody(txn);
+                final TransactionBody updateTxn = CommonUtils.extractTransactionBody(txn);
                 tentativeRbsIncrease =
                         ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease(
                                 updateTxn.getTransactionID().getTransactionValidStart(),
@@ -219,13 +220,13 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
                                 oldMeta.hasAutoRenewAccount(),
                                 Timestamp.newBuilder().setSeconds(oldExpiry).build(),
                                 updateTxn.getConsensusUpdateTopic());
-            } catch (Exception impossible) {
+            } catch (final Exception impossible) {
                 throw new IllegalStateException(impossible);
             }
 
             /* Create a custom activity metrics calculator based on the rbsIncrease. */
             final long rbsIncrease = tentativeRbsIncrease;
-            FeeCalculator.ActivityMetrics metricsCalc =
+            final FeeCalculator.ActivityMetrics metricsCalc =
                     (txBody, sigUsage) ->
                             ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(
                                     txBody, rbsIncrease, sigUsage);
@@ -238,7 +239,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("topic", topic);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("topic", topic);
         newAutoRenewAccount.ifPresent(id -> helper.add("autoRenewId", id));
         return helper;
     }

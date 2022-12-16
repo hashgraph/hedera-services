@@ -22,13 +22,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.consensus.SubmitMessageMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -39,7 +40,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +49,7 @@ import java.util.function.Function;
 
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     private Optional<String> topic = Optional.empty();
-    private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
+    private Optional<Function<HapiSpec, TopicID>> topicFn = Optional.empty();
     private Optional<ByteString> message = Optional.empty();
     private OptionalInt totalChunks = OptionalInt.empty();
     private OptionalInt chunkNumber = OptionalInt.empty();
@@ -57,11 +57,11 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     private Optional<TransactionID> initialTransactionID = Optional.empty();
     private boolean clearMessage = false;
 
-    public HapiMessageSubmit(String topic) {
+    public HapiMessageSubmit(final String topic) {
         this.topic = Optional.ofNullable(topic);
     }
 
-    public HapiMessageSubmit(Function<HapiApiSpec, TopicID> topicFn) {
+    public HapiMessageSubmit(final Function<HapiSpec, TopicID> topicFn) {
         this.topicFn = Optional.of(topicFn);
     }
 
@@ -83,17 +83,17 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return message;
     }
 
-    public HapiMessageSubmit message(ByteString s) {
+    public HapiMessageSubmit message(final ByteString s) {
         message = Optional.of(s);
         return this;
     }
 
-    public HapiMessageSubmit message(byte[] s) {
+    public HapiMessageSubmit message(final byte[] s) {
         message(ByteString.copyFrom(s));
         return this;
     }
 
-    public HapiMessageSubmit message(String s) {
+    public HapiMessageSubmit message(final String s) {
         message(s.getBytes());
         return this;
     }
@@ -103,28 +103,30 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return this;
     }
 
-    public HapiMessageSubmit chunkInfo(int totalChunks, int chunkNumber) {
+    public HapiMessageSubmit chunkInfo(final int totalChunks, final int chunkNumber) {
         this.totalChunks = OptionalInt.of(totalChunks);
         this.chunkNumber = OptionalInt.of(chunkNumber);
         return this;
     }
 
     public HapiMessageSubmit chunkInfo(
-            int totalChunks, int chunkNumber, String initialTransactionPayer) {
+            final int totalChunks, final int chunkNumber, final String initialTransactionPayer) {
         this.initialTransactionPayer = Optional.of(initialTransactionPayer);
         return chunkInfo(totalChunks, chunkNumber);
     }
 
     public HapiMessageSubmit chunkInfo(
-            int totalChunks, int chunkNumber, TransactionID initialTransactionID) {
+            final int totalChunks,
+            final int chunkNumber,
+            final TransactionID initialTransactionID) {
         this.initialTransactionID = Optional.of(initialTransactionID);
         return chunkInfo(totalChunks, chunkNumber);
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        TopicID id = resolveTopicId(spec);
-        ConsensusSubmitMessageTransactionBody opBody =
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+        final TopicID id = resolveTopicId(spec);
+        final ConsensusSubmitMessageTransactionBody opBody =
                 spec.txns()
                         .<ConsensusSubmitMessageTransactionBody,
                                 ConsensusSubmitMessageTransactionBody.Builder>
@@ -138,7 +140,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
                                             }
                                             if (totalChunks.isPresent()
                                                     && chunkNumber.isPresent()) {
-                                                ConsensusMessageChunkInfo chunkInfo =
+                                                final ConsensusMessageChunkInfo chunkInfo =
                                                         ConsensusMessageChunkInfo.newBuilder()
                                                                 .setInitialTransactionID(
                                                                         initialTransactionID.orElse(
@@ -163,9 +165,9 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return b -> b.setConsensusSubmitMessage(opBody);
     }
 
-    private TopicID resolveTopicId(HapiApiSpec spec) {
+    private TopicID resolveTopicId(final HapiSpec spec) {
         if (topicFn.isPresent()) {
-            TopicID topicID = topicFn.get().apply(spec);
+            final TopicID topicID = topicFn.get().apply(spec);
             topic = Optional.of(HapiPropertySource.asTopicString(topicID));
             return topicID;
         }
@@ -176,7 +178,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Function<HapiApiSpec, List<Key>> variableDefaultSigners() {
+    protected Function<HapiSpec, List<Key>> variableDefaultSigners() {
         return spec -> {
             if (topic.isPresent() && spec.registry().hasKey(topic.get() + "Submit")) {
                 return List.of(spec.registry().getKey(topic.get() + "Submit"));
@@ -186,17 +188,18 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::submitMessage;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final var op = txn.getConsensusSubmitMessage();
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final var submitMeta = new SubmitMessageMeta(op.getMessage().size());
@@ -209,7 +212,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
+        final MoreObjects.ToStringHelper helper =
                 super.toStringHelper()
                         .add("topic", topic.orElse("<not set>"))
                         .add("message", message);

@@ -17,8 +17,8 @@ package com.hedera.services.bdd.suites.utils.sysfiles;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.yahcli.commands.files.SysFileUploadCommand;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -40,10 +40,10 @@ public class BookEntryPojo {
         private Integer port;
 
         @SuppressWarnings("java:S5960")
-        private static String asReadableIp(ByteString octets) {
-            byte[] raw = octets.toByteArray();
+        private static String asReadableIp(final ByteString octets) {
+            final byte[] raw = octets.toByteArray();
             Assertions.assertEquals(4, raw.length, "An IP4v4 address should have four octets!");
-            var sb = new StringBuilder();
+            final var sb = new StringBuilder();
             for (int i = 0; i < 4; i++) {
                 sb.append("" + (0xff & raw[i]));
                 if (i != 3) {
@@ -57,7 +57,7 @@ public class BookEntryPojo {
             return ipAddressV4;
         }
 
-        public void setIpAddressV4(String ipAddressV4) {
+        public void setIpAddressV4(final String ipAddressV4) {
             this.ipAddressV4 = ipAddressV4;
         }
 
@@ -65,13 +65,13 @@ public class BookEntryPojo {
             return port;
         }
 
-        public void setPort(Integer port) {
+        public void setPort(final Integer port) {
             this.port = port;
         }
 
         @SuppressWarnings("java:S5960")
-        static EndpointPojo fromGrpc(ServiceEndpoint proto) {
-            var pojo = new EndpointPojo();
+        static EndpointPojo fromGrpc(final ServiceEndpoint proto) {
+            final var pojo = new EndpointPojo();
             pojo.setIpAddressV4(asReadableIp(proto.getIpAddressV4()));
             pojo.setPort(proto.getPort());
             Assertions.assertNotEquals(
@@ -100,8 +100,8 @@ public class BookEntryPojo {
     private List<EndpointPojo> endpoints;
 
     @SuppressWarnings("java:S1874")
-    static BookEntryPojo fromGrpc(NodeAddress address) {
-        var entry = new BookEntryPojo();
+    static BookEntryPojo fromGrpc(final NodeAddress address) {
+        final var entry = new BookEntryPojo();
 
         entry.deprecatedIp =
                 address.getIpAddress().isEmpty() ? null : address.getIpAddress().toStringUtf8();
@@ -118,10 +118,10 @@ public class BookEntryPojo {
             entry.nodeAccount = HapiPropertySource.asAccountString(address.getNodeAccountId());
         } else {
             try {
-                var memo = address.getMemo().toStringUtf8();
+                final var memo = address.getMemo().toStringUtf8();
                 HapiPropertySource.asAccount(memo);
                 entry.nodeAccount = memo;
-            } catch (Exception ignore) {
+            } catch (final Exception ignore) {
                 entry.nodeAccount = null;
             }
         }
@@ -144,13 +144,13 @@ public class BookEntryPojo {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
     @SuppressWarnings("java:S1874")
     public Stream<NodeAddress> toGrpcStream() {
-        var grpc = NodeAddress.newBuilder();
+        final var grpc = NodeAddress.newBuilder();
 
         if (deprecatedIp != null) {
             grpc.setIpAddress(ByteString.copyFromUtf8(deprecatedIp));
@@ -163,8 +163,9 @@ public class BookEntryPojo {
 
         if (rsaPubKey != null) {
             if (rsaPubKey.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
-                var computedKey = asHexEncodedDerPubKey(baseDir, grpc.getNodeId());
+                final var baseDir =
+                        SysFileUploadCommand.activeSrcDir.get() + File.separator + "pubkeys";
+                final var computedKey = asHexEncodedDerPubKey(baseDir, grpc.getNodeId());
                 grpc.setRSAPubKey(computedKey);
             } else {
                 grpc.setRSAPubKey(rsaPubKey);
@@ -175,15 +176,16 @@ public class BookEntryPojo {
         }
         if (!certHash.equals(MISSING_CERT_HASH)) {
             if (certHash.equals(SENTINEL_REPLACEMENT_VALUE)) {
-                var baseDir = SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
-                var computedHash = asHexEncodedSha384HashFor(baseDir, grpc.getNodeId());
+                final var baseDir =
+                        SysFileUploadCommand.activeSrcDir.get() + File.separator + "certs";
+                final var computedHash = asHexEncodedSha384HashFor(baseDir, grpc.getNodeId());
                 grpc.setNodeCertHash(ByteString.copyFromUtf8(computedHash));
             } else {
                 grpc.setNodeCertHash(ByteString.copyFromUtf8(certHash));
             }
         }
 
-        for (var endpoint : endpoints) {
+        for (final var endpoint : endpoints) {
             grpc.addServiceEndpoint(endpoint.toGrpc());
         }
         if (description != null) {
@@ -196,7 +198,7 @@ public class BookEntryPojo {
         return Stream.of(grpc.build());
     }
 
-    private static void mapEndpoints(NodeAddress from, BookEntryPojo to) {
+    private static void mapEndpoints(final NodeAddress from, final BookEntryPojo to) {
         to.endpoints = from.getServiceEndpointList().stream().map(EndpointPojo::fromGrpc).toList();
     }
 
@@ -204,7 +206,7 @@ public class BookEntryPojo {
         return stake;
     }
 
-    public void setStake(Long stake) {
+    public void setStake(final Long stake) {
         this.stake = stake;
     }
 
@@ -212,7 +214,7 @@ public class BookEntryPojo {
         return deprecatedIp;
     }
 
-    public void setDeprecatedIp(String deprecatedIp) {
+    public void setDeprecatedIp(final String deprecatedIp) {
         this.deprecatedIp = deprecatedIp;
     }
 
@@ -220,7 +222,7 @@ public class BookEntryPojo {
         return deprecatedMemo;
     }
 
-    public void setDeprecatedMemo(String deprecatedMemo) {
+    public void setDeprecatedMemo(final String deprecatedMemo) {
         this.deprecatedMemo = deprecatedMemo;
     }
 
@@ -228,7 +230,7 @@ public class BookEntryPojo {
         return nodeAccount;
     }
 
-    public void setNodeAccount(String nodeAccount) {
+    public void setNodeAccount(final String nodeAccount) {
         this.nodeAccount = nodeAccount;
     }
 
@@ -236,7 +238,7 @@ public class BookEntryPojo {
         return rsaPubKey;
     }
 
-    public void setRsaPubKey(String rsaPubKey) {
+    public void setRsaPubKey(final String rsaPubKey) {
         this.rsaPubKey = rsaPubKey;
     }
 
@@ -244,7 +246,7 @@ public class BookEntryPojo {
         return certHash;
     }
 
-    public void setCertHash(String certHash) {
+    public void setCertHash(final String certHash) {
         this.certHash = certHash;
     }
 
@@ -252,7 +254,7 @@ public class BookEntryPojo {
         return deprecatedPortNo;
     }
 
-    public void setDeprecatedPortNo(Integer deprecatedPortNo) {
+    public void setDeprecatedPortNo(final Integer deprecatedPortNo) {
         this.deprecatedPortNo = deprecatedPortNo;
     }
 
@@ -260,7 +262,7 @@ public class BookEntryPojo {
         return nodeId;
     }
 
-    public void setNodeId(Long nodeId) {
+    public void setNodeId(final Long nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -268,34 +270,34 @@ public class BookEntryPojo {
         return endpoints;
     }
 
-    public void setEndpoints(List<EndpointPojo> endpoints) {
+    public void setEndpoints(final List<EndpointPojo> endpoints) {
         this.endpoints = endpoints;
     }
 
-    static String asHexEncodedSha384HashFor(String baseDir, long nodeId) {
+    static String asHexEncodedSha384HashFor(final String baseDir, final long nodeId) {
         try {
-            var crtBytes =
+            final var crtBytes =
                     Files.readAllBytes(Paths.get(baseDir, String.format("node%d.crt", nodeId)));
-            var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
+            final var crtHash = CommonUtils.noThrowSha384HashOf(crtBytes);
             return com.swirlds.common.utility.CommonUtils.hex(crtHash);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
-    static String asHexEncodedDerPubKey(String baseDir, long nodeId) {
+    static String asHexEncodedDerPubKey(final String baseDir, final long nodeId) {
         try {
-            var pubKeyBytes =
+            final var pubKeyBytes =
                     Files.readAllBytes(Paths.get(baseDir, String.format("node%d.der", nodeId)));
             return com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static ByteString asOctets(String ipAddressV4) {
-        byte[] octets = new byte[4];
-        String[] literals = ipAddressV4.split("[.]");
+    public static ByteString asOctets(final String ipAddressV4) {
+        final byte[] octets = new byte[4];
+        final String[] literals = ipAddressV4.split("[.]");
         for (int i = 0; i < 4; i++) {
             octets[i] = (byte) Integer.parseInt(literals[i]);
         }

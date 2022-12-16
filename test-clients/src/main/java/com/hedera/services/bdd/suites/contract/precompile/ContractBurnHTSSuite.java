@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -54,13 +54,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
@@ -68,7 +68,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class ContractBurnHTSSuite extends HapiApiSuite {
+public class ContractBurnHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractBurnHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -84,7 +84,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
 
     public static void main(String... args) {
-        new ContractBurnHTSSuite().runSuiteSync();
+        new ContractBurnHTSSuite().runSuiteAsync();
     }
 
     @Override
@@ -93,22 +93,23 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
-        return List.of(HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer());
+    List<HapiSpec> negativeSpecs() {
+        return List.of(hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
-                HSCS_PREC_004_token_burn_of_fungible_token_units(),
-                HSCS_PREC_005_token_burn_of_NFT(),
-                HSCS_PREC_011_burn_after_nested_mint());
+                hscsPrec004TokenBurnOfFungibleTokenUnits(),
+                hscsPrec005TokenBurnOfNft(),
+                hscsPrec011BurnAfterNestedMint());
     }
 
-    private HapiApiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
+    private HapiSpec hscsPrec004TokenBurnOfFungibleTokenUnits() {
+        final var gasUsed = 14085L;
         return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -137,6 +138,46 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
+                        contractCall(
+                                        THE_CONTRACT,
+                                        "burnTokenWithEvent",
+                                        BigInteger.ZERO,
+                                        new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .via("burnZero"),
+                        getTxnRecord("burnZero")
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .logs(
+                                                                        inOrder(
+                                                                                logWith()
+                                                                                        .noData()
+                                                                                        .withTopicsInOrder(
+                                                                                                List
+                                                                                                        .of(
+                                                                                                                parsedToByteString(
+                                                                                                                        50))))))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
+                        childRecordsCheck(
+                                "burnZero",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_BURN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withTotalSupply(50))
+                                                        .gasUsed(gasUsed))
+                                        .newTotalSupply(50)),
                         contractCall(
                                         THE_CONTRACT,
                                         "burnTokenWithEvent",
@@ -174,7 +215,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .HAPI_BURN)
                                                                         .withStatus(SUCCESS)
-                                                                        .withTotalSupply(49)))
+                                                                        .withTotalSupply(49))
+                                                        .gasUsed(gasUsed))
                                         .newTotalSupply(49)
                                         .tokenTransfers(
                                                 changingFungibleBalances()
@@ -206,7 +248,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
     }
 
-    private HapiApiSpec HSCS_PREC_005_token_burn_of_NFT() {
+    private HapiSpec hscsPrec005TokenBurnOfNft() {
+        final var gasUsed = 14085;
         return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -264,12 +307,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .HAPI_BURN)
                                                                         .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1)))
+                                                                        .withTotalSupply(1))
+                                                        .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }
 
-    private HapiApiSpec HSCS_PREC_011_burn_after_nested_mint() {
+    private HapiSpec hscsPrec011BurnAfterNestedMint() {
         final var innerContract = "MintToken";
         final var outerContract = "NestedBurn";
         final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);
@@ -363,7 +407,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
 
-    private HapiApiSpec HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer() {
+    private HapiSpec hscsPreC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
         final var bob = "bob";
         final var feeCollector = "feeCollector";
         final var tokenWithHbarFee = "tokenWithHbarFee";
@@ -463,7 +507,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+    private String getNestedContractAddress(String outerContract, HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(
                 spec.registry().getContractId(outerContract));
     }

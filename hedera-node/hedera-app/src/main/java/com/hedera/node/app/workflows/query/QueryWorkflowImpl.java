@@ -16,8 +16,8 @@
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /**
  * Dummy implementation. To be implemented by <a
@@ -26,9 +26,9 @@ import javax.annotation.Nonnull;
 public final class QueryWorkflowImpl implements QueryWorkflow {
     @Override
     public void handleQuery(
-            @Nonnull final SessionContext session,
-            @Nonnull final ByteBuffer requestBuffer,
-            @Nonnull final ByteBuffer responseBuffer) {
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
         // To be implemented by Issue #4208
     }
 }

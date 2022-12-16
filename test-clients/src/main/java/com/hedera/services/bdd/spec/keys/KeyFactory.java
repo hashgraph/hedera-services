@@ -24,12 +24,18 @@ import static java.util.Map.Entry;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.SignatureGenerator;
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.keys.Ed25519Utils;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.Transaction;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
@@ -37,7 +43,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -67,9 +79,9 @@ public class KeyFactory implements Serializable {
     private final SigMapGenerator defaultSigMapGen =
             TrieSigMapGenerator.withNature(UNIQUE_PREFIXES);
 
-    private transient HapiSpecRegistry registry;
+    private final transient HapiSpecRegistry registry;
 
-    public KeyFactory(HapiSpecSetup setup, HapiSpecRegistry registry) throws Exception {
+    public KeyFactory(final HapiSpecSetup setup, final HapiSpecRegistry registry) throws Exception {
         this.setup = setup;
         this.registry = registry;
 
@@ -117,7 +129,7 @@ public class KeyFactory implements Serializable {
         final var loc = explicitEcdsaLocFor(name);
         try {
             Files.writeString(Paths.get(loc), hexedPubKey + "|" + key.getS().toString(16));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }
@@ -143,25 +155,28 @@ public class KeyFactory implements Serializable {
     }
 
     public void incorporate(
-            String byName, String pubKeyHex, PrivateKey privateKey, SigControl control) {
+            final String byName,
+            final String pubKeyHex,
+            final PrivateKey privateKey,
+            final SigControl control) {
         pkMap.put(pubKeyHex, privateKey);
         controlMap.put(registry.getKey(byName), control);
     }
 
-    public SigControl controlFor(Key key) {
+    public SigControl controlFor(final Key key) {
         return controlMap.get(key);
     }
 
-    public void setControl(Key key, SigControl control) {
+    public void setControl(final Key key, final SigControl control) {
         controlMap.put(key, control);
     }
 
-    public int controlledKeyCount(Key key, Map<Key, SigControl> overrides) {
+    public int controlledKeyCount(final Key key, final Map<Key, SigControl> overrides) {
         return asAuthor(key, overrides).getValue().numSimpleKeys();
     }
 
     public Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final List<Key> keys,
             final Map<Key, SigControl> overrides)
@@ -170,7 +185,7 @@ public class KeyFactory implements Serializable {
     }
 
     public Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final List<Key> keys,
             final Map<Key, SigControl> overrides,
@@ -179,12 +194,13 @@ public class KeyFactory implements Serializable {
         return sign(spec, txn, sigMapGen, authorsFor(keys, overrides));
     }
 
-    public List<Entry<Key, SigControl>> authorsFor(List<Key> keys, Map<Key, SigControl> overrides) {
+    public List<Entry<Key, SigControl>> authorsFor(
+            final List<Key> keys, final Map<Key, SigControl> overrides) {
         return keys.stream().map(k -> asAuthor(k, overrides)).collect(toList());
     }
 
-    private Entry<Key, SigControl> asAuthor(Key key, Map<Key, SigControl> overrides) {
-        SigControl control = overrides.getOrDefault(key, controlMap.get(key));
+    private Entry<Key, SigControl> asAuthor(final Key key, final Map<Key, SigControl> overrides) {
+        final SigControl control = overrides.getOrDefault(key, controlMap.get(key));
 
         if (control == null) {
             throw new IllegalArgumentException("No sig control for key " + key);
@@ -198,16 +214,13 @@ public class KeyFactory implements Serializable {
     }
 
     private Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final SigMapGenerator sigMapGen,
             final List<Entry<Key, SigControl>> authors)
             throws Throwable {
         final var signing =
-                new PrimitiveSigning(
-                        com.hedera.services.legacy.proto.utils.CommonUtils
-                                .extractTransactionBodyBytes(txn),
-                        authors);
+                new PrimitiveSigning(CommonUtils.extractTransactionBodyBytes(txn), authors);
 
         final var primitiveSigs = signing.completed();
         final var sigMap = sigMapGen.forPrimitiveSigs(spec, primitiveSigs);
@@ -224,10 +237,7 @@ public class KeyFactory implements Serializable {
                         .<Entry<Key, SigControl>>map(k -> Pair.of(k, SigControl.ED25519_ON))
                         .toList();
         final var signing =
-                new PrimitiveSigning(
-                        com.hedera.services.legacy.proto.utils.CommonUtils
-                                .extractTransactionBodyBytes(txn),
-                        authors);
+                new PrimitiveSigning(CommonUtils.extractTransactionBodyBytes(txn), authors);
         final var primitiveSigs = signing.completed();
         final var sigMap = SignatureMap.newBuilder();
         for (final var sig : primitiveSigs) {
@@ -248,7 +258,7 @@ public class KeyFactory implements Serializable {
         private final List<Entry<Key, SigControl>> authors;
         private final List<Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 
-        public PrimitiveSigning(byte[] data, List<Entry<Key, SigControl>> authors) {
+        public PrimitiveSigning(final byte[] data, final List<Entry<Key, SigControl>> authors) {
             this.data = data;
             this.authors = authors;
         }
@@ -260,7 +270,7 @@ public class KeyFactory implements Serializable {
             return keySigs;
         }
 
-        private void signRecursively(Key key, SigControl controller) throws Throwable {
+        private void signRecursively(final Key key, final SigControl controller) throws Throwable {
             switch (controller.getNature()) {
                 case SIG_OFF:
                 case CONTRACT_ID:
@@ -270,8 +280,8 @@ public class KeyFactory implements Serializable {
                     signIfNecessary(key);
                     break;
                 default:
-                    KeyList composite = getCompositeList(key);
-                    SigControl[] childControls = controller.getChildControls();
+                    final KeyList composite = getCompositeList(key);
+                    final SigControl[] childControls = controller.getChildControls();
                     for (int i = 0; i < childControls.length; i++) {
                         signRecursively(composite.getKeys(i), childControls[i]);
                     }
@@ -312,18 +322,18 @@ public class KeyFactory implements Serializable {
         return (ECPrivateKey) pkMap.get(pubKeyHex);
     }
 
-    public static KeyList getCompositeList(Key key) {
+    public static KeyList getCompositeList(final Key key) {
         return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
     }
 
-    public static EdDSAPrivateKey payerKey(HapiSpecSetup setup) {
+    public static EdDSAPrivateKey payerKey(final HapiSpecSetup setup) {
         if (StringUtils.isNotEmpty(setup.defaultPayerKey())) {
             return Ed25519Utils.keyFrom(
                     com.swirlds.common.utility.CommonUtils.unhex(setup.defaultPayerKey()));
         } else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
             return mnemonicToEd25519Key(setup.defaultPayerMnemonic());
         } else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {
-            var mnemonic = mnemonicFromFile(setup.defaultPayerMnemonicFile());
+            final var mnemonic = mnemonicFromFile(setup.defaultPayerMnemonicFile());
             return mnemonicToEd25519Key(mnemonic);
         } else {
             return Ed25519Utils.readKeyFrom(
@@ -331,21 +341,21 @@ public class KeyFactory implements Serializable {
         }
     }
 
-    public static String mnemonicFromFile(String wordsLoc) {
+    public static String mnemonicFromFile(final String wordsLoc) {
         try {
             return java.nio.file.Files.lines(Paths.get(wordsLoc)).collect(Collectors.joining(" "));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     public synchronized Key generateSubjectTo(
-            final HapiApiSpec spec, final SigControl controller, final KeyGenerator keyGen) {
+            final HapiSpec spec, final SigControl controller, final KeyGenerator keyGen) {
         return new Generation(spec, controller, keyGen).outcome();
     }
 
     public synchronized Key generateSubjectTo(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final SigControl controller,
             final KeyGenerator keyGen,
             final KeyLabel labels) {
@@ -359,18 +369,22 @@ public class KeyFactory implements Serializable {
 
         private final KeyLabel labels;
         private final SigControl control;
-        private final HapiApiSpec spec;
+        private final HapiSpec spec;
         private final KeyGenerator keyGen;
         private final Map<String, Key> byLabel = new HashMap<>();
 
         private int nextUnspecifiedAlgo = 0;
 
-        public Generation(HapiApiSpec spec, SigControl control, KeyGenerator keyGen) {
+        public Generation(
+                final HapiSpec spec, final SigControl control, final KeyGenerator keyGen) {
             this(spec, control, keyGen, KeyLabel.uniquelyLabeling(control));
         }
 
         public Generation(
-                HapiApiSpec spec, SigControl control, KeyGenerator keyGen, KeyLabel labels) {
+                final HapiSpec spec,
+                final SigControl control,
+                final KeyGenerator keyGen,
+                final KeyLabel labels) {
             this.spec = spec;
             this.labels = labels;
             this.control = control;
@@ -381,8 +395,8 @@ public class KeyFactory implements Serializable {
             return generate(control, labels, true);
         }
 
-        private Key generate(SigControl sc, KeyLabel label, boolean saving) {
-            Key generated;
+        private Key generate(final SigControl sc, final KeyLabel label, final boolean saving) {
+            final Key generated;
 
             switch (sc.getNature()) {
                 case PREDEFINED:
@@ -453,9 +467,9 @@ public class KeyFactory implements Serializable {
             }
         }
 
-        private KeyList composing(KeyLabel[] ls, SigControl[] cs) {
+        private KeyList composing(final KeyLabel[] ls, final SigControl[] cs) {
             Assertions.assertEquals(ls.length, cs.length, "Incompatible ls and cs!");
-            int N = ls.length;
+            final int N = ls.length;
             return KeyList.newBuilder()
                     .addAllKeys(
                             IntStream.range(0, N)
@@ -465,11 +479,11 @@ public class KeyFactory implements Serializable {
         }
     }
 
-    public Key generate(final HapiApiSpec spec, final KeyType type) {
+    public Key generate(final HapiSpec spec, final KeyType type) {
         return generate(spec, type, DEFAULT_KEY_GEN);
     }
 
-    public Key generate(final HapiApiSpec spec, final KeyType type, final KeyGenerator keyGen) {
+    public Key generate(final HapiSpec spec, final KeyType type, final KeyGenerator keyGen) {
         switch (type) {
             case THRESHOLD:
                 return generateSubjectTo(

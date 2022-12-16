@@ -15,7 +15,7 @@
  */
 package com.hedera.test.utils;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;

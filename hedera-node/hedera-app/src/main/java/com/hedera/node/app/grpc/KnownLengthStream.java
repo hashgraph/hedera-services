@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.grpc;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do
@@ -29,7 +29,7 @@ import javax.annotation.Nonnull;
 final class KnownLengthStream extends InputStream implements KnownLength {
     private final ByteBuffer buf;
 
-    public KnownLengthStream(ByteBuffer buf) {
+    public KnownLengthStream(final ByteBuffer buf) {
         this.buf = Objects.requireNonNull(buf);
     }
 
@@ -43,41 +43,41 @@ final class KnownLengthStream extends InputStream implements KnownLength {
     }
 
     @Override
-    public int read(@Nonnull byte[] b) {
-        int remaining = buf.remaining();
+    public int read(@NonNull final byte[] b) {
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;
         }
 
-        int numBytesToRead = Math.min(remaining, b.length);
+        final int numBytesToRead = Math.min(remaining, b.length);
         buf.get(b, 0, numBytesToRead);
         return numBytesToRead;
     }
 
     @Override
-    public int read(@Nonnull byte[] b, int off, int len) {
-        int remaining = buf.remaining();
+    public int read(@NonNull final byte[] b, final int off, final int len) {
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;
         }
 
-        int numBytesToRead = Math.min(remaining, len);
+        final int numBytesToRead = Math.min(remaining, len);
         buf.get(b, off, numBytesToRead);
         return numBytesToRead;
     }
 
     @Override
-    public long skip(long n) {
+    public long skip(final long n) {
         if (n <= 0) {
             return 0;
         }
 
-        int remaining = buf.remaining();
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return 0;
         }
 
-        int numBytesToSkip = Math.min(remaining, (int) n);
+        final int numBytesToSkip = Math.min(remaining, (int) n);
         buf.position(buf.position() + numBytesToSkip);
         return numBytesToSkip;
     }

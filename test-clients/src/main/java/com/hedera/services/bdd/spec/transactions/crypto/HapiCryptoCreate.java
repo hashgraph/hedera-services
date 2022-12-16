@@ -24,14 +24,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -42,7 +43,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +66,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     /** The time window (unit of second) of not doing another recharge if just recharged recently */
     private Optional<Integer> rechargeWindow = Optional.empty();
 
-    private String account;
+    private final String account;
     private Optional<Long> sendThresh = Optional.empty();
     private Optional<Long> receiveThresh = Optional.empty();
     private Optional<Long> initialBalance = Optional.empty();
@@ -77,10 +77,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<String> entityMemo = Optional.empty();
     private Optional<KeyType> keyType = Optional.empty();
     private Optional<SigControl> keyShape = Optional.empty();
-    private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
+    private Optional<Function<HapiSpec, Long>> balanceFn = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
-    private Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
+    private final Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
     private Optional<String> stakedAccountId = Optional.empty();
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
@@ -92,11 +92,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Key lookupKey(HapiApiSpec spec, String name) {
+    protected Key lookupKey(final HapiSpec spec, final String name) {
         return name.equals(account) ? key : spec.registry().getKey(name);
     }
 
-    public HapiCryptoCreate exposingCreatedIdTo(Consumer<AccountID> newAccountIdObserver) {
+    public HapiCryptoCreate exposingCreatedIdTo(final Consumer<AccountID> newAccountIdObserver) {
         this.newAccountIdObserver = Optional.of(newAccountIdObserver);
         return this;
     }
@@ -111,61 +111,61 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
-    public HapiCryptoCreate(String account) {
+    public HapiCryptoCreate(final String account) {
         this.account = account;
     }
 
-    public HapiCryptoCreate entityMemo(String memo) {
+    public HapiCryptoCreate entityMemo(final String memo) {
         entityMemo = Optional.of(memo);
         return this;
     }
 
-    public HapiCryptoCreate sendThreshold(Long amount) {
+    public HapiCryptoCreate sendThreshold(final Long amount) {
         sendThresh = Optional.of(amount);
         return this;
     }
 
-    public HapiCryptoCreate autoRenewSecs(long time) {
+    public HapiCryptoCreate autoRenewSecs(final long time) {
         autoRenewDurationSecs = Optional.of(time);
         return this;
     }
 
-    public HapiCryptoCreate receiveThreshold(Long amount) {
+    public HapiCryptoCreate receiveThreshold(final Long amount) {
         receiveThresh = Optional.of(amount);
         return this;
     }
 
-    public HapiCryptoCreate receiverSigRequired(boolean isRequired) {
+    public HapiCryptoCreate receiverSigRequired(final boolean isRequired) {
         receiverSigRequired = Optional.of(isRequired);
         return this;
     }
 
-    public HapiCryptoCreate balance(Long amount) {
+    public HapiCryptoCreate balance(final Long amount) {
         initialBalance = Optional.of(amount);
         return this;
     }
 
-    public HapiCryptoCreate maxAutomaticTokenAssociations(int max) {
+    public HapiCryptoCreate maxAutomaticTokenAssociations(final int max) {
         maxAutomaticTokenAssociations = Optional.of(max);
         return this;
     }
 
-    public HapiCryptoCreate balance(Function<HapiApiSpec, Long> fn) {
+    public HapiCryptoCreate balance(final Function<HapiSpec, Long> fn) {
         balanceFn = Optional.of(fn);
         return this;
     }
 
-    public HapiCryptoCreate key(String name) {
+    public HapiCryptoCreate key(final String name) {
         keyName = Optional.of(name);
         return this;
     }
 
-    public HapiCryptoCreate key(Key key) {
+    public HapiCryptoCreate key(final Key key) {
         this.key = key;
         return this;
     }
 
-    public HapiCryptoCreate keyType(KeyType type) {
+    public HapiCryptoCreate keyType(final KeyType type) {
         keyType = Optional.of(type);
         return this;
     }
@@ -175,37 +175,37 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
-    public HapiCryptoCreate rechargeWindow(int window) {
+    public HapiCryptoCreate rechargeWindow(final int window) {
         rechargeWindow = Optional.of(window);
         return this;
     }
 
-    public HapiCryptoCreate keyShape(SigControl controller) {
+    public HapiCryptoCreate keyShape(final SigControl controller) {
         keyShape = Optional.of(controller);
         return this;
     }
 
-    public HapiCryptoCreate proxy(String idLit) {
+    public HapiCryptoCreate proxy(final String idLit) {
         proxy = Optional.of(HapiPropertySource.asAccount(idLit));
         return this;
     }
 
-    public HapiCryptoCreate stakedAccountId(String idLit) {
+    public HapiCryptoCreate stakedAccountId(final String idLit) {
         stakedAccountId = Optional.of(idLit);
         return this;
     }
 
-    public HapiCryptoCreate stakedNodeId(long idLit) {
+    public HapiCryptoCreate stakedNodeId(final long idLit) {
         stakedNodeId = Optional.of(idLit);
         return this;
     }
 
-    public HapiCryptoCreate declinedReward(boolean isDeclined) {
+    public HapiCryptoCreate declinedReward(final boolean isDeclined) {
         isDeclinedReward = isDeclined;
         return this;
     }
 
-    public HapiCryptoCreate alias(ByteString alias) {
+    public HapiCryptoCreate alias(final ByteString alias) {
         this.alias = Optional.of(alias);
         return this;
     }
@@ -216,22 +216,23 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.CryptoCreate, this::usageEstimate, txn, numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
-        var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
-        var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
-        var accumulator = new UsageAccumulator();
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
+        final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
+        final var accumulator = new UsageAccumulator();
         cryptoOpsUsage.cryptoCreateUsage(suFrom(svo), baseMeta, opMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         key =
                 key != null
                         ? key
@@ -241,9 +242,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                 keyShape,
                                 keyType,
                                 Optional.of(this::effectiveKeyGen));
-        long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
+        final long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
         initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
-        CryptoCreateTransactionBody opBody =
+        final CryptoCreateTransactionBody opBody =
                 spec.txns()
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
@@ -284,17 +285,17 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::createAccount;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS || forgettingEverything) {
             return;
         }
@@ -314,7 +315,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
 
         if (advertiseCreation) {
-            String banner =
+            final String banner =
                     "\n\n"
                             + bannerWith(
                                     String.format(
@@ -326,7 +327,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("account", account);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("account", account);
         keyType.ifPresent(kt -> helper.add("keyType", kt));
         initialBalance.ifPresent(b -> helper.add("balance", b));
         Optional.ofNullable(lastReceipt)

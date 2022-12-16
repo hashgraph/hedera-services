@@ -16,14 +16,14 @@
 package com.hedera.services.bdd.spec.persistence;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
-import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
@@ -96,7 +96,7 @@ public class SpecKey {
         this.wordsLoc = wordsLoc;
     }
 
-    public void registerWith(HapiApiSpec spec, RegistryForms forms) {
+    public void registerWith(HapiSpec spec, RegistryForms forms) {
         if (pemLoc != MISSING_LOC) {
             registerPemWith(spec, forms);
         } else if (wordsLoc != MISSING_LOC) {
@@ -107,7 +107,7 @@ public class SpecKey {
         }
     }
 
-    private void registerMnemonicWith(HapiApiSpec spec, RegistryForms forms) {
+    private void registerMnemonicWith(HapiSpec spec, RegistryForms forms) {
         var qWordsLoc = qualifiedKeyLoc(wordsLoc, spec);
         var words = new File(qWordsLoc);
         String mnemonic;
@@ -155,7 +155,7 @@ public class SpecKey {
         }
     }
 
-    private void registerPemWith(HapiApiSpec spec, RegistryForms forms) {
+    private void registerPemWith(HapiSpec spec, RegistryForms forms) {
         var qPemLoc = qualifiedKeyLoc(pemLoc, spec);
         var aes256EncryptedPkcs8Pem = new File(qPemLoc);
         if (!aes256EncryptedPkcs8Pem.exists()) {
@@ -185,7 +185,7 @@ public class SpecKey {
                         SigControl.ON);
     }
 
-    private String qualifiedKeyLoc(String loc, HapiApiSpec spec) {
+    private String qualifiedKeyLoc(String loc, HapiSpec spec) {
         return String.format(
                 "%s/%s/%s", spec.setup().persistentEntitiesDir(), EntityManager.KEYS_SUBDIR, loc);
     }

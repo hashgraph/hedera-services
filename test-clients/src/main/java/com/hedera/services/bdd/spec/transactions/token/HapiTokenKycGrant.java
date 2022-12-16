@@ -15,17 +15,23 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenGrantKycUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenGrantKycUsage;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,15 +41,15 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     static final Logger log = LogManager.getLogger(HapiTokenKycGrant.class);
 
-    private String token;
-    private String account;
+    private final String token;
+    private final String account;
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenGrantKycToAccount;
     }
 
-    public HapiTokenKycGrant(String token, String account) {
+    public HapiTokenKycGrant(final String token, final String account) {
         this.token = token;
         this.account = account;
     }
@@ -54,7 +60,8 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenGrantKycToAccount,
@@ -63,17 +70,17 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
                         numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         return TokenGrantKycUsage.newEstimate(
                         txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var aId = TxnUtils.asId(account, spec);
-        var tId = TxnUtils.asTokenId(token, spec);
-        TokenGrantKycTransactionBody opBody =
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+        final var aId = TxnUtils.asId(account, spec);
+        final var tId = TxnUtils.asTokenId(token, spec);
+        final TokenGrantKycTransactionBody opBody =
                 spec.txns()
                         .<TokenGrantKycTransactionBody, TokenGrantKycTransactionBody.Builder>body(
                                 TokenGrantKycTransactionBody.class,
@@ -85,23 +92,23 @@ public class HapiTokenKycGrant extends HapiTxnOp<HapiTokenKycGrant> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKycKey(token));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::grantKycToTokenAccount;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {}
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
+        final MoreObjects.ToStringHelper helper =
                 super.toStringHelper().add("token", token).add("account", account);
         return helper;
     }

@@ -15,20 +15,20 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenUpdateUsage;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,8 +60,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newTreasury = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Supplier<Key>> newSupplyKeySupplier = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> newSymbolFn = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> newNameFn = Optional.empty();
+    private Optional<Function<HapiSpec, String>> newSymbolFn = Optional.empty();
+    private Optional<Function<HapiSpec, String>> newNameFn = Optional.empty();
     private boolean useImproperEmptyKey = false;
     private boolean useEmptyAdminKeyList = false;
     private boolean useInvalidFeeScheduleKey = false;
@@ -120,7 +120,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate symbol(Function<HapiApiSpec, String> symbolFn) {
+    public HapiTokenUpdate symbol(Function<HapiSpec, String> symbolFn) {
         this.newSymbolFn = Optional.of(symbolFn);
         return this;
     }
@@ -130,7 +130,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate name(Function<HapiApiSpec, String> nameFn) {
+    public HapiTokenUpdate name(Function<HapiSpec, String> nameFn) {
         this.newNameFn = Optional.of(nameFn);
         return this;
     }
@@ -181,7 +181,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final TokenInfo info =
                     HapiTokenFeeScheduleUpdate.lookupInfo(spec, token, log, loggingOff);
@@ -227,12 +227,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             HederaFunctionality.TokenUpdate, metricsCalc, txn, numPayerKeys);
         } catch (Throwable t) {
             log.warn("Couldn't estimate usage", t);
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var id = TxnUtils.asTokenId(token, spec);
         if (newSymbolFn.isPresent()) {
             newSymbol = Optional.of(newSymbolFn.get().apply(spec));
@@ -304,8 +304,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(
                 spec -> {
@@ -322,12 +322,12 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateToken;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

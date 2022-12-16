@@ -19,10 +19,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -59,13 +59,13 @@ public class RecordFileChecker extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         lookForFile(spec);
         return false;
     }
 
     @SuppressWarnings("java:S5960")
-    private void lookForFile(HapiApiSpec spec) throws IOException {
+    private void lookForFile(HapiSpec spec) throws IOException {
         var addressBook = downloadBook(spec);
 
         for (var address : addressBook.getNodeAddressList()) {
@@ -125,7 +125,7 @@ public class RecordFileChecker extends UtilOp {
         }
     }
 
-    private NodeAddressBook downloadBook(HapiApiSpec spec) throws InvalidProtocolBufferException {
+    private NodeAddressBook downloadBook(HapiSpec spec) throws InvalidProtocolBufferException {
         String addressBook = spec.setup().nodeDetailsName();
         HapiGetFileContents op = getFileContents(addressBook);
         allRunFor(spec, op);

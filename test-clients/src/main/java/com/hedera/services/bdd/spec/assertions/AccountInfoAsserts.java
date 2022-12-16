@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -257,7 +257,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public static void assertTinybarAmountIsApproxUsd(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final double expectedFractionalUsd,
             final long actualTinybars,
             final double allowedPercentDiff) {
@@ -321,7 +321,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
     }
 
     public AccountInfoAsserts balance(
-            Function<HapiApiSpec, Function<Long, Optional<String>>> dynamicCondition) {
+            Function<HapiSpec, Function<Long, Optional<String>>> dynamicCondition) {
         registerProvider(
                 (spec, o) -> {
                     Function<Long, Optional<String>> expectation = dynamicCondition.apply(spec);
@@ -334,23 +334,23 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public static Function<HapiApiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
-            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn) {
+    public static Function<HapiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
+            String snapshot, ToLongFunction<HapiSpec> expDeltaFn) {
         return approxChangeFromSnapshot(snapshot, expDeltaFn, 0L);
     }
 
-    public static Function<HapiApiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
+    public static Function<HapiSpec, Function<Long, Optional<String>>> changeFromSnapshot(
             String snapshot, long expDelta) {
         return approxChangeFromSnapshot(snapshot, expDelta, 0L);
     }
 
-    public static Function<HapiApiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
+    public static Function<HapiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
             String snapshot, long expDelta, long epsilon) {
         return approxChangeFromSnapshot(snapshot, ignore -> expDelta, epsilon);
     }
 
-    public static Function<HapiApiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
-            String snapshot, ToLongFunction<HapiApiSpec> expDeltaFn, long epsilon) {
+    public static Function<HapiSpec, Function<Long, Optional<String>>> approxChangeFromSnapshot(
+            String snapshot, ToLongFunction<HapiSpec> expDeltaFn, long epsilon) {
         return spec ->
                 actual -> {
                     long expDelta = expDeltaFn.applyAsLong(spec);

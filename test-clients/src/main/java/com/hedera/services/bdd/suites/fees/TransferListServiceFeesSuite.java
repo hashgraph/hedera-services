@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultFailingHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultFailingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.from;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.missingPayments;
@@ -26,11 +26,11 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -41,7 +41,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TransferListServiceFeesSuite extends HapiApiSuite {
+public class TransferListServiceFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransferListServiceFeesSuite.class);
 
     final Function<Long, Long> sufficientBalanceFn = fee -> 2L * fee;
@@ -56,24 +56,24 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return Arrays.asList(
                 nobodyPaysRecordFeeForInvalidTxn(),
                 noExtraFeeChargedForCreationTransfer(),
                 nodeCoversForBrokePayer());
     }
 
-    private List<HapiApiSpec> negativeTests() {
+    private List<HapiSpec> negativeTests() {
         return Arrays.asList();
     }
 
     private final String FEE_CHARGED = "feeCharged";
 
-    private final BiFunction<String, Function<Long, Long>, Function<HapiApiSpec, Long>>
+    private final BiFunction<String, Function<Long, Long>, Function<HapiSpec, Long>>
             getBalanceFromFee =
                     (name, balanceFn) ->
                             spec -> {
@@ -90,7 +90,7 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
                                 return balanceFn.apply(feeCharged);
                             };
 
-    private HapiApiSpec nodeCoversForBrokePayer() {
+    private HapiSpec nodeCoversForBrokePayer() {
         final long TRANSFER_AMOUNT = 1_000L;
 
         return defaultFailingHapiSpec("NodeCoversForBrokePayer")
@@ -128,7 +128,7 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
                 .then(UtilVerbs.assertionsHold((spec, assertLog) -> {}));
     }
 
-    private HapiApiSpec noExtraFeeChargedForCreationTransfer() {
+    private HapiSpec noExtraFeeChargedForCreationTransfer() {
         return defaultHapiSpec("NodeCoversExtraServiceFee")
                 .given(
                         cryptoCreate("anon").via("referenceCreation"),
@@ -145,7 +145,7 @@ public class TransferListServiceFeesSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec nobodyPaysRecordFeeForInvalidTxn() {
+    private HapiSpec nobodyPaysRecordFeeForInvalidTxn() {
         final long TRANSFER_AMOUNT = 1_000L;
 
         return defaultHapiSpec("NobodyPaysRecordFeeForInvalidTxn")

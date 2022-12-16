@@ -34,4 +34,22 @@ contract TokenExpiryContract is HederaTokenService {
             revert ();
         }
     }
+
+    function updateExpiryInfoForTokenAndReadLatestInfo(
+        address token,
+        uint32 second,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod) external returns (
+        IHederaTokenService.Expiry memory expiry) {
+        updateExpiryInfoForToken(token, second, autoRenewAccount, autoRenewPeriod);
+
+        (int responseCode,
+        IHederaTokenService.Expiry memory retrievedExpiry) = HederaTokenService.getTokenExpiryInfo(token);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        expiry = retrievedExpiry;
+    }
 }

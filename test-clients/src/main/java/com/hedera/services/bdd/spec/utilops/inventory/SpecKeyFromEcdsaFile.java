@@ -15,12 +15,12 @@
  */
 package com.hedera.services.bdd.spec.utilops.inventory;
 
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
+import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PROVIDER;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
@@ -56,13 +56,13 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
             final String[] parts = data.split("[|]");
             hexedPubKey = parts[0];
             s = new BigInteger(parts[1], 16);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     static void createAndLinkEcdsaKey(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final byte[] pubKey,
             final PrivateKey privateKey,
             final String name,
@@ -79,16 +79,16 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
                 s -> spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s)));
     }
 
-    public SpecKeyFromEcdsaFile linkedTo(String id) {
+    public SpecKeyFromEcdsaFile linkedTo(final String id) {
         linkedId = Optional.of(id);
         return this;
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(final HapiSpec spec) throws Throwable {
         final var params = ECNamedCurveTable.getParameterSpec("secp256k1");
         final var keySpec = new ECPrivateKeySpec(s, params);
-        KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);
+        final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);
         final var privateKey = kf.generatePrivate(keySpec);
         createAndLinkEcdsaKey(
                 spec, CommonUtils.unhex(hexedPubKey), privateKey, name, linkedId, log);
@@ -97,7 +97,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        var helper = super.toStringHelper();
+        final var helper = super.toStringHelper();
         helper.add("name", loc);
         linkedId.ifPresent(s -> helper.add("linkedId", s));
         return helper;

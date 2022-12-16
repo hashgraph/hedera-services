@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.fees;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-import com.hedera.services.pricing.RequiredPriceTypes;
+import com.hedera.node.app.hapi.fees.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -32,9 +32,9 @@ import java.util.Set;
  * fee schedules are missing one or more price types that are required in the current release.
  */
 public class ScheduleTypePatching {
-    public FeeSchedule withPatchedTypesIfNecessary(FeeSchedule possiblyUntypedSchedule) {
+    public FeeSchedule withPatchedTypesIfNecessary(final FeeSchedule possiblyUntypedSchedule) {
         final var usableSchedule = FeeSchedule.newBuilder();
-        for (var tfs : possiblyUntypedSchedule.getTransactionFeeScheduleList()) {
+        for (final var tfs : possiblyUntypedSchedule.getTransactionFeeScheduleList()) {
             final var usableTfs = TransactionFeeSchedule.newBuilder();
             final var fn = tfs.getHederaFunctionality();
             usableTfs.mergeFrom(tfs);
@@ -46,16 +46,16 @@ public class ScheduleTypePatching {
     }
 
     private void ensurePatchedFeeScheduleHasRequiredTypes(
-            TransactionFeeSchedule origTfs,
-            TransactionFeeSchedule.Builder patchedTfs,
-            Set<SubType> requiredTypes) {
+            final TransactionFeeSchedule origTfs,
+            final TransactionFeeSchedule.Builder patchedTfs,
+            final Set<SubType> requiredTypes) {
         /* The deprecated prices are the final fallback; if even they are not set, the function will be free */
         final var oldDefaultPrices = origTfs.getFeeData();
         FeeData explicitDefaultPrices = null;
 
         /* First determine what types are already present; and what default prices to use, if any */
         final List<SubType> listedTypes = new ArrayList<>();
-        for (var typedPrices : origTfs.getFeesList()) {
+        for (final var typedPrices : origTfs.getFeesList()) {
             final var type = typedPrices.getSubType();
             listedTypes.add(type);
             if (type == DEFAULT) {
@@ -65,7 +65,7 @@ public class ScheduleTypePatching {
 
         final Set<SubType> presentTypes =
                 listedTypes.isEmpty() ? EnumSet.noneOf(SubType.class) : EnumSet.copyOf(listedTypes);
-        for (var type : requiredTypes) {
+        for (final var type : requiredTypes) {
             if (!presentTypes.contains(type)) {
                 if (explicitDefaultPrices != null) {
                     patchedTfs.addFees(explicitDefaultPrices.toBuilder().setSubType(type).build());

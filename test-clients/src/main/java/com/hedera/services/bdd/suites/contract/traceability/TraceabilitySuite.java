@@ -15,10 +15,12 @@
  */
 package com.hedera.services.bdd.suites.contract.traceability;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -31,18 +33,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.stripSelector;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -52,7 +55,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhex
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
@@ -61,6 +63,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.hyperledger.besu.crypto.Hash.keccak256;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -70,7 +74,10 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -81,10 +88,8 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils.FunctionType;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
@@ -98,16 +103,18 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
-public class TraceabilitySuite extends HapiApiSuite {
+public class TraceabilitySuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 
@@ -136,19 +143,18 @@ public class TraceabilitySuite extends HapiApiSuite {
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     private static final String RUNTIME_CODE = "runtimeBytecode";
-    private static final String SIDECARS_PROP = "contracts.sidecars";
-    private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
+    public static final String SIDECARS_PROP = "contracts.sidecars";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TraceabilitySuite().runSuiteSync();
     }
 
     @SuppressWarnings("java:S5960")
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         try {
             initialize();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
                     defaultHapiSpec("initialize")
@@ -161,50 +167,37 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
-        return Stream.concat(
-                        Stream.of(setNeededProps()),
-                        Stream.of(
-                                traceabilityE2EScenario1(),
-                                traceabilityE2EScenario2(),
-                                traceabilityE2EScenario3(),
-                                traceabilityE2EScenario4(),
-                                traceabilityE2EScenario5(),
-                                traceabilityE2EScenario6(),
-                                traceabilityE2EScenario7(),
-                                traceabilityE2EScenario8(),
-                                traceabilityE2EScenario9(),
-                                traceabilityE2EScenario10(),
-                                traceabilityE2EScenario11(),
-                                traceabilityE2EScenario12(),
-                                traceabilityE2EScenario13(),
-                                traceabilityE2EScenario14(),
-                                traceabilityE2EScenario15(),
-                                traceabilityE2EScenario16(),
-                                traceabilityE2EScenario17(),
-                                traceabilityE2EScenario18(),
-                                traceabilityE2EScenario19(),
-                                traceabilityE2EScenario20(),
-                                traceabilityE2EScenario21(),
-                                vanillaBytecodeSidecar(),
-                                vanillaBytecodeSidecar2(),
-                                ethereumLazyCreateExportsExpectedSidecars(),
-                                assertSidecars()))
+        return Stream.of(
+                        traceabilityE2EScenario1(),
+                        traceabilityE2EScenario2(),
+                        traceabilityE2EScenario3(),
+                        traceabilityE2EScenario4(),
+                        traceabilityE2EScenario5(),
+                        traceabilityE2EScenario6(),
+                        traceabilityE2EScenario7(),
+                        traceabilityE2EScenario8(),
+                        traceabilityE2EScenario9(),
+                        traceabilityE2EScenario10(),
+                        traceabilityE2EScenario11(),
+                        traceabilityE2EScenario12(),
+                        traceabilityE2EScenario13(),
+                        traceabilityE2EScenario14(),
+                        traceabilityE2EScenario15(),
+                        traceabilityE2EScenario16(),
+                        traceabilityE2EScenario17(),
+                        traceabilityE2EScenario18(),
+                        traceabilityE2EScenario19(),
+                        traceabilityE2EScenario20(),
+                        traceabilityE2EScenario21(),
+                        vanillaBytecodeSidecar(),
+                        vanillaBytecodeSidecar2(),
+                        actionsShowPropagatedRevert(),
+                        ethereumLazyCreateExportsExpectedSidecars(),
+                        assertSidecars())
                 .toList();
     }
 
-    HapiApiSpec setNeededProps() {
-        return defaultHapiSpec("setNeededProps")
-                .given()
-                .when()
-                .then(
-                        overridingTwo(
-                                SIDECARS_PROP,
-                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE",
-                                COMPRESSION_PROP,
-                                "true"));
-    }
-
-    private HapiApiSpec traceabilityE2EScenario1() {
+    private HapiSpec traceabilityE2EScenario1() {
         return defaultHapiSpec("traceabilityE2EScenario1")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -793,7 +786,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario2() {
+    private HapiSpec traceabilityE2EScenario2() {
         return defaultHapiSpec("traceabilityE2EScenario2")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -1437,7 +1430,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario3() {
+    private HapiSpec traceabilityE2EScenario3() {
         return defaultHapiSpec("traceabilityE2EScenario3")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -2081,7 +2074,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario4() {
+    private HapiSpec traceabilityE2EScenario4() {
         return defaultHapiSpec("traceabilityE2EScenario4")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -2540,7 +2533,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario5() {
+    private HapiSpec traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -3011,7 +3004,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario6() {
+    private HapiSpec traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -3537,7 +3530,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario7() {
+    private HapiSpec traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -4134,7 +4127,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario8() {
+    private HapiSpec traceabilityE2EScenario8() {
         return defaultHapiSpec("traceabilityE2EScenario8")
                 .given(
                         uploadInitCode(TRACEABILITY_CALLCODE),
@@ -4660,7 +4653,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario9() {
+    private HapiSpec traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -5151,7 +5144,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario10() {
+    private HapiSpec traceabilityE2EScenario10() {
         return defaultHapiSpec("traceabilityE2EScenario10")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -5700,7 +5693,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario11() {
+    private HapiSpec traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11")
                 .given(
                         uploadInitCode(TRACEABILITY),
@@ -6133,7 +6126,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario12() {
+    private HapiSpec traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
         return defaultHapiSpec(scenario12)
@@ -6175,11 +6168,10 @@ public class TraceabilitySuite extends HapiApiSuite {
                         expectContractBytecodeSidecarSansInitcodeFor(TRACEABILITY_TXN, contract));
     }
 
-    HapiApiSpec traceabilityE2EScenario13() {
-        AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
+    HapiSpec traceabilityE2EScenario13() {
+        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -6229,14 +6221,12 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .build())));
                                 }),
                         expectContractBytecodeWithMinimalFieldsSidecarFor(
-                                FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
-    private HapiApiSpec traceabilityE2EScenario14() {
+    private HapiSpec traceabilityE2EScenario14() {
         return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -6258,7 +6248,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    AtomicReference<AccountID> accountIDAtomicReference =
+                                    final AtomicReference<AccountID> accountIDAtomicReference =
                                             new AtomicReference<>();
                                     final var hapiGetAccountInfo =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
@@ -6287,11 +6277,10 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .build())),
                                             expectContractBytecodeWithMinimalFieldsSidecarFor(
                                                     TRACEABILITY_TXN, PAY_RECEIVABLE_CONTRACT));
-                                }),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                }));
     }
 
-    HapiApiSpec traceabilityE2EScenario15() {
+    HapiSpec traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
         final var CREATE_2_TXN = "Create2Txn";
@@ -6381,7 +6370,6 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                             expectedCreate2Address.set(
                                                                     hexedAddress);
                                                         })),
-                        overriding("contracts.allowCreate2", "true"),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -6514,7 +6502,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                 .then();
     }
 
-    HapiApiSpec traceabilityE2EScenario16() {
+    HapiSpec traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
         final String txn = "payTxn";
@@ -6660,7 +6648,8 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                                     .wrapUnsafely(
                                                                                             Function
                                                                                                     .parse(
-                                                                                                            "isToken(address)")
+                                                                                                            "isToken"
+                                                                                                                + "(address)")
                                                                                                     .encodeCallWithArgs(
                                                                                                             hexedSolidityAddressToHeadlongAddress(
                                                                                                                     asHexedSolidityAddress(
@@ -6681,7 +6670,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec traceabilityE2EScenario17() {
+    private HapiSpec traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -6776,7 +6765,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec traceabilityE2EScenario18() {
+    private HapiSpec traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(
@@ -6808,13 +6797,12 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(4)));
     }
 
-    HapiApiSpec traceabilityE2EScenario19() {
+    HapiSpec traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
         final var transferTxn = "payTxn";
         return defaultHapiSpec("traceabilityE2EScenario19")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -6833,7 +6821,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    AtomicReference<AccountID> ethSenderAccountReference =
+                                    final AtomicReference<AccountID> ethSenderAccountReference =
                                             new AtomicReference<>();
                                     final var hapiGetAccountInfo =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
@@ -6864,11 +6852,10 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                                             RECEIVER))
                                                                     .setOutput(EMPTY)
                                                                     .build())));
-                                }),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                }));
     }
 
-    private HapiApiSpec traceabilityE2EScenario20() {
+    private HapiSpec traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20")
                 .given(uploadInitCode(REVERTING_CONTRACT))
                 .when(
@@ -6905,7 +6892,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 FIRST_CREATE_TXN, REVERTING_CONTRACT, BigInteger.valueOf(6)));
     }
 
-    private HapiApiSpec traceabilityE2EScenario21() {
+    private HapiSpec traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21")
                 .given(
                         uploadInitCode(REVERTING_CONTRACT),
@@ -7009,7 +6996,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                         .build())))));
     }
 
-    private HapiApiSpec vanillaBytecodeSidecar() {
+    private HapiSpec vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
         final var firstTxn = "firstTxn";
@@ -7051,7 +7038,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                 firstTxn, EMPTY_CONSTRUCTOR_CONTRACT, EMPTY_CONSTRUCTOR_CONTRACT));
     }
 
-    private HapiApiSpec vanillaBytecodeSidecar2() {
+    private HapiSpec vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
         final var firstTxn = "firstTxn";
@@ -7089,20 +7076,261 @@ public class TraceabilitySuite extends HapiApiSuite {
                         expectContractBytecodeSidecarFor(firstTxn, contract, contract));
     }
 
-    HapiApiSpec ethereumLazyCreateExportsExpectedSidecars() {
+    private HapiSpec actionsShowPropagatedRevert() {
+        final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
+        final var badApproval = "BadApproval";
+        final var somebody = "somebody";
+        final var somebodyElse = "somebodyElse";
+        final var tokenInQuestion = "TokenInQuestion";
+        final var someSupplyKey = "someSupplyKey";
+        final AtomicReference<String> tiqMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> somebodyMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
+        final String contractCreateTxn = "contractCreate";
+        final var serialNumberId = MAX_UINT256_VALUE;
+        return propertyPreservingHapiSpec("ActionsShowPropagatedRevert")
+                .preserving(SIDECARS_PROP)
+                .given(
+                        overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
+                        uploadInitCode(APPROVE_BY_DELEGATE),
+                        contractCreate(APPROVE_BY_DELEGATE).via(contractCreateTxn),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord =
+                                            getTxnRecord(contractCreateTxn);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    contractCreateTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            GENESIS))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setGas(197000)
+                                                                    .setGasUsed(214)
+                                                                    .setOutput(EMPTY)
+                                                                    .build())));
+                                }),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(somebody)
+                                .maxAutomaticTokenAssociations(2)
+                                .exposingCreatedIdTo(
+                                        id -> somebodyMirrorAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(somebodyElse)
+                                .maxAutomaticTokenAssociations(2)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                somebodyElseMirrorAddr.set(
+                                                        asHexedSolidityAddress(id))),
+                        newKeyNamed(someSupplyKey),
+                        tokenCreate(tokenInQuestion)
+                                .supplyKey(someSupplyKey)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                tiqMirrorAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))),
+                        mintToken(
+                                tokenInQuestion,
+                                List.of(
+                                        ByteString.copyFromUtf8("A penny for"),
+                                        ByteString.copyFromUtf8("the Old Guy"))),
+                        cryptoTransfer(
+                                movingUnique(tokenInQuestion, 1L)
+                                        .between(TOKEN_TREASURY, somebody)))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        APPROVE_BY_DELEGATE,
+                                                        "doIt",
+                                                        asHeadlongAddress(tiqMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                somebodyElseMirrorAddr.get()),
+                                                        serialNumberId)
+                                                .payingWith(somebody)
+                                                .gas(1_000_000)
+                                                .via(badApproval)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord = getTxnRecord(badApproval);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    badApproval,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CALL)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            somebody))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setInput(
+                                                                            encodeFunctionCall(
+                                                                                    APPROVE_BY_DELEGATE,
+                                                                                    "doIt",
+                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                            asHexedSolidityAddress(
+                                                                                                    spec.registry()
+                                                                                                            .getTokenID(
+                                                                                                                    tokenInQuestion))),
+                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                            asHexedSolidityAddress(
+                                                                                                    spec.registry()
+                                                                                                            .getAccountID(
+                                                                                                                    somebodyElse))),
+                                                                                    serialNumberId))
+                                                                    .setGas(979000)
+                                                                    .setGasUsed(948950)
+                                                                    .setRevertReason(
+                                                                            ByteString.EMPTY)
+                                                                    .build(),
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_DELEGATECALL)
+                                                                    .setCallingContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setRecipientContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            spec.registry()
+                                                                                                    .getTokenID(
+                                                                                                            tokenInQuestion)
+                                                                                                    .getTokenNum())
+                                                                                    .build())
+                                                                    .setGas(959347)
+                                                                    .setGasUsed(944446)
+                                                                    .setInput(
+                                                                            ByteStringUtils
+                                                                                    .wrapUnsafely(
+                                                                                            Function
+                                                                                                    .parse(
+                                                                                                            "approve(address,uint256)")
+                                                                                                    .encodeCallWithArgs(
+                                                                                                            hexedSolidityAddressToHeadlongAddress(
+                                                                                                                    asHexedSolidityAddress(
+                                                                                                                            spec.registry()
+                                                                                                                                    .getAccountID(
+                                                                                                                                            somebodyElse))),
+                                                                                                            serialNumberId)
+                                                                                                    .array()))
+                                                                    .setRevertReason(
+                                                                            ByteString.EMPTY)
+                                                                    .setCallDepth(1)
+                                                                    .build(),
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(SYSTEM)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_DELEGATECALL)
+                                                                    .setCallingContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            spec.registry()
+                                                                                                    .getTokenID(
+                                                                                                            tokenInQuestion)
+                                                                                                    .getTokenNum())
+                                                                                    .build())
+                                                                    .setRecipientContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            359L)
+                                                                                    .build())
+                                                                    .setGas(941693)
+                                                                    .setGasUsed(941693)
+                                                                    .setInput(
+                                                                            ByteStringUtils
+                                                                                    .wrapUnsafely(
+                                                                                            ArrayUtils
+                                                                                                    .addAll(
+                                                                                                            ArrayUtils
+                                                                                                                    .addAll(
+                                                                                                                            Arrays
+                                                                                                                                    .copyOfRange(
+                                                                                                                                            keccak256(
+                                                                                                                                                            Bytes
+                                                                                                                                                                    .of(
+                                                                                                                                                                            "redirectForToken(address,bytes)"
+                                                                                                                                                                                    .getBytes()))
+                                                                                                                                                    .toArrayUnsafe(),
+                                                                                                                                            0,
+                                                                                                                                            4),
+                                                                                                                            Arrays
+                                                                                                                                    .copyOfRange(
+                                                                                                                                            encodeTuple(
+                                                                                                                                                    "(address)",
+                                                                                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                                                                                            asHexedSolidityAddress(
+                                                                                                                                                                    spec.registry()
+                                                                                                                                                                            .getTokenID(
+                                                                                                                                                                                    tokenInQuestion)))),
+                                                                                                                                            12,
+                                                                                                                                            32)),
+                                                                                                            Function
+                                                                                                                    .parse(
+                                                                                                                            "approve(address,uint256)")
+                                                                                                                    .encodeCallWithArgs(
+                                                                                                                            hexedSolidityAddressToHeadlongAddress(
+                                                                                                                                    asHexedSolidityAddress(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            somebodyElse))),
+                                                                                                                            serialNumberId)
+                                                                                                                    .array())))
+                                                                    .setError(
+                                                                            ByteString.copyFrom(
+                                                                                    "ERROR_DECODING_PRECOMPILE_INPUT"
+                                                                                            .getBytes()))
+                                                                    .setCallDepth(2)
+                                                                    .build())));
+                                }));
+    }
+
+    private HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
         final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
-        return defaultHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
+        return propertyPreservingHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
+                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
-                        overridingTwo(CHAIN_ID_PROPERTY, "298", LAZY_CREATE_PROPERTY, "true"),
-                        overridingTwo(
+                        overridingThree(
+                                CHAIN_ID_PROPERTY,
+                                "298",
+                                LAZY_CREATE_PROPERTY,
+                                "true",
                                 "contracts.evm.version",
-                                "v0.32",
-                                "contracts.evm.version.dynamic",
-                                "true"),
+                                "v0.32"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -7215,18 +7443,15 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                                     .get())
                                                                     .setOutput(EMPTY)
                                                                     .build())));
-                                }),
-                        resetToDefault(
-                                CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version"));
+                                }));
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec assertSidecars() {
+    private HapiSpec assertSidecars() {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000),
-                        resetToDefault(COMPRESSION_PROP, SIDECARS_PROP))
+                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -7253,7 +7478,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     }
 
     private CustomSpecAssert expectContractActionSidecarFor(
-            String txnName, List<ContractAction> actions) {
+            final String txnName, final List<ContractAction> actions) {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(txnName);
@@ -7439,8 +7664,8 @@ public class TraceabilitySuite extends HapiApiSuite {
 
     private static void initialize() throws Exception {
         final var recordStreamFolderPath =
-                HapiApiSpec.isRunningInCi()
-                        ? HapiApiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
+                HapiSpec.isRunningInCi()
+                        ? HapiSpec.ciPropOverrides().get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY)
                         : HapiSpecSetup.getDefaultPropertySource()
                                 .get(RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY);
         sidecarWatcher = new SidecarWatcher(Paths.get(recordStreamFolderPath));

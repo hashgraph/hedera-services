@@ -22,7 +22,8 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
@@ -79,7 +79,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (hasExpectations) {
             Assertions.assertFalse(
                     response.getContractGetBytecodeResponse().getBytecode().isEmpty(),
@@ -96,7 +96,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractBytecodeQuery(spec, payment, false);
         response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
@@ -107,15 +107,14 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractBytecodeQuery(spec, payment, true);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractGetBytecode(query);
         return costFrom(response);
     }
 
-    private Query getContractBytecodeQuery(
-            HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractBytecodeQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         final ContractID resolvedTarget;
         if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
             resolvedTarget =
@@ -134,7 +133,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiApiSpec spec) {
+    protected long costOnlyNodePayment(HapiSpec spec) {
         return spec.fees()
                 .forOp(
                         HederaFunctionality.ContractGetBytecode,

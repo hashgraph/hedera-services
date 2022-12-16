@@ -24,17 +24,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +48,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     static final Logger log = LogManager.getLogger(HapiTopicCreate.class);
 
     private Key adminKey;
-    private String topic;
+    private final String topic;
     private boolean advertiseCreation = false;
     private Optional<Key> submitKey = Optional.empty();
     private OptionalLong autoRenewPeriod = OptionalLong.empty();
@@ -62,7 +62,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     /** For some test we need the capability to build transaction has no autoRenewPeiord */
     private boolean clearAutoRenewPeriod = false;
 
-    public HapiTopicCreate(String topic) {
+    public HapiTopicCreate(final String topic) {
         this.topic = topic;
     }
 
@@ -71,37 +71,37 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return this;
     }
 
-    public HapiTopicCreate topicMemo(String s) {
+    public HapiTopicCreate topicMemo(final String s) {
         topicMemo = Optional.of(s);
         return this;
     }
 
-    public HapiTopicCreate adminKeyName(String s) {
+    public HapiTopicCreate adminKeyName(final String s) {
         adminKeyName = Optional.of(s);
         return this;
     }
 
-    public HapiTopicCreate submitKeyName(String s) {
+    public HapiTopicCreate submitKeyName(final String s) {
         submitKeyName = Optional.of(s);
         return this;
     }
 
-    public HapiTopicCreate adminKeyShape(KeyShape shape) {
+    public HapiTopicCreate adminKeyShape(final KeyShape shape) {
         adminKeyShape = Optional.of(shape);
         return this;
     }
 
-    public HapiTopicCreate submitKeyShape(KeyShape shape) {
+    public HapiTopicCreate submitKeyShape(final KeyShape shape) {
         submitKeyShape = Optional.of(shape);
         return this;
     }
 
-    public HapiTopicCreate autoRenewAccountId(String id) {
+    public HapiTopicCreate autoRenewAccountId(final String id) {
         autoRenewAccountId = Optional.of(id);
         return this;
     }
 
-    public HapiTopicCreate autoRenewPeriod(long secs) {
+    public HapiTopicCreate autoRenewPeriod(final long secs) {
         autoRenewPeriod = OptionalLong.of(secs);
         return this;
     }
@@ -112,7 +112,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Key lookupKey(HapiApiSpec spec, String name) {
+    protected Key lookupKey(final HapiSpec spec, final String name) {
         if (submitKey.isPresent() && (topic + "Submit").equals(name)) {
             return submitKey.get();
         } else {
@@ -131,9 +131,9 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         genKeysFor(spec);
-        ConsensusCreateTopicTransactionBody opBody =
+        final ConsensusCreateTopicTransactionBody opBody =
                 spec.txns()
                         .<ConsensusCreateTopicTransactionBody,
                                 ConsensusCreateTopicTransactionBody.Builder>
@@ -156,7 +156,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return b -> b.setConsensusCreateTopic(opBody);
     }
 
-    private void genKeysFor(HapiApiSpec spec) {
+    private void genKeysFor(final HapiSpec spec) {
         if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
             adminKey = netOf(spec, adminKeyName, adminKeyShape, Optional.of(this::effectiveKeyGen));
         }
@@ -173,8 +173,8 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers =
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
         Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
         autoRenewAccountId.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
@@ -182,7 +182,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -191,17 +191,17 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         spec.registry().saveTopicId(topic, lastReceipt.getTopicID());
         spec.registry().saveBytes(topic, ByteString.copyFrom(new byte[48]));
         try {
-            TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
-            long approxConsensusTime =
+            final TransactionBody txn = CommonUtils.extractTransactionBody(txnSubmitted);
+            final long approxConsensusTime =
                     txn.getTransactionID().getTransactionValidStart().getSeconds() + 1;
             spec.registry()
                     .saveTopicMeta(topic, txn.getConsensusCreateTopic(), approxConsensusTime);
-        } catch (Exception impossible) {
+        } catch (final Exception impossible) {
             throw new IllegalStateException(impossible);
         }
 
         if (advertiseCreation) {
-            String banner =
+            final String banner =
                     "\n\n"
                             + bannerWith(
                                     String.format(
@@ -212,12 +212,13 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         ConsensusCreateTopic,
@@ -228,7 +229,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper().add("topic", topic);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper().add("topic", topic);
         autoRenewAccountId.ifPresent(id -> helper.add("autoRenewId", id));
         Optional.ofNullable(lastReceipt)
                 .ifPresent(

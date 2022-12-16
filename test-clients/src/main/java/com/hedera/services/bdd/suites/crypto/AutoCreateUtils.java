@@ -15,9 +15,15 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class AutoCreateUtils {
@@ -42,5 +48,13 @@ public class AutoCreateUtils {
             return Key.newBuilder().build();
         }
         return aliasKey;
+    }
+
+    public static void updateSpecFor(HapiSpec spec, String alias) {
+        var accountIDAtomicReference = new AtomicReference<AccountID>();
+        allRunFor(spec, getAliasedAccountInfo(alias).exposingIdTo(accountIDAtomicReference::set));
+        final var aliasKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
+        spec.registry().saveAccountAlias(aliasKey, accountIDAtomicReference.get());
+        spec.registry().saveAccountId(alias, accountIDAtomicReference.get());
     }
 }

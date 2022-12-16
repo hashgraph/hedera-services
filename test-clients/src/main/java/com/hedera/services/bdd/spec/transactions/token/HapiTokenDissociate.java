@@ -15,18 +15,24 @@
  */
 package com.hedera.services.bdd.spec.transactions.token;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDissociateUsage;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -37,15 +43,15 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     static final Logger log = LogManager.getLogger(HapiTokenDissociate.class);
 
-    private String account;
-    private List<String> tokens = new ArrayList<>();
+    private final String account;
+    private final List<String> tokens = new ArrayList<>();
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.TokenDissociateFromAccount;
     }
 
-    public HapiTokenDissociate(String account, String... tokens) {
+    public HapiTokenDissociate(final String account, final String... tokens) {
         this.account = account;
         this.tokens.addAll(List.of(tokens));
     }
@@ -56,7 +62,8 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
+            throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.TokenDissociateFromAccount,
@@ -65,16 +72,16 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
                         numPayerKeys);
     }
 
-    private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         return TokenDissociateUsage.newEstimate(
                         txn, new TxnUsageEstimator(suFrom(svo), txn, ESTIMATOR_UTILS))
                 .get();
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var aId = TxnUtils.asId(account, spec);
-        TokenDissociateTransactionBody opBody =
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
+        final var aId = TxnUtils.asId(account, spec);
+        final TokenDissociateTransactionBody opBody =
                 spec.txns()
                         .<TokenDissociateTransactionBody, TokenDissociateTransactionBody.Builder>
                                 body(
@@ -93,23 +100,23 @@ public class HapiTokenDissociate extends HapiTxnOp<HapiTokenDissociate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(account));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::dissociateTokens;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {}
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper =
+        final MoreObjects.ToStringHelper helper =
                 super.toStringHelper().add("account", account).add("tokens", tokens);
         return helper;
     }
