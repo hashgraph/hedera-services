@@ -525,6 +525,50 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
+    void verifyEthLazyCreateThrowsWhenEvmAddressInBodyIsNotValid() {
+        // setup:
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        "randomBytes".getBytes()))
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely("randomBytes".getBytes())))
+                .willReturn(EntityNum.MISSING_NUM)
+                .willReturn(EntityNum.fromLong(666L));
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
+
+        // then:
+        verify(recordService, never()).externaliseEvmCallTransaction(any());
+        verify(worldState, never()).getCreatedContractIds();
+        verify(txnCtx, never()).setTargetedContract(IdUtils.asContract("0.0." + 666L));
+        verifyNoMoreInteractions(evmTxProcessor);
+    }
+
+    @Test
     void verifyAccountStoreNotQueriedForTokenAddress() {
         // setup:
         givenValidTxnCtx();
