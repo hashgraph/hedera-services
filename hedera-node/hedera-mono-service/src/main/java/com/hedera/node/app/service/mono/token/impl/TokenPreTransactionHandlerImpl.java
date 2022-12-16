@@ -15,14 +15,19 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.Optional;
+
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -159,13 +164,48 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     /** {@inheritDoc} */
     public TransactionMetadata preHandlePauseToken(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
-        throw new NotImplementedException();
+        final var op = txn.getTokenPause();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        if (op.hasToken()) {
+            handlePauseUnpause(op.getToken(), meta);
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+
+        return meta.build();
     }
 
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleUnpauseToken(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
-        throw new NotImplementedException();
+        final var op = txn.getTokenUnpause();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        if (op.hasToken()) {
+            handlePauseUnpause(op.getToken(), meta);
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+
+        return meta.build();
+    }
+
+    private void handlePauseUnpause(TokenID tokenId, SigTransactionMetadataBuilder meta) {
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (!tokenMeta.failed()) {
+            if (tokenMeta.metadata().pauseKey().isPresent()) {
+                meta.addToReqKeys(tokenMeta.metadata().pauseKey().get());
+            } else {
+                meta.status(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY);
+            }
+        } else {
+            meta.status(tokenMeta.failureReason());
+        }
     }
 }

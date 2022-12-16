@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -191,6 +193,110 @@ class TokenPreTransactionHandlerImplTest {
         assertEquals(payerKey, meta.payerKey());
     }
 
+    @Test
+    void tokenPauseUnpauseVanilla() {
+        final var pauseKey = (JKey) randomKey;
+        final var pauseTxn = tokenPauseTransaction(true);
+        final var unpauseTxn = tokenUnpauseTransaction(true);
+        final var expectedPauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(pauseTxn)
+                        .build();
+        final var expectedUnpauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(unpauseTxn)
+                        .build();
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        Optional.of(pauseKey),
+                                        false,
+                                        null),
+                                null));
+
+        final var pauseMeta = subject.preHandlePauseToken(pauseTxn);
+        final var unpauseMeta = subject.preHandleUnpauseToken(unpauseTxn);
+
+        assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
+        assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
+        basicMetaAssertions(pauseMeta, 1, false, OK);
+        basicMetaAssertions(unpauseMeta, 1, false, OK);
+        assertEquals(payerKey, pauseMeta.payerKey());
+        assertEquals(payerKey, unpauseMeta.payerKey());
+        assertIterableEquals(List.of(pauseKey), pauseMeta.requiredNonPayerKeys());
+        assertIterableEquals(List.of(pauseKey), unpauseMeta.requiredNonPayerKeys());
+    }
+
+    @Test
+    void tokenPauseUnpauseNoTokenFails() {
+        final var pauseTxn = tokenPauseTransaction(false);
+        final var unpauseTxn = tokenUnpauseTransaction(false);
+        final var expectedPauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(pauseTxn)
+                        .build();
+        final var expectedUnpauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(unpauseTxn)
+                        .build();
+
+        final var pauseMeta = subject.preHandlePauseToken(pauseTxn);
+        final var unpauseMeta = subject.preHandleUnpauseToken(unpauseTxn);
+
+        assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
+        assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
+        basicMetaAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetaAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
+        assertEquals(payerKey, pauseMeta.payerKey());
+        assertEquals(payerKey, unpauseMeta.payerKey());
+    }
+
+    @Test
+    void tokenPauseUnpauseNoKeyAddedIfTokenMetaFailed() {
+        final var pauseKey = (JKey) randomKey;
+        final var pauseTxn = tokenPauseTransaction(true);
+        final var unpauseTxn = tokenUnpauseTransaction(true);
+        final var expectedPauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(pauseTxn)
+                        .build();
+        final var expectedUnpauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(unpauseTxn)
+                        .build();
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, false, null),
+                                INVALID_TOKEN_ID));
+
+        final var pauseMeta = subject.preHandlePauseToken(pauseTxn);
+        final var unpauseMeta = subject.preHandleUnpauseToken(unpauseTxn);
+
+        assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
+        assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
+        basicMetaAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetaAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
+        assertEquals(payerKey, pauseMeta.payerKey());
+        assertEquals(payerKey, unpauseMeta.payerKey());
+    }
+
     private TransactionBody tokenWipeTransaction(boolean withToken) {
         final var transactionID =
                 TransactionID.newBuilder()
@@ -211,6 +317,52 @@ class TokenPreTransactionHandlerImplTest {
                         withToken
                                 ? wipeTxBody
                                 : TokenWipeAccountTransactionBody.getDefaultInstance().toBuilder())
+                .build();
+    }
+
+    private TransactionBody tokenPauseTransaction(boolean withToken) {
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payer)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var pauseTxBody =
+                TokenPauseTransactionBody.newBuilder()
+                        .setToken(
+                                TokenID.newBuilder()
+                                        .setTokenNum(666)
+                                        .setRealmNum(0)
+                                        .setShardNum(0)
+                                        .build());
+
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setTokenPause(
+                        withToken
+                                ? pauseTxBody
+                                : TokenPauseTransactionBody.getDefaultInstance().toBuilder())
+                .build();
+    }
+
+    private TransactionBody tokenUnpauseTransaction(boolean withToken) {
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payer)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var unpauseTxBody =
+                TokenUnpauseTransactionBody.newBuilder()
+                        .setToken(
+                                TokenID.newBuilder()
+                                        .setTokenNum(666)
+                                        .setRealmNum(0)
+                                        .setShardNum(0)
+                                        .build());
+
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setTokenUnpause(
+                        withToken
+                                ? unpauseTxBody
+                                : TokenUnpauseTransactionBody.getDefaultInstance().toBuilder())
                 .build();
     }
 
