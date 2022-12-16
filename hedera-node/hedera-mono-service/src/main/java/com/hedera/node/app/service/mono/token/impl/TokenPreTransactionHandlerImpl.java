@@ -46,42 +46,48 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCreateToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleCreateToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleUpdateToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleMintToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleMintToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleBurnToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleBurnToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleDeleteToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleWipeTokenAccount(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleWipeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         final var op = txn.getTokenWipe();
         final var meta =
@@ -107,21 +113,24 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleFreezeTokenAccount(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleFreezeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUnfreezeTokenAccount(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleUnfreezeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleGrantKycToTokenAccount(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleGrantKycToTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
@@ -136,35 +145,40 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAssociateTokens(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleAssociateTokens(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDissociateTokens(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleDissociateTokens(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateTokenFeeSchedule(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleUpdateTokenFeeSchedule(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandlePauseToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandlePauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUnpauseToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleUnpauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
