@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asUsableFcKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
@@ -26,8 +23,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.util.List;
 import java.util.Objects;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 /**
  * A {@code TokenPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -39,92 +41,92 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     private final PreHandleContext preHandleContext;
 
     public TokenPreTransactionHandlerImpl(
-            @NonNull final AccountStore accountStore, @NonNull final PreHandleContext ctx) {
+            @NonNull final AccountStore accountStore, PreHandleContext preHandleContext) {
         this.accountStore = Objects.requireNonNull(accountStore);
-        this.preHandleContext = Objects.requireNonNull(ctx);
+
+        this.preHandleContext = preHandleContext;
     }
 
     @Override
-    public TransactionMetadata preHandleCreateToken(final TransactionBody txn) {
-        final var payer = txn.getTransactionID().getAccountID();
+    public TransactionMetadata preHandleCreateToken(TransactionBody txn, AccountID payer) {
         return buildSigTransactionMetadata(txn, payer);
     }
 
     @Override
-    public TransactionMetadata preHandleUpdateToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleUpdateToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleMintToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleMintToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleBurnToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleBurnToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleDeleteToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleDeleteToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleWipeTokenAccount(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleWipeTokenAccount(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleFreezeTokenAccount(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleFreezeTokenAccount(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleUnfreezeTokenAccount(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleUnfreezeTokenAccount(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleGrantKycToTokenAccount(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleGrantKycToTokenAccount(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleRevokeKycFromTokenAccount(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleRevokeKycFromTokenAccount(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleAssociateTokens(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleAssociateTokens(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleDissociateTokens(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleDissociateTokens(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleUpdateTokenFeeSchedule(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleUpdateTokenFeeSchedule(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandlePauseToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandlePauseToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleUnpauseToken(final TransactionBody txn) {
-        return null;
+    public TransactionMetadata preHandleUnpauseToken(TransactionBody txn, AccountID payer) {
+        throw new NotImplementedException();
     }
 
     /**
      * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed for
      * signing the transaction
      *
-     * @param txn given transaction body
+     * @param txn   given transaction body
      * @param payer payer for the transaction
      * @return transaction's metadata needed to validate signatures
      */
@@ -136,11 +138,11 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
-        meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        meta.addNonPayerKey(treasuryId, ACCOUNT_ID_DOES_NOT_EXIST);
         meta.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         if (tokenCreateTxnBody.hasAdminKey()) {
-            final var adminKey = asUsableFcKey(tokenCreateTxnBody.getAdminKey());
-            adminKey.ifPresent(meta::addToReqKeys);
+            final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
+            adminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
         addCustomFeeKey(meta, customFees);
         return meta.build();
@@ -150,38 +152,41 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             SigTransactionMetadataBuilder meta, final List<CustomFee> customFeesList) {
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
-            final var collector = customFee.getFeeCollectorAccountId();
+            final var hasCollector = customFee.hasFeeCollectorAccountId();
+            if (hasCollector) {
+                final var collector = customFee.getFeeCollectorAccountId();
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
             since these are automatically associated to the newly created token. */
-            final boolean alwaysAdd;
-            if (customFee.hasFixedFee()) {
-                final var fixedFee = customFee.getFixedFee();
-                alwaysAdd =
-                        fixedFee.hasDenominatingTokenId()
-                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                if (alwaysAdd) {
-                    meta.addNonPayerKey(collector, failureStatus);
-                } else {
-                    meta.addNonPayerKeyIfReceiverSigRequired(collector, failureStatus);
-                }
-            } else if (customFee.hasFractionalFee()) {
-                meta.addNonPayerKey(collector, failureStatus);
-            } else if (customFee.hasRoyaltyFee()) {
-                final var royaltyFee = customFee.getRoyaltyFee();
-                if (royaltyFee.hasFallbackFee()) {
-                    final var fFee = royaltyFee.getFallbackFee();
+                final boolean alwaysAdd;
+                if (customFee.hasFixedFee()) {
+                    final var fixedFee = customFee.getFixedFee();
                     alwaysAdd =
-                            fFee.hasDenominatingTokenId()
-                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                            fixedFee.hasDenominatingTokenId()
+                                    && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
                     if (alwaysAdd) {
                         meta.addNonPayerKey(collector, failureStatus);
                     } else {
-                        meta.addNonPayerKeyIfReceiverSigRequired(collector, failureStatus);
+                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
                     }
+                } else if (customFee.hasFractionalFee()) {
+                    meta.addNonPayerKey(collector, failureStatus);
+                } else if (customFee.hasRoyaltyFee()) {
+                    final var royaltyFee = customFee.getRoyaltyFee();
+                    if (royaltyFee.hasFallbackFee()) {
+                        final var fFee = royaltyFee.getFallbackFee();
+                        alwaysAdd =
+                                fFee.hasDenominatingTokenId()
+                                        && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                        if (alwaysAdd) {
+                            meta.addNonPayerKey(collector, failureStatus);
+                        }
+                    } else {
+                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
+                    }
+                } else {
+                    meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
                 }
-            } else {
-                meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             }
         }
     }

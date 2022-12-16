@@ -335,6 +335,7 @@ import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -348,7 +349,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
-class SigRequirementsTest {
+public class SigRequirementsTest {
     private static class TopicAdapter {
         public static TopicSigMetaLookup throwingUoe() {
             return id -> {
@@ -6467,12 +6468,12 @@ class SigRequirementsTest {
                 id -> null);
     }
 
-    static List<Key> sanityRestored(List<JKey> jKeys) {
+    public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
                 .map(
                         jKey -> {
                             try {
-                                return JKey.mapJKey(jKey);
+                                return JKey.mapJKey((JKey) jKey);
                             } catch (Exception ignore) {
                             }
                             throw new AssertionError("All keys should be mappable!");

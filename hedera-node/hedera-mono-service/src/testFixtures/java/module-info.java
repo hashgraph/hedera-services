@@ -13,4 +13,6 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires net.i2p.crypto.eddsa;
     requires org.bouncycastle.provider;
     requires org.apache.commons.codec;
+    requires com.hedera.node.app.spi;
+    requires org.apache.commons.lang3;
 }
