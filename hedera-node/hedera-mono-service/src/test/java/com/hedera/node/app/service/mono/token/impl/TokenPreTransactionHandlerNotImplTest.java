@@ -17,9 +17,7 @@ package com.hedera.node.app.service.mono.token.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.state.logic.NetworkUtilization;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,10 +28,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenPreTransactionHandlerNotImplTest {
 
-    @Mock
-    private AccountStore accountStore;
-    @Mock
-    private PreHandleContext context;
+    @Mock private AccountStore accountStore;
+    @Mock private PreHandleContext context;
     private TokenPreTransactionHandlerImpl subject;
 
     @BeforeEach
@@ -43,24 +39,32 @@ class TokenPreTransactionHandlerNotImplTest {
 
     @Test
     void notImplementedStuffIsntImplemented() {
-        assertThrows(NotImplementedException.class, () -> subject.preHandleAssociateTokens(null, null));
+        assertThrows(
+                NotImplementedException.class, () -> subject.preHandleAssociateTokens(null, null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleBurnToken(null, null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteToken(null, null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleMintToken(null, null));
         assertThrows(
-                NotImplementedException.class, () -> subject.preHandleFreezeTokenAccount(null, null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleAssociateTokens(null, null));
+                NotImplementedException.class,
+                () -> subject.preHandleFreezeTokenAccount(null, null));
         assertThrows(
-                NotImplementedException.class, () -> subject.preHandleGrantKycToTokenAccount(null, null));
+                NotImplementedException.class, () -> subject.preHandleAssociateTokens(null, null));
+        assertThrows(
+                NotImplementedException.class,
+                () -> subject.preHandleGrantKycToTokenAccount(null, null));
         assertThrows(
                 NotImplementedException.class,
                 () -> subject.preHandleRevokeKycFromTokenAccount(null, null));
         assertThrows(
-                NotImplementedException.class, () -> subject.preHandleUnfreezeTokenAccount(null, null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleWipeTokenAccount(null, null));
+                NotImplementedException.class,
+                () -> subject.preHandleUnfreezeTokenAccount(null, null));
+        assertThrows(
+                NotImplementedException.class, () -> subject.preHandleWipeTokenAccount(null, null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleUpdateToken(null, null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDissociateTokens(null, null));
+        assertThrows(
+                NotImplementedException.class, () -> subject.preHandleDissociateTokens(null, null));
         assertThrows(NotImplementedException.class, () -> subject.preHandlePauseToken(null, null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleUnpauseToken(null, null));
+        assertThrows(
+                NotImplementedException.class, () -> subject.preHandleUnpauseToken(null, null));
     }
 }

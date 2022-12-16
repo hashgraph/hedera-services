@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
@@ -23,13 +26,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.List;
 import java.util.Objects;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code TokenPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -88,12 +87,14 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     }
 
     @Override
-    public TransactionMetadata preHandleGrantKycToTokenAccount(TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleGrantKycToTokenAccount(
+            TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleRevokeKycFromTokenAccount(TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleRevokeKycFromTokenAccount(
+            TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
@@ -108,7 +109,8 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     }
 
     @Override
-    public TransactionMetadata preHandleUpdateTokenFeeSchedule(TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleUpdateTokenFeeSchedule(
+            TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
@@ -126,7 +128,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
      * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed for
      * signing the transaction
      *
-     * @param txn   given transaction body
+     * @param txn given transaction body
      * @param payer payer for the transaction
      * @return transaction's metadata needed to validate signatures
      */
@@ -155,9 +157,9 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             final var hasCollector = customFee.hasFeeCollectorAccountId();
             if (hasCollector) {
                 final var collector = customFee.getFeeCollectorAccountId();
-            /* A fractional fee collector and a collector for a fixed fee denominated
-            in the units of the newly created token both must always sign a TokenCreate,
-            since these are automatically associated to the newly created token. */
+                /* A fractional fee collector and a collector for a fixed fee denominated
+                in the units of the newly created token both must always sign a TokenCreate,
+                since these are automatically associated to the newly created token. */
                 final boolean alwaysAdd;
                 if (customFee.hasFixedFee()) {
                     final var fixedFee = customFee.getFixedFee();

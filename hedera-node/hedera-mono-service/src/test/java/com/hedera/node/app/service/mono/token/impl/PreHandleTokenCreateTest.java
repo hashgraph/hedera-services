@@ -1,4 +1,25 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.mono.token.impl;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
+import static com.hedera.test.utils.AdapterUtils.txnFrom;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -6,16 +27,9 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
-import static com.hedera.test.utils.AdapterUtils.txnFrom;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class PreHandleTokenCreateTest {
 
@@ -38,8 +52,7 @@ public class PreHandleTokenCreateTest {
 
     @Test
     void getsTokenCreateAdminKeyOnly() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY), payer);
+        final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY), payer);
 
         assertTrue(meta.requiredNonPayerKeys().contains(adminKey));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
@@ -47,8 +60,7 @@ public class PreHandleTokenCreateTest {
 
     @Test
     void tokenCreateMissingAdmin() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_MISSING_ADMIN), payer);
+        final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_MISSING_ADMIN), payer);
 
         assertFalse(meta.requiredNonPayerKeys().contains(adminKey));
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
@@ -73,7 +85,8 @@ public class PreHandleTokenCreateTest {
     @Test
     void tokenCreateTreasuryAsCustomPayer() {
         final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER), payer);
+                subject.preHandleCreateToken(
+                        txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER), payer);
 
         assertTrue(meta.requiredNonPayerKeys().contains(customPayerKey));
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
@@ -89,8 +102,7 @@ public class PreHandleTokenCreateTest {
 
     @Test
     void tokenCreateWithAutoRenew() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW), payer);
+        final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW), payer);
 
         assertTrue(meta.requiredNonPayerKeys().contains(miscKey));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
@@ -99,7 +111,8 @@ public class PreHandleTokenCreateTest {
     @Test
     void tokenCreateWithAutoRenewAsCustomPayer() {
         final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER), payer);
+                subject.preHandleCreateToken(
+                        txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER), payer);
 
         assertTrue(meta.requiredNonPayerKeys().contains(customPayerKey));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
@@ -124,7 +137,8 @@ public class PreHandleTokenCreateTest {
     @Test
     void tokenCreateCustomFixedFeeAndCollectorSigReq() {
         final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ), payer);
+                subject.preHandleCreateToken(
+                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ), payer);
 
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
@@ -132,7 +146,8 @@ public class PreHandleTokenCreateTest {
     @Test
     void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() {
         final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER), payer);
+                subject.preHandleCreateToken(
+                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER), payer);
 
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
@@ -140,7 +155,8 @@ public class PreHandleTokenCreateTest {
     @Test
     void tokenCreateCustomFixedFeeNoCollectorSigReq() {
         final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ), payer);
+                subject.preHandleCreateToken(
+                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ), payer);
 
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
@@ -149,7 +165,9 @@ public class PreHandleTokenCreateTest {
     void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM), payer);
+                        txnFrom(
+                                TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM),
+                        payer);
 
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
@@ -167,7 +185,9 @@ public class PreHandleTokenCreateTest {
     void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ), payer);
+                        txnFrom(
+                                TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ),
+                        payer);
 
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
@@ -176,7 +196,9 @@ public class PreHandleTokenCreateTest {
     void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ), payer);
+                        txnFrom(
+                                TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ),
+                        payer);
 
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
@@ -185,7 +207,8 @@ public class PreHandleTokenCreateTest {
     void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK), payer);
+                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK),
+                        payer);
 
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
@@ -194,7 +217,8 @@ public class PreHandleTokenCreateTest {
     void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK), payer);
+                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK),
+                        payer);
 
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
