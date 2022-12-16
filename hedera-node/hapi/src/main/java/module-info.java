@@ -1,5 +1,6 @@
 module com.hedera.node.hapi {
     requires com.hedera.hashgraph.pbj.runtime;
+
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.parser;
     exports com.hedera.hapi.node.base.schema;
