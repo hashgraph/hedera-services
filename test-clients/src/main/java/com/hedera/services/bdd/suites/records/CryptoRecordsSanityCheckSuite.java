@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -38,15 +38,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
+public class CryptoRecordsSanityCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoRecordsSanityCheckSuite.class);
 
     public static void main(String... args) {
@@ -54,9 +54,9 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     cryptoCreateRecordSanityChecks(),
                     cryptoDeleteRecordSanityChecks(),
                     cryptoTransferRecordSanityChecks(),
@@ -67,7 +67,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec ownershipChangeShowsInRecord() {
+    private HapiSpec ownershipChangeShowsInRecord() {
         final var firstOwner = "A";
         final var secondOwner = "B";
         final var uniqueToken = "DoubleVision";
@@ -98,7 +98,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                 .then(getTxnRecord(mintRecord).logged(), getTxnRecord(xferRecord).logged());
     }
 
-    private HapiApiSpec cryptoCreateRecordSanityChecks() {
+    private HapiSpec cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(
                         takeBalanceSnapshots(
@@ -117,7 +117,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec cryptoDeleteRecordSanityChecks() {
+    private HapiSpec cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(
                         flattened(
@@ -144,7 +144,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec cryptoTransferRecordSanityChecks() {
+    private HapiSpec cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(
                         flattened(
@@ -170,7 +170,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec cryptoUpdateRecordSanityChecks() {
+    private HapiSpec cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(
                         flattened(
@@ -202,7 +202,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec insufficientAccountBalanceRecordSanityChecks() {
+    private HapiSpec insufficientAccountBalanceRecordSanityChecks() {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
                 .given(
@@ -240,7 +240,7 @@ public class CryptoRecordsSanityCheckSuite extends HapiApiSuite {
                                         "receiver")));
     }
 
-    private HapiApiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
+    private HapiSpec invalidPayerSigCryptoTransferRecordSanityChecks() {
         final long BALANCE = 10_000_000L;
 
         return defaultHapiSpec("InvalidPayerSigCryptoTransferSanityChecks")

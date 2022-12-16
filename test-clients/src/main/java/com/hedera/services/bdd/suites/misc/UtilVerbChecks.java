@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -29,14 +29,14 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UtilVerbChecks extends HapiApiSuite {
+public class UtilVerbChecks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilVerbChecks.class);
 
     public static void main(String... args) throws Exception {
@@ -44,16 +44,16 @@ public class UtilVerbChecks extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						testLivenessTimeout(),
                     testMakingFree(),
                     //						testDissociation(),
                 });
     }
 
-    private HapiApiSpec testMakingFree() {
+    private HapiSpec testMakingFree() {
         return defaultHapiSpec("TestMakingFree")
                 .given(
                         cryptoCreate("civilian"),
@@ -69,7 +69,7 @@ public class UtilVerbChecks extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(OK));
     }
 
-    private HapiApiSpec testDissociation() {
+    private HapiSpec testDissociation() {
         return defaultHapiSpec("TestDissociation")
                 .given(
                         cryptoCreate("t"),
@@ -86,7 +86,7 @@ public class UtilVerbChecks extends HapiApiSuite {
                                 .hasNoTokenRelationship("b"));
     }
 
-    private HapiApiSpec testLivenessTimeout() {
+    private HapiSpec testLivenessTimeout() {
         return defaultHapiSpec("TestLivenessTimeout")
                 .given()
                 .when()

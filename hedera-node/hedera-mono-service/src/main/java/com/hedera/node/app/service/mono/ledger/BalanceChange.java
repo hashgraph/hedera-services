@@ -70,6 +70,7 @@ public class BalanceChange {
     private ByteString alias;
     private int expectedDecimals = -1;
     private boolean isApprovedAllowance = false;
+    private boolean isForCustomFee = false;
     private AccountID payerID = null;
 
     public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
@@ -86,12 +87,13 @@ public class BalanceChange {
         return tokenChange;
     }
 
-    public static BalanceChange hbarAdjust(final Id id, final long amount) {
+    public static BalanceChange hbarCustomFeeAdjust(final Id id, final long amount) {
         return new BalanceChange(
                 id,
                 amount,
                 DEFAULT_PAYER,
                 DEFAULT_ALLOWANCE_APPROVAL,
+                true,
                 INSUFFICIENT_ACCOUNT_BALANCE);
     }
 
@@ -116,8 +118,9 @@ public class BalanceChange {
         return nftChange;
     }
 
-    public static BalanceChange tokenAdjust(final Id account, final Id token, final long amount) {
-        return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL);
+    public static BalanceChange tokenCustomFeeAdjust(
+            final Id account, final Id token, final long amount) {
+        return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true);
     }
 
     public static BalanceChange tokenAdjust(
@@ -125,10 +128,16 @@ public class BalanceChange {
             final Id token,
             final long amount,
             final AccountID payerID,
-            final boolean isApprovedAllowance) {
+            final boolean isApprovedAllowance,
+            final boolean isForCustomFee) {
         final var change =
                 new BalanceChange(
-                        account, amount, payerID, isApprovedAllowance, INSUFFICIENT_TOKEN_BALANCE);
+                        account,
+                        amount,
+                        payerID,
+                        isApprovedAllowance,
+                        isForCustomFee,
+                        INSUFFICIENT_TOKEN_BALANCE);
         change.payerID = payerID;
         change.token = token;
         change.tokenId = token.asGrpcToken();
@@ -141,6 +150,7 @@ public class BalanceChange {
             final long amount,
             final AccountID payerID,
             final boolean isApprovedAllowance,
+            final boolean isForCustomFee,
             final ResponseCodeEnum code) {
         this.token = null;
         this.account = account;
@@ -148,6 +158,7 @@ public class BalanceChange {
         this.alias = accountId.getAlias();
         this.originalUnits = amount;
         this.isApprovedAllowance = isApprovedAllowance;
+        this.isForCustomFee = isForCustomFee;
         this.payerID = payerID;
         this.codeForInsufficientBalance = code;
         this.aggregatedUnits = amount;
@@ -309,6 +320,10 @@ public class BalanceChange {
      */
     public boolean isApprovedAllowance() {
         return this.allowanceUnits < 0;
+    }
+
+    public boolean isForCustomFee() {
+        return this.isForCustomFee;
     }
 
     public AccountID getPayerID() {

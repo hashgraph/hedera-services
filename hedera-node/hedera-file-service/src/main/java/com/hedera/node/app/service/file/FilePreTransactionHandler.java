@@ -17,6 +17,7 @@ package com.hedera.node.app.service.file;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -32,9 +33,10 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.FileCreateTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the file creation
      */
-    TransactionMetadata preHandleCreateFile(TransactionBody txn);
+    TransactionMetadata preHandleCreateFile(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileUpdate}
@@ -43,9 +45,10 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.FileUpdateTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the file update
      */
-    TransactionMetadata preHandleUpdateFile(TransactionBody txn);
+    TransactionMetadata preHandleUpdateFile(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileDelete}
@@ -54,9 +57,10 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.FileDeleteTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the file deletion
      */
-    TransactionMetadata preHandleDeleteFile(TransactionBody txn);
+    TransactionMetadata preHandleDeleteFile(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileAppend}
@@ -65,9 +69,10 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.FileAppendTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the file append
      */
-    TransactionMetadata preHandleAppendContent(TransactionBody txn);
+    TransactionMetadata preHandleAppendContent(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemDelete}
@@ -76,9 +81,10 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody} targeting a file
+     * @param payer payer of the transaction
      * @return the metadata for the system file deletion
      */
-    TransactionMetadata preHandleSystemDelete(TransactionBody txn);
+    TransactionMetadata preHandleSystemDelete(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemUndelete}
@@ -87,7 +93,8 @@ public interface FilePreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody} targeting a file
+     * @param payer payer of the transaction
      * @return the metadata for the system file un-deletion
      */
-    TransactionMetadata preHandleSystemUndelete(TransactionBody txn);
+    TransactionMetadata preHandleSystemUndelete(TransactionBody txn, AccountID payer);
 }

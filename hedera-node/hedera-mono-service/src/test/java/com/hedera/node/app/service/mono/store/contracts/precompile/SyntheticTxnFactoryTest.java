@@ -49,7 +49,9 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -66,13 +68,11 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Associa
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
@@ -430,7 +430,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedFreezeTokenCall() {
-        final var freezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var freezeWrapper = new TokenFreezeUnfreezeWrapper<>(fungible, a);
         final var result = subject.createFreeze(freezeWrapper);
         final var txnBody = result.build();
 
@@ -440,7 +440,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUnfreezeTokenCall() {
-        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper<>(fungible, a);
         final var result = subject.createUnFreeze(unfreezeWrapper);
         final var txnBody = result.build();
 
@@ -474,7 +474,7 @@ class SyntheticTxnFactoryTest {
         final var alias = key.toByteString();
         final var evmAddress =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(
+                        EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
         final var result = subject.createAccount(alias, key, evmAddress, balance, 0);
         final var txnBody = result.build();
@@ -1356,7 +1356,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedGrantKycCall() {
-        final var grantWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var grantWrapper = new GrantRevokeKycWrapper<>(fungible, a);
         final var result = subject.createGrantKyc(grantWrapper);
         final var txnBody = result.build();
 
@@ -1366,7 +1366,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedRevokeKycCall() {
-        final var revokeWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var revokeWrapper = new GrantRevokeKycWrapper<>(fungible, a);
         final var result = subject.createRevokeKyc(revokeWrapper);
         final var txnBody = result.build();
 

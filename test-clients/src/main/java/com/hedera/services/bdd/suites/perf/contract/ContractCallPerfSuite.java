@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -26,15 +26,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractCallPerfSuite extends HapiApiSuite {
+public class ContractCallPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);
 
     public static void main(String... args) {
@@ -42,7 +42,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(contractCallPerf());
     }
 
@@ -51,7 +51,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
         return false;
     }
 
-    HapiApiSpec contractCallPerf() {
+    HapiSpec contractCallPerf() {
         final int NUM_CALLS = 1_000;
         final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1) / 2;
         final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";

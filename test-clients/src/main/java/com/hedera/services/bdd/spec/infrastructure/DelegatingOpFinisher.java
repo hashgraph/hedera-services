@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.infrastructure;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOpFinisher;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 
@@ -32,7 +32,7 @@ public class DelegatingOpFinisher implements HapiSpecOpFinisher {
     }
 
     @Override
-    public void finishFor(HapiApiSpec spec) throws Throwable {
+    public void finishFor(HapiSpec spec) throws Throwable {
         delegate.finalizeExecFor(spec);
     }
 

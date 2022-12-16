@@ -16,12 +16,9 @@
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +27,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StackedContractAliases extends HederaEvmContractAliases implements ContractAliases {
@@ -89,33 +85,6 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
                         }
                     });
         }
-    }
-
-    @Override
-    public void link(ByteString alias, EntityNum num) {
-        if (alias.size() != EVM_ADDRESS_LEN) {
-            throw new UnsupportedOperationException(
-                    "Stacked alias manager cannot link aliases with size != 20.");
-        }
-        link(Address.wrap(Bytes.of(alias.toByteArray())), num.toEvmAddress());
-    }
-
-    @Override
-    public void unlink(ByteString alias) {
-        throw new UnsupportedOperationException(
-                "Stacked alias manager cannot perform unlink outside EVM");
-    }
-
-    @Override
-    public void forgetEvmAddress(ByteString alias) {
-        throw new UnsupportedOperationException(
-                "Stacked alias manager cannot perform forgetEvmAddress outside EVM");
-    }
-
-    @Override
-    public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
-        throw new UnsupportedOperationException(
-                "Stacked alias manager cannot perform maybeLinkEvmAddress through key");
     }
 
     @Override

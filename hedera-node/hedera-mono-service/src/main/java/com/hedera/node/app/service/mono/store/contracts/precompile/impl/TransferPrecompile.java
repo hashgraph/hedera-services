@@ -62,7 +62,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -135,10 +135,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final boolean isLazyCreationEnabled;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
-    private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
-    private AutoCreationLogic autoCreationLogic;
+    private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
 
     public TransferPrecompile(
@@ -224,8 +223,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity);
         }
 
-        /* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
-        final var numExplicitChanges = explicitChanges.size();
         final var assessmentStatus = impliedTransfers.getMeta().code();
         validateTrue(assessmentStatus == OK, assessmentStatus);
         final var changes = impliedTransfers.getAllBalanceChanges();
@@ -248,7 +245,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
             if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance()) {
+                if (change.isApprovedAllowance() || change.isForCustomFee()) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
@@ -262,7 +259,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 updater.aliases());
                 validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
-            if (i < numExplicitChanges) {
+            if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
                 NFT exchanges) */
                 var hasReceiverSigIfReq = true;
@@ -295,7 +292,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // track auto-creation child records if needed
         if (autoCreationLogic != null) {
             autoCreationLogic.submitRecords(
-                    infrastructureFactory.newRecordSubmissionsScopedTo(updater), false);
+                    infrastructureFactory.newRecordSubmissionsScopedTo(updater));
         }
 
         transferLogic.doZeroSum(changes);
@@ -342,7 +339,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             return;
         }
-        explicitChanges = constructBalanceChanges();
+        final var explicitChanges = constructBalanceChanges();
         if (numLazyCreates > 0 && !isLazyCreationEnabled) {
             impliedValidity = NOT_SUPPORTED;
             return;

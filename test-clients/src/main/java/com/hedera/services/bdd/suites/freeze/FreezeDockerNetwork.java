@@ -15,17 +15,17 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FreezeDockerNetwork extends HapiApiSuite {
+public class FreezeDockerNetwork extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeDockerNetwork.class);
 
     public static void main(String... args) {
@@ -33,14 +33,14 @@ public class FreezeDockerNetwork extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     justFreeze(),
                 });
     }
 
-    private HapiApiSpec justFreeze() {
+    private HapiSpec justFreeze() {
         return customHapiSpec("JustFreeze")
                 .withProperties(
                         Map.of(

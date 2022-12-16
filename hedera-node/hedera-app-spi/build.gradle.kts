@@ -24,10 +24,17 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
+    implementation(libs.grpc.stub)
     api(libs.hapi)
+    implementation(libs.helidon.io.grpc)
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
 

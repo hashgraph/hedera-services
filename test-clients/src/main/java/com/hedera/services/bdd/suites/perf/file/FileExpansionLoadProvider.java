@@ -32,12 +32,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +66,7 @@ import org.apache.logging.log4j.Logger;
  *       out of rotation" and a new target file created).
  * </ul>
  */
-public class FileExpansionLoadProvider extends HapiApiSuite {
+public class FileExpansionLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 
     private static final String MAX_FILE_SIZE_KB_PROP = "files.maxSizeKb";
@@ -90,15 +90,15 @@ public class FileExpansionLoadProvider extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runFileExpansions(),
                 });
     }
 
-    private HapiApiSpec runFileExpansions() {
-        return HapiApiSpec.defaultHapiSpec("RunFileExpansions")
+    private HapiSpec runFileExpansions() {
+        return HapiSpec.defaultHapiSpec("RunFileExpansions")
                 .given(
                         overriding(MAX_FILE_SIZE_KB_PROP, OVERRIDE_MAX_FILE_SIZE_KB),
                         stdMgmtOf(duration, unit, maxOpsPerSec),
@@ -110,7 +110,7 @@ public class FileExpansionLoadProvider extends HapiApiSuite {
                 .then(overriding(MAX_FILE_SIZE_KB_PROP, DEFAULT_MAX_FILE_SIZE_KB));
     }
 
-    private Function<HapiApiSpec, OpProvider> fileExpansionsFactory() {
+    private Function<HapiSpec, OpProvider> fileExpansionsFactory() {
         final SplittableRandom r = new SplittableRandom();
         final Set<String> usableTargets = ConcurrentHashMap.newKeySet();
         final LongFunction<String> targetNameFn = i -> "expandingFile" + i;

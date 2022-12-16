@@ -15,12 +15,12 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -35,11 +35,11 @@ public class CryptoCreatePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCryptoCreates());
     }
 
-    private HapiApiSpec runCryptoCreates() {
+    private HapiSpec runCryptoCreates() {
         final int NUM_CREATES = 1000000;
         return defaultHapiSpec("cryptoCreatePerf")
                 .given()
