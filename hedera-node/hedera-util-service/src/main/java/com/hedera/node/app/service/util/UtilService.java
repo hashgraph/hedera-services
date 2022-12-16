@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface UtilService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return UtilService.class.getSimpleName();
+    }
+
     /**
      * Creates the util service pre-handler given a particular Hedera world state.
      *

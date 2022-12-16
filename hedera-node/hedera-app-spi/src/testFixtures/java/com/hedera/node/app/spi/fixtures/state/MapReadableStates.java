@@ -24,9 +24,16 @@ import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
 public class MapReadableStates implements ReadableStates {
-    private final Map<String, MapReadableState> states;
+    private final Map<String, ReadableState> states;
 
-    public MapReadableStates(@NonNull final Map<String, MapReadableState> states) {
+    public MapReadableStates(ReadableState... states) {
+        this.states = new HashMap<>();
+        for (final var state : states) {
+            this.states.put(state.getStateKey(), state);
+        }
+    }
+
+    public MapReadableStates(@NonNull final Map<String, ReadableState> states) {
         this.states = states;
     }
 

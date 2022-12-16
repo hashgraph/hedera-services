@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface FreezeService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return FreezeService.class.getSimpleName();
+    }
+
     /**
      * Creates the freeze service pre-handler given a particular Hedera world state.
      *

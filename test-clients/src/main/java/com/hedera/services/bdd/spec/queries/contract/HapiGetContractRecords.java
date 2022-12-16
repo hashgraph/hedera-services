@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.queries.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.ensureDir;
+import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -26,7 +26,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -99,7 +99,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expectation.isPresent()) {
             List<TransactionRecord> actualRecords =
                     response.getContractGetRecordsResponse().getRecordsList();
@@ -109,7 +109,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractRecordsQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -135,7 +135,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractRecordsQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -144,7 +144,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         return costFrom(response);
     }
 
-    private Query getContractRecordsQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asContractId(contract, spec);
         ContractGetRecordsQuery opQuery =
                 ContractGetRecordsQuery.newBuilder()
@@ -155,7 +155,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return spec.fees()
                 .forOp(HederaFunctionality.ContractGetRecords, fees.getCostForQueryByIDOnly());
     }
@@ -177,7 +177,7 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         return helper;
     }
 
-    private void saveSnapshots(HapiApiSpec spec, List<TransactionRecord> records) {
+    private void saveSnapshots(HapiSpec spec, List<TransactionRecord> records) {
         String specSnapshotDir = specScopedDir(spec, snapshotDirPath);
         ensureDir(specSnapshotDir);
         String snapshotDir = specSnapshotDir + "/" + contract;
@@ -201,11 +201,11 @@ public class HapiGetContractRecords extends HapiQueryOp<HapiGetContractRecords> 
         }
     }
 
-    private String specScopedDir(HapiApiSpec spec, Optional<String> prefix) {
+    private String specScopedDir(HapiSpec spec, Optional<String> prefix) {
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 
-    private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records)
+    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records)
             throws Throwable {
         String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
         try {

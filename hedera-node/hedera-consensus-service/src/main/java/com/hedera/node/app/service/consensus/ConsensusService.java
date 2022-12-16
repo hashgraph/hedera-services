@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface ConsensusService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return ConsensusService.class.getSimpleName();
+    }
+
     /**
      * Creates the consensus service pre-handler given a particular Hedera world state.
      *

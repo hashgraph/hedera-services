@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface NetworkService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return NetworkService.class.getSimpleName();
+    }
+
     /**
      * Creates the network service pre-handler given a particular Hedera world state.
      *

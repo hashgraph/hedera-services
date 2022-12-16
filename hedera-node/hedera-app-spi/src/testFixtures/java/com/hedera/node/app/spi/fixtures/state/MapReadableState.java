@@ -26,6 +26,11 @@ import java.util.Objects;
 public class MapReadableState<K, V> extends ReadableStateBase<K, V> {
     private final Map<K, V> backingStore;
 
+    public MapReadableState(@NonNull final String stateKey) {
+        super(stateKey);
+        this.backingStore = new HashMap<>();
+    }
+
     public MapReadableState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);

@@ -15,8 +15,8 @@
  */
 package com.hedera.test.mocks;
 
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import java.time.Instant;
 
 public enum TestFeeMultiplierSource implements FeeMultiplierSource {

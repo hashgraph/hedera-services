@@ -16,21 +16,18 @@
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.ConsensusDeleteTopicFactory.newSignedConsensusDeleteTopic;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ConsensusDeleteTopicScenarios implements TxnHandlingScenario {
     CONSENSUS_DELETE_TOPIC_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get()));
+            return PlatformTxnAccessor.from(newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get());
         }
     },
     CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get()));
+            return PlatformTxnAccessor.from(newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get());
         }
     }
 }

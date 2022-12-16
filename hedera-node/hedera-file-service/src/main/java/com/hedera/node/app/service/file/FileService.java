@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface FileService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return FileService.class.getSimpleName();
+    }
+
     /**
      * Creates the file service pre-handler given a particular Hedera world state.
      *

@@ -15,15 +15,15 @@
  */
 package com.hedera.services.bdd.suites.autorenew;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TopicAutoRenewalSuite extends HapiApiSuite {
+public class TopicAutoRenewalSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicAutoRenewalSuite.class);
 
     public static void main(String... args) {
@@ -33,15 +33,15 @@ public class TopicAutoRenewalSuite extends HapiApiSuite {
     // TODO : just added empty shells for now.
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(topicAutoRemoval(), topicAutoRenewal());
     }
 
-    private HapiApiSpec topicAutoRemoval() {
+    private HapiSpec topicAutoRemoval() {
         return defaultHapiSpec("").given().when().then();
     }
 
-    private HapiApiSpec topicAutoRenewal() {
+    private HapiSpec topicAutoRenewal() {
         return defaultHapiSpec("").given().when().then();
     }
 

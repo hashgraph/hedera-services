@@ -9,6 +9,10 @@ module com.hedera.node.app.hapi.fees {
     exports com.hedera.node.app.hapi.fees.usage.token.meta;
     exports com.hedera.node.app.hapi.fees.usage.file;
     exports com.hedera.node.app.hapi.fees.usage;
+    exports com.hedera.node.app.hapi.fees.usage.util;
+    exports com.hedera.node.app.hapi.fees.calc;
+    exports com.hedera.node.app.hapi.fees.usage.contract;
+    exports com.hedera.node.app.hapi.fees.usage.token.entities;
 
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.hashgraph.protobuf.java.api;

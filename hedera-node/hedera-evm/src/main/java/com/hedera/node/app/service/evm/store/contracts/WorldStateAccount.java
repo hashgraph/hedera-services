@@ -25,10 +25,11 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
+import org.hyperledger.besu.evm.code.CodeFactory;
 
 public class WorldStateAccount implements Account {
     private static final Code EMPTY_CODE =
-            Code.createLegacyCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+            CodeFactory.createCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY), 0, false);
 
     private final Wei balance;
     private final Address address;
@@ -68,7 +69,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return getCodeInternal().getBytes();
+        return getCodeInternal().getContainerBytes();
     }
 
     @Override

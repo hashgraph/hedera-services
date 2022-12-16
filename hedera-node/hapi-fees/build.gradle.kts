@@ -21,14 +21,22 @@ description = "Hedera Services API Fees"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
+    annotationProcessor(libs.dagger.compiler)
+
+    implementation(libs.bundles.di)
+    implementation(libs.helidon.io.grpc)
     implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
     implementation(libs.hapi)
-    implementation(libs.javax.inject)
     implementation(libs.jackson)
     compileOnly(libs.spotbugs.annotations)
 

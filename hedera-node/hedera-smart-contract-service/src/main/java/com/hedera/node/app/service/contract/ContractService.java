@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Contract Service</a>.
  */
 public interface ContractService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return ContractService.class.getSimpleName();
+    }
+
     /**
      * Creates the contract service pre-handler given a particular Hedera world state.
      *

@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface TokenService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return TokenService.class.getSimpleName();
+    }
+
     /**
      * Creates the token service pre-handler given a particular Hedera world state.
      *

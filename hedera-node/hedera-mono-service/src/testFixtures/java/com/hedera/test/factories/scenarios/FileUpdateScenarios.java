@@ -18,65 +18,60 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.FileUpdateFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.FileUpdateFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.factories.txns.FileUpdateFactory.newSignedFileUpdate;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum FileUpdateScenarios implements TxnHandlingScenario {
     VANILLA_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(from(newSignedFileUpdate(MISC_FILE_ID).get()));
+            return PlatformTxnAccessor.from(newSignedFileUpdate(MISC_FILE_ID).get());
         }
     },
     TREASURY_SYS_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedFileUpdate(SYS_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get()));
+                    newSignedFileUpdate(SYS_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedFileUpdate(SYS_FILE_ID).payer(TREASURY_PAYER_ID).get()));
+                    newSignedFileUpdate(SYS_FILE_ID).payer(TREASURY_PAYER_ID).get());
         }
     },
     MASTER_SYS_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedFileUpdate(SYS_FILE_ID)
-                                    .payer(MASTER_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get()));
+                    newSignedFileUpdate(SYS_FILE_ID)
+                            .payer(MASTER_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     IMMUTABLE_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(from(newSignedFileUpdate(IMMUTABLE_FILE_ID).get()));
+            return PlatformTxnAccessor.from(newSignedFileUpdate(IMMUTABLE_FILE_ID).get());
         }
     },
     FILE_UPDATE_NEW_WACL_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedFileUpdate(MISC_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get()));
+                    newSignedFileUpdate(MISC_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     FILE_UPDATE_MISSING_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedFileUpdate(MISSING_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get()));
+                    newSignedFileUpdate(MISSING_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     }
 }

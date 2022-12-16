@@ -18,7 +18,7 @@ package com.hedera.test.factories.sigs;
 import static com.hedera.test.factories.sigs.SigWrappers.asInvalid;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 
-import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 

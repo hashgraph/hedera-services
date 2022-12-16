@@ -15,21 +15,19 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenUnpauseFactory.newSignedTokenUnpause;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenUnpauseScenarios implements TxnHandlingScenario {
     VALID_UNPAUSE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenUnpause()
-                                    .unPausing(KNOWN_TOKEN_WITH_PAUSE)
-                                    .nonPayerKts(TOKEN_PAUSE_KT)
-                                    .get()));
+                    newSignedTokenUnpause()
+                            .unPausing(KNOWN_TOKEN_WITH_PAUSE)
+                            .nonPayerKts(TOKEN_PAUSE_KT)
+                            .get());
         }
     },
 }

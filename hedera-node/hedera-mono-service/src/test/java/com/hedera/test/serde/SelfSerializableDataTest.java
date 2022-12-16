@@ -20,10 +20,11 @@ import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.virtual.annotations.StateSetter;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -58,8 +59,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * able to deserialize itself from serialized forms from versions between {@link
  * SerializableDet#getMinimumSupportedVersion()} to {@link Versioned#getVersion()}.
  *
- * <p>A typical subclass (c.f., {@link
- * com.hedera.services.state.merkle.MerkleAccountStateSerdeTest}) will use a {@link
+ * <p>A typical subclass (c.f., {@link MerkleAccountStateSerdeTest}) will use a {@link
  * com.hedera.test.utils.SeededPropertySource} to create a collection of expected objects for each
  * supported version; likely via the {@code SelfSerializable}'s "many argument" constructor. It will
  * then keep hard-coded serialized forms that were created with each supported version, so this test

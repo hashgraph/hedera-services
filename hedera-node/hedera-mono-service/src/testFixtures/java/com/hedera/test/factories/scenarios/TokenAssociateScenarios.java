@@ -15,72 +15,66 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.TokenAssociateFactory.newSignedTokenAssociate;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenAssociateScenarios implements TxnHandlingScenario {
     TOKEN_ASSOCIATE_WITH_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenAssociate()
-                                    .targeting(MISC_ACCOUNT)
-                                    .associating(KNOWN_TOKEN_WITH_KYC)
-                                    .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                                    .nonPayerKts(MISC_ACCOUNT_KT)
-                                    .get()));
+                    newSignedTokenAssociate()
+                            .targeting(MISC_ACCOUNT)
+                            .associating(KNOWN_TOKEN_WITH_KYC)
+                            .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                            .nonPayerKts(MISC_ACCOUNT_KT)
+                            .get());
         }
     },
     TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenAssociate()
-                                    .targeting(DEFAULT_PAYER)
-                                    .associating(KNOWN_TOKEN_WITH_KYC)
-                                    .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                                    .get()));
+                    newSignedTokenAssociate()
+                            .targeting(DEFAULT_PAYER)
+                            .associating(KNOWN_TOKEN_WITH_KYC)
+                            .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                            .get());
         }
     },
     TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenAssociate()
-                                    .targeting(CUSTOM_PAYER_ACCOUNT)
-                                    .associating(KNOWN_TOKEN_WITH_KYC)
-                                    .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                                    .get()));
+                    newSignedTokenAssociate()
+                            .targeting(CUSTOM_PAYER_ACCOUNT)
+                            .associating(KNOWN_TOKEN_WITH_KYC)
+                            .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                            .get());
         }
     },
     TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenAssociate()
-                                    .targeting(STAKING_FUND)
-                                    .associating(KNOWN_TOKEN_WITH_KYC)
-                                    .get()));
+                    newSignedTokenAssociate()
+                            .targeting(STAKING_FUND)
+                            .associating(KNOWN_TOKEN_WITH_KYC)
+                            .get());
         }
     },
     TOKEN_ASSOCIATE_WITH_MISSING_TARGET {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenAssociate()
-                                    .targeting(MISSING_ACCOUNT)
-                                    .associating(KNOWN_TOKEN_WITH_KYC)
-                                    .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
-                                    .get()));
+                    newSignedTokenAssociate()
+                            .targeting(MISSING_ACCOUNT)
+                            .associating(KNOWN_TOKEN_WITH_KYC)
+                            .associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+                            .get());
         }
     },
 }

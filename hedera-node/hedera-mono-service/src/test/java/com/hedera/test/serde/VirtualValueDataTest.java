@@ -19,7 +19,7 @@ import static com.hedera.test.serde.SerializedForms.assertSameBufferSerializatio
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBuffer;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.state.virtual.annotations.StateSetter;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.virtualmap.VirtualValue;
 import java.lang.reflect.InvocationTargetException;

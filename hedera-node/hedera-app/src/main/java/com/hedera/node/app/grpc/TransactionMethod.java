@@ -53,6 +53,6 @@ final class TransactionMethod extends MethodBase {
             @NonNull final SessionContext session,
             @NonNull final ByteBuffer requestBuffer,
             @NonNull final ByteBuffer responseBuffer) {
-        workflow.handleTransaction(session, requestBuffer, responseBuffer);
+        workflow.submitTransaction(session, requestBuffer, responseBuffer);
     }
 }
