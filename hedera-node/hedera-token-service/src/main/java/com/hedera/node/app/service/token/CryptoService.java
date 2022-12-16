@@ -36,6 +36,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface CryptoService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return CryptoService.class.getSimpleName();
+    }
+
     /**
      * Creates the crypto service pre-handler given a particular Hedera world state.
      *
@@ -46,6 +53,15 @@ public interface CryptoService extends Service {
     @NonNull
     CryptoPreTransactionHandler createPreTransactionHandler(
             @NonNull States states, @NonNull PreHandleContext ctx);
+
+    /**
+     * Creates and returns a new {@link CryptoQueryHandler}
+     *
+     * @return A new {@link CryptoQueryHandler}
+     */
+    @Override
+    @NonNull
+    CryptoQueryHandler createQueryHandler(@NonNull States states);
 
     /**
      * Returns the concrete implementation instance of the service

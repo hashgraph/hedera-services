@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -86,6 +87,7 @@ class InfrastructureFactoryTest {
     @Mock private UsageLimits usageLimits;
     @Mock private EntityIdSource ids;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private OptionValidator validator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
@@ -121,6 +123,7 @@ class InfrastructureFactoryTest {
                         usageLimits,
                         ids,
                         encoder,
+                        evmEncoder,
                         validator,
                         recordsHistorian,
                         sigImpactHistorian,
