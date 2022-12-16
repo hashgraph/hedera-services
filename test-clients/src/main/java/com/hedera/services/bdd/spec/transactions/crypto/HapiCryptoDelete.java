@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.lookUpAccountWithA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -82,7 +82,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.CryptoDelete,
@@ -92,7 +92,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         AccountID target;
 
         if (referenceType == ReferenceType.REGISTRY_NAME) {
@@ -117,7 +117,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -139,8 +139,8 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> deleteSigners = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        List<Function<HapiSpec, Key>> deleteSigners = new ArrayList<>();
         deleteSigners.addAll(super.defaultSigners());
         deleteSigners.add(spec -> spec.registry().getKey(account));
         deleteSigners.add(
@@ -153,7 +153,7 @@ public class HapiCryptoDelete extends HapiTxnOp<HapiCryptoDelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoDelete;
     }
 

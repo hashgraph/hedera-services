@@ -24,10 +24,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +70,7 @@ class HederaEvmMessageCallProcessorTest {
     @Mock private EVM evm;
     @Mock private PrecompileContractRegistry precompiles;
     @Mock private MessageFrame frame;
-    @Mock private HederaEvmOperationTracer hederaEvmOperationTracer;
+    @Mock private DefaultHederaTracer hederaEvmOperationTracer;
     @Mock private WorldUpdater worldUpdater;
     @Mock private PrecompiledContract nonHtsPrecompile;
     @Mock private AbstractLedgerEvmWorldUpdater updater;
@@ -228,5 +229,38 @@ class HederaEvmMessageCallProcessorTest {
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
         verify(nonHtsPrecompile).getName();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
+    }
+
+    @Test
+    void executesLazyCreate() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+    }
+
+    @Test
+    void executesLazyCreateFailed() {
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS))
+                .willAnswer(
+                        invocation -> {
+                            given(frame.getState()).willReturn(EXCEPTIONAL_HALT);
+                            return null;
+                        });
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+        verify(frame, never()).getSenderAddress();
     }
 }

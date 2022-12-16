@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -26,14 +26,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TopicDeleteSuite extends HapiApiSuite {
+public class TopicDeleteSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicDeleteSuite.class);
 
     public static void main(String... args) {
@@ -46,7 +46,7 @@ public class TopicDeleteSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 cannotDeleteAccountAsTopic(),
                 topicIdIsValidated(),
@@ -56,7 +56,7 @@ public class TopicDeleteSuite extends HapiApiSuite {
                 feeAsExpected());
     }
 
-    private HapiApiSpec cannotDeleteAccountAsTopic() {
+    private HapiSpec cannotDeleteAccountAsTopic() {
         return defaultHapiSpec("CannotDeleteAccountAsTopic")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -65,7 +65,7 @@ public class TopicDeleteSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
-    private HapiApiSpec topicIdIsValidated() {
+    private HapiSpec topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given()
                 .when()
@@ -75,21 +75,21 @@ public class TopicDeleteSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
-    private HapiApiSpec noAdminKeyCannotDelete() {
+    private HapiSpec noAdminKeyCannotDelete() {
         return defaultHapiSpec("noAdminKeyCannotDelete")
                 .given(createTopic("testTopic"))
                 .when(deleteTopic("testTopic").hasKnownStatus(UNAUTHORIZED))
                 .then();
     }
 
-    private HapiApiSpec deleteWithAdminKey() {
+    private HapiSpec deleteWithAdminKey() {
         return defaultHapiSpec("deleteWithAdminKey")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 .when(deleteTopic("testTopic").hasPrecheck(ResponseCodeEnum.OK))
                 .then(getTopicInfo("testTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID));
     }
 
-    private HapiApiSpec deleteFailedWithWrongKey() {
+    private HapiSpec deleteFailedWithWrongKey() {
         long PAYER_BALANCE = 1_999_999_999L;
         return defaultHapiSpec("deleteFailedWithWrongKey")
                 .given(
@@ -105,7 +105,7 @@ public class TopicDeleteSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec feeAsExpected() {
+    private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))
                 .when(deleteTopic("testTopic").blankMemo().payingWith("payer").via("topicDelete"))

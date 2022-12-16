@@ -15,28 +15,6 @@
  */
 package com.hedera.node.app.service.evm.contracts.operations;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /** Hedera adapted {@link ExceptionalHaltReason} */
@@ -69,9 +47,12 @@ public class HederaExceptionalHaltReason {
     /** Used when the target of a {@code selfdestruct} has positive balances. */
     public static final ExceptionalHaltReason TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES =
             HederaExceptionalHalt.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+    /** Used when а Hedera precompile input is invalid and cannot be decoded. */
+    public static final ExceptionalHaltReason ERROR_DECODING_PRECOMPILE_INPUT =
+            HederaExceptionalHalt.ERROR_DECODING_PRECOMPILE_INPUT;
     /** Used when a lazy account creation fails and a lazy creation can't be completed. */
     public static final ExceptionalHaltReason FAILURE_DURING_LAZY_ACCOUNT_CREATE =
-            HederaExceptionalHalt.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+            HederaExceptionalHalt.FAILURE_DURING_LAZY_ACCOUNT_CREATION;
 
     enum HederaExceptionalHalt implements ExceptionalHaltReason {
         INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
@@ -81,7 +62,8 @@ public class HederaExceptionalHaltReason {
         TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES(
                 "Accounts with positive fungible token balances cannot be deleted"),
         CONTRACT_STILL_OWNS_NFTS("Accounts who own nfts cannot be deleted"),
-        FAILURE_DURING_LAZY_ACCOUNT_CREATE("Failure during lazy account create");
+        ERROR_DECODING_PRECOMPILE_INPUT("Error when decoding precompile input."),
+        FAILURE_DURING_LAZY_ACCOUNT_CREATION("Failure during lazy account creation");
 
         final String description;
 

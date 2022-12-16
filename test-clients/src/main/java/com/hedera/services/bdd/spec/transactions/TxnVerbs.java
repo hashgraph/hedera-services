@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
@@ -28,7 +28,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
@@ -104,18 +104,17 @@ public class TxnVerbs {
 
     @SafeVarargs
     public static HapiCryptoTransfer sortedCryptoTransfer(
-            Function<HapiApiSpec, TransferList>... providers) {
+            Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(true, providers);
     }
 
     @SafeVarargs
-    public static HapiCryptoTransfer cryptoTransfer(
-            Function<HapiApiSpec, TransferList>... providers) {
+    public static HapiCryptoTransfer cryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(providers);
     }
 
     public static HapiCryptoTransfer cryptoTransfer(
-            BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+            BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> def) {
         return new HapiCryptoTransfer(def);
     }
 
@@ -148,7 +147,7 @@ public class TxnVerbs {
         return new HapiTopicDelete(topic);
     }
 
-    public static HapiTopicDelete deleteTopic(Function<HapiApiSpec, TopicID> topicFn) {
+    public static HapiTopicDelete deleteTopic(Function<HapiSpec, TopicID> topicFn) {
         return new HapiTopicDelete(topicFn);
     }
 
@@ -160,7 +159,7 @@ public class TxnVerbs {
         return new HapiMessageSubmit(topic);
     }
 
-    public static HapiMessageSubmit submitMessageTo(Function<HapiApiSpec, TopicID> topicFn) {
+    public static HapiMessageSubmit submitMessageTo(Function<HapiSpec, TopicID> topicFn) {
         return new HapiMessageSubmit(topicFn);
     }
 
@@ -391,8 +390,13 @@ public class TxnVerbs {
     }
 
     public static HapiContractCall contractCall(
-            String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
+            String contract, String abi, Function<HapiSpec, Object[]> fn) {
         return new HapiContractCall(abi, contract, fn);
+    }
+
+    public static HapiContractCall contractCallWithTuple(
+            String contract, String abi, Function<HapiSpec, Tuple> fn) {
+        return new HapiContractCall(abi, fn, contract);
     }
 
     public static HapiContractCall explicitContractCall(

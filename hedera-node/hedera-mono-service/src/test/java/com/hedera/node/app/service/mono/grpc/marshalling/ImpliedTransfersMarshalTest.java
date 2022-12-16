@@ -633,14 +633,14 @@ class ImpliedTransfersMarshalTest {
         ans.add(changingHbar(adjustFrom(cModel, +50), payer));
         if (incTokens) {
             final var adjustOne =
-                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false);
+                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false, false);
             adjustOne.setExpectedDecimals(2);
 
             ans.add(adjustOne);
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false, false));
             ans.add(
                     changingNftOwnership(
                             Id.fromGrpcToken(yetAnotherId),
@@ -728,9 +728,9 @@ class ImpliedTransfersMarshalTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
     private final BalanceChange aTrigger =
-            BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
+            BalanceChange.tokenCustomFeeAdjust(aAccount, Id.fromGrpcToken(anId), -1);
     private final BalanceChange bTrigger =
-            BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
+            BalanceChange.tokenCustomFeeAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
 
     private final List<CustomFeeMeta> mockFinalMeta =
             List.of(new CustomFeeMeta(aAccount, aAccount, Collections.emptyList()));

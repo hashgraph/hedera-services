@@ -15,20 +15,21 @@
  */
 package com.hedera.services.bdd.spec.transactions.contract;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
-import static com.hedera.services.bdd.suites.HapiApiSuite.CHAIN_ID;
-import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_HASH_KEY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -36,7 +37,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
@@ -67,7 +68,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private static final String CALL_DATA_FILE_NAME = "CallData";
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
-    private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+    private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 
     public static final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
@@ -82,6 +83,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private Consumer<Object[]> resultObserver = null;
+    private Consumer<ByteString> eventDataObserver = null;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean createCallDataFile;
     private boolean isTokenFlow;
@@ -176,13 +178,18 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.isTokenFlow = isTokenFlow;
     }
 
-    public HapiEthereumCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
+    public HapiEthereumCall(String abi, String contract, Function<HapiSpec, Object[]> fn) {
         this(abi, contract);
         paramsFn = Optional.of(fn);
     }
 
     public HapiEthereumCall exposingResultTo(final Consumer<Object[]> observer) {
         resultObserver = observer;
+        return this;
+    }
+
+    public HapiEthereumCall exposingEventDataTo(final Consumer<ByteString> observer) {
+        eventDataObserver = observer;
         return this;
     }
 
@@ -253,7 +260,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::callEthereum;
     }
 
@@ -263,7 +270,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.EthereumTransaction,
@@ -273,7 +280,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
@@ -285,7 +292,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
         final byte[] to;
         if (alias != null) {
-            to = EthTxSigs.recoverAddressFromPubKey(alias.toByteArray());
+            to = recoverAddressFromPubKey(alias.toByteArray());
         } else if (account != null) {
             to = Utils.asAddress(spec.registry().getAccountID(account));
         } else if (isTokenFlow) {
@@ -359,7 +366,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(final HapiSpec spec) throws Throwable {
         if (actualPrecheck == OK) {
             spec.incrementNonce(privateKeyRef);
         }
@@ -381,11 +388,19 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                         resultObserver.accept(result.toList().toArray());
                     });
         }
+        if (eventDataObserver != null) {
+            doObservedLookup(
+                    spec,
+                    txnSubmitted,
+                    rcd ->
+                            eventDataObserver.accept(
+                                    rcd.getContractCallResult().getLogInfo(0).getData()));
+        }
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final var signers = new ArrayList<Function<HapiSpec, Key>>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         for (final var added : otherSigs) {
             signers.add(spec -> spec.registry().getKey(added));
@@ -395,7 +410,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     static void doGasLookup(
             final LongConsumer gasObserver,
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction txn,
             final boolean isCreate)
             throws Throwable {
@@ -412,7 +427,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     static void doObservedLookup(
-            final HapiApiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
+            final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
             throws Throwable {
         final var txnId = extractTxnId(txn);
         final var lookup =

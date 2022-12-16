@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -32,6 +33,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final WorldLedgers ledgers;
     protected final EncodingFacade encoder;
+    protected final EvmEncodingFacade evmEncoder;
     protected final PrecompilePricingUtils pricingUtils;
 
     protected AbstractReadOnlyPrecompile(
@@ -39,11 +41,13 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
         this.tokenId = tokenId;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.ledgers = ledgers;
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.pricingUtils = pricingUtils;
     }
 

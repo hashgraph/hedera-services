@@ -20,6 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -56,8 +57,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGas
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.EvmAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
@@ -95,6 +96,7 @@ class InfrastructureFactoryTest {
     @Mock private UsageLimits usageLimits;
     @Mock private EntityIdSource ids;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private OptionValidator validator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
@@ -134,6 +136,7 @@ class InfrastructureFactoryTest {
                         usageLimits,
                         ids,
                         encoder,
+                        evmEncoder,
                         validator,
                         recordsHistorian,
                         sigImpactHistorian,
@@ -182,7 +185,7 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewAutoCreationLogc() {
         assertInstanceOf(
-                AutoCreationLogic.class,
+                EvmAutoCreationLogic.class,
                 subject.newAutoCreationLogicScopedTo(mock(HederaStackedWorldStateUpdater.class)));
     }
 

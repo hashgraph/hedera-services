@@ -25,7 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookU
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingPeriodRecord;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
-import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
+import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
@@ -37,7 +37,8 @@ import com.esaulpaugh.headlong.abi.ABIJSON;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
@@ -129,6 +130,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
+    @Nullable private Consumer<List<String>> createdIdsObserver = null;
+    @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -175,6 +178,17 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
         this.observer = Optional.of(observer);
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
+        this.createdIdsObserver = creationObserver;
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingTokenCreationsTo(
+            final Consumer<List<TokenID>> createdTokenIdsObserver) {
+        this.createdTokenIdsObserver = createdTokenIdsObserver;
         return this;
     }
 
@@ -413,7 +427,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @SuppressWarnings("java:S5960")
-    private void assertPriority(final HapiApiSpec spec, final TransactionRecord actualRecord)
+    private void assertPriority(final HapiSpec spec, final TransactionRecord actualRecord)
             throws Throwable {
         if (priorityExpectations.isPresent()) {
             final ErroringAsserts<TransactionRecord> asserts =
@@ -426,7 +440,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void assertChildRecords(
-            final HapiApiSpec spec, final List<TransactionRecord> actualRecords) throws Throwable {
+            final HapiSpec spec, final List<TransactionRecord> actualRecords) throws Throwable {
         if (childRecordsExpectations.isPresent()) {
             int numStakingRecords = 0;
             if (!actualRecords.isEmpty() && isEndOfStakingPeriodRecord(actualRecords.get(0))) {
@@ -463,7 +477,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
     }
 
-    private void assertDuplicates(final HapiApiSpec spec) throws Throwable {
+    private void assertDuplicates(final HapiSpec spec) throws Throwable {
         if (duplicateExpectations.isPresent()) {
             final var asserts = duplicateExpectations.get().assertsFor(spec);
             final var errors =
@@ -474,7 +488,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
     }
 
-    private void assertTransactionHash(final HapiApiSpec spec, final TransactionRecord actualRecord)
+    private void assertTransactionHash(final HapiSpec spec, final TransactionRecord actualRecord)
             throws InvalidProtocolBufferException {
         final Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
         assertArrayEquals(
@@ -483,8 +497,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 "Bad transaction hash!");
     }
 
-    private void assertTopicRunningHash(
-            final HapiApiSpec spec, final TransactionRecord actualRecord) throws IOException {
+    private void assertTopicRunningHash(final HapiSpec spec, final TransactionRecord actualRecord)
+            throws IOException {
         if (topicToValidate.isPresent()) {
             if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
                 final var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
@@ -524,7 +538,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @Override
-    protected void assertExpectationsGiven(final HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(final HapiSpec spec) throws Throwable {
         if (assertNothing) {
             return;
         }
@@ -537,7 +551,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         assertChildRecords(spec, childRecords);
     }
 
-    private void assertCorrectRecord(final HapiApiSpec spec, final TransactionRecord actualRecord)
+    private void assertCorrectRecord(final HapiSpec spec, final TransactionRecord actualRecord)
             throws Throwable {
         assertPriority(spec, actualRecord);
         if (scheduled || assertOnlyPriority) {
@@ -844,7 +858,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     @SuppressWarnings("java:S1874")
-    protected void submitWith(final HapiApiSpec spec, final Transaction payment)
+    protected void submitWith(final HapiSpec spec, final Transaction payment)
             throws InvalidProtocolBufferException {
         final Query query = getRecordQuery(spec, payment, false);
         response =
@@ -873,7 +887,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         assertEquals(count, observedCount, "Wrong # of non-staking records");
                     }
                 });
+        final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
+        final List<TokenID> tokenCreations =
+                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
+            if (rec.getReceipt().hasAccountID() && creations != null) {
+                creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+            }
+            if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
+                tokenCreations.add(rec.getReceipt().getTokenID());
+            }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
                         .saveAccountId(
@@ -893,6 +916,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         rec.getReceipt()::getAccountID);
             }
         }
+        if (createdIdsObserver != null) {
+            createdIdsObserver.accept(creations);
+        }
+        if (createdTokenIdsObserver != null) {
+            createdTokenIdsObserver.accept(tokenCreations);
+        }
 
         if (verboseLoggingOn) {
             if (format.isPresent()) {
@@ -900,9 +929,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             } else {
                 final var fee = rcd.getTransactionFee();
                 final var rates = spec.ratesProvider();
-                final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
-                LOG.info(
-                        "{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
+                if (rates.hasRateSet()) {
+                    final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
+                    LOG.info(
+                            "{}Record (charged ${}): {}",
+                            spec::logPrefix,
+                            () -> priceInUsd,
+                            () -> rcd);
+                }
                 LOG.info(
                         "{}  And {} child record{}: {}",
                         spec::logPrefix,
@@ -951,8 +985,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @Override
-    protected long lookupCostWith(final HapiApiSpec spec, final Transaction payment)
-            throws Throwable {
+    protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
         final Query query = getRecordQuery(spec, payment, true);
         final Response response =
                 spec.clients()
@@ -962,7 +995,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private Query getRecordQuery(
-            final HapiApiSpec spec, final Transaction payment, final boolean costOnly) {
+            final HapiSpec spec, final Transaction payment, final boolean costOnly) {
         TransactionID txnId =
                 useDefaultTxnId
                         ? defaultTxnId
@@ -991,7 +1024,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @Override
-    protected long costOnlyNodePayment(final HapiApiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(final HapiSpec spec) throws Throwable {
         return spec.fees()
                 .forOp(
                         HederaFunctionality.TransactionGetRecord,

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
@@ -32,5 +33,12 @@ public final class CryptoServiceImpl implements CryptoService {
         Objects.requireNonNull(ctx);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store, ctx);
+    }
+
+    @NonNull
+    @Override
+    public CryptoQueryHandler createQueryHandler(@NonNull final States states) {
+        Objects.requireNonNull(states);
+        return new CryptoQueryHandlerImpl(states);
     }
 }

@@ -64,6 +64,8 @@ import static org.mockito.Mockito.when;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -148,6 +150,7 @@ class CreatePrecompileTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private TokenCreateTransactionBody tokenCreateTransactionBody;
@@ -267,6 +270,7 @@ class CreatePrecompileTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -1702,7 +1706,9 @@ class CreatePrecompileTest {
         assertNull(result.getOutput());
 
         // and
-        verify(frame).setRevertReason(any());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         verifyNoInteractions(createLogic);
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never())

@@ -38,8 +38,8 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -77,6 +77,8 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -189,7 +191,7 @@ class AutoCreationLogicTest {
                         DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
-        assertTrue(subject.getTokenAliasMap().isEmpty());
+        Assertions.assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
     @Test
@@ -199,11 +201,13 @@ class AutoCreationLogicTest {
         final var key = Key.parseFrom(ecdsaKeyBytes);
         final var evmAddress =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(
+                        EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
+        final var pretendAddress = Address.BLS12_G2MUL.toArray();
+        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -216,6 +220,7 @@ class AutoCreationLogicTest {
         assertEquals(initialTransfer, input.getNewBalance());
         verify(aliasManager).link(ecKeyAlias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(ecKeyAlias);
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(pretendAddress));
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
@@ -235,7 +240,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -282,7 +287,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -328,7 +333,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -427,15 +432,12 @@ class AutoCreationLogicTest {
 
         final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecords(
-                (txnBody, txnRecord) -> {
-                    recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord);
-                },
-                false);
+                (txnBody, txnRecord) ->
+                        recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
 
-        verify(sigImpactHistorian, never()).markAliasChanged(edKeyAlias);
-        verify(sigImpactHistorian, never()).markEntityChanged(createdNum.longValue());
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
 

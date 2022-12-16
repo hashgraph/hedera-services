@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -76,7 +77,10 @@ class ContractCallTransitionLogicTest {
     private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
     private final ByteString alias =
             ByteStringUtils.wrapUnsafely(
-                    new byte[] {1, 2, 3, 5, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12});
+                    new byte[] {
+                        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49,
+                        50
+                    });
     private long gas = 1_234;
     private long sent = 1_234L;
     private static final long maxGas = 666_666L;
@@ -181,6 +185,7 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
+        senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(
                         accountStore.loadContract(
@@ -520,6 +525,50 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
+    void verifyEthLazyCreateThrowsWhenEvmAddressInBodyIsNotValid() {
+        // setup:
+        var op =
+                TransactionBody.newBuilder()
+                        .setContractCall(
+                                ContractCallTransactionBody.newBuilder()
+                                        .setGas(gas)
+                                        .setAmount(sent)
+                                        .setContractID(
+                                                ContractID.newBuilder()
+                                                        .setEvmAddress(
+                                                                ByteStringUtils.wrapUnsafely(
+                                                                        "randomBytes".getBytes()))
+                                                        .build()));
+        contractCallTxn = op.build();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely("randomBytes".getBytes())))
+                .willReturn(EntityNum.MISSING_NUM)
+                .willReturn(EntityNum.fromLong(666L));
+        given(properties.isAutoCreationEnabled()).willReturn(true);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        // when:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
+
+        // then:
+        verify(recordService, never()).externaliseEvmCallTransaction(any());
+        verify(worldState, never()).getCreatedContractIds();
+        verify(txnCtx, never()).setTargetedContract(IdUtils.asContract("0.0." + 666L));
+        verifyNoMoreInteractions(evmTxProcessor);
+    }
+
+    @Test
     void verifyAccountStoreNotQueriedForTokenAddress() {
         // setup:
         givenValidTxnCtx();
@@ -698,6 +747,40 @@ class ContractCallTransitionLogicTest {
 
         // expect:
         assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
+    void verifyCallEthFailsWhenValueLargerThanBalance() {
+        // setup:
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1233L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
+                .willReturn(contractAccount);
+
+        given(
+                        evmTxProcessor.executeEth(
+                                any(), any(), anyLong(), anyLong(), any(), any(), any(), any(),
+                                anyLong()))
+                .willThrow(InvalidTransactionException.class);
+        // then:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
     }
 
     private void givenValidTxnCtx() {

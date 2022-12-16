@@ -43,21 +43,45 @@ public class StatesImpl implements States {
     @Override
     public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
-
-        if (stateKey.equals("ACCOUNTS")) {
-            final var accounts = children.accounts();
-            return (State<K, V>)
-                    (accounts.areOnDisk()
-                            ? new OnDiskStateImpl<>(
-                                    stateKey, accounts.getOnDiskAccounts(), children.signedAt())
-                            : new InMemoryStateImpl<>(
-                                    stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
-        } else if (stateKey.equals("ALIASES")) {
-            final var state =
-                    new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
-            return (StateBase) state;
-        } else {
-            throw new NotImplementedException(
+        // FUTURE: This is a temporary implementation and will be replaced in the future
+        switch (stateKey) {
+            case "ACCOUNTS" -> {
+                final var accounts = children.accounts();
+                return (State<K, V>)
+                        (accounts.areOnDisk()
+                                ? new OnDiskStateImpl<>(
+                                        stateKey, accounts.getOnDiskAccounts(), children.signedAt())
+                                : new InMemoryStateImpl<>(
+                                        stateKey,
+                                        accounts.getInMemoryAccounts(),
+                                        children.signedAt()));
+            }
+            case "ALIASES" -> {
+                final var state =
+                        new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
+                return (StateBase) state;
+            }
+            case "SCHEDULES-BY-EQUALITY" -> {
+                final var state =
+                        new InMemoryStateImpl<>(
+                                stateKey, children.schedules().byEquality(), children.signedAt());
+                return (StateBase) state;
+            }
+            case "SCHEDULES-BY-ID" -> {
+                final var state =
+                        new InMemoryStateImpl<>(
+                                stateKey, children.schedules().byId(), children.signedAt());
+                return (StateBase) state;
+            }
+            case "SCHEDULES-BY-EXPIRY" -> {
+                final var state =
+                        new InMemoryStateImpl<>(
+                                stateKey,
+                                children.schedules().byExpirationSecond(),
+                                children.signedAt());
+                return (StateBase) state;
+            }
+            default -> throw new NotImplementedException(
                     String.format("State key %s not supported", stateKey));
         }
     }

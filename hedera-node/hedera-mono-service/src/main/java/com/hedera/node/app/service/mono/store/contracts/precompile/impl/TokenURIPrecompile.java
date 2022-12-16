@@ -15,34 +15,24 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.STRING;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function TOKEN_URI_NFT_FUNCTION =
-            new Function("tokenURI(uint256)", STRING);
-    private static final Bytes TOKEN_URI_NFT_SELECTOR =
-            Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
-    private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create(UINT256);
+public class TokenURIPrecompile extends AbstractReadOnlyPrecompile
+        implements EvmTokenURIPrecompile {
+
     private NftId nftId;
 
     public TokenURIPrecompile(
@@ -50,8 +40,9 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -73,15 +64,10 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
                 nftId, "`body` method should be called before `getSuccessResultsFor`");
 
         final var metadata = ledgers.metadataOf(nftId);
-        return encoder.encodeTokenUri(metadata);
+        return evmEncoder.encodeTokenUri(metadata);
     }
 
     public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
-
-        final var tokenId = (BigInteger) decodedArguments.get(0);
-
-        return new OwnerOfAndTokenURIWrapper(tokenId.longValueExact());
+        return EvmTokenURIPrecompile.decodeTokenUriNFT(input);
     }
 }

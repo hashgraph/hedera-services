@@ -21,9 +21,6 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.node.app.service.mono.store.contracts.WorldLedgers.ECDSA_KEY_ALIAS_PREFIX;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -31,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
@@ -52,7 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -64,7 +60,7 @@ import org.hyperledger.besu.datatypes.Address;
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support
  * the Hedera Token Service. The memo field, for example, is not yet present.
  */
-public class Account implements HederaEvmAccount {
+public class Account extends HederaEvmAccount {
     private Id id;
 
     private long expiry;
@@ -74,7 +70,6 @@ public class Account implements HederaEvmAccount {
     private boolean isReceiverSigRequired = false;
     private long ownedNfts;
     private long autoRenewSecs;
-    private ByteString alias = ByteString.EMPTY;
     private JKey key;
     private String memo = "";
     private Id proxy;
@@ -88,10 +83,12 @@ public class Account implements HederaEvmAccount {
     private long ethereumNonce;
 
     public Account(Id id) {
+        super(id.asEvmAddress());
         this.id = id;
     }
 
     public Account(final ByteString alias) {
+        super(Address.fromHexString(Hex.toHexString(alias.toByteArray())));
         this.alias = alias;
     }
 
@@ -146,25 +143,6 @@ public class Account implements HederaEvmAccount {
     public void decrementNumTreasuryTitles() {
         validateTrue(numTreasuryTitles > 0, FAIL_INVALID);
         numTreasuryTitles--;
-    }
-
-    public Address canonicalAddress() {
-        if (alias.isEmpty()) {
-            return id.asEvmAddress();
-        } else {
-            if (alias.size() == EVM_ADDRESS_SIZE) {
-                return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
-                    && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                var addressBytes =
-                        EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                return addressBytes == null
-                        ? id.asEvmAddress()
-                        : Address.wrap(Bytes.wrap(addressBytes));
-            } else {
-                return id.asEvmAddress();
-            }
-        }
     }
 
     public int getAutoAssociationMetadata() {
@@ -401,14 +379,6 @@ public class Account implements HederaEvmAccount {
 
     public void setProxy(final Id proxy) {
         this.proxy = proxy;
-    }
-
-    public ByteString getAlias() {
-        return alias;
-    }
-
-    public void setAlias(final ByteString alias) {
-        this.alias = alias;
     }
 
     public Map<EntityNum, Long> getCryptoAllowances() {

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -24,15 +24,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue2098Spec extends HapiApiSuite {
+public class Issue2098Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2098Spec.class);
 
     public static void main(String... args) {
@@ -40,9 +40,9 @@ public class Issue2098Spec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     queryApiPermissionsChangeImmediately(),
                     txnApiPermissionsChangeImmediately(),
                     adminsCanQueryNoMatterPermissions(),
@@ -50,7 +50,7 @@ public class Issue2098Spec extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec txnApiPermissionsChangeImmediately() {
+    private HapiSpec txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate("civilian"))
                 .when(
@@ -68,7 +68,7 @@ public class Issue2098Spec extends HapiApiSuite {
                                 .payingWith("civilian"));
     }
 
-    private HapiApiSpec queryApiPermissionsChangeImmediately() {
+    private HapiSpec queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate("civilian"), createTopic("misc"))
                 .when(
@@ -85,7 +85,7 @@ public class Issue2098Spec extends HapiApiSuite {
                         getTopicInfo("misc").payingWith("civilian"));
     }
 
-    private HapiApiSpec adminsCanQueryNoMatterPermissions() {
+    private HapiSpec adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate("civilian"), createTopic("misc"))
                 .when(
@@ -102,7 +102,7 @@ public class Issue2098Spec extends HapiApiSuite {
                                 .overridingProps(Map.of("getTopicInfo", "0-*")));
     }
 
-    private HapiApiSpec adminsCanTransactNoMatterPermissions() {
+    private HapiSpec adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate("civilian"))
                 .when(

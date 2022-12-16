@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Function;
@@ -46,7 +46,7 @@ public class EqualityAssertsProviderFactory {
                 };
     }
 
-    public static <T> ErroringAssertsProvider<T> shouldBe(Function<HapiApiSpec, T> expectation) {
+    public static <T> ErroringAssertsProvider<T> shouldBe(Function<HapiSpec, T> expectation) {
         return spec ->
                 actual -> {
                     try {

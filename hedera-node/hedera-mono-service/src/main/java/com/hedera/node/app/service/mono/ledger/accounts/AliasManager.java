@@ -22,8 +22,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -56,7 +56,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     private static final String NON_TRANSACTIONAL_MSG =
             "Base alias manager does not buffer changes";
     private static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
-            EthTxSigs::recoverAddressFromPubKey;
+            EthSigsUtils::recoverAddressFromPubKey;
 
     private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -257,7 +257,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
-    private byte[] keyAliasToEVMAddress(final ByteString alias) {
+    public byte[] keyAliasToEVMAddress(final ByteString alias) {
         try {
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);
