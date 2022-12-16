@@ -36,8 +36,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -50,6 +52,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
+    private final Predicate<Address> isNativePrecompileCheck;
     private InfrastructureFactory infrastructureFactory;
 
     public HederaMessageCallProcessor(
@@ -57,6 +60,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
+        isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
     }
 
     public HederaMessageCallProcessor(
@@ -64,7 +68,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
             final InfrastructureFactory infrastructureFactory) {
-        super(evm, precompiles, hederaPrecompileList);
+        this(evm, precompiles, hederaPrecompileList);
         this.infrastructureFactory = infrastructureFactory;
     }
 
@@ -72,15 +76,15 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     public void start(final MessageFrame frame, final OperationTracer operationTracer) {
         super.start(frame, operationTracer);
 
-        final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
-        final var nonPrecompileResultState = frame.getState();
-        if (nonPrecompileResultState != EXCEPTIONAL_HALT
-                && nonPrecompileResultState != CODE_EXECUTING) {
-            // Pre-compile execution doesn't set the state to CODE_EXECUTING after start()
+        // potential precompile execution will be done after super.start(),
+        // so trace results here
+        final var contractAddress = frame.getContractAddress();
+        if (isNativePrecompileCheck.test(contractAddress)
+                || hederaPrecompiles.containsKey(contractAddress)) {
             ((HederaOperationTracer) operationTracer)
                     .tracePrecompileResult(
                             frame,
-                            hederaPrecompile != null
+                            hederaPrecompiles.containsKey(contractAddress)
                                     ? ContractActionType.SYSTEM
                                     : ContractActionType.PRECOMPILE);
         }
@@ -133,7 +137,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
                 // track auto-creation preceding child record
                 final var recordSubmissions =
                         infrastructureFactory.newRecordSubmissionsScopedTo(updater);
-                autoCreationLogic.submitRecords(recordSubmissions, false);
+                autoCreationLogic.submitRecords(recordSubmissions);
                 // track the lazy account so it is accessible to the EVM
                 updater.trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));

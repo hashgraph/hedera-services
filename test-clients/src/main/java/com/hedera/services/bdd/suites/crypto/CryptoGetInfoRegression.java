@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -40,9 +40,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
@@ -51,7 +51,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoGetInfoRegression extends HapiApiSuite {
+public class CryptoGetInfoRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetInfoRegression.class);
 
     public static void main(String... args) {
@@ -64,9 +64,9 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     failsForDeletedAccount(),
                     failsForMissingAccount(),
                     failsForMissingPayment(),
@@ -79,7 +79,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
     }
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
-    private HapiApiSpec fetchesOnlyALimitedTokenAssociations() {
+    private HapiSpec fetchesOnlyALimitedTokenAssociations() {
         final int infoLimit = 3;
         final var account = "test";
         final var aKey = "tokenKey";
@@ -194,7 +194,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                         getAccountInfo(account).hasTokenRelationShipCount(infoLimit).logged());
     }
 
-    private HapiApiSpec succeedsNormally() {
+    private HapiSpec succeedsNormally() {
         long balance = 1_234_567L;
         long autoRenew = 6999999L;
         long sendThresh = 1_111L;
@@ -241,14 +241,14 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec failsForMissingAccount() {
+    private HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
                 .then(getAccountInfo("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec failsForMalformedPayment() {
+    private HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -258,7 +258,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec failsForUnfundablePayment() {
+    private HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -270,7 +270,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    private HapiApiSpec failsForInsufficientPayment() {
+    private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
                 .when()
@@ -280,7 +280,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    private HapiApiSpec failsForMissingPayment() {
+    private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
@@ -290,7 +290,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiApiSpec failsForDeletedAccount() {
+    private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))
                 .when(cryptoDelete("toBeDeleted").transfer(GENESIS))

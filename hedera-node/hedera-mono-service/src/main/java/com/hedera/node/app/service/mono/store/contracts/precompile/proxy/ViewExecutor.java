@@ -104,8 +104,7 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -115,8 +114,7 @@ public class ViewExecutor {
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -127,15 +125,14 @@ public class ViewExecutor {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var nftID =
                         NftID.newBuilder()
-                                .setTokenID(wrapper.tokenID())
+                                .setTokenID(wrapper.token())
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
                 final var nonFungibleTokenInfo =
@@ -162,20 +159,20 @@ public class ViewExecutor {
                         GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
+                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.token());
                 return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
                 final var wrapper = GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.token());
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
@@ -190,8 +187,7 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-                final var customFees =
-                        ledgers.infoForTokenCustomFees(wrapper.tokenID()).orElse(null);
+                final var customFees = ledgers.infoForTokenCustomFees(wrapper.token()).orElse(null);
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -201,29 +197,27 @@ public class ViewExecutor {
                 final var wrapper = IsTokenPrecompile.decodeIsToken(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isToken =
-                        ledgers.isTokenAddress(
-                                EntityIdUtils.asTypedEvmAddress((wrapper.tokenID())));
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress((wrapper.token())));
                 return encoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {
                 final var wrapper = GetTokenTypePrecompile.decodeGetTokenType(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var tokenType = ledgers.typeOf(wrapper.tokenID());
+                final var tokenType = ledgers.typeOf(wrapper.token());
                 return encoder.encodeGetTokenType(tokenType.ordinal());
             }
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);

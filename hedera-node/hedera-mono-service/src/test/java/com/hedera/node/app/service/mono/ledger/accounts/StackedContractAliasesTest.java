@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,9 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Map;
@@ -122,26 +119,9 @@ class StackedContractAliasesTest {
     }
 
     @Test
-    void refusesToUnLinkFromByteString() {
-        final var bytes = "bytes".getBytes();
-        final var alias = ByteStringUtils.wrapUnsafely(bytes);
-        assertThrows(UnsupportedOperationException.class, () -> subject.unlink(alias));
-    }
-
-    @Test
-    void refusesToForgetEvmAddressFromByteString() {
-        final var bytes = "bytes".getBytes();
-        final var alias = ByteStringUtils.wrapUnsafely(bytes);
-        assertThrows(UnsupportedOperationException.class, () -> subject.forgetEvmAddress(alias));
-    }
-
-    @Test
-    void refusesToMaybeLinkEvmAddress() {
-        final var bytes = "bytes".getBytes();
-        final var key = new JECDSASecp256k1Key(bytes);
+    void refusesToLinkFromMirrorAddress() {
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.maybeLinkEvmAddress(key, EntityNum.MISSING_NUM));
+                IllegalArgumentException.class, () -> subject.link(mirrorAddress, mirrorAddress));
     }
 
     @Test
@@ -171,27 +151,6 @@ class StackedContractAliasesTest {
     void linkingAddsToMap() {
         subject.link(nonMirrorAddress, mirrorAddress);
         assertSame(mirrorAddress, subject.changedLinks().get(nonMirrorAddress));
-    }
-
-    @Test
-    void linkingWithByteStringAddsToMap() {
-        subject.link(
-                ByteStringUtils.wrapUnsafely(nonMirrorAddress.toArrayUnsafe()),
-                EntityNum.fromEvmAddress(mirrorAddress));
-        assertEquals(mirrorAddress, subject.changedLinks().get(nonMirrorAddress));
-    }
-
-    @Test
-    void linkingWithByteStringWithSizeDifferentThanEvmAddressThrows() {
-        final var bytes = new byte[EVM_ADDRESS_SIZE + 1];
-        final var alias = ByteStringUtils.wrapUnsafely(bytes);
-        final var entityNum = EntityNum.fromEvmAddress(mirrorAddress);
-        assertThrows(UnsupportedOperationException.class, () -> subject.link(alias, entityNum));
-
-        final var bytes2 = new byte[EVM_ADDRESS_SIZE - 1];
-        final var alias2 = ByteStringUtils.wrapUnsafely(bytes2);
-        final var entityNum2 = EntityNum.fromEvmAddress(mirrorAddress);
-        assertThrows(UnsupportedOperationException.class, () -> subject.link(alias2, entityNum2));
     }
 
     @Test

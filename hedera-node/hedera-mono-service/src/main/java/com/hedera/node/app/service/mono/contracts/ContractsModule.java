@@ -22,7 +22,10 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPre
 import static com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -36,6 +39,7 @@ import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.store.StoresModule;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -57,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.EVM;
@@ -200,5 +205,26 @@ public interface ContractsModule {
             Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(
                 gasCalculator, evm, true, List.copyOf(validationRules), 1);
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<CallLocalEvmTxProcessor> provideCallLocalEvmTxProcessorFactory(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager) {
+        return () ->
+                new CallLocalEvmTxProcessor(
+                        codeCache,
+                        livePricesSource,
+                        dynamicProperties,
+                        gasCalculator,
+                        mcps,
+                        ccps,
+                        aliasManager);
     }
 }

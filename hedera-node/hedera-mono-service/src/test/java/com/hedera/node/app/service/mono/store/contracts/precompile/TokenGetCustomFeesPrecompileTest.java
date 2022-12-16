@@ -34,6 +34,8 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -51,7 +53,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
@@ -90,6 +91,7 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -142,6 +144,7 @@ class TokenGetCustomFeesPrecompileTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -165,7 +168,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper<>(tokenMerkleId);
         final var fractionalFee = getFractionalFee();
         final Bytes pretendArguments =
                 Bytes.concatenate(
@@ -202,7 +205,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper<>(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
@@ -241,7 +244,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     @Test
@@ -258,7 +261,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     private void givenMinimalFrameContext() {

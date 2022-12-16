@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -184,6 +185,7 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
+        senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(
                         accountStore.loadContract(
@@ -701,6 +703,40 @@ class ContractCallTransitionLogicTest {
 
         // expect:
         assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
+    void verifyCallEthFailsWhenValueLargerThanBalance() {
+        // setup:
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1233L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
+                .willReturn(contractAccount);
+
+        given(
+                        evmTxProcessor.executeEth(
+                                any(), any(), anyLong(), anyLong(), any(), any(), any(), any(),
+                                anyLong()))
+                .willThrow(InvalidTransactionException.class);
+        // then:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
     }
 
     private void givenValidTxnCtx() {

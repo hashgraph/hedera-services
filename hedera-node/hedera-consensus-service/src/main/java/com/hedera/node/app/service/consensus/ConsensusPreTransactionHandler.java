@@ -17,6 +17,7 @@ package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -33,9 +34,10 @@ public interface ConsensusPreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the topic creation
      */
-    TransactionMetadata preHandleCreateTopic(TransactionBody txn);
+    TransactionMetadata preHandleCreateTopic(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -45,9 +47,10 @@ public interface ConsensusPreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the topic update
      */
-    TransactionMetadata preHandleUpdateTopic(TransactionBody txn);
+    TransactionMetadata preHandleUpdateTopic(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -57,9 +60,10 @@ public interface ConsensusPreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the topic delete
      */
-    TransactionMetadata preHandleDeleteTopic(TransactionBody txn);
+    TransactionMetadata preHandleDeleteTopic(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -69,7 +73,8 @@ public interface ConsensusPreTransactionHandler extends PreTransactionHandler {
      *
      * @param txn a transaction with a {@link
      *     com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody}
+     * @param payer payer of the transaction
      * @return the metadata for the topic message submission
      */
-    TransactionMetadata preHandleSubmitMessage(TransactionBody txn);
+    TransactionMetadata preHandleSubmitMessage(TransactionBody txn, AccountID payer);
 }

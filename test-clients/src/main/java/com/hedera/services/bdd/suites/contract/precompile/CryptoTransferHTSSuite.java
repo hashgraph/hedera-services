@@ -15,9 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -28,8 +27,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -53,13 +50,9 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransferToAlias;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -67,15 +60,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -85,16 +74,14 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -103,22 +90,18 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferHTSSuite extends HapiApiSuite {
+public class CryptoTransferHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String FUNGIBLE_TOKEN = "TokenA";
     private static final String NFT_TOKEN = "Token_NFT";
-    private static final String NFT_TOKEN2 = "Token_NFT2";
-    private static final String TOKEN_TREASURY = "treasury";
+
     private static final String RECEIVER = "receiver";
     private static final String RECEIVER2 = "receiver2";
     private static final String SENDER = "sender";
     private static final String SENDER2 = "sender2";
-    private static final String NOT_SUPPORTED_TXN = "notSupportedTxn";
-    private static final String TRANSFER_TXN = "transferTxn";
-    private static final String TRANSFER_TXN2 = "transferTxn2";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
@@ -147,51 +130,39 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
     private static final String RECEIVER_SIGNATURE = "receiverSignature";
     private static final String APPROVE_TXN = "approveTxn";
-    private static final String ALLOW_AUTO_ASSOCIATIONS_PROPERTY =
-            "contracts.allowAutoAssociations";
-    private static final String BASE_APPROVE_TXN = "baseApproveTxn";
-    private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
-    private static final String FIRST_MEMO = "firstMemo";
-    private static final String SECOND_MEMO = "secondMemo";
 
     public static void main(final String... args) {
-        new CryptoTransferHTSSuite().runSuiteSync();
+        new CryptoTransferHTSSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    nonNestedCryptoTransferForFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                    nonNestedCryptoTransferForNonFungibleToken(),
-                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-                    hapiTransferFromForFungibleToken(),
-                    hapiTransferFromForNFT(),
-                    cryptoTransferNFTsWithCustomFeesMixedScenario(),
-                    hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
-                    hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
-                    hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                    hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                    hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                    hapiTransferFromForNFT(),
-                    transferFungibleToNonExistingEvmAddress(),
-                    transferNftToNonExistingEvmAddress(),
-                    transferFromForFungibleTokenToEVMAddressAlias(),
-                    transferFromForNFTToEVMAddressAlias()
-                });
+                nonNestedCryptoTransferForFungibleToken(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                nonNestedCryptoTransferForNonFungibleToken(),
+                nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                repeatedTokenIdsAreAutomaticallyConsolidated(),
+                activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                hapiTransferFromForFungibleToken(),
+                hapiTransferFromForNFT(),
+                cryptoTransferNFTsWithCustomFeesMixedScenario(),
+                hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
+                hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
-    private HapiApiSpec hapiTransferFromForFungibleToken() {
+    private HapiSpec hapiTransferFromForFungibleToken() {
+        final var theSpender = "spender";
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -203,6 +174,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5),
+                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
@@ -220,13 +192,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         FUNGIBLE_TOKEN,
                                         HTS_TRANSFER_FROM_CONTRACT,
                                         allowance)
-                                .via(BASE_APPROVE_TXN)
+                                .via("baseApproveTxn")
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN,
                                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -305,7 +277,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS),
                                                 getAccountDetails(OWNER)
                                                         .payingWith(GENESIS)
-                                                        .has(accountWith().noAllowances()),
+                                                        .has(accountDetailsWith().noAllowances()),
                                                 // no allowance left, should fail
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
@@ -465,7 +437,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    private HapiApiSpec hapiTransferFromForNFT() {
+    private HapiSpec hapiTransferFromForNFT() {
+        final var theSpender = "spender";
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         return defaultHapiSpec("hapiTransferFromForNFT")
@@ -474,6 +447,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5),
+                        cryptoCreate(theSpender).maxAutomaticTokenAssociations(5),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(5),
                         tokenCreate(NFT_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
@@ -491,7 +465,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         HTS_TRANSFER_FROM_CONTRACT,
                                         false,
                                         List.of(2L))
-                                .via(BASE_APPROVE_TXN)
+                                .via("baseApproveTxn")
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -612,7 +586,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
+    private HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
         final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
@@ -711,10 +685,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 2 * toSendEachTuple))));
     }
 
-    private HapiApiSpec nonNestedCryptoTransferForFungibleToken() {
+    private HapiSpec nonNestedCryptoTransferForFungibleToken() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
                 .given(
-                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER)
                                 .balance(2 * ONE_HUNDRED_HBARS)
@@ -765,17 +740,37 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN)
+                                                    .via(cryptoTransferTxn)
+                                                    .gas(GAS_TO_OFFER),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            TRANSFER_MULTIPLE_TOKENS,
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -0L),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                0L))
+                                                                                .build()
+                                                                    })
+                                                    .payingWith(GENESIS)
+                                                    .via("cryptoTransferZero")
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
+                        getTxnRecord("cryptoTransferZero").andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                cryptoTransferTxn,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -783,14 +778,17 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
+                                                                        .withStatus(SUCCESS))
+                                                        .gasUsed(14085L))
                                         .tokenTransfers(
                                                 SomeFungibleTransfers.changingFungibleBalances()
                                                         .including(FUNGIBLE_TOKEN, SENDER, -50)
                                                         .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
+    private HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers")
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -850,9 +848,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                     })
                                                     .gas(GAS_TO_OFFER)
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN));
+                                                    .via(cryptoTransferTxn));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 30),
@@ -860,7 +858,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                cryptoTransferTxn,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -877,7 +875,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 FUNGIBLE_TOKEN, RECEIVER2, 20))));
     }
 
-    private HapiApiSpec nonNestedCryptoTransferForNonFungibleToken() {
+    private HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
         return defaultHapiSpec("NonNestedCryptoTransferForNonFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -892,7 +892,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         cryptoTransfer(
                                         TokenMovement.movingUnique(NFT_TOKEN, 1)
@@ -930,10 +931,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN)
+                                                    .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -942,7 +943,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                "cryptoTransferTxn",
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -957,7 +958,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 NFT_TOKEN, SENDER, RECEIVER, 1L))));
     }
 
-    private HapiApiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
+    private HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
         return defaultHapiSpec("NonNestedCryptoTransferForMultipleNonFungibleTokens")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -975,7 +978,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER))
@@ -1024,10 +1028,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN)
+                                                    .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1040,7 +1044,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                cryptoTransferTxn,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1057,7 +1061,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 2L))));
     }
 
-    private HapiApiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
+    private HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleAndNonFungibleToken")
                 .given(
@@ -1080,7 +1085,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER))
@@ -1144,10 +1150,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                     .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN)
+                                                    .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
@@ -1160,7 +1166,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                cryptoTransferTxn,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1180,8 +1186,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 1L))));
     }
 
-    private HapiApiSpec
+    private HapiSpec
             nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
+        final var cryptoTransferTxn = "cryptoTransferTxn";
+
         return defaultHapiSpec(
                         "NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens")
                 .given(
@@ -1202,7 +1210,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
@@ -1280,10 +1289,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                     .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
-                                                    .via(CRYPTO_TRANSFER_TXN)
+                                                    .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
@@ -1302,7 +1311,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                CRYPTO_TRANSFER_TXN,
+                                cryptoTransferTxn,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1325,7 +1334,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 2L))));
     }
 
-    private HapiApiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
+    private HapiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
         final var revertedFungibleTransferTxn = "revertedFungibleTransferTxn";
         final var successfulFungibleTransferTxn = "successfulFungibleTransferTxn";
         final var revertedNftTransferTxn = "revertedNftTransferTxn";
@@ -1361,7 +1370,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
+                        mintToken(
+                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
@@ -1575,7 +1585,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                 2L))));
     }
 
-    private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
+    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
         return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithoutApproveFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -1744,7 +1754,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
@@ -1766,14 +1777,15 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then();
     }
 
-    private HapiApiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
+    private HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("TransferFromForNFTWithCustomFeesWithApproveForAll")
+        return defaultHapiSpec("CryptoTransferNFTsWithCustomFeesMixedScenario")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -1944,12 +1956,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                         .build())
                                                                         .build())
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE)
                                                         .gas(1_000_000L))))
                 .then();
     }
 
-    private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
+    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
         return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithApproveForAll")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -2140,7 +2153,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 HTS_TRANSFER_FROM_NFT,
@@ -2161,12 +2175,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE))))
                 .then();
     }
 
-    private HapiApiSpec
-            hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .given(
@@ -2358,7 +2372,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 HTS_TRANSFER_FROM_NFT,
@@ -2379,11 +2394,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE))))
                 .then();
     }
 
-    private HapiApiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
+    private HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -2508,12 +2524,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then();
     }
 
-    private HapiApiSpec
+    private HapiSpec
             hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
@@ -2657,475 +2674,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(
+                                                                RECEIVER_SIGNATURE))))
                 .then();
-    }
-
-    private HapiApiSpec transferFungibleToNonExistingEvmAddress() {
-        final var FUNGIBLE_TOKEN_2 = "ftnt";
-        return defaultHapiSpec("transferFungibleToNonExistingEvmAddress")
-                .given(
-                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
-                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(TOTAL_SUPPLY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN_2)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(TOTAL_SUPPLY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
-                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN_2)),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
-                        cryptoTransfer(
-                                moving(200, FUNGIBLE_TOKEN_2).between(TOKEN_TREASURY, SENDER)),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
-                                    final var token2 = spec.registry().getTokenID(FUNGIBLE_TOKEN_2);
-                                    final var sender = spec.registry().getAccountID(SENDER);
-                                    final var amountToBeSent = 50L;
-
-                                    allRunFor(
-                                            spec,
-                                            newKeyNamed(DELEGATE_KEY)
-                                                    .shape(
-                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                                                    sigs(ON, CONTRACT))),
-                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent),
-                                                                                            accountAmountAlias(
-                                                                                                    addressBytes,
-                                                                                                    amountToBeSent))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .via(NOT_SUPPORTED_TXN)
-                                                    .gas(GAS_TO_OFFER),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                                            UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent),
-                                                                                            accountAmountAlias(
-                                                                                                    addressBytes,
-                                                                                                    amountToBeSent))
-                                                                                    .build(),
-                                                                            tokenTransferList()
-                                                                                    .forToken(
-                                                                                            token2)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -amountToBeSent),
-                                                                                            accountAmountAlias(
-                                                                                                    addressBytes,
-                                                                                                    amountToBeSent))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .via(TRANSFER_TXN)
-                                                    .gas(GAS_TO_OFFER),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withAccountAmounts(
-                                                                                            accountAmount(
-                                                                                                    sender,
-                                                                                                    -1L),
-                                                                                            accountAmountAlias(
-                                                                                                    addressBytes,
-                                                                                                    1L))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .via(TRANSFER_TXN2)
-                                                    .gas(GAS_TO_OFFER),
-                                            childRecordsCheck(
-                                                    NOT_SUPPORTED_TXN,
-                                                    CONTRACT_REVERT_EXECUTED,
-                                                    recordWith().status(NOT_SUPPORTED)),
-                                            childRecordsCheck(
-                                                    TRANSFER_TXN,
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS),
-                                                    recordWith().status(SUCCESS)),
-                                            childRecordsCheck(
-                                                    TRANSFER_TXN2,
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS)),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .has(
-                                                            AccountInfoAsserts.accountWith()
-                                                                    .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
-                                                                    .autoRenew(
-                                                                            THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(LAZY_MEMO)),
-                                            getAliasedAccountBalance(evmAddressBytes)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 51)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN_2, 50)
-                                                    .logged());
-                                }))
-                .then(resetToDefault(LAZY_CREATION_ENABLED));
-    }
-
-    private HapiApiSpec transferNftToNonExistingEvmAddress() {
-        return defaultHapiSpec("transferNftToNonExistingEvmAddress")
-                .given(
-                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(SENDER)
-                                .balance(10 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(5)
-                                .key(MULTI_KEY),
-                        cryptoCreate(RECEIVER)
-                                .balance(2 * ONE_HUNDRED_HBARS)
-                                .receiverSigRequired(true)
-                                .maxAutomaticTokenAssociations(5),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NFT_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .treasury(SENDER)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY),
-                        tokenCreate(NFT_TOKEN2)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .treasury(SENDER)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(NFT_TOKEN, List.of(META1, META2)),
-                        mintToken(NFT_TOKEN2, List.of(META3, META4)),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    final var token = spec.registry().getTokenID(NFT_TOKEN);
-                                    final var token2 = spec.registry().getTokenID(NFT_TOKEN2);
-                                    final var sender = spec.registry().getAccountID(SENDER);
-
-                                    allRunFor(
-                                            spec,
-                                            newKeyNamed(DELEGATE_KEY)
-                                                    .shape(
-                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
-                                                                    sigs(ON, CONTRACT))),
-                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransferToAlias(
-                                                                                                    sender,
-                                                                                                    addressBytes,
-                                                                                                    1L))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .via(NOT_SUPPORTED_TXN)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(GAS_TO_OFFER),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                                            UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                                            contractCall(
-                                                            CONTRACT,
-                                                            "transferMultipleTokens",
-                                                            tokenTransferLists()
-                                                                    .withTokenTransferList(
-                                                                            tokenTransferList()
-                                                                                    .forToken(token)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransferToAlias(
-                                                                                                    sender,
-                                                                                                    addressBytes,
-                                                                                                    1L))
-                                                                                    .build(),
-                                                                            tokenTransferList()
-                                                                                    .forToken(
-                                                                                            token2)
-                                                                                    .withNftTransfers(
-                                                                                            nftTransferToAlias(
-                                                                                                    sender,
-                                                                                                    addressBytes,
-                                                                                                    1L))
-                                                                                    .build())
-                                                                    .build())
-                                                    .payingWith(GENESIS)
-                                                    .via(TRANSFER_TXN)
-                                                    .gas(GAS_TO_OFFER),
-                                            childRecordsCheck(
-                                                    NOT_SUPPORTED_TXN,
-                                                    CONTRACT_REVERT_EXECUTED,
-                                                    recordWith().status(NOT_SUPPORTED)),
-                                            childRecordsCheck(
-                                                    TRANSFER_TXN,
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS),
-                                                    recordWith().status(SUCCESS)),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .has(
-                                                            AccountInfoAsserts.accountWith()
-                                                                    .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
-                                                                    .autoRenew(
-                                                                            THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(LAZY_MEMO)),
-                                            getAliasedAccountBalance(evmAddressBytes)
-                                                    .hasTokenBalance(NFT_TOKEN, 1)
-                                                    .hasTokenBalance(NFT_TOKEN2, 1)
-                                                    .logged());
-                                }))
-                .then(resetToDefault(LAZY_CREATION_ENABLED));
-    }
-
-    private HapiApiSpec transferFromForFungibleTokenToEVMAddressAlias() {
-        final var allowance = 10L;
-        final var successfulTransferFromTxn = "txn";
-        return defaultHapiSpec("transferFromForFungibleTokenToEVMAddressAlias")
-                .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(5),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(10L)
-                                .maxSupply(1000L)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(OWNER),
-                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
-                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addTokenAllowance(
-                                        OWNER,
-                                        FUNGIBLE_TOKEN,
-                                        HTS_TRANSFER_FROM_CONTRACT,
-                                        allowance)
-                                .via(BASE_APPROVE_TXN)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .fee(ONE_HBAR),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(
-                                        accountWith()
-                                                .tokenAllowancesContaining(
-                                                        FUNGIBLE_TOKEN,
-                                                        HTS_TRANSFER_FROM_CONTRACT,
-                                                        allowance)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final ByteString alias =
-                                            ByteStringUtils.wrapUnsafely(addressBytes);
-                                    allRunFor(
-                                            spec,
-                                            // transfer allowance/2 amount
-                                            contractCall(
-                                                            HTS_TRANSFER_FROM_CONTRACT,
-                                                            HTS_TRANSFER_FROM,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            FUNGIBLE_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            OWNER))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    addressBytes),
-                                                            BigInteger.valueOf(allowance / 2))
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via(successfulTransferFromTxn)
-                                                    .hasKnownStatus(SUCCESS),
-                                            childRecordsCheck(
-                                                    successfulTransferFromTxn,
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_TRANSFER_FROM)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)))),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .logged()
-                                                    .has(
-                                                            AccountInfoAsserts.accountWith()
-                                                                    .hasEmptyKey()
-                                                                    .evmAddressAlias(alias)
-                                                                    .autoRenew(
-                                                                            THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(LAZY_MEMO)),
-                                            getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, allowance / 2)
-                                                    .logged());
-                                }))
-                .then(resetToDefault(LAZY_CREATION_ENABLED));
-    }
-
-    private HapiApiSpec transferFromForNFTToEVMAddressAlias() {
-        return defaultHapiSpec("transferFromForNFTToEVMAddressAlias")
-                .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(5),
-                        tokenCreate(NFT_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .treasury(OWNER)
-                                .initialSupply(0L)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
-                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        mintToken(NFT_TOKEN, List.of(META1, META2)),
-                        cryptoApproveAllowance()
-                                .payingWith(DEFAULT_PAYER)
-                                .addNftAllowance(
-                                        OWNER,
-                                        NFT_TOKEN,
-                                        HTS_TRANSFER_FROM_CONTRACT,
-                                        false,
-                                        List.of(2L))
-                                .via(BASE_APPROVE_TXN)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .fee(ONE_HBAR))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var alias = ByteStringUtils.wrapUnsafely(addressBytes);
-                                    allRunFor(
-                                            spec,
-                                            // transfer allowed NFT
-                                            contractCall(
-                                                            HTS_TRANSFER_FROM_CONTRACT,
-                                                            HTS_TRANSFER_FROM_NFT,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getTokenID(
-                                                                                            NFT_TOKEN))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            OWNER))),
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    addressBytes),
-                                                            BigInteger.valueOf(2L))
-                                                    .gas(GAS_TO_OFFER)
-                                                    .via(TRANSFER_TXN)
-                                                    .hasKnownStatus(SUCCESS),
-                                            childRecordsCheck(
-                                                    TRANSFER_TXN,
-                                                    SUCCESS,
-                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .contractCallResult(
-                                                                    resultWith()
-                                                                            .contractCallResult(
-                                                                                    htsPrecompileResult()
-                                                                                            .forFunction(
-                                                                                                    FunctionType
-                                                                                                            .HAPI_TRANSFER_FROM)
-                                                                                            .withStatus(
-                                                                                                    SUCCESS)))),
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .logged()
-                                                    .has(
-                                                            AccountInfoAsserts.accountWith()
-                                                                    .hasEmptyKey()
-                                                                    .evmAddressAlias(alias)
-                                                                    .autoRenew(
-                                                                            THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(LAZY_MEMO)),
-                                            getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(NFT_TOKEN, 1)
-                                                    .logged());
-                                }))
-                .then(resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     @Override

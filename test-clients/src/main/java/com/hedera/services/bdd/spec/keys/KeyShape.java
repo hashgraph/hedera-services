@@ -124,7 +124,7 @@ public class KeyShape extends SigControl {
 
     @SuppressWarnings("unchecked")
     public SigControl signedWith(Object control) {
-        if (this == SIMPLE) {
+        if (this == SIMPLE || this == ED25519 || this == SECP256K1) {
             if (!(control instanceof SigControl)) {
                 throw new IllegalArgumentException("Shape is simple but multiple controls given!");
             }

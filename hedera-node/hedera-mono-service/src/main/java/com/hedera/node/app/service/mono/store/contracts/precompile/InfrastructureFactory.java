@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -56,9 +57,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExe
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
+import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.EvmAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
@@ -96,6 +98,7 @@ public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
+    private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -120,6 +123,7 @@ public class InfrastructureFactory {
             final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
@@ -136,6 +140,7 @@ public class InfrastructureFactory {
             final EntityCreator entityCreator) {
         this.ids = ids;
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -266,7 +271,7 @@ public class InfrastructureFactory {
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, encoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(
@@ -346,19 +351,18 @@ public class InfrastructureFactory {
                 sigImpactHistorian);
     }
 
-    public AutoCreationLogic newAutoCreationLogicScopedTo(
+    public AbstractAutoCreationLogic newAutoCreationLogicScopedTo(
             final HederaStackedWorldStateUpdater updater) {
         final var autoCreationLogic =
-                new AutoCreationLogic(
+                new EvmAutoCreationLogic(
                         usageLimits,
                         syntheticTxnFactory,
                         entityCreator,
                         ids,
-                        updater.aliases(),
-                        sigImpactHistorian,
                         () -> view,
                         txnCtx,
-                        dynamicProperties);
+                        dynamicProperties,
+                        updater.aliases());
         autoCreationLogic.setFeeCalculator(feeCalculator.get());
         return autoCreationLogic;
     }

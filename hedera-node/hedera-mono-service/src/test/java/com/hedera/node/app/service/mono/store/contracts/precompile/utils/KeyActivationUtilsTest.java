@@ -23,6 +23,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {
+    @Mock private MessageFrame grandparent;
+    @Mock private MessageFrame parent;
     @Mock private MessageFrame messageFrame;
     @Mock private WorldStateAccount worldStateAccount;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
@@ -44,6 +49,23 @@ class KeyActivationUtilsTest {
         var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
 
         assertTrue(result);
+    }
+
+    @Test
+    void legacyActivationTestDetectsReceiverMatch() {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        stack.push(grandparent);
+        stack.push(parent);
+        stack.push(messageFrame);
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+
+        final var granted = Address.BLAKE2B_F_COMPRESSION;
+
+        given(grandparent.getRecipientAddress()).willReturn(Address.BLAKE2B_F_COMPRESSION);
+        given(parent.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
+
+        final var subject = KeyActivationUtils.legacyActivationTestFor(messageFrame);
+        assertTrue(subject.stackIncludesReceiver(granted));
     }
 
     @Test

@@ -257,7 +257,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
-    private byte[] keyAliasToEVMAddress(final ByteString alias) {
+    public byte[] keyAliasToEVMAddress(final ByteString alias) {
         try {
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);

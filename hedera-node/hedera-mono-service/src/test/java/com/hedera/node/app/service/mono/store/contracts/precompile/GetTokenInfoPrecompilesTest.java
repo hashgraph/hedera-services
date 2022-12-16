@@ -48,6 +48,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -116,6 +117,7 @@ class GetTokenInfoPrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -248,6 +250,7 @@ class GetTokenInfoPrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -961,7 +964,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 
@@ -975,7 +978,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 
@@ -989,7 +992,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.token());
         assertEquals(1, decodedInput.serialNumber());
     }
 
