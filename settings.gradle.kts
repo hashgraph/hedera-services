@@ -168,7 +168,6 @@ dependencyResolutionManagement {
 
         // The libs of this catalog can be used for test or build uses.
         create("testLibs") {
-            version("assertj-version", "3.23.1")
             version("awaitility-version", "4.2.0")
             version("besu-internal-version", "22.1.1")
             version("commons-collections4-version", "4.4")
