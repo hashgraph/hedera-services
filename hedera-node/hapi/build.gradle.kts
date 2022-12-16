@@ -41,3 +41,13 @@ sourceSets {
         }
     }
 }
+
+// Give JUnit more ram and make it execute tests in parallel
+tasks.withType<Test> {
+    // We are running a lot of tests 10s of thousands, so they need to run in parallel
+    systemProperties["junit.jupiter.execution.parallel.enabled"] = true
+    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+    // Some also need more memory
+    minHeapSize = "512m"
+    maxHeapSize = "4096m"
+}
