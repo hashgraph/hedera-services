@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
@@ -191,6 +192,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
+                                .keyShape(SigControl.ED25519_ON)
                                 .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(TOKEN_EXPIRY_CONTRACT),
@@ -220,7 +222,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidTokenTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -255,7 +259,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidExpiryTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -270,7 +276,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                                                 asHeadlongAddress(INVALID_ADDRESS),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidAutoRenewAccountTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -289,6 +297,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                         .get())),
                                                                 1L)
                                                         .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidAutoRenewPeriodTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -306,7 +317,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("updateExpiryTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))
