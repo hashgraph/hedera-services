@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -59,7 +60,7 @@ public class OpUsageCtxHelper {
             new ExtantFeeScheduleContext(0, 0);
 
     private final StateView workingView;
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
     private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
     private final AliasManager aliasManager;
@@ -67,7 +68,7 @@ public class OpUsageCtxHelper {
     @Inject
     public OpUsageCtxHelper(
             final StateView workingView,
-            final FileNumbers fileNumbers,
+            final HederaFileNumbers fileNumbers,
             final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
             final AliasManager aliasManager) {
         this.tokens = tokens;

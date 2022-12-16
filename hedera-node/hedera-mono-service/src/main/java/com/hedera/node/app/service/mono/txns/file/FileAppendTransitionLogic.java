@@ -30,6 +30,8 @@ import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
@@ -49,7 +51,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
             ignore -> OK;
 
     private final HederaFs hfs;
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
     private final TransactionContext txnCtx;
     private final SigImpactHistorian sigImpactHistorian;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -57,7 +59,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
     @Inject
     public FileAppendTransitionLogic(
             final HederaFs hfs,
-            final FileNumbers fileNumbers,
+            final HederaFileNumbers fileNumbers,
             final TransactionContext txnCtx,
             final SigImpactHistorian sigImpactHistorian,
             final Supplier<MerkleNetworkContext> networkCtx) {

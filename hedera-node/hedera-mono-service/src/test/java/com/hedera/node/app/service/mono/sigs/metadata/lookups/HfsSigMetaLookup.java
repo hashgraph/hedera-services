@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.sigs.metadata.FileSigningMetadata;
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 
 /**
@@ -36,9 +37,9 @@ public class HfsSigMetaLookup implements FileSigMetaLookup {
             new SafeLookupResult<>(SPECIAL_FILE_META);
 
     private final HederaFs hfs;
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
 
-    public HfsSigMetaLookup(final HederaFs hfs, final FileNumbers fileNumbers) {
+    public HfsSigMetaLookup(final HederaFs hfs, final HederaFileNumbers fileNumbers) {
         this.hfs = hfs;
         this.fileNumbers = fileNumbers;
     }

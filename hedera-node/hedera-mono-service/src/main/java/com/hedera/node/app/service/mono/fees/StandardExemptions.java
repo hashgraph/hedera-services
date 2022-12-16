@@ -20,16 +20,20 @@ import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.A
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class StandardExemptions implements FeeExemptions {
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final SystemOpPolicies systemOpPolicies;
 
     @Inject
-    public StandardExemptions(AccountNumbers accountNums, SystemOpPolicies systemOpPolicies) {
+    public StandardExemptions(
+            final HederaAccountNumbers accountNums,
+            final SystemOpPolicies systemOpPolicies) {
         this.accountNums = accountNums;
         this.systemOpPolicies = systemOpPolicies;
     }

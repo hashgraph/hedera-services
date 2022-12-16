@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -75,7 +76,7 @@ class BackedSystemAccountsCreatorTest {
     private AddressBook book;
     private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
-    private AccountNumbers accountNums;
+    private HederaAccountNumbers accountNums;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private BackedSystemAccountsCreator subject;

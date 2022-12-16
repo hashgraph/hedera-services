@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.address.Address;
@@ -93,7 +94,7 @@ class StakingAccountsCommitInterceptorTest {
     @Mock private StakePeriodManager stakePeriodManager;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private MerkleAccount merkleAccount;
-    @Mock private AccountNumbers accountNumbers;
+    @Mock private HederaAccountNumbers accountNumbers;
     @Mock private TransactionContext txnCtx;
 
     private StakeInfoManager stakeInfoManager;

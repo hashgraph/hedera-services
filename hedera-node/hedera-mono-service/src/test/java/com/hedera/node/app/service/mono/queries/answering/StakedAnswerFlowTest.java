@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
@@ -82,7 +83,7 @@ class StakedAnswerFlowTest {
     private static final SignedTxnAccessor paymentAccessor = accessorWith(payer);
     private static final SignedTxnAccessor superuserPaymentAccessor = accessorWith(superuser);
 
-    private static final AccountNumbers accountNumbers = new MockAccountNumbers();
+    private static final HederaAccountNumbers accountNumbers = new MockAccountNumbers();
 
     @Mock private FeeData usagePrices;
     @Mock private StateView stateView;

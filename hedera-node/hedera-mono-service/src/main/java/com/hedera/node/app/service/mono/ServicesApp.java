@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
@@ -96,6 +97,7 @@ import javax.inject.Singleton;
             KeysModule.class,
             SigsModule.class,
             GrpcModule.class,
+            ConfigModule.class,
             StatsModule.class,
             StateModule.class,
             FilesModule.class,

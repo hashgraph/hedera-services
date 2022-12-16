@@ -43,6 +43,7 @@ import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.*;
@@ -90,7 +91,7 @@ class PreHandleDispatcherImplTest {
             @Mock ScheduleService scheduleService,
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
-            @Mock AccountNumbers accountNumbers,
+            @Mock HederaAccountNumbers accountNumbers,
             @Mock HederaFileNumbers hederaFileNumbers,
             @Mock AccountKeyLookup keyLookup) {
         servicesAccessor =

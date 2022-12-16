@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -129,7 +130,7 @@ class MigrationRecordsManagerTest {
     @Mock private SideEffectsTracker tracker101;
     @Mock private SideEffectsTracker tracker2;
     @Mock private EntityCreator creator;
-    @Mock private AccountNumbers accountNumbers;
+    @Mock private HederaAccountNumbers accountNumbers;
     @Mock private BackedSystemAccountsCreator systemAccountsCreator;
     @Mock private MerkleAccount merkleAccount;
     @LoggingTarget private LogCaptor logCaptor;

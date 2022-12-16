@@ -15,7 +15,6 @@
  */
 package com.hedera.test.mocks;
 
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 

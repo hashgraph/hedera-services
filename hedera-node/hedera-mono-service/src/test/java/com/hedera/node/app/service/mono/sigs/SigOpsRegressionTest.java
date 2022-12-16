@@ -45,6 +45,7 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
@@ -86,7 +87,7 @@ import org.junit.jupiter.api.Test;
 class SigOpsRegressionTest {
     private HederaFs hfs;
     private AliasManager aliasManager;
-    private FileNumbers fileNumbers = new MockFileNumbers();
+    private HederaFileNumbers fileNumbers = new MockFileNumbers();
     private List<TransactionSignature> expectedSigs;
     private ResponseCodeEnum expectedErrorStatus;
     private PlatformTxnAccessor platformTxn;

@@ -27,6 +27,8 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -55,8 +57,8 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
     static final Map.Entry<ResponseCodeEnum, Boolean> LIMIT_EXCEEDED_VERDICT =
             new AbstractMap.SimpleImmutableEntry<>(EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED, false);
 
-    private final FileNumbers fileNums;
-    private final AccountNumbers accountNums;
+    private final HederaFileNumbers fileNums;
+    private final HederaAccountNumbers accountNums;
     private final TransactionContext txnCtx;
     private final GlobalDynamicProperties properties;
     private final Supplier<ExchangeRates> midnightRates;
@@ -65,13 +67,13 @@ public class TxnAwareRatesManager implements FileUpdateInterceptor {
 
     @Inject
     public TxnAwareRatesManager(
-            FileNumbers fileNums,
-            AccountNumbers accountNums,
-            GlobalDynamicProperties properties,
-            TransactionContext txnCtx,
-            Supplier<ExchangeRates> midnightRates,
-            Consumer<ExchangeRateSet> postUpdateCb,
-            IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory) {
+            final FileNumbers fileNums,
+            final HederaAccountNumbers accountNums,
+            final GlobalDynamicProperties properties,
+            final TransactionContext txnCtx,
+            final Supplier<ExchangeRates> midnightRates,
+            final Consumer<ExchangeRateSet> postUpdateCb,
+            final IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>> intradayLimitFactory) {
         this.txnCtx = txnCtx;
         this.fileNums = fileNums;
         this.properties = properties;

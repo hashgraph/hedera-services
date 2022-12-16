@@ -25,6 +25,7 @@ import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +41,14 @@ public class TreasuryCloner {
 
     private static final Logger log = LogManager.getLogger(TreasuryCloner.class);
 
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final Supplier<HederaAccount> accountSupplier;
     private final BackingStore<AccountID, HederaAccount> accounts;
     private final List<HederaAccount> clonesCreated = new ArrayList<>();
 
     @Inject
     public TreasuryCloner(
-            final AccountNumbers accountNums,
+            final HederaAccountNumbers accountNums,
             final Supplier<HederaAccount> accountSupplier,
             final BackingStore<AccountID, HederaAccount> accounts) {
         this.accountSupplier = accountSupplier;

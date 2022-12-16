@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -65,7 +66,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     private final GlobalDynamicProperties dynamicProperties;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoManager stakeInfoManager;
-    private final AccountNumbers accountNumbers;
+    private final HederaAccountNumbers accountNumbers;
     private final TransactionContext txnCtx;
 
     // The current and new staked ids of the account being processed
@@ -95,7 +96,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,
             final StakeInfoManager stakeInfoManager,
-            final AccountNumbers accountNumbers,
+            final HederaAccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final AccountUsageTracking usageTracking) {
         super(usageTracking, sideEffectsTracker);

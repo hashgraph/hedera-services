@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -57,14 +58,14 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
     private final AliasManager aliasManager;
     private final StateChildren stateChildren;
     private final Map<FileID, HFileMeta> metaMap;
     private final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
 
     public StateChildrenSigMetadataLookup(
-            final FileNumbers fileNumbers,
+            final HederaFileNumbers fileNumbers,
             final StateChildren stateChildren,
             final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform) {
         this.fileNumbers = fileNumbers;

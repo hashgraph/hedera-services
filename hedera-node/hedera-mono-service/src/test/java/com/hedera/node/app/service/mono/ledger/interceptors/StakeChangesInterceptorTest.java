@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumMap;
@@ -56,7 +57,7 @@ class StakeChangesInterceptorTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private StakePeriodManager stakePeriodManager;
     @Mock private StakeInfoManager stakeInfoManager;
-    @Mock private AccountNumbers accountNumbers;
+    @Mock private HederaAccountNumbers accountNumbers;
     @Mock private TransactionContext txnCtx;
     @Mock private UsageLimits usageLimits;
 

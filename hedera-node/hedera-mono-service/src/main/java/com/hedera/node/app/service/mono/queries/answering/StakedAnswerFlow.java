@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.txns.submission.PlatformSubmissionManager;
 import com.hedera.node.app.service.mono.txns.submission.TransactionPrecheck;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -52,7 +53,7 @@ import java.util.function.Supplier;
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;
     private final QueryFeeCheck queryFeeCheck;
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final HapiOpPermissions hapiOpPermissions;
     private final Supplier<StateView> stateViews;
     private final UsagePricesProvider resourceCosts;
@@ -63,7 +64,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
     public StakedAnswerFlow(
             final FeeCalculator fees,
-            final AccountNumbers accountNums,
+            final HederaAccountNumbers accountNums,
             final Supplier<StateView> stateViews,
             final UsagePricesProvider resourceCosts,
             final FunctionalityThrottling throttles,

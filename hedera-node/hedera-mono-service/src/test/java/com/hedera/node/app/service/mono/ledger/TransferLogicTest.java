@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -83,7 +84,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TransferLogicTest {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
-    private AccountNumbers accountNums = new MockAccountNumbers();
+    private HederaAccountNumbers accountNums = new MockAccountNumbers();
     private final long initialBalance = 1_000_000L;
     private final long initialAllowance = 100L;
     private final AccountID revokedSpender = AccountID.newBuilder().setAccountNum(12346L).build();

@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -42,7 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class PolicyBasedSigWaivers implements SignatureWaivers {
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final SystemOpPolicies opPolicies;
 
     @Inject

@@ -33,7 +33,7 @@ public final class CryptoServiceImpl implements CryptoService {
         Objects.requireNonNull(ctx);
         final var accountStore = new AccountStore(states);
         final var tokenStore = new TokenStore(states);
-        return new CryptoPreTransactionHandlerImpl(accountStore, tokenStore, ctx);
+        return new CryptoPreTransactionHandlerImpl(tokenStore, accountStore, ctx);
     }
 
     @NonNull

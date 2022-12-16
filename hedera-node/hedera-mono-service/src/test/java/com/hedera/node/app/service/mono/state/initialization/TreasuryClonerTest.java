@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
@@ -44,7 +45,7 @@ public class TreasuryClonerTest {
     private static final long pretendExpiry = 1_234_567L;
     private static final JKey pretendTreasuryKey =
             new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
-    private static final AccountNumbers nums = new MockAccountNumbers();
+    private static final HederaAccountNumbers nums = new MockAccountNumbers();
 
     @Mock private BackingStore<AccountID, HederaAccount> accounts;
 

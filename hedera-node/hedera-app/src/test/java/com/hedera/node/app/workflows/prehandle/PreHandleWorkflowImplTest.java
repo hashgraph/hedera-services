@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.common.PreCheckException;
@@ -91,7 +92,7 @@ class PreHandleWorkflowImplTest {
             @Mock ScheduleService scheduleService,
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
-            @Mock AccountNumbers accountNumbers,
+            @Mock HederaAccountNumbers accountNumbers,
             @Mock HederaFileNumbers hederaFileNumbers,
             @Mock AccountKeyLookup keyLookup) {
         servicesAccessor =

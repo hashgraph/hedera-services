@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -95,7 +96,7 @@ class FileAppendTransitionLogicTest {
     MerkleNetworkContext networkCtx;
 
     FileAppendTransitionLogic subject;
-    FileNumbers numbers = new MockFileNumbers();
+    HederaFileNumbers numbers = new MockFileNumbers();
 
     @BeforeEach
     void setup() throws Throwable {

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -80,7 +81,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OpUsageCtxHelperTest {
-    private final FileNumbers fileNumbers = new MockFileNumbers();
+    private final HederaFileNumbers fileNumbers = new MockFileNumbers();
 
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private StateView workingView;

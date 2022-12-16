@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
@@ -161,7 +162,7 @@ public interface StakingActivityModule {
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,
             final StakeInfoManager stakeInfoManager,
-            final @MockProps AccountNumbers accountNumbers,
+            final @MockProps HederaAccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final AccountUsageTracking usageTracking) {
         final Supplier<HederaAccount> accountSupplier =

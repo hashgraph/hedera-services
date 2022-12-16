@@ -313,6 +313,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -439,7 +440,7 @@ public class SigRequirementsTest {
     private HederaFs hfs;
     private TokenStore tokenStore;
     private AliasManager aliasManager;
-    private FileNumbers fileNumbers = new MockFileNumbers();
+    private HederaFileNumbers fileNumbers = new MockFileNumbers();
     private ScheduleStore scheduleStore;
     private TransactionBody txn;
     private SigRequirements subject;

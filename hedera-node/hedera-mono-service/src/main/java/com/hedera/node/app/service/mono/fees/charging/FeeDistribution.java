@@ -24,6 +24,8 @@ import com.hedera.node.app.service.mono.exceptions.InconsistentAdjustmentsExcept
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,7 +47,7 @@ public class FeeDistribution {
 
     @Inject
     public FeeDistribution(
-            final AccountNumbers accountNumbers, final GlobalDynamicProperties dynamicProperties) {
+            final HederaAccountNumbers accountNumbers, final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
         this.stakingRewardAccountId =
                 STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());
