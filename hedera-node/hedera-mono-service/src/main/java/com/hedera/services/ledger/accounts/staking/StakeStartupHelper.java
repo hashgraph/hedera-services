@@ -81,8 +81,8 @@ public class StakeStartupHelper {
      * this address book.
      *
      * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
-     * the {@code createGenesisChildren()} work currently still done by {@link
-     * com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
+     * the {@code createGenesisChildren()} work currently still done by {@code
+     * StakingInfoMapBuilder}.
      *
      * @param addressBook the genesis address book
      */

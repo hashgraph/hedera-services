@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -48,6 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
@@ -90,7 +92,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 1_000_000L;
-    private static final long AUTO_RENEW_PERIOD = 8_000_000L;
+    private static final long AUTO_RENEW_PERIOD = THREE_MONTHS_IN_SECONDS;
     private static final String TOKEN_SYMBOL = "tokenSymbol";
     private static final String TOKEN_NAME = "tokenName";
     private static final String MEMO = "memo";
@@ -313,7 +315,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN),
@@ -344,12 +346,13 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                feeCollector))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(feeCollector)
                                                         .refusingEthConversion()
                                                         .exposingResultTo(
                                                                 result -> {
@@ -392,7 +395,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             .hasTotalSupply(200)
                                             .hasEntityMemo(MEMO)
                                             .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewAccount(feeCollector)
                                             .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
                                             .hasSupplyType(TokenSupplyType.INFINITE)
                                             .searchKeysGlobally()
@@ -746,7 +749,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
-                        newKeyNamed(treasuryAndFeeCollectorKey),
+                        newKeyNamed(treasuryAndFeeCollectorKey).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
                                 .key(treasuryAndFeeCollectorKey)
@@ -782,7 +785,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                feeCollector))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -792,9 +795,6 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
-                                                        .signedBy(
-                                                                ECDSA_KEY,
-                                                                treasuryAndFeeCollectorKey)
                                                         .alsoSigningWithFullPrefix(
                                                                 ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
@@ -839,7 +839,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             .hasTotalSupply(0)
                                             .hasEntityMemo(MEMO)
                                             .hasTreasury(feeCollector)
-                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewAccount(feeCollector)
                                             .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
                                             .hasSupplyType(TokenSupplyType.FINITE)
                                             .hasMaxSupply(400)
@@ -1346,7 +1346,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(contractAdminKey),
-                        newKeyNamed(treasuryAndFeeCollectorKey),
+                        newKeyNamed(treasuryAndFeeCollectorKey).shape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector)
                                 .key(treasuryAndFeeCollectorKey)
@@ -1383,7 +1383,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                feeCollector))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1393,9 +1393,6 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
-                                                        .signedBy(
-                                                                ECDSA_KEY,
-                                                                treasuryAndFeeCollectorKey)
                                                         .alsoSigningWithFullPrefix(
                                                                 ED25519KEY,
                                                                 treasuryAndFeeCollectorKey)
@@ -1512,12 +1509,13 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                feeCollector))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(feeCollector)
                                                         .refusingEthConversion()
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
@@ -1542,6 +1540,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("createTokenWithInvalidFeeCollector")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(CIVILIAN).keyShape(ED25519),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
@@ -1576,12 +1575,13 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                CIVILIAN))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(CIVILIAN)
                                                         .refusingEthConversion()
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
