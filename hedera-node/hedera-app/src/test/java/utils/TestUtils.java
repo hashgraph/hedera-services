@@ -18,10 +18,6 @@ package utils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.Executors;
 
@@ -46,5 +42,4 @@ public class TestUtils {
         return new DefaultMetrics(
                 Executors.newSingleThreadScheduledExecutor(), new DefaultMetricsFactory());
     }
-
 }

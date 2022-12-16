@@ -21,6 +21,20 @@ import com.hedera.node.app.spi.state.Writer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Holds metadata related to a registered service's state.
+ *
+ * @param serviceName The name of the service
+ * @param stateKey The state key associated with the service's state
+ * @param keyParser The parser to use for deserializing the key of the state
+ * @param valueParser The parser to use for deserializing the value of the state
+ * @param keyWriter The writer to use to serialize the key of the state
+ * @param valueWriter The writer to use to serialize the value of the state
+ * @param keyRuler If used with an on-disk state, the ruler to use to measure and report the number
+ *     of bytes in key to be deserialized
+ * @param <K> The type of the state key
+ * @param <V> The type of the state value
+ */
 public record StateMetadata<K, V>(
         @NonNull String serviceName,
         @NonNull String stateKey,
