@@ -33,7 +33,6 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.impl.sigs.KeyValidator;
 import com.hedera.services.store.contracts.precompile.impl.sigs.LegacyKeyValidator;
-import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.tokens.HederaTokenStore;

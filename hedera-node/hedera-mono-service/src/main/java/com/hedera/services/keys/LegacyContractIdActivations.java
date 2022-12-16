@@ -20,13 +20,11 @@ import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
-
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import com.hedera.services.utils.EntityIdUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
@@ -55,8 +53,7 @@ public record LegacyContractIdActivations(Map<Address, Set<Address>> privilegedC
                                         fromTwoPartDelimited(
                                                 literal,
                                                 "by",
-                                                (account, contracts) -> {
-                                                },
+                                                (account, contracts) -> {},
                                                 LegacyContractIdActivations::parsedMirrorAddressOf,
                                                 LegacyContractIdActivations::contracts,
                                                 Pair::of))

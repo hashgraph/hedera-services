@@ -97,8 +97,8 @@ public interface PropertySource {
         return csv.isEmpty()
                 ? Collections.emptySet()
                 : Arrays.stream(csv.split(","))
-                .map(valueOf)
-                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+                        .map(valueOf)
+                        .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }
 
     boolean containsProperty(String name);

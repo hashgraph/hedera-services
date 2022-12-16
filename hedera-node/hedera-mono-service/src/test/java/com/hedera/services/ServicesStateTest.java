@@ -114,7 +114,6 @@ class ServicesStateTest {
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
-
     @Mock private StakeStartupHelper stakeStartupHelper;
     @Mock private HashLogger hashLogger;
     @Mock private Platform platform;

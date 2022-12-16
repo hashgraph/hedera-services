@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
@@ -17,16 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
-import java.util.Objects;
-import java.util.Optional;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
+import java.util.Objects;
+import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public final class KeyActivationUtils {
 

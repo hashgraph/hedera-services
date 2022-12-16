@@ -167,6 +167,7 @@ public interface ServicesApp {
     GrpcServerManager grpc();
 
     NamedDigestFactory digestFactory();
+
     StakeStartupHelper stakeStartupHelper();
 
     SystemFilesManager sysFilesManager();
