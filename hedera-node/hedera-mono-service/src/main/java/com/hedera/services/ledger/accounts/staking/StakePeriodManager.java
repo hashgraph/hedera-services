@@ -39,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakePeriodManager {
-    private static final Logger log = LogManager.getLogger(StakeInfoManager.class);
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
     public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 
