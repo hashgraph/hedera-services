@@ -109,7 +109,7 @@ class TokenPreTransactionHandlerImplTest {
                                         null),
                                 null));
 
-        final var meta = subject.preHandleWipeTokenAccount(txn);
+        final var meta = subject.preHandleWipeTokenAccount(txn, payer);
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
@@ -127,7 +127,7 @@ class TokenPreTransactionHandlerImplTest {
                         .txnBody(txn)
                         .build();
 
-        final var meta = subject.preHandleWipeTokenAccount(txn);
+        final var meta = subject.preHandleWipeTokenAccount(txn, payer);
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
@@ -151,7 +151,7 @@ class TokenPreTransactionHandlerImplTest {
                                         null, null, null, null, null, null, null, false, null),
                                 INVALID_TOKEN_ID));
 
-        final var meta = subject.preHandleWipeTokenAccount(txn);
+        final var meta = subject.preHandleWipeTokenAccount(txn, payer);
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
@@ -183,7 +183,7 @@ class TokenPreTransactionHandlerImplTest {
                                         null),
                                 null));
 
-        final var meta = subject.preHandleWipeTokenAccount(txn);
+        final var meta = subject.preHandleWipeTokenAccount(txn, payer);
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
