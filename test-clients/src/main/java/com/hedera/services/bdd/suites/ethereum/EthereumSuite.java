@@ -68,6 +68,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -853,7 +854,9 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector)
+                                .keyShape(SigControl.ED25519_ON)
+                                .balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(GAS_LIMIT),
                         tokenCreate(EXISTING_TOKEN).decimals(5),
@@ -885,11 +888,12 @@ public class EthereumSuite extends HapiApiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                RELAYER))),
+                                                                                                feeCollector))),
                                                                 8_000_000L)
                                                         .via(firstTxn)
                                                         .gasLimit(GAS_LIMIT)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(feeCollector)
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(

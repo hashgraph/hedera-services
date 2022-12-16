@@ -17,11 +17,11 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
-import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import java.util.Objects;
 import java.util.Optional;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -50,8 +50,8 @@ public final class KeyActivationUtils {
      *       part of a non-delegate call.
      * </ol>
      *
-     * <p>Note that because the {@link DecodingFacade} converts every address to its "mirror"
-     * address form (as needed for e.g. the {@link TransferLogic} implementation), we can assume the
+     * <p>Note that because the {@code DecodingFacade} converts every address to its "mirror"
+     * address form (as needed for e.g. the {@code TransferLogic} implementation), we can assume the
      * target address is a mirror address. All other addresses we resolve to their mirror form
      * before proceeding.
      *
@@ -68,16 +68,72 @@ public final class KeyActivationUtils {
             final KeyActivationTest activationTest,
             final WorldLedgers ledgers,
             final ContractAliases aliases) {
+        return internalValidateKey(frame, target, activationTest, null, ledgers, aliases);
+    }
+
+    public static boolean validateLegacyKey(
+            final MessageFrame frame,
+            final Address target,
+            final LegacyKeyActivationTest legacyActivationTest,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases) {
+        return internalValidateKey(frame, target, null, legacyActivationTest, ledgers, aliases);
+    }
+
+    private static boolean internalValidateKey(
+            final MessageFrame frame,
+            final Address target,
+            @Nullable final KeyActivationTest activationTest,
+            @Nullable final LegacyKeyActivationTest legacyActivationTest,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases) {
         final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
         final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
         if (isDelegateCall(frame) && !isToken(frame, recipient)) {
-            return activationTest.apply(true, target, recipient, ledgers);
+            if (activationTest != null) {
+                return activationTest.apply(true, target, recipient, ledgers);
+            } else {
+                return Objects.requireNonNull(legacyActivationTest)
+                        .apply(true, target, recipient, ledgers, legacyActivationTestFor(frame));
+            }
         } else {
             final var parentFrame = getParentOf(frame);
-            final var delegated = parentFrame.map(KeyActivationUtils::isDelegateCall).orElse(false);
-            return activationTest.apply(delegated, target, sender, ledgers);
+            final boolean delegated =
+                    parentFrame.map(KeyActivationUtils::isDelegateCall).orElse(false);
+            if (activationTest != null) {
+                return activationTest.apply(delegated, target, sender, ledgers);
+            } else {
+                return Objects.requireNonNull(legacyActivationTest)
+                        .apply(delegated, target, sender, ledgers, legacyActivationTestFor(frame));
+            }
         }
+    }
+
+    /**
+     * Returns a predicate that checks whether any frame in the EVM stack <i>below the top</i> has a
+     * recipient address of interest.
+     *
+     * <p>Only used when validating certain signatures in the {@link
+     * com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile} and {@link
+     * com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile}.
+     *
+     * @param frame the current frame
+     * @return a predicate that tests if an address appears as recipient below this frame
+     */
+    static LegacyActivationTest legacyActivationTestFor(final MessageFrame frame) {
+        return address -> {
+            final var iter = frame.getMessageFrameStack().iterator();
+            // We skip the frame at the top of the stack (recall that a deque representing
+            // a stack stores the top at the front of its internal list)
+            for (iter.next(); iter.hasNext(); ) {
+                final var ancestor = iter.next();
+                if (address.equals(ancestor.getRecipientAddress())) {
+                    return true;
+                }
+            }
+            return false;
+        };
     }
 
     static boolean isToken(final MessageFrame frame, final Address address) {

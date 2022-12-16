@@ -20,14 +20,21 @@ import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Singleton
 public class StakeInfoManager {
+    private static final Logger log = LogManager.getLogger(StakeInfoManager.class);
     private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
 
+    // Used to improve performance when node ids are sequential whole numbers (0, 1, 2, ...)
     private MerkleStakingInfo[] cache;
     private MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfos;
 
@@ -38,16 +45,43 @@ public class StakeInfoManager {
 
     public void unclaimRewardsForStakeStart(final long nodeId, final long amount) {
         final var info = mutableStakeInfoFor(nodeId);
-        info.increaseUnclaimedStakeRewardStart(amount);
+        if (info != null) {
+            info.increaseUnclaimedStakeRewardStart(amount);
+        }
     }
 
-    public MerkleStakingInfo mutableStakeInfoFor(final long nodeId) {
-        // Current node ids are 0, 1, 2, ..., n---if this changes, an array ofc will no longer be a
-        // good cache
-        final var curStakingInfos = stakingInfos.get();
-        if (cache == null) {
-            cache = new MerkleStakingInfo[stakingInfos.get().size()];
+    public void prepForManaging(final List<Long> nodeIds) {
+        final var numNodes = nodeIds.size();
+        final var orderedIds = nodeIds.stream().sorted().toList();
+        if (orderedIds.equals(LongStream.range(0, numNodes).boxed().toList())) {
+            cache = new MerkleStakingInfo[numNodes];
+        } else {
+            cache = null;
         }
+    }
+
+    @Nullable
+    public MerkleStakingInfo mutableStakeInfoFor(final long nodeId) {
+        if (cache == null) {
+            return stakingInfos.get().getForModify(EntityNum.fromLong(nodeId));
+        } else {
+            if (nodeId < 0) {
+                log.warn("Stake info requested for negative node id {}", nodeId);
+                return null;
+            }
+            if (nodeId >= cache.length) {
+                log.warn(
+                        "Stake info requested for node id {} beyond cache size {}",
+                        nodeId,
+                        cache.length);
+                return null;
+            }
+            return getFromCache(nodeId);
+        }
+    }
+
+    private MerkleStakingInfo getFromCache(final long nodeId) {
+        final var curStakingInfos = stakingInfos.get();
         final var i = (int) nodeId;
         if (cache[i] == null && curStakingInfos == prevStakingInfos) {
             cache[i] = curStakingInfos.getForModify(EntityNum.fromLong(nodeId));

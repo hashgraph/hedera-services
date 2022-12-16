@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -71,6 +72,8 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             PrecompilePricingUtils precompilePricingUtils,
             final int functionId) {
         super(
+                KeyActivationUtils::validateKey,
+                KeyActivationUtils::validateLegacyKey,
                 ledgers,
                 aliases,
                 sigsVerifier,

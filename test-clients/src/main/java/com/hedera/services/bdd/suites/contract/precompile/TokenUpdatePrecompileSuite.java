@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -306,7 +307,9 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("updateNftTreasuryWithAndWithoutAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(newTokenTreasury).maxAutomaticTokenAssociations(6),
+                        cryptoCreate(newTokenTreasury)
+                                .keyShape(ED25519_ON)
+                                .maxAutomaticTokenAssociations(6),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
@@ -361,6 +364,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 newTokenTreasury))))
                                                         .via("tokenUpdateTxn")
+                                                        .alsoSigningWithFullPrefix(newTokenTreasury)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT))))

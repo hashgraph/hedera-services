@@ -25,7 +25,6 @@ import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,6 +47,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -115,6 +114,7 @@ class ServicesStateTest {
     private final NodeId selfId = new NodeId(false, 1L);
     private static final String bookMemo = "0.0.4";
 
+    @Mock private StakeStartupHelper stakeStartupHelper;
     @Mock private HashLogger hashLogger;
     @Mock private Platform platform;
     @Mock private AddressBook addressBook;
@@ -352,6 +352,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(platform.getSelfId()).willReturn(selfId);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         APPS.save(selfId.getId(), app);
 
@@ -383,6 +384,7 @@ class ServicesStateTest {
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
         subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
@@ -449,6 +451,7 @@ class ServicesStateTest {
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
         subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
@@ -520,6 +523,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -547,6 +551,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -578,6 +583,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -647,6 +653,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -694,6 +701,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 

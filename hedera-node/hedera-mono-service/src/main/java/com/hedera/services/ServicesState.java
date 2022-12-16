@@ -182,7 +182,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable SoftwareVersion deserializedVersion) {
+            final SoftwareVersion deserializedVersion) {
         if (trigger == GENESIS) {
             genesisInit(platform, addressBook, dualState);
         } else {
@@ -313,11 +313,18 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.systemExits().fail(1);
         } else {
             final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
-            if (trigger == RESTART && isUpgrade) {
-                dualState.setFreezeTime(null);
-                networkCtx().discardPreparedUpgradeMeta();
-                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
-                    networkCtx().markMigrationRecordsNotYetStreamed();
+            if (trigger == RESTART) {
+                // We may still want to change the address book without an upgrade. But note
+                // that without a dynamic address book, this MUST be a no-op during reconnect.
+                app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                if (isUpgrade) {
+                    dualState.setFreezeTime(null);
+                    networkCtx().discardPreparedUpgradeMeta();
+                    if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
+                        networkCtx().markMigrationRecordsNotYetStreamed();
+                    }
+                    app.stakeStartupHelper()
+                            .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -341,6 +348,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         .ensureSystemAccounts(
                                 app.backingAccounts(), app.workingState().addressBook());
                 app.sysFilesManager().createManagedFilesIfMissing();
+                app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
             if (trigger != RECONNECT) {
                 // Once we have a dynamic address book, this will run unconditionally

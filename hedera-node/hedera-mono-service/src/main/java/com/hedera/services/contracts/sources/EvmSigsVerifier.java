@@ -39,6 +39,7 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.utils.LegacyActivationTest;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface EvmSigsVerifier {
@@ -66,6 +67,33 @@ public interface EvmSigsVerifier {
             Address account,
             Address activeContract,
             WorldLedgers worldLedgers);
+
+    /**
+     * Determines if the target account has an active key given the cryptographic signatures from
+     * the {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified
+     * asynchronously; plus the given recipient and contract of the current {@link
+     * org.hyperledger.besu.evm.frame.MessageFrame}; plus any legacy {@code contractID} activation.
+     *
+     * <p>If the account's key includes a {@code contractID} key matching the contract address, or a
+     * {@code delegatableContractId} key matching the recipient address, then those keys must be
+     * treated as active for the purposes of this test.
+     *
+     * <p>Does <b>not</b> perform any synchronous signature verification.
+     *
+     * @param isDelegateCall a flag showing if the message represented by the active frame is
+     *     invoked via {@code delegatecall}
+     * @param account the address of the account to test for key activation
+     * @param activeContract the address of the contract that is deemed active
+     * @param worldLedgers the worldLedgers representing current state
+     * @param legacyActivationTest an activation test for approved legacy contract ids
+     * @return whether the target account's key has an active signature
+     */
+    boolean hasLegacyActiveKey(
+            boolean isDelegateCall,
+            Address account,
+            Address activeContract,
+            WorldLedgers worldLedgers,
+            LegacyActivationTest legacyActivationTest);
 
     /**
      * Determines if the target account <b>either</b> has no receiver sig requirement; or an active

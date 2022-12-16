@@ -26,6 +26,7 @@ import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
@@ -161,6 +162,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
+    private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
     public GlobalDynamicProperties(
@@ -330,6 +332,8 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors =
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        legacyContractIdActivations =
+                properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
 
     public int maxTokensPerAccount() {
@@ -790,5 +794,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean shouldEnforceAccountCreationThrottleForContracts() {
         return enforceContractCreationThrottle;
+    }
+
+    public LegacyContractIdActivations legacyContractIdActivations() {
+        return legacyContractIdActivations;
     }
 }
