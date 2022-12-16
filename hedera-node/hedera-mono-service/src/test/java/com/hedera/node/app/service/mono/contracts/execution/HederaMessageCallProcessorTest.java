@@ -326,7 +326,7 @@ class HederaMessageCallProcessorTest {
         verify(updater)
                 .trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
-        verify(frame, times(2)).getState();
+        verify(frame, times(1)).getState();
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 
@@ -365,7 +365,7 @@ class HederaMessageCallProcessorTest {
 
         verify(frame).decrementRemainingGas(initialGas);
         verify(frame).setState(EXCEPTIONAL_HALT);
-        verify(frame, times(2)).getState();
+        verify(frame, times(1)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
         verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
         verifyNoMoreInteractions(autoCreationLogic);
@@ -407,7 +407,7 @@ class HederaMessageCallProcessorTest {
 
         verify(frame).decrementRemainingGas(frame.getRemainingGas());
         verify(frame).setState(EXCEPTIONAL_HALT);
-        verify(frame, times(2)).getState();
+        verify(frame, times(1)).getState();
         verify(hederaTracer)
                 .traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
         verifyNoMoreInteractions(autoCreationLogic);
