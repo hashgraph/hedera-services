@@ -416,7 +416,7 @@ class SideEffectsTrackerTest {
         subject.reset();
         assertFalse(subject.hasTrackedRandomData());
         assertEquals(-1, subject.getPseudorandomNumber());
-        assertEquals(null, subject.getPseudorandomBytes());
+        assertNull(subject.getPseudorandomBytes());
     }
 
     @Test

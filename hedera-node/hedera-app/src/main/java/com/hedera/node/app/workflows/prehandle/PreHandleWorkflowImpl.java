@@ -56,9 +56,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final ServicesAccessor servicesAccessor;
     private final WorkflowOnset onset;
     private final PreHandleContext context;
-
     private HederaState lastUsedState;
-    private PreHandleDispatcher dispatcher;
+    private PreHandleDispatcherImpl dispatcher;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
@@ -88,7 +87,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcher(state, servicesAccessor, context);
+            dispatcher = new PreHandleDispatcherImpl(state, servicesAccessor, context);
             lastUsedState = state;
         }
 
@@ -105,9 +104,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private TransactionMetadata preHandle(
-            final PreHandleDispatcher dispatcher,
+            final PreHandleDispatcherImpl dispatcher,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
+        AccountID payer = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -118,7 +118,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var metadata = dispatcher.dispatch(txBody);
+            payer = txBody.getTransactionID().getAccountID();
+            final var metadata = dispatcher.dispatch(txBody, payer);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented
