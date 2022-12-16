@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -309,13 +310,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
+        final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(someARAccount).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN)
@@ -348,13 +351,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                someARAccount))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
                                                         .refusingEthConversion()
+                                                        .alsoSigningWithFullPrefix(
+                                                                someARAccount, feeCollector)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
@@ -580,13 +585,17 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
+        final var arEd25519Key = "arEd25519Key";
+        final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN),
@@ -617,13 +626,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                initialAutoRenewAccount))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
                                                         .refusingEthConversion()
+                                                        .alsoSigningWithFullPrefix(
+                                                                arEd25519Key, feeCollector)
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
@@ -665,7 +676,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             .hasTotalSupply(200)
                                             .hasEntityMemo(MEMO)
                                             .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewAccount(initialAutoRenewAccount)
                                             .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
                                             .hasSupplyType(TokenSupplyType.INFINITE)
                                             .searchKeysGlobally()

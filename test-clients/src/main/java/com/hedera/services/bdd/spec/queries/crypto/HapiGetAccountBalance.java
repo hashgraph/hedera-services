@@ -306,6 +306,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private Query getAccountBalanceQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (entityFn.isPresent()) {
             account = entityFn.get().get();
+            repr = account;
         }
 
         Consumer<CryptoGetAccountBalanceQuery.Builder> config;

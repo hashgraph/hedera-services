@@ -91,6 +91,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpauseP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.TokenCreateReqs;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
@@ -736,7 +737,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     senderAddress,
                                     dynamicProperties.fundingAccount(),
                                     feeCalculator,
-                                    precompilePricingUtils)
+                                    precompilePricingUtils,
+                                    TokenCreateReqs::new)
                             : null;
                     case AbiConstants.ABI_ID_GET_TOKEN_INFO -> new TokenInfoPrecompile(
                             null,

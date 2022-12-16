@@ -73,6 +73,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -1131,7 +1132,7 @@ public class EthereumSuite extends HapiSuite {
 
     private HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
-        final var feeCollector = "feeCollector";
+        final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
         final var contract = "TokenCreateContract";
         final var EXISTING_TOKEN = "EXISTING_TOKEN";
         final var firstTxn = "firstCreateTxn";
@@ -1145,11 +1146,13 @@ public class EthereumSuite extends HapiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollectorAndAutoRenew)
+                                .keyShape(SigControl.ED25519_ON)
+                                .balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract).gas(GAS_LIMIT),
                         tokenCreate(EXISTING_TOKEN).decimals(5),
-                        tokenAssociate(feeCollector, EXISTING_TOKEN))
+                        tokenAssociate(feeCollectorAndAutoRenew, EXISTING_TOKEN))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1167,7 +1170,7 @@ public class EthereumSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                feeCollector))),
+                                                                                                feeCollectorAndAutoRenew))),
                                                                 asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -1177,11 +1180,13 @@ public class EthereumSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                RELAYER))),
+                                                                                                feeCollectorAndAutoRenew))),
                                                                 8_000_000L)
                                                         .via(firstTxn)
                                                         .gasLimit(GAS_LIMIT)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(
+                                                                feeCollectorAndAutoRenew)
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
