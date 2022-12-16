@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -7444,9 +7443,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                     .get())
                                                                     .setOutput(EMPTY)
                                                                     .build())));
-                                }),
-                        resetToDefault(
-                                CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version"));
+                                }));
     }
 
     @SuppressWarnings("java:S5960")
