@@ -17,13 +17,6 @@ import me.champeau.gradle.igp.gitRepositories
 
 // Add local maven build directory to plugin repos
 pluginManagement {
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.namespace == "com.hedera.pbj") {
-                useModule("com.hedera.pbj:pbj-compiler:0.1.0")
-            }
-        }
-    }
     repositories {
         gradlePluginPortal()
         mavenCentral()
