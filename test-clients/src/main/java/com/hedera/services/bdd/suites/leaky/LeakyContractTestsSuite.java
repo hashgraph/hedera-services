@@ -1469,7 +1469,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
         final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
         final var depositAmount = 1000;
-        final var payTxn = "payTxn";
         return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCallTooManyCreatesFails")
                 .preserving(
                         lazyCreationProperty,
