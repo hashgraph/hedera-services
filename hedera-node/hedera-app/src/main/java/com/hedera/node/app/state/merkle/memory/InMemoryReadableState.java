@@ -31,10 +31,10 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 public final class InMemoryReadableState<K, V> extends ReadableStateBase<K, V> {
+    /** The metadata for this state */
+    private final StateMetadata<K, V> md;
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
-
-    private final StateMetadata<K, V> md;
 
     /**
      * Create a new instance.

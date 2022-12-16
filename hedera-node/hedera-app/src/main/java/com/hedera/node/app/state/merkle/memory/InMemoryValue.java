@@ -26,11 +26,12 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
-/** */
+/** The value stored in a {@link MerkleMap} for in memory states */
 public final class InMemoryValue<K, V> extends PartialMerkleLeaf
         implements MerkleNode, Keyed<InMemoryKey<K>>, SelfSerializable, MerkleLeaf {
 
@@ -74,6 +75,7 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
         this.val = Objects.requireNonNull(value);
     }
 
+    /** {@inheritDoc} */
     @Override
     public InMemoryValue<K, V> copy() {
         throwIfImmutable();
@@ -84,36 +86,52 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
         return cp;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return StateUtils.computeValueClassId(md.serviceName(), md.stateKey());
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getVersion() {
         return 1;
     }
 
+    /** {@inheritDoc} */
     @Override
     public InMemoryKey<K> getKey() {
         return key;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void setKey(@NonNull final InMemoryKey<K> inMemoryKey) {
         throwIfImmutable();
         this.key = Objects.requireNonNull(inMemoryKey);
     }
 
+    /**
+     * Gets the value.
+     *
+     * @return The value.
+     */
+    @Nullable
     public V getValue() {
         return val;
     }
 
-    public void setValue(final V value) {
+    /**
+     * Sets the value. Cannot be called if the leaf is immutable.
+     *
+     * @param value the new value
+     */
+    public void setValue(@Nullable final V value) {
         throwIfImmutable();
         this.val = value;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
@@ -125,6 +143,7 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
         this.val = md.valueParser().parse(new DataInputStream(serializableDataInputStream));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {

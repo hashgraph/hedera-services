@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.state.WritableStateBase;
 import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -32,29 +31,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SerializationTest extends MerkleTestBase {
-    private final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-
-    @BeforeEach
-    protected void setUp() {
-        // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
-        // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
-        // nodes).
-        try {
-            registry.reset();
-            registry.registerConstructables("com.swirlds.merklemap");
-            registry.registerConstructables("com.swirlds.jaspermap");
-            registry.registerConstructables("com.swirlds.common.merkle");
-            registry.registerConstructables("com.swirlds.merkle");
-            registry.registerConstructables("com.swirlds.merkle.tree");
-        } catch (ConstructableRegistryException ex) {
-            throw new AssertionError(ex);
-        }
-    }
 
     protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
             throws IOException {

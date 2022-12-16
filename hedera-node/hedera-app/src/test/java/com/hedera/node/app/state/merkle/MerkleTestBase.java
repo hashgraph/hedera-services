@@ -20,6 +20,8 @@ import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -40,6 +42,8 @@ public class MerkleTestBase extends TestBase {
     public static final long E_LONG_KEY = 4L;
     public static final long F_LONG_KEY = 5L;
     public static final long G_LONG_KEY = 6L;
+
+    protected final ConstructableRegistry registry = ConstructableRegistry.getInstance();
 
     // The "FRUIT" Map is part of FIRST_SERVICE
     protected String fruitLabel;
@@ -69,6 +73,20 @@ public class MerkleTestBase extends TestBase {
 
     @BeforeEach
     void setUp() {
+        // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
+        // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
+        // nodes).
+        try {
+            registry.reset();
+            registry.registerConstructables("com.swirlds.merklemap");
+            registry.registerConstructables("com.swirlds.jaspermap");
+            registry.registerConstructables("com.swirlds.common.merkle");
+            registry.registerConstructables("com.swirlds.merkle");
+            registry.registerConstructables("com.swirlds.merkle.tree");
+        } catch (ConstructableRegistryException ex) {
+            throw new AssertionError(ex);
+        }
+
         fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
         fruitVirtualMap = createVirtualMap(fruitLabel);
