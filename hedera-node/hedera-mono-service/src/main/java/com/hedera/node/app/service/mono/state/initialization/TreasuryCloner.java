@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.config.HederaNumbers.LAST_RESERVE
 import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;

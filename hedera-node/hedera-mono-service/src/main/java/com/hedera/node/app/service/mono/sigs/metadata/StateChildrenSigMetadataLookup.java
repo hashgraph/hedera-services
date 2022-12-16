@@ -31,7 +31,6 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.MetadataMapFactory;

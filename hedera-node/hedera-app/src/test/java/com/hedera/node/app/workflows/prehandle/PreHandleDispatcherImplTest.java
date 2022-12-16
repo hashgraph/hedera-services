@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FilePreTransactionHandler;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;

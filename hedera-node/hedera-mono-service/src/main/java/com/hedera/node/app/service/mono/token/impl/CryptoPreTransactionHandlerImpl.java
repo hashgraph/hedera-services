@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,7 +57,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx, final AccountID payer) {
+    public TransactionMetadata preHandleCryptoCreate(
+            final TransactionBody tx, final AccountID payer) {
         final var op = tx.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
@@ -67,7 +67,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn, final AccountID payer) {
+    public TransactionMetadata preHandleCryptoDelete(
+            final TransactionBody txn, final AccountID payer) {
         final var op = txn.getCryptoDelete();
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
@@ -83,7 +84,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn, final AccountID payer) {
+    public TransactionMetadata preHandleApproveAllowances(
+            final TransactionBody txn, final AccountID payer) {
         final var op = txn.getCryptoApproveAllowance();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
@@ -134,9 +136,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleUpdateAccount(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoUpdateAccount();
         final var updateAccountId = op.getAccountIDToUpdate();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
@@ -152,11 +153,11 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(final TransactionBody txn, final AccountID payer) {
+    public TransactionMetadata preHandleCryptoTransfer(
+            final TransactionBody txn, final AccountID payer) {
         final var op = Objects.requireNonNull(txn).getCryptoTransfer();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         for (final var transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
             if (!tokenMeta.failed()) {
@@ -172,13 +173,15 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAddLiveHash(final TransactionBody txn, final AccountID payer) {
+    public TransactionMetadata preHandleAddLiveHash(
+            final TransactionBody txn, final AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteLiveHash(final TransactionBody txn, final AccountID payer) {
+    public TransactionMetadata preHandleDeleteLiveHash(
+            final TransactionBody txn, final AccountID payer) {
         throw new NotImplementedException();
     }
 
@@ -208,8 +211,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     private void handleTokenTransfers(
-            final List<AccountAmount> transfers,
-            final SigTransactionMetadataBuilder meta) {
+            final List<AccountAmount> transfers, final SigTransactionMetadataBuilder meta) {
         for (AccountAmount accountAmount : transfers) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
             if (!keyOrFailure.failed()) {
@@ -285,8 +287,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     private void handleHbarTransfers(
-            final CryptoTransferTransactionBody op,
-            final SigTransactionMetadataBuilder meta) {
+            final CryptoTransferTransactionBody op, final SigTransactionMetadataBuilder meta) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
 

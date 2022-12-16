@@ -144,7 +144,10 @@ class CryptoPreTransactionHandlerImplTest {
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
         final var meta = subject.preHandleCryptoCreate(txn, payer);
 
@@ -162,6 +165,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
         given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(false);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);

@@ -18,14 +18,12 @@ package com.hedera.node.app.service.mono.fees.charging;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InconsistentAdjustmentsException;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,7 +45,8 @@ public class FeeDistribution {
 
     @Inject
     public FeeDistribution(
-            final HederaAccountNumbers accountNumbers, final GlobalDynamicProperties dynamicProperties) {
+            final HederaAccountNumbers accountNumbers,
+            final GlobalDynamicProperties dynamicProperties) {
         this.dynamicProperties = dynamicProperties;
         this.stakingRewardAccountId =
                 STATIC_PROPERTIES.scopedAccountWith(accountNumbers.stakingRewardAccount());

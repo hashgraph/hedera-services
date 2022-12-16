@@ -15,7 +15,6 @@
  */
 package com.hedera.test.mocks;
 
-
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 
 public class MockAccountNumbers implements HederaAccountNumbers {
