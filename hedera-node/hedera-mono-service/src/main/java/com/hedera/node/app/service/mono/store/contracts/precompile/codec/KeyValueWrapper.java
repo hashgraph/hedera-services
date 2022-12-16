@@ -163,7 +163,8 @@ public final class KeyValueWrapper {
             case DELEGATABLE_CONTRACT_ID -> Key.newBuilder()
                     .setDelegatableContractId(delegatableContractID)
                     .build();
-            default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
+            default -> throw new InvalidTransactionException(
+                    "INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         };
     }
 }
