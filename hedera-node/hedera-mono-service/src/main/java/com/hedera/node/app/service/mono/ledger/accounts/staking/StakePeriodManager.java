@@ -101,8 +101,11 @@ public class StakePeriodManager {
     public boolean isRewardable(final long stakePeriodStart) {
         return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod();
     }
+
     public long estimatedFirstNonRewardableStakePeriod() {
-        return networkCtx.get().areRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
+        return networkCtx.get().areRewardsActivated()
+                ? estimatedCurrentStakePeriod() - 1
+                : Long.MIN_VALUE;
     }
 
     public boolean isEstimatedRewardable(final long stakePeriodStart) {

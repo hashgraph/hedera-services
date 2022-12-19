@@ -48,7 +48,8 @@ public class RewardCalculator {
     }
 
     public long computePendingReward(final HederaAccount account) {
-        final var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
         if (!stakePeriodManager.isRewardable(effectiveStart)) {
             return 0;
         }
@@ -86,7 +87,8 @@ public class RewardCalculator {
 
     public long estimatePendingRewards(
             final HederaAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
-        final var effectiveStart = stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
         if (!stakePeriodManager.isEstimatedRewardable(effectiveStart)) {
             return 0;
         }
