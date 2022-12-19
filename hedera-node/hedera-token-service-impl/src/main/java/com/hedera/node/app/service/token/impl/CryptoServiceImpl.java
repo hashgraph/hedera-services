@@ -22,14 +22,13 @@ import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
     @NonNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(
-            @Nonnull final States states, @Nonnull PreHandleContext ctx) {
+            @NonNull final States states, @NonNull PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
         final var store = new ReadableAccountStore(states);
@@ -39,6 +38,7 @@ public final class CryptoServiceImpl implements CryptoService {
     @NonNull
     @Override
     public CryptoQueryHandler createQueryHandler(@NonNull States states) {
-        return null;
+        Objects.requireNonNull(states);
+        return new CryptoQueryHandlerImpl(states);
     }
 }

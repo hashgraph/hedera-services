@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadOnlyScheduleStoreTest {
+class ReadableScheduleStoreTest {
     @Mock States states;
     @Mock State state;
     @Mock ScheduleVirtualValue schedule;
