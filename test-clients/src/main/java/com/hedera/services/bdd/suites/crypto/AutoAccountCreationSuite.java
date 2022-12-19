@@ -781,7 +781,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var underfunded = "underfunded";
         final var secondTransferTxn = "SecondTransferTxn";
         final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
-        return onlyDefaultHapiSpec("FailureAfterHollowAccountCreationReclaimsAlias")
+        return defaultHapiSpec("FailureAfterHollowAccountCreationReclaimsAlias")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))

@@ -132,7 +132,7 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer)
-                        .addToReqKeys(payerKey);
+                        .addToReqNonPayerKeys(payerKey);
         meta = subject.build();
 
         assertFalse(meta.failed());
@@ -150,11 +150,11 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(txn)
                         .payerKeyFor(payer)
-                        .addToReqKeys(payerKey);
+                        .addToReqNonPayerKeys(payerKey);
         meta = subject.build();
 
         assertTrue(meta.failed());
-        assertEquals(null, meta.payerKey());
+        assertNull(meta.payerKey());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, meta.status());
 
         assertEquals(txn, meta.txnBody());
@@ -171,10 +171,10 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
-        subject.addToReqKeys(payerKey);
+        subject.addToReqNonPayerKeys(payerKey);
 
         assertEquals(0, subject.build().requiredNonPayerKeys().size());
-        assertEquals(null, subject.build().payerKey());
+        assertNull(subject.build().payerKey());
         assertFalse(subject.build().requiredNonPayerKeys().contains(payerKey));
     }
 
@@ -190,7 +190,7 @@ class SigTransactionMetadataBuilderTest {
         assertEquals(0, subject.build().requiredNonPayerKeys().size());
         assertEquals(payerKey, subject.build().payerKey());
 
-        subject.addToReqKeys(otherKey);
+        subject.addToReqNonPayerKeys(otherKey);
         assertEquals(1, subject.build().requiredNonPayerKeys().size());
         assertEquals(payerKey, subject.build().payerKey());
         assertTrue(subject.build().requiredNonPayerKeys().contains(otherKey));

@@ -76,6 +76,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private String literalHexedAlias = null;
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
     private boolean assertAccountIDIsNotAlias = false;
+    private ByteString rawAlias;
 
     List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
@@ -95,6 +96,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             account = reference;
             repr = account;
         }
+    }
+
+    public HapiGetAccountBalance(ByteString rawAlias, ReferenceType type) {
+        this.rawAlias = rawAlias;
+        this.referenceType = type;
     }
 
     public HapiGetAccountBalance(Supplier<String> supplier) {
@@ -300,6 +306,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private Query getAccountBalanceQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (entityFn.isPresent()) {
             account = entityFn.get().get();
+            repr = account;
         }
 
         Consumer<CryptoGetAccountBalanceQuery.Builder> config;
@@ -316,6 +323,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             AccountID id;
             if (referenceType == ReferenceType.REGISTRY_NAME) {
                 id = TxnUtils.asId(account, spec);
+            } else if (referenceType == ReferenceType.RAW_ALIAS) {
+                id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
                 id = spec.registry().aliasIdFor(aliasKeySource);
             }

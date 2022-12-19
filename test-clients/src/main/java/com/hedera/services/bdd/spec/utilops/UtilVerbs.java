@@ -1416,11 +1416,24 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
 
+    public static Tuple accountAmountAlias(final byte[] alias, final Long amount) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
+
         return Tuple.of(
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender, final byte[] alias, final Long serialNumber) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
     }
 

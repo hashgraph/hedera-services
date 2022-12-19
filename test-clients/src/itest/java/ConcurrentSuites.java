@@ -60,6 +60,7 @@ import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
@@ -147,6 +148,7 @@ public class ConcurrentSuites {
                     ERC721ContractInteractions::new,
                     ERC1155ContractInteractions::new,
                     // contract.precompile
+                    SigningReqsSuite::new,
                     ApproveAllowanceSuite::new,
                     AssociatePrecompileSuite::new,
                     ContractBurnHTSSuite::new,
