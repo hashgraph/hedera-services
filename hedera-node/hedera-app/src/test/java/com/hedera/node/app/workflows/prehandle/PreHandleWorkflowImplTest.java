@@ -28,10 +28,12 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -125,14 +127,20 @@ class PreHandleWorkflowImplTest {
         // given
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
+        final AccountID payerID = AccountID.newBuilder().build();
+        final TransactionID transactionID =
+                TransactionID.newBuilder().setAccountID(payerID).build();
         final TransactionBody txBody =
-                TransactionBody.newBuilder().setConsensusCreateTopic(content).build();
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setConsensusCreateTopic(content)
+                        .build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        when(dispatcher.preHandle(eq(state), eq(txBody))).thenReturn(metadata);
+        when(dispatcher.dispatchPreHandle(state, txBody, payerID)).thenReturn(metadata);
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);

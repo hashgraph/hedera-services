@@ -80,7 +80,7 @@ public class IngestChecker {
         }
 
         // call handler for transaction-specific pre-check
-        dispatcher.preCheck(txBody);
+        dispatcher.dispatchPreCheck(txBody);
     }
 
     /**

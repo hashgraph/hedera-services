@@ -125,7 +125,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var metadata = dispatcher.preHandle(state, txBody);
+            final AccountID payerID = txBody.getTransactionID().getAccountID();
+            final var metadata = dispatcher.dispatchPreHandle(state, txBody, payerID);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented

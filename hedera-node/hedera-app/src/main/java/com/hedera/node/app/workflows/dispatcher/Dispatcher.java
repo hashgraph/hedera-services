@@ -57,29 +57,12 @@ public class Dispatcher {
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void preCheck(@NonNull final TransactionBody transactionBody) throws PreCheckException {
+    public void dispatchPreCheck(@NonNull final TransactionBody transactionBody)
+            throws PreCheckException {
         requireNonNull(transactionBody);
 
         final var handler = getHandler(transactionBody);
         handler.preCheck(transactionBody);
-    }
-
-    /**
-     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
-     * the specific functionality. The payer is taken from the transaction.
-     *
-     * @param state the {@link HederaState} of this request
-     * @param transactionBody the {@link TransactionBody} of the request
-     * @throws NullPointerException if {@code transactionBody} is {@code null}
-     */
-    @NonNull
-    public TransactionMetadata preHandle(
-            @NonNull final HederaState state, @NonNull final TransactionBody transactionBody) {
-        requireNonNull(state);
-        requireNonNull(transactionBody);
-
-        final AccountID payer = transactionBody.getTransactionID().getAccountID();
-        return preHandle(state, transactionBody, payer);
     }
 
     /**
@@ -92,7 +75,7 @@ public class Dispatcher {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
-    public TransactionMetadata preHandle(
+    public TransactionMetadata dispatchPreHandle(
             @NonNull final HederaState state,
             @NonNull final TransactionBody transactionBody,
             @NonNull final AccountID payer) {

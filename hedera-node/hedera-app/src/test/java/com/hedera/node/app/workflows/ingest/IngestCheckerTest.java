@@ -126,7 +126,7 @@ class IngestCheckerTest {
     void testCheckTransactionBodyWithBrokenSpecificValidationFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.getDefaultInstance();
-        doThrow(new PreCheckException(INVALID_FILE_ID)).when(dispatcher).preCheck(txBody);
+        doThrow(new PreCheckException(INVALID_FILE_ID)).when(dispatcher).dispatchPreCheck(txBody);
 
         // then
         assertThatThrownBy(

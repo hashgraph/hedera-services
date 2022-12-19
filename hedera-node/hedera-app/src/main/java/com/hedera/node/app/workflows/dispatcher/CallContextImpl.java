@@ -49,6 +49,6 @@ public class CallContextImpl implements CallContext {
         requireNonNull(transactionBody);
         requireNonNull(payer);
 
-        return dispatcher.preHandle(state, transactionBody, payer);
+        return dispatcher.dispatchPreHandle(state, transactionBody, payer);
     }
 }

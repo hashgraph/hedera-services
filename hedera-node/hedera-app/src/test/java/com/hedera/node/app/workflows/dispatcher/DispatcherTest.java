@@ -229,24 +229,15 @@ class DispatcherTest {
                         .build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.preHandle(null, txBody))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null, txBody, payer))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, null))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, null, payer))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, invalidSystemDelete))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, txBody, null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, invalidSystemDelete, payer))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, invalidSystemUndelete))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> dispatcher.preHandle(null, txBody, payer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, null, payer))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, txBody, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, invalidSystemDelete, payer))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.preHandle(state, invalidSystemUndelete, payer))
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, invalidSystemUndelete, payer))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -258,23 +249,10 @@ class DispatcherTest {
             Object ignored)
             throws PreCheckException {
         // when
-        dispatcher.preCheck(txBody);
+        dispatcher.dispatchPreCheck(txBody);
 
         // then
         verify(handlerSelection.apply(handlers)).preCheck(txBody);
-    }
-
-    @ParameterizedTest
-    @MethodSource("getDispatchParameters")
-    void testPreHandle(
-            final TransactionBody txBody,
-            final Object ignored,
-            final Consumer<Handlers> verification) {
-        // when
-        dispatcher.preHandle(state, txBody);
-
-        // then
-        verification.accept(this.handlers);
     }
 
     @ParameterizedTest
@@ -287,7 +265,7 @@ class DispatcherTest {
         final var payer = AccountID.newBuilder().build();
 
         // when
-        dispatcher.preHandle(state, txBody, payer);
+        dispatcher.dispatchPreHandle(state, txBody, payer);
 
         // then
         verification.accept(this.handlers);
