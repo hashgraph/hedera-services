@@ -67,6 +67,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.THIRD_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.TOKEN_WITH_CUSTOM_FEE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
@@ -571,9 +572,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
@@ -599,10 +599,23 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
                                     final var getTxnRecord =
                                             getTxnRecord("createTxn")
                                                     .hasPriority(recordWith().hasNoAlias());
-                                    allRunFor(spec, hapiGetAccountInfo, getTxnRecord);
+                                    allRunFor(
+                                            spec,
+                                            hapiGetAccountInfo,
+                                            hapiGetAnotherAccountInfo,
+                                            getTxnRecord);
                                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
     }

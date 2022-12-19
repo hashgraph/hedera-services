@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCrea
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyAliasProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -132,31 +133,20 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     aliasManager.link(op.getEvmAddress(), EntityNum.fromAccountId(created));
                     sigImpactHistorian.markAliasChanged(op.getAlias());
                 } else {
+                    final var evmAddress =
+                            ByteStringUtils.wrapUnsafely(
+                                    Objects.requireNonNull(
+                                            recoverAddressFromPubKey(
+                                                    op.getKey()
+                                                            .getECDSASecp256K1()
+                                                            .toByteArray())));
                     if (op.hasKey()
                             && !op.getKey().getECDSASecp256K1().isEmpty()
-                            && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-                        aliasManager.link(
-                                ByteStringUtils.wrapUnsafely(
-                                        Objects.requireNonNull(
-                                                recoverAddressFromPubKey(
-                                                        op.getKey()
-                                                                .getECDSASecp256K1()
-                                                                .toByteArray()))),
-                                EntityNum.fromAccountId(created));
-                        sigImpactHistorian.markAliasChanged(
-                                ByteStringUtils.wrapUnsafely(
-                                        Objects.requireNonNull(
-                                                recoverAddressFromPubKey(
-                                                        op.getKey()
-                                                                .getECDSASecp256K1()
-                                                                .toByteArray()))));
-                        txnCtx.setEvmAddress(
-                                ByteStringUtils.wrapUnsafely(
-                                        Objects.requireNonNull(
-                                                recoverAddressFromPubKey(
-                                                        op.getKey()
-                                                                .getECDSASecp256K1()
-                                                                .toByteArray()))));
+                            && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()
+                            && aliasManager.lookupIdBy(evmAddress).equals(MISSING_NUM)) {
+                        aliasManager.link(evmAddress, EntityNum.fromAccountId(created));
+                        sigImpactHistorian.markAliasChanged(evmAddress);
+                        txnCtx.setEvmAddress(evmAddress);
                     }
                 }
             }
@@ -189,7 +179,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
-                if (recoveredEvmAddressFromPrimitiveKey.length > 0) {
+                if (recoveredEvmAddressFromPrimitiveKey.length > 0
+                        && aliasManager
+                                .lookupIdBy(
+                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
+                                .equals(MISSING_NUM)) {
                     customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
             }

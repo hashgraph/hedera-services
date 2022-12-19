@@ -56,6 +56,7 @@ public class CryptoCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
 
     public static final String ACCOUNT = "account";
+    public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
 
@@ -572,9 +573,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3, op4);
@@ -585,7 +585,16 @@ public class CryptoCreateSuite extends HapiSuite {
                                                                     .key(SECP_256K1_SOURCE_KEY)
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
                                 }))
                 .then();
     }
@@ -648,9 +657,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
@@ -673,7 +681,16 @@ public class CryptoCreateSuite extends HapiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
                                 }))
                 .then();
     }

@@ -178,7 +178,7 @@ public class CryptoCreateChecks {
     private ResponseCodeEnum validateKeyAliasAndEvmAddressCombinations(
             final CryptoCreateTransactionBody op) {
         if (onlyKeyProvided(op)) {
-            return validateOnlyKeyProvidedCase(op);
+            return validateKey(op);
         } else if (onlyEvmAddressProvided(op)) {
             return validateOnlyEvmAddressProvidedCase(op);
         } else if (onlyAliasProvided(op)) {
@@ -223,26 +223,6 @@ public class CryptoCreateChecks {
 
     public static boolean onlyEvmAddressProvided(CryptoCreateTransactionBody op) {
         return !op.hasKey() && op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
-    }
-
-    private ResponseCodeEnum validateOnlyKeyProvidedCase(final CryptoCreateTransactionBody op) {
-        final var keyValidity = validateKey(op);
-        if (keyValidity != OK) {
-            return keyValidity;
-        }
-
-        if (!op.getKey().getECDSASecp256K1().isEmpty()
-                && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-            var isKeyUsedAsAliasValidity = isUsedAsAliasCheck(op.getKey().getECDSASecp256K1());
-
-            if (isKeyUsedAsAliasValidity != OK) {
-                return isKeyUsedAsAliasValidity;
-            }
-
-            return tryToRecoverEVMAddressAndCheckValidity(
-                    op.getKey().getECDSASecp256K1().toByteArray());
-        }
-        return OK;
     }
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
