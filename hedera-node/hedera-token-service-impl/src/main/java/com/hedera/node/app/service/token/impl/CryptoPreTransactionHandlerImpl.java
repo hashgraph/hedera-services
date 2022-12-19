@@ -200,7 +200,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     @Deprecated(forRemoval = true)
     @VisibleForTesting
-    void setWaivers(final CryptoSignatureWaiversImpl waivers) {
+    public void setWaivers(final CryptoSignatureWaiversImpl waivers) {
         this.waivers = waivers;
     }
 }
