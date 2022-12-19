@@ -177,6 +177,30 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
     }
 }
 
+val validationJar = tasks.register<ShadowJar>("validationJar") {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    configurations = listOf(project.configurations["runtimeClasspath"])
+    mergeServiceFiles()
+
+    exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+
+    archiveFileName.set("ValidationScenarios.jar")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
+            "Multi-Release" to "true"
+        )
+    }
+}
+
 val copyYahCli = tasks.register<Copy>("copyYahCli") {
     group = "copy"
     from(yahCliJar)

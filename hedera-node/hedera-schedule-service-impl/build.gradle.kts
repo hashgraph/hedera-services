@@ -19,7 +19,16 @@ plugins {
 
 description = "Default Hedera Schedule Service Implementation"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+}
+
 dependencies {
     api(project(":hedera-node:hedera-schedule-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testLibs.bundles.mockito)
 }

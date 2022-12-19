@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl;
+package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
-import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
-/**
- * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardScheduledService implements ScheduleService {
+public class ScheduleServiceImpl implements ScheduleService {
     @NonNull
     @Override
     public SchedulePreTransactionHandler createPreTransactionHandler(
             @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Objects.requireNonNull(states);
+        Objects.requireNonNull(ctx);
+        return new SchedulePreTransactionHandlerImpl(ctx.keyLookup());
     }
 }
