@@ -36,11 +36,11 @@ import org.apache.commons.lang3.NotImplementedException;
  * keys (but not the candidate signatures) for each schedule operation.
  */
 public class SchedulePreTransactionHandlerImpl implements SchedulePreTransactionHandler {
-    private ReadOnlyScheduleStore scheduleStore;
+    private ReadableScheduleStore scheduleStore;
     private final AccountKeyLookup keyLookup;
 
     public SchedulePreTransactionHandlerImpl(
-            @NonNull final ReadOnlyScheduleStore scheduleStore,
+            @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final AccountKeyLookup keyLookup) {
         Objects.requireNonNull(scheduleStore);
         Objects.requireNonNull(keyLookup);

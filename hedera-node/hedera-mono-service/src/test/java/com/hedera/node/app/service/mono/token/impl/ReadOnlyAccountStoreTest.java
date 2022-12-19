@@ -63,13 +63,13 @@ class ReadOnlyAccountStoreTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    private ReadOnlyAccountStore subject;
+    private ReadableAccountStore subject;
 
     @BeforeEach
     public void setUp() {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
-        subject = new ReadOnlyAccountStore(states);
+        subject = new ReadableAccountStore(states);
     }
 
     @Test

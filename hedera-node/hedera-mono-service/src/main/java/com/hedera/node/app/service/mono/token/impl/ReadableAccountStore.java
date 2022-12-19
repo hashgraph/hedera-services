@@ -43,18 +43,18 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public final class ReadOnlyAccountStore implements AccountKeyLookup {
+public final class ReadableAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
     private final State<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final State<ByteString, Long> aliases;
 
     /**
-     * Create a new {@link ReadOnlyAccountStore} instance.
+     * Create a new {@link ReadableAccountStore} instance.
      *
      * @param states The state to use.
      */
-    public ReadOnlyAccountStore(@NonNull final States states) {
+    public ReadableAccountStore(@NonNull final States states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

@@ -31,7 +31,7 @@ public final class CryptoServiceImpl implements CryptoService {
             @NonNull final States states, @NonNull final PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        final var store = new ReadOnlyAccountStore(states);
+        final var store = new ReadableAccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store, ctx);
     }
 

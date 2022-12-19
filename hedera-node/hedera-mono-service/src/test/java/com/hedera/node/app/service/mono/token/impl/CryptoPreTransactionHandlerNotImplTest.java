@@ -27,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
-    @Mock private ReadOnlyAccountStore store;
+    @Mock private ReadableAccountStore store;
     @Mock private PreHandleContext context;
 
     private CryptoPreTransactionHandlerImpl subject;

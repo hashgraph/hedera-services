@@ -33,16 +33,16 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadOnlyScheduleStore {
+public class ReadableScheduleStore {
     /** The underlying data storage class that holds the token data. */
     private final State<Long, ScheduleVirtualValue> schedulesById;
 
     /**
-     * Create a new {@link ReadOnlyScheduleStore} instance.
+     * Create a new {@link ReadableScheduleStore} instance.
      *
      * @param states The state to use.
      */
-    public ReadOnlyScheduleStore(@NonNull final States states) {
+    public ReadableScheduleStore(@NonNull final States states) {
         Objects.requireNonNull(states);
         this.schedulesById = states.get("SCHEDULES_BY_ID");
     }

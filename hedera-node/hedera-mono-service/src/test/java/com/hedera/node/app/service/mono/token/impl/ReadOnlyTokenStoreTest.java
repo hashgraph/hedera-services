@@ -76,12 +76,12 @@ class ReadOnlyTokenStoreTest {
                     accountsKycGrantedByDefault,
                     treasury);
 
-    private ReadOnlyTokenStore subject;
+    private ReadableTokenStore subject;
 
     @BeforeEach
     public void setUp() {
         initializeToken();
-        subject = new ReadOnlyTokenStore(states);
+        subject = new ReadableTokenStore(states);
     }
 
     private void initializeToken() {
