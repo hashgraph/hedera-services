@@ -73,7 +73,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.0-SNAPSHOT")
+            version("hapi-version", "0.33.0")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")

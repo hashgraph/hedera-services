@@ -114,7 +114,7 @@ class ContractCallLocalAnswerTest {
                         entityAccess,
                         dynamicProperties,
                         nodeLocalProperties,
-                        evmTxProcessor,
+                        () -> evmTxProcessor,
                         blockMetaProvider);
     }
 

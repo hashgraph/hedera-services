@@ -23,7 +23,10 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -37,6 +40,7 @@ import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.StoresModule;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -57,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.EVM;
@@ -198,5 +203,26 @@ public interface ContractsModule {
             Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(
                 gasCalculator, evm, true, List.copyOf(validationRules), 1);
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<CallLocalEvmTxProcessor> provideCallLocalEvmTxProcessorFactory(
+            final CodeCache codeCache,
+            final LivePricesSource livePricesSource,
+            final GlobalDynamicProperties dynamicProperties,
+            final GasCalculator gasCalculator,
+            final Map<String, Provider<MessageCallProcessor>> mcps,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager) {
+        return () ->
+                new CallLocalEvmTxProcessor(
+                        codeCache,
+                        livePricesSource,
+                        dynamicProperties,
+                        gasCalculator,
+                        mcps,
+                        ccps,
+                        aliasManager);
     }
 }

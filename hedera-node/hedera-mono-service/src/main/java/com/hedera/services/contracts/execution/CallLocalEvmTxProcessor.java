@@ -24,9 +24,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
-import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -38,12 +36,10 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  * Extension of the base {@link EvmTxProcessor} that provides interface for executing {@link
  * com.hederahashgraph.api.proto.java.ContractCallLocal} queries
  */
-@Singleton
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
-    @Inject
     public CallLocalEvmTxProcessor(
             final CodeCache codeCache,
             final LivePricesSource livePricesSource,

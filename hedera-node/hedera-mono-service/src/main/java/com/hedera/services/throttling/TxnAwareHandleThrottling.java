@@ -40,6 +40,11 @@ public class TxnAwareHandleThrottling implements FunctionalityThrottling {
     }
 
     @Override
+    public boolean shouldThrottleNOfUnscaled(final int n, final HederaFunctionality function) {
+        return delegate.shouldThrottleNOfUnscaled(n, function, txnCtx.consensusTime());
+    }
+
+    @Override
     public boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query) {
         throw new UnsupportedOperationException();
     }

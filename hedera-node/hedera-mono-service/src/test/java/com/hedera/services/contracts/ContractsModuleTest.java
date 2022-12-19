@@ -15,9 +15,11 @@
  */
 package com.hedera.services.contracts;
 
+import static com.hedera.services.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
 import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -26,6 +28,7 @@ import static org.mockito.Mockito.doNothing;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -33,12 +36,15 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -49,6 +55,9 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +86,11 @@ class ContractsModuleTest {
     @Mock EntityCreator entityCreator;
     @Mock MessageFrame messageFrame;
     @Mock WorldUpdater worldUpdater;
+    @Mock CodeCache codeCache;
+    @Mock GasCalculator gasCalculator;
+    @Mock AliasManager aliasManager;
+    @Mock MessageCallProcessor messageCallProcessor;
+    @Mock ContractCreationProcessor contractCreationProcessor;
 
     ContractsTestComponent subject;
 
@@ -101,6 +115,22 @@ class ContractsModuleTest {
                         .transactionContext(transactionContext)
                         .entityCreator(entityCreator)
                         .build();
+    }
+
+    @Test
+    void canManufactureCallLocalProcessors() {
+        final var pretendVersion = "0.0.1";
+        given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
+        final var supplier =
+                provideCallLocalEvmTxProcessorFactory(
+                        codeCache,
+                        livePricesSource,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        Map.of(pretendVersion, () -> messageCallProcessor),
+                        Map.of(pretendVersion, () -> contractCreationProcessor),
+                        aliasManager);
+        assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
     }
 
     @Test
