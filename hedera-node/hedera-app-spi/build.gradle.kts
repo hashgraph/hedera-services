@@ -36,6 +36,6 @@ dependencies {
     api(libs.swirlds.common)
     api(libs.slf4j.api)
     compileOnlyApi(libs.spotbugs.annotations)
-    
+
     testImplementation(testLibs.bundles.mockito)
 }
