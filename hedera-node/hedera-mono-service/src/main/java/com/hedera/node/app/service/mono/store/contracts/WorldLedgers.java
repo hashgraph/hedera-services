@@ -46,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -70,7 +71,6 @@ import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.customfees.LedgerCustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -217,7 +217,7 @@ public class WorldLedgers {
                 if (token == null) {
                     return Optional.empty();
                 }
-                return Optional.of(token.grpcFeeSchedule());
+                return Optional.of(token.evmCustomFees());
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting custom fees for token {}!",

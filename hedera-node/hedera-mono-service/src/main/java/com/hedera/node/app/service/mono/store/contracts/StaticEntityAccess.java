@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
@@ -56,7 +57,6 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;

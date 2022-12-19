@@ -197,7 +197,7 @@ public class ViewExecutor {
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                return encoder.encodeTokenGetCustomFees(customFees);
+                return evmEncoder.encodeTokenGetCustomFees(customFees);
             }
             case ABI_ID_IS_TOKEN -> {
                 final var wrapper = IsTokenPrecompile.decodeIsToken(input);

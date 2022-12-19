@@ -34,6 +34,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
@@ -81,7 +82,6 @@ import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -492,7 +492,7 @@ public class StateView {
             if (token == null) {
                 return emptyList();
             }
-            return token.grpcFeeSchedule();
+            return token.evmCustomFees();
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting custom fees for token {}!",

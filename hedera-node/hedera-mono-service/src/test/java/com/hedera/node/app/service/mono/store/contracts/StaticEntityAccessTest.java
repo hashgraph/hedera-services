@@ -233,7 +233,7 @@ class StaticEntityAccessTest {
 
     @Test
     void infoForTokenCustomFees() {
-        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
+//        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
 
         final var customFees = subject.infoForTokenCustomFees(tokenId);
         assertNotNull(customFees);

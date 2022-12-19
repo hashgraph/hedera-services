@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.booleanTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.decimalsType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getFungibleTokenInfoType;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenCustomFeesType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
@@ -33,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -177,6 +179,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+            .withStatus(SUCCESS.getNumber())
+            .withCustomFees(customFees)
+            .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -209,6 +219,7 @@ public class EvmEncodingFacade {
         private Address approved;
 
         private EvmTokenInfo tokenInfo;
+        private List<CustomFee> customFees;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -226,6 +237,7 @@ public class EvmEncodingFacade {
                         case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         default -> notSpecifiedType;
                     };
             this.functionType = functionType;
@@ -325,6 +337,11 @@ public class EvmEncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withCustomFees(final List<CustomFee> customFees) {
+            this.customFees = customFees;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -349,6 +366,7 @@ public class EvmEncodingFacade {
                                 convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         default -> Tuple.of(status);
                     };
 
@@ -361,6 +379,25 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForGetFungibleTokenInfo() {
             return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), tokenInfo.getDecimals()));
+        }
+
+        private Tuple getTupleForTokenGetCustomFees() {
+            return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForTokenCustomFees(final int responseCode) {
+            final var fixedFees = new ArrayList<Tuple>();
+            final var fractionalFees = new ArrayList<Tuple>();
+            final var royaltyFees = new ArrayList<Tuple>();
+
+            for (final var customFee : customFees) {
+                extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
+            }
+            return Tuple.of(
+                responseCode,
+                fixedFees.toArray(new Tuple[fixedFees.size()]),
+                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                royaltyFees.toArray(new Tuple[royaltyFees.size()]));
         }
 
         private Tuple getTupleForTokenInfo() {

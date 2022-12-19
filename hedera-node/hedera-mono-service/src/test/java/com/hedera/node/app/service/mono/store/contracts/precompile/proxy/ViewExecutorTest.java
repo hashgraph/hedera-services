@@ -346,7 +346,7 @@ class ViewExecutorTest {
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
                 .thenReturn(new TokenGetCustomFeesWrapper<>(fungible));
-        given(ledgers.infoForTokenCustomFees(fungible)).willReturn(getCustomFees());
+//        given(ledgers.infoForTokenCustomFees(fungible)).willReturn(getCustomFees());
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());

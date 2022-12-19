@@ -484,7 +484,7 @@ class WorldLedgersTest {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
         given(customFees.size()).willReturn(3);
-        given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
+//        given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
 
         final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
         assertEquals(3, customFeesInfo.size());

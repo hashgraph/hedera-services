@@ -72,6 +72,19 @@ public class EvmParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
+
+    public static final TupleType getTokenCustomFeesType =
+        TupleType.parse(
+            RESPONSE_STATUS_AT_BEGINNING
+                + FIXED_FEE
+                + ARRAY_BRACKETS
+                + ","
+                + FRACTIONAL_FEE
+                + ARRAY_BRACKETS
+                + ","
+                + ROYALTY_FEE
+                + ARRAY_BRACKETS
+                + ")");
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
 
     public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
@@ -105,6 +118,7 @@ public class EvmParsingConstants {
         ERC_GET_APPROVED,
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_FUNGIBLE_TOKEN_INFO,
+        HAPI_GET_TOKEN_CUSTOM_FEES,
 
         NOT_SPECIFIED
     }

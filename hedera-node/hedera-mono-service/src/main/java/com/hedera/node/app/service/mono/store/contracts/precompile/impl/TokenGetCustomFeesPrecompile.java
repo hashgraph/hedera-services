@@ -57,7 +57,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
         final var customFees = ledgers.infoForTokenCustomFees(tokenId).orElse(null);
         validateTrue(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-        return encoder.encodeTokenGetCustomFees(customFees);
+        return evmEncoder.encodeTokenGetCustomFees(customFees);
     }
 
     public static TokenGetCustomFeesWrapper<TokenID> decodeTokenGetCustomFees(final Bytes input) {
