@@ -17,8 +17,11 @@ package com.hedera.node.app.service.consensus.impl.test;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class ConsensusServiceImplTest {
 
@@ -33,5 +36,30 @@ class ConsensusServiceImplTest {
                 ConsensusServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type ConsensusServiceImpl");
+    }
+
+    @Test
+    void serviceCreatesPreTransactionHandler() {
+        final var service = ConsensusService.getInstance();
+
+        final var result =
+                service.createPreTransactionHandler(
+                        Mockito.mock(States.class), Mockito.mock(PreHandleContext.class));
+
+        Assertions.assertNotNull(result);
+    }
+
+    @Test
+    void checkNullArgs() {
+        final var service = ConsensusService.getInstance();
+
+        Assertions.assertThrows(
+                NullPointerException.class,
+                () ->
+                        service.createPreTransactionHandler(
+                                null, Mockito.mock(PreHandleContext.class)));
+        Assertions.assertThrows(
+                NullPointerException.class,
+                () -> service.createPreTransactionHandler(Mockito.mock(States.class), null));
     }
 }
