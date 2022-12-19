@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -66,7 +67,6 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -233,7 +233,7 @@ class StaticEntityAccessTest {
 
     @Test
     void infoForTokenCustomFees() {
-//        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
+        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
 
         final var customFees = subject.infoForTokenCustomFees(tokenId);
         assertNotNull(customFees);

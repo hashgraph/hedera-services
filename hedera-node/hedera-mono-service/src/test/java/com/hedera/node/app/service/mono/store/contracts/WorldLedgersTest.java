@@ -169,7 +169,7 @@ class WorldLedgersTest {
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private TokenInfo tokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
-    @Mock private List<CustomFee> customFees;
+    @Mock private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees;
     @Mock private JKey key;
 
     private WorldLedgers subject;
@@ -484,7 +484,7 @@ class WorldLedgersTest {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
         given(customFees.size()).willReturn(3);
-//        given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
+        given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
 
         final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
         assertEquals(3, customFeesInfo.size());
