@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl;
+package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.schedule.ScheduleService;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.

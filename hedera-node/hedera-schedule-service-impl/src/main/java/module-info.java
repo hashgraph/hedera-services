@@ -1,12 +1,18 @@
-module com.hedera.node.app.service.scheduled.impl {
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+
+module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.node.app.service.scheduled;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires static com.github.spotbugs.annotations;
+    requires com.hedera.hashgraph.protobuf.java.api;
+    requires org.apache.commons.lang3;
+    requires com.hedera.node.app.service.mono;
 
-    provides com.hedera.node.app.service.scheduled.ScheduleService with
-            com.hedera.node.app.service.scheduled.impl.StandardScheduledService;
-
-    exports com.hedera.node.app.service.scheduled.impl to
+    exports com.hedera.node.app.service.schedule.impl to
+            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.scheduled.impl.test;
     exports com.hedera.node.app.service.scheduled.impl.handlers;
+
+    provides com.hedera.node.app.service.schedule.ScheduleService with
+            ScheduleServiceImpl;
 }
