@@ -19,7 +19,6 @@ import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -785,9 +784,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        cryptoCreate(underfunded)
-                                .balance(10 * ONE_HBAR))
+                .when(cryptoCreate(underfunded).balance(10 * ONE_HBAR))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -799,37 +796,65 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                     final var evmAddress =
                                             ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
                                     targetAddress.set(evmAddress);
-                                    final var controlledOp = cryptoTransfer((sameSpec, b) -> {
-                                        final var sponsorId = spec.registry().getAccountID(LAZY_CREATE_SPONSOR);
-                                        final var underfundedId = spec.registry().getAccountID(underfunded);
-                                        final var funding = spec.registry().getAccountID(FUNDING);
-                                        b.setTransfers(TransferList.newBuilder()
-                                                        .addAccountAmounts(aaWith(sponsorId, -ONE_HUNDRED_HBARS))
-                                                        .addAccountAmounts(aaWith(evmAddress, +ONE_HUNDRED_HBARS))
-                                                        .addAccountAmounts(aaWith(underfundedId, -ONE_HUNDRED_HBARS))
-                                                        .addAccountAmounts(aaWith(funding, +ONE_HUNDRED_HBARS))
-                                                .build());
-                                    })
-                                            .hasKnownStatus(SUCCESS)
-                                            .memo("QUESTIONABLE")
-                                            .signedBy(DEFAULT_PAYER, LAZY_CREATE_SPONSOR, underfunded)
-                                            .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
-                                            .via(TRANSFER_TXN);
+                                    final var controlledOp =
+                                            cryptoTransfer(
+                                                            (sameSpec, b) -> {
+                                                                final var sponsorId =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        LAZY_CREATE_SPONSOR);
+                                                                final var underfundedId =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        underfunded);
+                                                                final var funding =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        FUNDING);
+                                                                b.setTransfers(
+                                                                        TransferList.newBuilder()
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                sponsorId,
+                                                                                                -ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                evmAddress,
+                                                                                                +ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                underfundedId,
+                                                                                                -ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                funding,
+                                                                                                +ONE_HUNDRED_HBARS))
+                                                                                .build());
+                                                            })
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .memo("QUESTIONABLE")
+                                                    .signedBy(
+                                                            DEFAULT_PAYER,
+                                                            LAZY_CREATE_SPONSOR,
+                                                            underfunded)
+                                                    .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
+                                                    .via(TRANSFER_TXN);
                                     allRunFor(spec, controlledOp);
                                 }),
-                                getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                        .nodePayment(123)
-                                        .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-                                sourcing(() -> cryptoTransfer(
-                                    tinyBarsFromTo(
-                                            LAZY_CREATE_SPONSOR,
-                                            targetAddress.get(),
-                                            ONE_HUNDRED_HBARS))
-                                    .signedBy(DEFAULT_PAYER, LAZY_CREATE_SPONSOR)
-                                    .via(secondTransferTxn)),
-                                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged()
-                        );
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .nodePayment(123)
+                                .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+                        sourcing(
+                                () ->
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                LAZY_CREATE_SPONSOR,
+                                                                targetAddress.get(),
+                                                                ONE_HUNDRED_HBARS))
+                                                .signedBy(DEFAULT_PAYER, LAZY_CREATE_SPONSOR)
+                                                .via(secondTransferTxn)),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged());
     }
 
     private HapiSpec canGetBalanceAndInfoViaAlias() {
