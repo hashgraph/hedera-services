@@ -342,12 +342,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                     if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                         networkCtx().markMigrationRecordsNotYetStreamed();
                     }
-                    if (((SerializableSemVers) deserializedVersion).isAfter(LAST_027X_VERSION)) {
-                        // This is our opportunity to recompute any bad staking metadata safely;
-                        // all nodes will make exactly the same changes here, exactly once
-                        app.stakeStartupHelper()
-                                .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
-                    }
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -357,6 +351,15 @@ public class ServicesState extends PartialNaryMerkleInternal
             logStateChildrenSizes();
             // This updates the working state accessor with our children
             app.initializationFlow().runWith(this, bootstrapProps);
+
+            if (trigger == RESTART
+                    && isUpgrade
+                    && ((SerializableSemVers) deserializedVersion).isAfter(LAST_027X_VERSION)) {
+                // This is our opportunity to recompute any bad staking metadata safely;
+                // all nodes will make exactly the same changes here, exactly once
+                app.stakeStartupHelper()
+                        .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+            }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place

@@ -174,7 +174,13 @@ class StakeStartupHelperTest {
                 final var nodeId = preUpgradeNodeIds[r.nextInt(preUpgradeNodeIds.length)];
                 account.setStakedId(-nodeId - 1);
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
-                given(rewardCalculator.computePendingReward(account)).willReturn(pretendReward);
+                given(
+                                rewardCalculator.estimatePendingRewards(
+                                        account,
+                                        stakingInfos.get(
+                                                EntityNum.fromLong(
+                                                        account.getStakedNodeAddressBookId()))))
+                        .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
                 account.setDeclineReward(r.nextBoolean());

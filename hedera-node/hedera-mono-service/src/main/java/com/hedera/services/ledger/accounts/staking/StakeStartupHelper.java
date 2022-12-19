@@ -191,9 +191,13 @@ public class StakeStartupHelper {
                 (num, account) -> {
                     if (account.getStakedId() < 0) {
                         if (doPendingRewards) {
-                            final var actualPending =
-                                    rewardCalculator.computePendingReward(account);
-                            newPendingRewards.addAndGet(actualPending);
+                            final var truePending =
+                                    rewardCalculator.estimatePendingRewards(
+                                            account,
+                                            stakingInfos.get(
+                                                    EntityNum.fromLong(
+                                                            account.getStakedNodeAddressBookId())));
+                            newPendingRewards.addAndGet(truePending);
                         }
                         if (doNodeStakes) {
                             updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);

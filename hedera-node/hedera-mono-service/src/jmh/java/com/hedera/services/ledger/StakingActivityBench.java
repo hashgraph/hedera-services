@@ -223,13 +223,14 @@ public class StakingActivityBench {
                                                         EntityNum.fromLong(
                                                                 account
                                                                         .getStakedNodeAddressBookId()));
+                                final var effectiveStart =
+                                        stakePeriodManager.effectivePeriod(
+                                                account.getStakePeriodStart());
                                 final var detailReward =
-                                        rewardCalculator.computeRewardFromDetails(
-                                                account,
-                                                info,
-                                                curPeriod,
-                                                stakePeriodManager.effectivePeriod(
-                                                        account.getStakePeriodStart()));
+                                        stakePeriodManager.isRewardable(effectiveStart)
+                                                ? rewardCalculator.computeRewardFromDetails(
+                                                        account, info, curPeriod, effectiveStart)
+                                                : 0;
                                 detailPendingRewards.getAndAdd(detailReward);
                             }
                         });
