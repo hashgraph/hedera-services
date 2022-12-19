@@ -112,6 +112,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 1. Parse the TransactionBody and check the syntax
                 final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
+                if (onsetResult.errorCode() != OK) {
+                    throw new PreCheckException(onsetResult.errorCode());
+                }
+
                 final var txBody = onsetResult.txBody();
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();

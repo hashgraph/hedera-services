@@ -15,21 +15,7 @@
  */
 package com.hedera.node.app.spi.workflows;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 /**
  * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
  */
-public interface TransactionHandler {
-
-    /**
-     * This method is called during the ingest-workflow. It does pre-checks that are specific to the
-     * operation.
-     *
-     * @param txBody the {@link TransactionBody} that needs to be validated
-     * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws PreCheckException if validation fails
-     */
-    void preCheck(@NonNull TransactionBody txBody) throws PreCheckException;
-}
+public interface TransactionHandler {}

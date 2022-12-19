@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -141,7 +143,8 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    public void checkTransactionBody(@NonNull final TransactionBody txBody)
+    @NonNull
+    public ResponseCodeEnum checkTransactionBody(@NonNull final TransactionBody txBody)
             throws PreCheckException {
         requireNonNull(txBody);
 
@@ -154,21 +157,21 @@ public class OnsetChecker {
         }
 
         var txnId = txBody.getTransactionID();
-        if (recordCache.isReceiptPresent(txnId)) {
-            throw new PreCheckException(DUPLICATE_TRANSACTION);
-        }
-
-        if (!isPlausibleTxnFee(txBody.getTransactionFee())) {
-            throw new PreCheckException(INSUFFICIENT_TX_FEE);
-        }
-
         if (!isPlausibleAccount(txnId.getAccountID())) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
         }
 
         checkMemo(txBody.getMemo());
 
-        checkTimebox(txnId.getTransactionValidStart(), txBody.getTransactionValidDuration());
+        if (recordCache.isReceiptPresent(txnId)) {
+            return DUPLICATE_TRANSACTION;
+        }
+
+        if (!isPlausibleTxnFee(txBody.getTransactionFee())) {
+            return INSUFFICIENT_TX_FEE;
+        }
+
+        return checkTimebox(txnId.getTransactionValidStart(), txBody.getTransactionValidDuration());
     }
 
     private static boolean isPlausibleTxnFee(final long transactionFee) {
@@ -193,23 +196,24 @@ public class OnsetChecker {
         }
     }
 
-    private void checkTimebox(final Timestamp start, final Duration duration)
-            throws PreCheckException {
+    private ResponseCodeEnum checkTimebox(final Timestamp start, final Duration duration) {
         final var validForSecs = duration.getSeconds();
         if (validForSecs < dynamicProperties.minTxnDuration()
                 || validForSecs > dynamicProperties.maxTxnDuration()) {
-            throw new PreCheckException(INVALID_TRANSACTION_DURATION);
+            return INVALID_TRANSACTION_DURATION;
         }
 
         final var validStart = safeguardedInstant(start);
         final var validDuration = safeguardedDuration(validForSecs, validStart);
         final var consensusTime = Instant.now(Clock.systemUTC());
         if (validStart.plusSeconds(validDuration).isBefore(consensusTime)) {
-            throw new PreCheckException(TRANSACTION_EXPIRED);
+            return TRANSACTION_EXPIRED;
         }
         if (!validStart.isBefore(consensusTime)) {
-            throw new PreCheckException(INVALID_TRANSACTION_START);
+            return INVALID_TRANSACTION_START;
         }
+
+        return OK;
     }
 
     /**

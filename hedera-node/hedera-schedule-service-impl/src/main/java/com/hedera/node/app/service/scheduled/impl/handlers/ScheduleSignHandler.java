@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.scheduled.impl.handlers;
 
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -27,11 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}.
  */
 public class ScheduleSignHandler implements TransactionHandler {
-
-    @Override
-    public void preCheck(@NonNull final TransactionBody txBody) throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
-    }
 
     /**
      * This method is called during the pre-handle workflow.

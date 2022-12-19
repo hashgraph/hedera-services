@@ -23,7 +23,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -39,20 +38,15 @@ public class IngestChecker {
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
-    private final Dispatcher dispatcher;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
-     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@link
-     *     com.hedera.node.app.spi.workflows.TransactionHandler#preCheck(TransactionBody)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public IngestChecker(
-            @NonNull final AccountID nodeAccountID, @NonNull final Dispatcher dispatcher) {
+    public IngestChecker(@NonNull final AccountID nodeAccountID) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
-        this.dispatcher = requireNonNull(dispatcher);
     }
 
     /**
@@ -70,17 +64,14 @@ public class IngestChecker {
         requireNonNull(txBody);
         requireNonNull(functionality);
 
-        var txnId = txBody.getTransactionID();
         if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
+        var txnId = txBody.getTransactionID();
         if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
-
-        // call handler for transaction-specific pre-check
-        dispatcher.dispatchPreCheck(txBody);
     }
 
     /**

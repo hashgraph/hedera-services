@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -77,7 +76,7 @@ class IngestWorkflowImplTest {
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic);
+            new OnsetResult(TRANSACTION_BODY, OK, SIGNATURE_MAP, ConsensusCreateTopic);
 
     @Mock private NodeInfo nodeInfo;
 
@@ -371,26 +370,6 @@ class IngestWorkflowImplTest {
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(BUSY);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
-        verify(opCounters, never()).countSubmitted(any());
-    }
-
-    @Test
-    void testSemanticFails() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        doThrow(new PreCheckException(NOT_SUPPORTED))
-                .when(checker)
-                .checkTransactionSemantics(TRANSACTION_BODY, ConsensusCreateTopic);
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(NOT_SUPPORTED);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
         verify(submissionManager, never()).submit(any(), any(), any());

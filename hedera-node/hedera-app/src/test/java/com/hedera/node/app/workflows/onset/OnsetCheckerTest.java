@@ -24,10 +24,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -250,7 +252,7 @@ class OnsetCheckerTest {
     }
 
     @Test
-    void testCheckTransactionBodySuccess() {
+    void testCheckTransactionBodySuccess() throws PreCheckException {
         // given
         final var txBody =
                 TransactionBody.newBuilder()
@@ -258,8 +260,11 @@ class OnsetCheckerTest {
                         .setTransactionValidDuration(ONE_MINUTE)
                         .build();
 
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
         // then
-        assertThatCode(() -> checker.checkTransactionBody(txBody)).doesNotThrowAnyException();
+        assertThat(result).isEqualTo(OK);
     }
 
     @Test
@@ -285,38 +290,6 @@ class OnsetCheckerTest {
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_ID);
-    }
-
-    @Test
-    void testCheckTransactionBodyDuplicateFails() {
-        // given
-        when(recordCache.isReceiptPresent(transactionID)).thenReturn(true);
-        final var txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setTransactionValidDuration(ONE_MINUTE)
-                        .build();
-
-        // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
-    }
-
-    @Test
-    void testCheckTransactionBodyWithInvalidFeeFails() {
-        // given
-        final var txBody =
-                TransactionBody.newBuilder()
-                        .setTransactionID(transactionID)
-                        .setTransactionValidDuration(ONE_MINUTE)
-                        .setTransactionFee(-1L)
-                        .build();
-
-        // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
     }
 
     @Test
@@ -422,7 +395,41 @@ class OnsetCheckerTest {
     }
 
     @Test
-    void testCheckTransactionBodyWithTooSmallDurationFails() {
+    void testCheckTransactionBodyDuplicateFails() throws PreCheckException {
+        // given
+        when(recordCache.isReceiptPresent(transactionID)).thenReturn(true);
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
+
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
+        // then
+        assertThat(result).isEqualTo(DUPLICATE_TRANSACTION);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithInvalidFeeFails() throws PreCheckException {
+        // given
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .setTransactionFee(-1L)
+                        .build();
+
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
+        // then
+        assertThat(result).isEqualTo(INSUFFICIENT_TX_FEE);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithTooSmallDurationFails() throws PreCheckException {
         // given
         final var duration = Duration.newBuilder().setSeconds(MIN_DURATION - 1).build();
         final var txBody =
@@ -431,14 +438,15 @@ class OnsetCheckerTest {
                         .setTransactionValidDuration(duration)
                         .build();
 
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
         // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
+        assertThat(result).isEqualTo(INVALID_TRANSACTION_DURATION);
     }
 
     @Test
-    void testCheckTransactionBodyWithTooLargeDurationFails() {
+    void testCheckTransactionBodyWithTooLargeDurationFails() throws PreCheckException {
         // given
         final var duration = Duration.newBuilder().setSeconds(MAX_DURATION + 1).build();
         final var txBody =
@@ -447,14 +455,15 @@ class OnsetCheckerTest {
                         .setTransactionValidDuration(duration)
                         .build();
 
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
         // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
+        assertThat(result).isEqualTo(INVALID_TRANSACTION_DURATION);
     }
 
     @Test
-    void testCheckTransactionBodyWithExpiredTimeFails() {
+    void testCheckTransactionBodyWithExpiredTimeFails() throws PreCheckException {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
         final var past =
@@ -470,14 +479,15 @@ class OnsetCheckerTest {
                         .setTransactionValidDuration(ONE_MINUTE)
                         .build();
 
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
         // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
+        assertThat(result).isEqualTo(TRANSACTION_EXPIRED);
     }
 
     @Test
-    void testCheckTransactionBodyWithFutureStartFails() {
+    void testCheckTransactionBodyWithFutureStartFails() throws PreCheckException {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
         final var future =
@@ -493,10 +503,11 @@ class OnsetCheckerTest {
                         .setTransactionValidDuration(ONE_MINUTE)
                         .build();
 
+        // when
+        final var result = checker.checkTransactionBody(txBody);
+
         // then
-        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
+        assertThat(result).isEqualTo(INVALID_TRANSACTION_START);
     }
 
     @SuppressWarnings("ConstantConditions")

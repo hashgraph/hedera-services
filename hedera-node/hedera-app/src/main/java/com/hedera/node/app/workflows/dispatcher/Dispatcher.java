@@ -18,8 +18,6 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -47,22 +45,6 @@ public class Dispatcher {
     public Dispatcher(@NonNull final Handlers handlers, @NonNull final StoreCache storeCache) {
         this.handlers = requireNonNull(handlers);
         this.storeCache = requireNonNull(storeCache);
-    }
-
-    /**
-     * Dispatch a pre-check request. It is forwarded to the correct handler, which takes care of the
-     * specific functionality.
-     *
-     * @param transactionBody the {@link TransactionBody} of the request
-     * @throws NullPointerException if {@code transactionBody} is {@code null}
-     * @throws PreCheckException if validation fails
-     */
-    public void dispatchPreCheck(@NonNull final TransactionBody transactionBody)
-            throws PreCheckException {
-        requireNonNull(transactionBody);
-
-        final var handler = getHandler(transactionBody);
-        handler.preCheck(transactionBody);
     }
 
     /**
@@ -173,77 +155,6 @@ public class Dispatcher {
                         .preHandle(transactionBody, payer);
                 case FILEID -> handlers.fileSystemUndeleteHandler()
                         .preHandle(transactionBody, payer);
-                case ID_NOT_SET -> throw new IllegalArgumentException(
-                        "SystemUndelete without IdCase");
-            };
-
-            case NODE_STAKE_UPDATE, DATA_NOT_SET -> throw new UnsupportedOperationException(
-                    "Not implemented");
-        };
-    }
-
-    private TransactionHandler getHandler(final TransactionBody transactionBody) {
-        return switch (transactionBody.getDataCase()) {
-            case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler();
-            case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler();
-            case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler();
-            case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler();
-
-            case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler();
-            case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler();
-            case CONTRACTCALL -> handlers.contractCallHandler();
-            case CONTRACTDELETEINSTANCE -> handlers.contractDeleteHandler();
-            case ETHEREUMTRANSACTION -> handlers.etherumTransactionHandler();
-
-            case CRYPTOCREATEACCOUNT -> handlers.cryptoCreateHandler();
-            case CRYPTOUPDATEACCOUNT -> handlers.cryptoUpdateHandler();
-            case CRYPTOTRANSFER -> handlers.cryptoTransferHandler();
-            case CRYPTODELETE -> handlers.cryptoDeleteHandler();
-            case CRYPTOAPPROVEALLOWANCE -> handlers.cryptoApproveAllowanceHandler();
-            case CRYPTODELETEALLOWANCE -> handlers.cryptoDeleteAllowanceHandler();
-            case CRYPTOADDLIVEHASH -> handlers.cryptoAddLiveHashHandler();
-            case CRYPTODELETELIVEHASH -> handlers.cryptoDeleteLiveHashHandler();
-
-            case FILECREATE -> handlers.fileCreateHandler();
-            case FILEUPDATE -> handlers.fileUpdateHandler();
-            case FILEDELETE -> handlers.fileDeleteHandler();
-            case FILEAPPEND -> handlers.fileAppendHandler();
-
-            case FREEZE -> handlers.freezeHandler();
-
-            case UNCHECKEDSUBMIT -> handlers.uncheckedSubmitHandler();
-
-            case SCHEDULECREATE -> handlers.scheduleCreateHandler();
-            case SCHEDULESIGN -> handlers.scheduleSignHandler();
-            case SCHEDULEDELETE -> handlers.scheduleDeleteHandler();
-
-            case TOKENCREATION -> handlers.tokenCreateHandler();
-            case TOKENUPDATE -> handlers.tokenUpdateHandler();
-            case TOKENMINT -> handlers.tokenMintHandler();
-            case TOKENBURN -> handlers.tokenBurnHandler();
-            case TOKENDELETION -> handlers.tokenDeleteHandler();
-            case TOKENWIPE -> handlers.tokenAccountWipeHandler();
-            case TOKENFREEZE -> handlers.tokenFreezeAccountHandler();
-            case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler();
-            case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler();
-            case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler();
-            case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler();
-            case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler();
-            case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler();
-            case TOKEN_PAUSE -> handlers.tokenPauseHandler();
-            case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
-
-            case UTIL_PRNG -> handlers.utilPrngHandler();
-
-            case SYSTEMDELETE -> switch (transactionBody.getSystemDelete().getIdCase()) {
-                case CONTRACTID -> handlers.contractSystemDeleteHandler();
-                case FILEID -> handlers.fileSystemDeleteHandler();
-                case ID_NOT_SET -> throw new IllegalArgumentException(
-                        "SystemDelete without IdCase");
-            };
-            case SYSTEMUNDELETE -> switch (transactionBody.getSystemUndelete().getIdCase()) {
-                case CONTRACTID -> handlers.contractSystemUndeleteHandler();
-                case FILEID -> handlers.fileSystemUndeleteHandler();
                 case ID_NOT_SET -> throw new IllegalArgumentException(
                         "SystemUndelete without IdCase");
             };

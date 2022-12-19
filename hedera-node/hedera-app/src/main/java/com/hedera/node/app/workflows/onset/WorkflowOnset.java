@@ -121,18 +121,20 @@ public class WorkflowOnset {
         // 3. Parse and validate TransactionBody
         final TransactionBody txBody =
                 parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
-        checker.checkTransactionBody(txBody);
+        var errorCode = checker.checkTransactionBody(txBody);
 
         // 4. Get HederaFunctionality
-        final HederaFunctionality functionality;
+        var functionality = HederaFunctionality.UNRECOGNIZED;
         try {
             functionality = MiscUtils.functionOf(txBody);
         } catch (UnknownHederaFunctionality e) {
-            throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            if (errorCode == ResponseCodeEnum.OK) {
+                errorCode = INVALID_TRANSACTION_BODY;
+            }
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(txBody, signatureMap, functionality);
+        return new OnsetResult(txBody, errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface

@@ -15,13 +15,16 @@
  */
 package com.hedera.node.app.workflows.onset;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -50,7 +53,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WorkflowOnsetTest {
 
-    @Mock private OnsetChecker checker;
+    @Mock(strictness = LENIENT)
+    private OnsetChecker checker;
 
     @Mock(strictness = LENIENT)
     private Parser<Query> queryParser;
@@ -77,7 +81,7 @@ class WorkflowOnsetTest {
     private WorkflowOnset onset;
 
     @BeforeEach
-    void setup() throws InvalidProtocolBufferException {
+    void setup() throws InvalidProtocolBufferException, PreCheckException {
         inputBuffer = ByteBuffer.allocate(0);
 
         final var content = ConsensusCreateTopicTransactionBody.newBuilder().build();
@@ -101,6 +105,9 @@ class WorkflowOnsetTest {
         when(txParser.parseFrom(inputBuffer)).thenReturn(tx);
 
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
+
+        when(checker.checkTransactionBody(any())).thenReturn(OK);
+
         onset = new WorkflowOnset(checker);
     }
 
@@ -117,6 +124,7 @@ class WorkflowOnsetTest {
 
         // then
         assertThat(result.txBody()).isEqualTo(txBody);
+        assertThat(result.errorCode()).isEqualTo(OK);
         assertThat(result.signatureMap()).isEqualTo(signatureMap);
         assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusCreateTopic);
     }
@@ -134,6 +142,7 @@ class WorkflowOnsetTest {
 
         // then
         assertThat(result.txBody()).isEqualTo(txBody);
+        assertThat(result.errorCode()).isEqualTo(OK);
         assertThat(result.signatureMap()).isEqualTo(signatureMap);
         assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusCreateTopic);
     }
@@ -187,6 +196,7 @@ class WorkflowOnsetTest {
 
         // then
         assertThat(result.txBody()).isEqualTo(localTxBody);
+        assertThat(result.errorCode()).isEqualTo(OK);
         assertThat(result.signatureMap()).isEqualTo(signatureMap);
         assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusDeleteTopic);
     }
@@ -268,12 +278,11 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithTransactionBodyCheckFails(@Mock OnsetChecker localChecker)
+    void testParseAndCheckWithTransactionBodyCheckCatastrophicFails(@Mock OnsetChecker localChecker)
             throws PreCheckException {
         // given
-        doThrow(new PreCheckException(INVALID_TRANSACTION_ID))
-                .when(localChecker)
-                .checkTransactionBody(txBody);
+        when(localChecker.checkTransactionBody(txBody))
+                .thenThrow(new PreCheckException(INVALID_TRANSACTION_ID));
         final var localOnset = new WorkflowOnset(localChecker);
 
         // then
@@ -282,18 +291,47 @@ class WorkflowOnsetTest {
                 .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_ID);
     }
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
+    @Test
+    void testParseAndCheckWithTransactionBodyCheckMildFails(
+            @Mock OnsetChecker localChecker, @Mock Parser<TransactionBody> localTxBodyParser)
+            throws InvalidProtocolBufferException, PreCheckException {
+        // given
+        final var localTxBody = TransactionBody.newBuilder().build();
+        when(localTxBodyParser.parseFrom(bodyBytes)).thenReturn(localTxBody);
+        when(localChecker.checkTransactionBody(localTxBody)).thenReturn(DUPLICATE_TRANSACTION);
+        final var localCtx =
+                new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
+
+        final var localOnset = new WorkflowOnset(localChecker);
+
+        // when
+        final var result = localOnset.parseAndCheck(localCtx, inputBuffer);
+
+        // then
+        assertThat(result.txBody()).isEqualTo(localTxBody);
+        assertThat(result.errorCode()).isEqualTo(DUPLICATE_TRANSACTION);
+        assertThat(result.signatureMap()).isEqualTo(signatureMap);
+        assertThat(result.functionality()).isEqualTo(HederaFunctionality.UNRECOGNIZED);
+    }
+
     @Test
     void testParseAndCheckWithUnknownHederaFunctionalityFails(
-            @Mock Parser<TransactionBody> localTxBodyParser) throws InvalidProtocolBufferException {
+            @Mock Parser<TransactionBody> localTxBodyParser)
+            throws InvalidProtocolBufferException, PreCheckException {
         // given
         final var localTxBody = TransactionBody.newBuilder().build();
         when(localTxBodyParser.parseFrom(bodyBytes)).thenReturn(localTxBody);
         final var localCtx =
                 new SessionContext(queryParser, txParser, signedParser, localTxBodyParser);
 
+        // when
+        final var result = onset.parseAndCheck(localCtx, inputBuffer);
+
         // then
-        assertThatThrownBy(() -> onset.parseAndCheck(localCtx, inputBuffer))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
+        assertThat(result.txBody()).isEqualTo(localTxBody);
+        assertThat(result.errorCode()).isEqualTo(INVALID_TRANSACTION_BODY);
+        assertThat(result.signatureMap()).isEqualTo(signatureMap);
+        assertThat(result.functionality()).isEqualTo(HederaFunctionality.UNRECOGNIZED);
     }
 }
