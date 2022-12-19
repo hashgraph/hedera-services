@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.bigIntegerTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.booleanTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.decimalsType;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
@@ -29,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FunctionType;
+import com.hederahashgraph.api.proto.java.TokenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -168,6 +170,14 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetFungibleTokenInfo(final EvmTokenInfo tokenInfo) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+            .withStatus(SUCCESS.getNumber())
+            .withTokenInfo(tokenInfo)
+            .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -216,6 +226,7 @@ public class EvmEncodingFacade {
                         case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> stringTuple;
                         case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         default -> notSpecifiedType;
                     };
             this.functionType = functionType;
@@ -338,6 +349,7 @@ public class EvmEncodingFacade {
                         case ERC_GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         default -> Tuple.of(status);
                     };
 
@@ -346,6 +358,10 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForGetTokenInfo() {
             return Tuple.of(status, getTupleForTokenInfo());
+        }
+
+        private Tuple getTupleForGetFungibleTokenInfo() {
+            return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), tokenInfo.getDecimals()));
         }
 
         private Tuple getTupleForTokenInfo() {

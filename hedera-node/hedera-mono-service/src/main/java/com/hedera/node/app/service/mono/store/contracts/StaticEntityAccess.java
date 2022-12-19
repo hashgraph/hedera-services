@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -314,6 +315,10 @@ public class StaticEntityAccess implements EntityAccess {
         return relStatus != null && relStatus.isFrozen();
     }
 
+
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
+        return view.evmInfoForToken(tokenId);
+    }
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
         return view.infoForToken(tokenId);
     }

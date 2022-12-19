@@ -72,6 +72,7 @@ public class EvmParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
+    public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
 
     public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
     public static final TupleType decimalsType = TupleType.parse(UINT8);
@@ -82,6 +83,8 @@ public class EvmParsingConstants {
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
     public static final TupleType getTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
+    public static final TupleType getFungibleTokenInfoType =
+        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
 
     public enum FunctionType {
         ERC_DECIMALS,
@@ -101,6 +104,7 @@ public class EvmParsingConstants {
         ERC_OWNER,
         ERC_GET_APPROVED,
         HAPI_GET_TOKEN_INFO,
+        HAPI_GET_FUNGIBLE_TOKEN_INFO,
 
         NOT_SPECIFIED
     }

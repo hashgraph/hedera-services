@@ -34,6 +34,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
@@ -182,6 +183,23 @@ public class StateView {
 
     public Optional<MerkleToken> tokenWith(final TokenID id) {
         return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
+    }
+
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null) {
+                return Optional.empty();
+            }
+            return Optional.of(token.asEvmTokenInfo(networkInfo.ledgerId()));
+        } catch (Exception unexpected) {
+            log.warn(
+                "Unexpected failure getting info for token {}!",
+                readableId(tokenId),
+                unexpected);
+            return Optional.empty();
+        }
     }
 
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {

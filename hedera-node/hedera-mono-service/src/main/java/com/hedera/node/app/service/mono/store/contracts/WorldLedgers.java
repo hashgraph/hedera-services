@@ -46,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -144,6 +145,18 @@ public class WorldLedgers {
     public boolean defaultKycStatus(final TokenID tokenId) {
         return propertyOf(
                 tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
+    }
+
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId, final ByteString ledgerId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.evmInfoForToken(tokenId);
+        } else {
+            final var token = tokensLedger.getImmutableRef(tokenId);
+            if (token == null) {
+                return Optional.empty();
+            }
+            return Optional.of(token.asEvmTokenInfo(ledgerId));
+        }
     }
 
     public Optional<TokenInfo> infoForToken(final TokenID tokenId, final ByteString ledgerId) {
