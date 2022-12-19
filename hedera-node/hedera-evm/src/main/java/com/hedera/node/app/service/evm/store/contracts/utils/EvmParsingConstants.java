@@ -72,6 +72,11 @@ public class EvmParsingConstants {
                     + ARRAY_BRACKETS
                     + ",string"
                     + ")";
+    public static final String NON_FUNGIBLE_TOKEN_INFO =
+        "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
+
+    public static final TupleType getNonFungibleTokenInfoType =
+        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     public static final TupleType getTokenCustomFeesType =
         TupleType.parse(
@@ -119,6 +124,7 @@ public class EvmParsingConstants {
         HAPI_GET_TOKEN_INFO,
         HAPI_GET_FUNGIBLE_TOKEN_INFO,
         HAPI_GET_TOKEN_CUSTOM_FEES,
+        HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
 
         NOT_SPECIFIED
     }

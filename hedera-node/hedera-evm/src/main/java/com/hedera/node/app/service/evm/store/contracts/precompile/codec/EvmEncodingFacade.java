@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.booleanTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.decimalsType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getFungibleTokenInfoType;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenCustomFeesType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
@@ -187,6 +188,16 @@ public class EvmEncodingFacade {
             .build();
     }
 
+    public Bytes encodeGetNonFungibleTokenInfo(
+        final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+            .withStatus(SUCCESS.getNumber())
+            .withTokenInfo(tokenInfo)
+            .withNftTokenInfo(nonFungibleTokenInfo)
+            .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -220,6 +231,7 @@ public class EvmEncodingFacade {
 
         private EvmTokenInfo tokenInfo;
         private List<CustomFee> customFees;
+        private EvmNftInfo nonFungibleTokenInfo;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -237,6 +249,7 @@ public class EvmEncodingFacade {
                         case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
                         case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
                         default -> notSpecifiedType;
                     };
@@ -342,6 +355,11 @@ public class EvmEncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withNftTokenInfo(final EvmNftInfo nonFungibleTokenInfo) {
+            this.nonFungibleTokenInfo = nonFungibleTokenInfo;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -366,6 +384,7 @@ public class EvmEncodingFacade {
                                 convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
                         default -> Tuple.of(status);
                     };
@@ -379,6 +398,18 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForGetFungibleTokenInfo() {
             return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), tokenInfo.getDecimals()));
+        }
+
+        private Tuple getTupleForGetNonFungibleTokenInfo() {
+            return Tuple.of(
+                status,
+                Tuple.of(
+                    getTupleForTokenInfo(),
+                    nonFungibleTokenInfo.getSerialNumber(),
+                    convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getAccount()),
+                    nonFungibleTokenInfo.getCreationTime(),
+                    nonFungibleTokenInfo.getMetadata(),
+                    convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getSpender())));
         }
 
         private Tuple getTupleForTokenGetCustomFees() {

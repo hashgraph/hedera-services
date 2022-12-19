@@ -131,7 +131,7 @@ public class ViewExecutor {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -142,13 +142,13 @@ public class ViewExecutor {
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
                 final var nonFungibleTokenInfo =
-                        ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmNftInfo(nftID, stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
                         ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-                return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
             }
             case ABI_ID_IS_FROZEN -> {
                 final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, a -> a);

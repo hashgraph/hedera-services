@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -69,6 +70,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.customfees.LedgerCustomFeeSchedules;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -81,6 +83,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import org.apache.commons.collections4.functors.IfClosure;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -170,6 +173,19 @@ public class WorldLedgers {
             }
             return Optional.of(token.asTokenInfo(tokenId, ledgerId));
         }
+    }
+
+    public Optional<EvmNftInfo> evmNftInfo(final NftID target, final ByteString ledgerId) {
+        Optional<TokenNftInfo> infoForNft = infoForNft(target, ledgerId);
+        if (infoForNft.isPresent()) {
+            TokenNftInfo info = infoForNft.get();
+            return Optional.of(new EvmNftInfo(info.getNftID().getSerialNumber(),
+                EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                info.getCreationTime().getSeconds(), info.getMetadata().toByteArray(),
+                EntityIdUtils.asTypedEvmAddress(info.getSpenderId())));
+        }
+
+        return Optional.empty();
     }
 
     public Optional<TokenNftInfo> infoForNft(final NftID target, final ByteString ledgerId) {
