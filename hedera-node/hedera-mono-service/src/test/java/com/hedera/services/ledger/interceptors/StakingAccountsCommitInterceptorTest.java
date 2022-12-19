@@ -390,6 +390,40 @@ class StakingAccountsCommitInterceptorTest {
     }
 
     @Test
+    void doesNotAwardStakeFromDeletedAccount() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var changes = buildChanges();
+        final var rewardPayment = 1L;
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+        counterparty.setDeleted(true);
+
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
+        given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1)))
+                .willReturn(true);
+
+        subject.preview(changes);
+
+        verify(rewardCalculator).applyReward(rewardPayment, counterparty, changes.changes(1));
+        verify(sideEffectsTracker)
+                .trackRewardPayment(counterpartyId.getAccountNum(), rewardPayment);
+
+        verify(stakeChangeManager)
+                .awardStake(1, (long) changes.changes(0).get(AccountProperty.BALANCE), false);
+
+        verify(stakeChangeManager).withdrawStake(0, changes.entity(1).getBalance(), false);
+
+        verify(stakeChangeManager, never())
+                .awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE), false);
+
+        assertFalse(subject.hasBeenRewarded(0));
+        assertTrue(subject.hasBeenRewarded(1));
+        // both have stakeMeta changes
+        assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
+    }
+
+    @Test
     void checksIfRewardsToBeActivatedEveryHandle() {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         final var changes = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();

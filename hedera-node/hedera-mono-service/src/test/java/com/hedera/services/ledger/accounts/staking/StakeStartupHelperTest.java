@@ -179,8 +179,19 @@ class StakeStartupHelperTest {
                 account.setStakePeriodStart(currentStakingPeriod - r.nextInt(2));
                 final var nodeId = preUpgradeNodeIds[r.nextInt(preUpgradeNodeIds.length)];
                 account.setStakedId(-nodeId - 1);
+                // Delete the account 10% of the time
+                if (r.nextDouble() < 0.10) {
+                    account.setDeleted(true);
+                    continue;
+                }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
-                given(rewardCalculator.computePendingReward(account)).willReturn(pretendReward);
+                given(
+                                rewardCalculator.estimatePendingRewards(
+                                        account,
+                                        stakingInfos.get(
+                                                EntityNum.fromLong(
+                                                        account.getStakedNodeAddressBookId()))))
+                        .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
                 account.setDeclineReward(r.nextBoolean());
