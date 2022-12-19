@@ -25,8 +25,8 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -45,7 +45,7 @@ class SigTransactionMetadataTest {
     @Mock private HederaKey payerKey;
     @Mock private HederaKey otherKey;
     @Mock AccountKeyLookup lookup;
-    private SigTransactionMetadata subject;
+    private TransactionMetadata subject;
 
     @Test
     void gettersWork() {
@@ -55,7 +55,7 @@ class SigTransactionMetadataTest {
                 new SigTransactionMetadataBuilder(lookup)
                         .payerKeyFor(PAYER)
                         .txnBody(txn)
-                        .addToReqKeys(otherKey)
+                        .addToReqNonPayerKeys(otherKey)
                         .build();
 
         assertFalse(subject.failed());
@@ -74,7 +74,7 @@ class SigTransactionMetadataTest {
                         .payerKeyFor(PAYER)
                         .status(INVALID_ACCOUNT_ID)
                         .txnBody(txn)
-                        .addToReqKeys(otherKey)
+                        .addToReqNonPayerKeys(otherKey)
                         .build();
 
         assertTrue(subject.failed());

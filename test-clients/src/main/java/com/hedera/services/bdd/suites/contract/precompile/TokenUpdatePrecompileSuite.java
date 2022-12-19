@@ -303,10 +303,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
         final AtomicReference<TokenID> noAdminKeyToken = new AtomicReference<>();
         final AtomicReference<TokenID> nftToken = new AtomicReference<>();
-        return defaultHapiSpec("updateNftTreasuryWithAndWithoutAdminKey")
+        return defaultHapiSpec("UpdateNftTreasuryWithAndWithoutAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(newTokenTreasury).maxAutomaticTokenAssociations(6),
+                        cryptoCreate(newTokenTreasury)
+                                .keyShape(ED25519_ON)
+                                .maxAutomaticTokenAssociations(6),
                         newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
@@ -349,6 +351,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(newTokenTreasury)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
@@ -363,6 +366,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .via("tokenUpdateTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(newTokenTreasury)
                                                         .payingWith(ACCOUNT))))
                 .then(
                         childRecordsCheck(
