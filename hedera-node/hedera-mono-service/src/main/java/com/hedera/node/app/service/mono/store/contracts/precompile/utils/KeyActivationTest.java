@@ -27,7 +27,7 @@ public interface KeyActivationTest {
      * <ul>
      *   <li>The {@code recipient} address is the account receiving the call operation; and,
      *   <li>The {@code contract} address is the account with the code being executed; and,
-     *   <li>Any {@code ContractID} or {@code delegatable_contract_id} key that matches the {@code
+     *   <li>Any {@code contractID} or {@code delegatable_contract_id} key that matches the {@code
      *       activeContract} address should be considered active (modulo whether the recipient and
      *       contract imply a delegate call).
      * </ul>
