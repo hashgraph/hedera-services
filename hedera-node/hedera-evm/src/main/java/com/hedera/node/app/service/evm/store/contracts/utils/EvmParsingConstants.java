@@ -104,6 +104,9 @@ public class EvmParsingConstants {
     public static final TupleType getFungibleTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
 
+    public static final TupleType getTokenExpiryInfoType =
+        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
+
     public enum FunctionType {
         ERC_DECIMALS,
         HAPI_GET_TOKEN_TYPE,
@@ -125,6 +128,7 @@ public class EvmParsingConstants {
         HAPI_GET_FUNGIBLE_TOKEN_INFO,
         HAPI_GET_TOKEN_CUSTOM_FEES,
         HAPI_GET_NON_FUNGIBLE_TOKEN_INFO,
+        HAPI_GET_TOKEN_EXPIRY_INFO,
 
         NOT_SPECIFIED
     }

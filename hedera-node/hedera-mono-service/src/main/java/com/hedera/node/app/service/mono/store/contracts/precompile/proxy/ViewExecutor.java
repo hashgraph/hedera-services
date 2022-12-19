@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestam
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
@@ -230,12 +231,12 @@ public class ViewExecutor {
                 Objects.requireNonNull(tokenInfo);
 
                 final var expiryInfo =
-                        new TokenExpiryWrapper(
+                        new TokenExpiryInfo(
                                 tokenInfo.getExpiry().getSeconds(),
-                                tokenInfo.getAutoRenewAccount(),
+                            EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
                                 tokenInfo.getAutoRenewPeriod().getSeconds());
 
-                return encoder.encodeGetTokenExpiryInfo(expiryInfo);
+                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = GetTokenKeyPrecompile.decodeGetTokenKey(input);

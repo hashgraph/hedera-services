@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getFungibleTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getNonFungibleTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenCustomFeesType;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenExpiryInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
@@ -198,6 +199,14 @@ public class EvmEncodingFacade {
             .build();
     }
 
+    public Bytes encodeGetTokenExpiryInfo(final TokenExpiryInfo tokenExpiryWrapper) {
+        return functionResultBuilder()
+            .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+            .withStatus(SUCCESS.getNumber())
+            .withExpiry(tokenExpiryWrapper)
+            .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -233,6 +242,8 @@ public class EvmEncodingFacade {
         private List<CustomFee> customFees;
         private EvmNftInfo nonFungibleTokenInfo;
 
+        private Tuple tokenExpiryInfo;
+
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
@@ -251,6 +262,7 @@ public class EvmEncodingFacade {
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
                         default -> notSpecifiedType;
                     };
             this.functionType = functionType;
@@ -360,6 +372,15 @@ public class EvmEncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withExpiry(final TokenExpiryInfo tokenExpiryInfo) {
+            this.tokenExpiryInfo =
+                Tuple.of(
+                    tokenExpiryInfo.getSecond(),
+                    convertBesuAddressToHeadlongAddress(tokenExpiryInfo.getAutoRenewAccount()),
+                    tokenExpiryInfo.getAutoRenewPeriod());
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -386,6 +407,7 @@ public class EvmEncodingFacade {
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         default -> Tuple.of(status);
                     };
 
@@ -414,6 +436,14 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForTokenGetCustomFees() {
             return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForGetTokenExpiryInfo() {
+            return getTupleForTokenExpiryInfo(status);
+        }
+
+        private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+            return Tuple.of(responseCode, tokenExpiryInfo);
         }
 
         private Tuple getTupleForTokenCustomFees(final int responseCode) {
