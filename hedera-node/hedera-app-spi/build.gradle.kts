@@ -36,9 +36,6 @@ dependencies {
     api(libs.swirlds.common)
     api(libs.slf4j.api)
     compileOnlyApi(libs.spotbugs.annotations)
-
-    implementation(libs.grpc.stub)
-    implementation(libs.helidon.io.grpc)
-
+    
     testImplementation(testLibs.bundles.mockito)
 }
