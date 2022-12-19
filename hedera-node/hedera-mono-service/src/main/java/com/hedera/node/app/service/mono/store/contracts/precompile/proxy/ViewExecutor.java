@@ -108,7 +108,8 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.evmInfoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -118,7 +119,8 @@ public class ViewExecutor {
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.evmInfoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);

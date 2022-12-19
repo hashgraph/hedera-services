@@ -315,10 +315,10 @@ public class StaticEntityAccess implements EntityAccess {
         return relStatus != null && relStatus.isFrozen();
     }
 
-
     public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
         return view.evmInfoForToken(tokenId);
     }
+
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
         return view.infoForToken(tokenId);
     }

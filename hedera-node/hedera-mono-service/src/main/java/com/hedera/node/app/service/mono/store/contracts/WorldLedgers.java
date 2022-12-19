@@ -147,7 +147,8 @@ public class WorldLedgers {
                 tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
     }
 
-    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId, final ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(
+            final TokenID tokenId, final ByteString ledgerId) {
         if (staticEntityAccess != null) {
             return staticEntityAccess.evmInfoForToken(tokenId);
         } else {

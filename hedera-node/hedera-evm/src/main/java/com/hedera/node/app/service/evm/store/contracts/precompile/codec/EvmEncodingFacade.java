@@ -30,7 +30,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FunctionType;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -172,10 +171,10 @@ public class EvmEncodingFacade {
 
     public Bytes encodeGetFungibleTokenInfo(final EvmTokenInfo tokenInfo) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
-            .withStatus(SUCCESS.getNumber())
-            .withTokenInfo(tokenInfo)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
     }
 
     private FunctionResultBuilder functionResultBuilder() {

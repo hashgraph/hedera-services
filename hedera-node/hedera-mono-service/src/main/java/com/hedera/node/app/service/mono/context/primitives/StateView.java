@@ -195,9 +195,9 @@ public class StateView {
             return Optional.of(token.asEvmTokenInfo(networkInfo.ledgerId()));
         } catch (Exception unexpected) {
             log.warn(
-                "Unexpected failure getting info for token {}!",
-                readableId(tokenId),
-                unexpected);
+                    "Unexpected failure getting info for token {}!",
+                    readableId(tokenId),
+                    unexpected);
             return Optional.empty();
         }
     }

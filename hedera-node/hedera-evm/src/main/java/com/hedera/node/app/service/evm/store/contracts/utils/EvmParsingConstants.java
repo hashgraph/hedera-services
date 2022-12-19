@@ -84,7 +84,7 @@ public class EvmParsingConstants {
     public static final TupleType getTokenInfoType =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
     public static final TupleType getFungibleTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
 
     public enum FunctionType {
         ERC_DECIMALS,
