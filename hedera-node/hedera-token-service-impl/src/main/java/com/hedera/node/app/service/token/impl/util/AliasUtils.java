@@ -19,13 +19,13 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAdd
 
 /** Utility class needed for resolving aliases */
 public final class AliasUtils {
-	public static final Long MISSING_NUM = 0L;
+    public static final Long MISSING_NUM = 0L;
 
-	private AliasUtils() {
-		throw new UnsupportedOperationException("Utility class");
-	}
+    private AliasUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
-	public static Long fromMirror(final byte[] evmAddress) {
-		return numFromEvmAddress(evmAddress);
-	}
+    public static Long fromMirror(final byte[] evmAddress) {
+        return numFromEvmAddress(evmAddress);
+    }
 }

@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl.test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.token.impl.CryptoPreTransactionHandlerImpl;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -25,28 +27,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
-	@Mock
-	private AccountStore store;
-	@Mock
-	private PreHandleContext context;
+    @Mock private AccountStore store;
+    @Mock private PreHandleContext context;
 
-	private CryptoPreTransactionHandlerImpl subject;
+    private CryptoPreTransactionHandlerImpl subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new CryptoPreTransactionHandlerImpl(store, context);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
+    }
 
-	@Test
-	void notImplementedStuffIsntImplemented() {
-		assertThrows(
+    @Test
+    void notImplementedStuffIsntImplemented() {
+        assertThrows(
                 NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null, null));
-		assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null, null));
-		assertThrows(
+        assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null, null));
+        assertThrows(
                 NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null, null));
-	}
+    }
 }
