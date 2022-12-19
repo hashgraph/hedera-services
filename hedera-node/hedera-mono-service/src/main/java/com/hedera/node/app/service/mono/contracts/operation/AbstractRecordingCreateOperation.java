@@ -15,8 +15,16 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -26,8 +34,11 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -198,30 +209,83 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             // C.f. https://github.com/hashgraph/hedera-services/issues/2807
             final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             final var sideEffects = new SideEffectsTracker();
-            sideEffects.trackNewContract(
-                    updater.idOfLastNewAddress(), childFrame.getContractAddress());
-            final var childRecord =
-                    creator.createSuccessfulSyntheticRecord(
-                            NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-            childRecord.onlyExternalizeIfSuccessful();
-            final var opCustomizer = updater.customizerForPendingCreation();
-            final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-            if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
-                final var contractBytecodeSidecar =
-                        SidecarUtils.createContractBytecodeSidecarFrom(
-                                updater.idOfLastNewAddress(),
-                                childFrame.getCode().getContainerBytes().toArrayUnsafe(),
-                                updater.get(childFrame.getContractAddress())
-                                        .getCode()
-                                        .toArrayUnsafe());
-                updater.manageInProgressRecord(
-                        recordsHistorian,
-                        childRecord,
-                        syntheticOp,
-                        List.of(contractBytecodeSidecar));
+
+            Address hollowAccountAddress = null;
+            AccountID hollowAccountID = null;
+            boolean hollowAccountExists = false;
+            if (updater.aliases() != null) {
+                hollowAccountAddress =
+                        updater.aliases().resolveForEvm(childFrame.getContractAddress());
+                hollowAccountID = accountIdFromEvmAddress(hollowAccountAddress);
+                hollowAccountExists =
+                        updater.trackingAccounts().get(hollowAccountID, KEY).equals(EMPTY_KEY);
+            }
+
+            if (hollowAccountExists) {
+                // reclaim the id for the contract
+                updater.reclaimLatestContractId();
+
+                // update the hollow account to be a contract
+                updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
+
+                // update the hollow account key to be the default contract key
+                updater.trackingAccounts().set(hollowAccountID, KEY, STANDIN_CONTRACT_ID_KEY);
+
+                // set initial contract nonce to 1
+                updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
+
+                sideEffects.trackNewContract(
+                        contractIdFromEvmAddress(hollowAccountAddress),
+                        childFrame.getContractAddress());
+
+                // track the hollow account completion
+                sideEffects.trackHollowAccountUpdate(hollowAccountID);
+                var childRecord =
+                        creator.createSuccessfulSyntheticRecord(
+                                NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+                childRecord.onlyExternalizeIfSuccessful();
+
+                final var accountKey =
+                        Key.newBuilder()
+                                .setContractID(STANDIN_CONTRACT_ID_KEY.getContractID())
+                                .build();
+
+                var syntheticOp =
+                        syntheticTxnFactory.updateHollowAccount(
+                                EntityNum.fromAccountId(hollowAccountID), accountKey);
+
+                recordsHistorian.trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticOp, childRecord);
+
+                // sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
             } else {
-                updater.manageInProgressRecord(
-                        recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
+                sideEffects.trackNewContract(
+                        updater.idOfLastNewAddress(), childFrame.getContractAddress());
+                var childRecord =
+                        creator.createSuccessfulSyntheticRecord(
+                                NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+                childRecord.onlyExternalizeIfSuccessful();
+
+                final var opCustomizer = updater.customizerForPendingCreation();
+                var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+
+                if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
+                    final var contractBytecodeSidecar =
+                            SidecarUtils.createContractBytecodeSidecarFrom(
+                                    updater.idOfLastNewAddress(),
+                                    childFrame.getCode().getContainerBytes().toArrayUnsafe(),
+                                    updater.get(childFrame.getContractAddress())
+                                            .getCode()
+                                            .toArrayUnsafe());
+                    updater.manageInProgressRecord(
+                            recordsHistorian,
+                            childRecord,
+                            syntheticOp,
+                            List.of(contractBytecodeSidecar));
+                } else {
+                    updater.manageInProgressRecord(
+                            recordsHistorian, childRecord, syntheticOp, Collections.emptyList());
+                }
             }
         } else {
             frame.setReturnData(childFrame.getOutputData());

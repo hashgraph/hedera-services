@@ -114,7 +114,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     public static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
     private static final String NFT_FINITE_SUPPLY_TOKEN = "nftB";
     private static final String MULTI_KEY = "multi";
-    private static final String PARTY = "party";
+    public static final String PARTY = "party";
     private static final String COUNTERPARTY = "counterparty";
 
     private static final String CIVILIAN = "somebody";
@@ -169,7 +169,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 noStakePeriodStartIfNotStakingToNode(),
                 hollowAccountCreationWithCryptoTransfer(),
                 hollowAccountCompletionWithCryptoTransfer(),
-                //                hollowAccountCompletionWithEthereumTransaction(),
                 hollowAccountCompletionWithContractCreate(),
                 hollowAccountCompletionWithContractCall(),
                 hollowAccountCompletionWithTokenAssociation(),

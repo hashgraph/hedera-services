@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -271,6 +272,16 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                     Key expectedKey = spec.registry().getKey(expectedKeyName);
                     assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), BAD_ADMIN_KEY);
                 });
+        return this;
+    }
+
+    public ContractInfoAsserts hasStandinContractKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                STANDIN_CONTRACT_ID_KEY,
+                                object2ContractInfo(o).getAdminKey(),
+                                BAD_ADMIN_KEY));
         return this;
     }
 

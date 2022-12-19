@@ -35,8 +35,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -66,6 +66,14 @@ import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContrac
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -77,6 +85,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -94,9 +103,13 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
@@ -144,7 +157,7 @@ public class Create2OperationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 create2FactoryWorksAsExpected(),
-                canBlockCreate2ChildWithHollowAccount(),
+                canMergeCreate2ChildWithHollowAccount(),
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
@@ -639,7 +652,7 @@ public class Create2OperationSuite extends HapiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiSpec canBlockCreate2ChildWithHollowAccount() {
+    private HapiSpec canMergeCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var creation = CREATION;
@@ -650,9 +663,15 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
         final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
-        final AtomicReference<String> blockedAliasAddr = new AtomicReference<>();
-        final AtomicReference<String> blockedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        final var initialTokenSupply = 1000;
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
         return defaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
                 .given(
@@ -667,7 +686,38 @@ public class Create2OperationSuite extends HapiSuite {
                                 .exposingNumTo(
                                         num ->
                                                 factoryEvmAddress.set(
-                                                        asHexedSolidityAddress(0, 0, num))))
+                                                        asHexedSolidityAddress(0, 0, num))),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .treasury(PARTY)
+                                .via(TOKEN_A_CREATE),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(PARTY)
+                                .via(NFT_CREATE),
+                        mintToken(
+                                NFT_INFINITE_SUPPLY_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"))),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var registry = spec.registry();
+                                    ftId.set(registry.getTokenID(A_TOKEN));
+                                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                                    partyId.set(registry.getAccountID(PARTY));
+                                    partyAlias.set(
+                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                                }))
                 .when(
                         sourcing(
                                 () ->
@@ -737,27 +787,62 @@ public class Create2OperationSuite extends HapiSuite {
                                             final var defaultPayerId =
                                                     spec.registry().getAccountID(DEFAULT_PAYER);
                                             b.setTransfers(
-                                                    TransferList.newBuilder()
-                                                            .addAccountAmounts(
-                                                                    aaWith(
-                                                                            ByteString.copyFrom(
-                                                                                    CommonUtils
-                                                                                            .unhex(
-                                                                                                    expectedCreate2Address
-                                                                                                            .get())),
-                                                                            +ONE_HBAR))
-                                                            .addAccountAmounts(
-                                                                    aaWith(
-                                                                            defaultPayerId,
-                                                                            -ONE_HBAR)));
+                                                            TransferList.newBuilder()
+                                                                    .addAccountAmounts(
+                                                                            aaWith(
+                                                                                    ByteString
+                                                                                            .copyFrom(
+                                                                                                    CommonUtils
+                                                                                                            .unhex(
+                                                                                                                    expectedCreate2Address
+                                                                                                                            .get())),
+                                                                                    +ONE_HBAR))
+                                                                    .addAccountAmounts(
+                                                                            aaWith(
+                                                                                    defaultPayerId,
+                                                                                    -ONE_HBAR)))
+                                                    .addTokenTransfers(
+                                                            TokenTransferList.newBuilder()
+                                                                    .setToken(ftId.get())
+                                                                    .addTransfers(
+                                                                            aaWith(
+                                                                                    partyAlias
+                                                                                            .get(),
+                                                                                    -500))
+                                                                    .addTransfers(
+                                                                            aaWith(
+                                                                                    ByteString
+                                                                                            .copyFrom(
+                                                                                                    CommonUtils
+                                                                                                            .unhex(
+                                                                                                                    expectedCreate2Address
+                                                                                                                            .get())),
+                                                                                    +500)))
+                                                    .addTokenTransfers(
+                                                            TokenTransferList.newBuilder()
+                                                                    .setToken(nftId.get())
+                                                                    .addNftTransfers(
+                                                                            ocWith(
+                                                                                    accountId(
+                                                                                            partyAlias
+                                                                                                    .get()),
+                                                                                    accountId(
+                                                                                            ByteString
+                                                                                                    .copyFrom(
+                                                                                                            CommonUtils
+                                                                                                                    .unhex(
+                                                                                                                            expectedCreate2Address
+                                                                                                                                    .get()))),
+                                                                                    1L)));
                                         })
-                                .signedBy(DEFAULT_PAYER)
+                                .signedBy(DEFAULT_PAYER, PARTY)
                                 .fee(ONE_HBAR)
                                 .via(creation),
                         getTxnRecord(creation)
                                 .andAllChildRecords()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
-                        sourcing(() -> getAccountInfo(hollowCreationAddress.get()).logged()),
+                        sourcing(() -> getAccountInfo(hollowCreationAddress.get()).logged()))
+                .then(
                         sourcing(
                                 () ->
                                         contractCall(
@@ -770,36 +855,27 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .sending(tcValue)
                                                 .via(CREATE_2_TXN)),
                         captureOneChildCreate2MetaFor(
-                                "Blocked contract",
+                                "Merged deployed contract with hollow account",
                                 CREATE_2_TXN,
-                                blockedMirrorAddr,
-                                blockedAliasAddr),
-                        logIt(
-                                "FIXME - Re-deployed the CREATE2 contract, should have been"
-                                        + " blocked!"),
-                        // Notice the hollow account is still linked to the address, not the
-                        // re-redeployed
-                        // CREATE2 contract
+                                mergedMirrorAddr,
+                                mergedAliasAddr),
                         sourcing(
                                 () ->
-                                        getLiteralAliasAccountInfo(blockedAliasAddr.get())
-                                                .nodePayment(ONE_HBAR)
-                                                .logged()))
-                .then(
-                        // IMPORTANT CLUE - but now CREATE2 *does* fail to redeploy the contract.
-                        // Seems
-                        // like existence of code is the deciding factor?
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)));
+                                        getContractInfo(mergedAliasAddr.get())
+                                                .has(
+                                                        contractWith()
+                                                                .numKvPairs(2)
+                                                                .hasStandinContractKey()
+                                                                .maxAutoAssociations(2)
+                                                                .hasAlreadyUsedAutomaticAssociations(
+                                                                        2)
+                                                                .memo(LAZY_MEMO)
+                                                                .balance(ONE_HBAR + tcValue))
+                                                .hasToken(relationshipWith(A_TOKEN).balance(500))
+                                                .hasToken(
+                                                        relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
+                                                                .balance(1))
+                                                .logged()));
     }
 
     @SuppressWarnings("java:S5669")

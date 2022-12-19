@@ -239,6 +239,11 @@ public class HederaStackedWorldStateUpdater
         sbhRefund = 0L;
     }
 
+    public void reclaimLatestContractId() {
+        worldState.reclaimContractId();
+        numAllocatedIds--;
+    }
+
     @Override
     public void commit() {
         super.commit();
