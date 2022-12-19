@@ -15,18 +15,19 @@
  */
 package com.hedera.services.yahcli.commands.accounts;
 
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
-import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.SendSuite;
 import com.hedera.services.yahcli.suites.Utils;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.ParentCommand;
+
+import java.util.concurrent.Callable;
+
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
         name = "send",
@@ -71,10 +72,9 @@ public class SendCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        // read data from config.yml
         var config = configFrom(accountsCommand.getYahcli());
 
-        if (!config.isALLowListExist(Long.parseLong(beneficiary))) {
+        if (!config.allowListExist(Long.parseLong(beneficiary))) {
             throw new CommandLine.ParameterException(
                     accountsCommand.getYahcli().getSpec().commandLine(),
                     "Beneficiary " + beneficiary + " supposed to be in allow list");
