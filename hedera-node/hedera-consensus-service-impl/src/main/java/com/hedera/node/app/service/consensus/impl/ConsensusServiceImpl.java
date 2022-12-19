@@ -20,15 +20,18 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class StandardConsensusService implements ConsensusService {
+public final class ConsensusServiceImpl implements ConsensusService {
     @NonNull
     @Override
     public ConsensusPreTransactionHandler createPreTransactionHandler(
             @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Objects.requireNonNull(states);
+        Objects.requireNonNull(ctx);
+        return new ConsensusPreTransactionHandlerImpl(ctx.keyLookup());
     }
 }

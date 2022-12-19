@@ -27,4 +27,8 @@ dependencies {
     api(project(":hedera-node:hedera-consensus-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     compileOnly(libs.spotbugs.annotations)
+
+    testImplementation(testLibs.bundles.testing)
+    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testLibs.mockito.inline)
 }

@@ -16,11 +16,11 @@
 package com.hedera.node.app.service.consensus.impl.test;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.StandardConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardConsensusServiceTest {
+class ConsensusServiceImplTest {
 
     @Test
     void testSpi() {
@@ -30,8 +30,8 @@ class StandardConsensusServiceTest {
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardConsensusService.class,
+                ConsensusServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardConsensusService");
+                "We must always receive an instance of type ConsensusServiceImpl");
     }
 }
