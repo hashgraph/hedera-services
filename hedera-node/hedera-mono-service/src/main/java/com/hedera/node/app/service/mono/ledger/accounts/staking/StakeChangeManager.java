@@ -44,11 +44,17 @@ public class StakeChangeManager {
     public void withdrawStake(
             final long curNodeId, final long amount, final boolean declinedReward) {
         final var node = stakeInfoManager.mutableStakeInfoFor(curNodeId);
+        if (node == null) {
+            return;
+        }
         node.removeRewardStake(amount, declinedReward);
     }
 
     public void awardStake(final long newNodeId, final long amount, final boolean declinedReward) {
         final var node = stakeInfoManager.mutableStakeInfoFor(newNodeId);
+        if (node == null) {
+            return;
+        }
         node.addRewardStake(amount, declinedReward);
     }
 

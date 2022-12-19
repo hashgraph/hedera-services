@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
@@ -25,10 +26,15 @@ import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contra
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -39,6 +45,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -52,7 +60,10 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -62,6 +73,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -100,6 +113,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -110,6 +124,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -125,6 +140,7 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -158,6 +174,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
             "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
+    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
+            KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -186,7 +204,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 createTokenWithInvalidFixedFeeWithERC721Denomination(),
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller());
+                createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+                lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -291,13 +310,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
+        final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(someARAccount).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN)
@@ -330,13 +351,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                someARAccount))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
                                                         .refusingEthConversion()
+                                                        .alsoSigningWithFullPrefix(
+                                                                someARAccount, feeCollector)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
@@ -562,13 +585,17 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
+        final var arEd25519Key = "arEd25519Key";
+        final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
                 .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
-                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
                         contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(EXISTING_TOKEN),
@@ -599,13 +626,15 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                ACCOUNT))),
+                                                                                                initialAutoRenewAccount))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
                                                         .refusingEthConversion()
+                                                        .alsoSigningWithFullPrefix(
+                                                                arEd25519Key, feeCollector)
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
@@ -647,7 +676,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             .hasTotalSupply(200)
                                             .hasEntityMemo(MEMO)
                                             .hasTreasury(TOKEN_CREATE_CONTRACT)
-                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewAccount(initialAutoRenewAccount)
                                             .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
                                             .hasSupplyType(TokenSupplyType.INFINITE)
                                             .searchKeysGlobally()
@@ -1272,6 +1301,82 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(300_000L)
                                                 .via(callTxn)));
+    }
+
+    private HapiSpec lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
+        final var CONTRACT = "CryptoTransfer";
+        final var SENDER = "sender";
+        final var FUNGIBLE_TOKEN = "fungibleToken";
+        final var DELEGATE_KEY = "contractKey";
+        final var NOT_SUPPORTED_TXN = "notSupportedTxn";
+        final var TOTAL_SUPPLY = 1_000;
+        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+
+        return propertyPreservingHapiSpec("lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled")
+                .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
+                .given(
+                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                        getContractInfo(CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                                    final var sender = spec.registry().getAccountID(SENDER);
+                                    final var amountToBeSent = 50L;
+
+                                    allRunFor(
+                                            spec,
+                                            newKeyNamed(DELEGATE_KEY)
+                                                    .shape(
+                                                            DELEGATE_CONTRACT_KEY_SHAPE.signedWith(
+                                                                    sigs(ON, CONTRACT))),
+                                            cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            tokenTransferLists()
+                                                                    .withTokenTransferList(
+                                                                            tokenTransferList()
+                                                                                    .forToken(token)
+                                                                                    .withAccountAmounts(
+                                                                                            accountAmount(
+                                                                                                    sender,
+                                                                                                    -amountToBeSent),
+                                                                                            accountAmountAlias(
+                                                                                                    addressBytes,
+                                                                                                    amountToBeSent))
+                                                                                    .build())
+                                                                    .build())
+                                                    .payingWith(GENESIS)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .via(NOT_SUPPORTED_TXN)
+                                                    .gas(GAS_TO_OFFER),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                                            childRecordsCheck(
+                                                    NOT_SUPPORTED_TXN,
+                                                    CONTRACT_REVERT_EXECUTED,
+                                                    recordWith().status(NOT_SUPPORTED)));
+                                }))
+                .then();
     }
 
     @Override
