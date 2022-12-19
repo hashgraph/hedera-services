@@ -32,6 +32,6 @@ class StandardCryptoServiceTest {
         Assertions.assertEquals(
                 StandardCryptoService.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardCryptoService");
+                "We must always receive an instance of type StandardCryptoServiceImpl");
     }
 }

@@ -21,19 +21,24 @@ import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
-/** Standard implementation of the {@link CryptoService} {@link com.hedera.node.app.spi.Service}. */
+/** An implementation of the {@link CryptoService} interface. */
 public final class StandardCryptoService implements CryptoService {
     @NonNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
+            @NonNull final States states, @NonNull final PreHandleContext ctx) {
+        Objects.requireNonNull(states);
+        Objects.requireNonNull(ctx);
+        final var store = new AccountStore(states);
+        return new CryptoPreTransactionHandlerImpl(store, ctx);
     }
 
     @NonNull
     @Override
     public CryptoQueryHandler createQueryHandler(@NonNull final States states) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Objects.requireNonNull(states);
+        return new CryptoQueryHandlerImpl(states);
     }
 }
