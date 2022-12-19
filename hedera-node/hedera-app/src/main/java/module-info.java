@@ -21,7 +21,7 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.contract.impl;
     requires com.hedera.node.app.service.file.impl;
     requires com.hedera.node.app.service.network.impl;
-    requires com.hedera.node.app.service.scheduled.impl;
+    requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
 }

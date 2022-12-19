@@ -20,4 +20,4 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class StandardScheduledService implements ScheduleService {}
+public final class ScheduleServiceImpl implements ScheduleService {}
