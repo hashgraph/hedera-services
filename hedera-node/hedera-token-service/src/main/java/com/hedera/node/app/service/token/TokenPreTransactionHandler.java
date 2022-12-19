@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,7 +35,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenCreateTransactionBody}
      * @return the metadata for the token creation
      */
-    TransactionMetadata preHandleCreateToken(TransactionBody txn);
+    TransactionMetadata preHandleCreateToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUpdate}
@@ -45,7 +46,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody}
      * @return the metadata for the token update
      */
-    TransactionMetadata preHandleUpdateToken(TransactionBody txn);
+    TransactionMetadata preHandleUpdateToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenMint}
@@ -56,7 +57,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenMintTransactionBody}
      * @return the metadata for the token minting
      */
-    TransactionMetadata preHandleMintToken(TransactionBody txn);
+    TransactionMetadata preHandleMintToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenBurn}
@@ -67,7 +68,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenBurnTransactionBody}
      * @return the metadata for the token burning
      */
-    TransactionMetadata preHandleBurnToken(TransactionBody txn);
+    TransactionMetadata preHandleBurnToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenDelete}
@@ -78,7 +79,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody}
      * @return the metadata for the token deletion
      */
-    TransactionMetadata preHandleDeleteToken(TransactionBody txn);
+    TransactionMetadata preHandleDeleteToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenAccountWipe}
@@ -89,7 +90,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody}
      * @return the metadata for the token wipe
      */
-    TransactionMetadata preHandleWipeTokenAccount(TransactionBody txn);
+    TransactionMetadata preHandleWipeTokenAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -101,7 +102,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody}
      * @return the metadata for the account freezing
      */
-    TransactionMetadata preHandleFreezeTokenAccount(TransactionBody txn);
+    TransactionMetadata preHandleFreezeTokenAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -113,7 +114,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody}
      * @return the metadata for the account unfreezing
      */
-    TransactionMetadata preHandleUnfreezeTokenAccount(TransactionBody txn);
+    TransactionMetadata preHandleUnfreezeTokenAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -125,7 +126,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody}
      * @return the metadata for the KYC grant
      */
-    TransactionMetadata preHandleGrantKycToTokenAccount(TransactionBody txn);
+    TransactionMetadata preHandleGrantKycToTokenAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -137,7 +138,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody}
      * @return the metadata for the KYC revocation
      */
-    TransactionMetadata preHandleRevokeKycFromTokenAccount(TransactionBody txn);
+    TransactionMetadata preHandleRevokeKycFromTokenAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -149,7 +150,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody}
      * @return the metadata for the token association
      */
-    TransactionMetadata preHandleAssociateTokens(TransactionBody txn);
+    TransactionMetadata preHandleAssociateTokens(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -161,7 +162,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody}
      * @return the metadata for the token dissociation
      */
-    TransactionMetadata preHandleDissociateTokens(TransactionBody txn);
+    TransactionMetadata preHandleDissociateTokens(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -173,7 +174,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody}
      * @return the metadata for the token fee schedule update
      */
-    TransactionMetadata preHandleUpdateTokenFeeSchedule(TransactionBody txn);
+    TransactionMetadata preHandleUpdateTokenFeeSchedule(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenPause}
@@ -184,7 +185,7 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenPauseTransactionBody}
      * @return the metadata for the token pausing
      */
-    TransactionMetadata preHandlePauseToken(TransactionBody txn);
+    TransactionMetadata preHandlePauseToken(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUnpause}
@@ -195,5 +196,5 @@ public interface TokenPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody}
      * @return the metadata for the token un-pausing
      */
-    TransactionMetadata preHandleUnpauseToken(TransactionBody txn);
+    TransactionMetadata preHandleUnpauseToken(TransactionBody txn, AccountID payer);
 }

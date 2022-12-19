@@ -53,10 +53,14 @@ public class ScheduledTxnFactory {
             final Boolean waitForExpiry) {
         final var creation =
                 ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(scheduleAdminKey)
-                        .setPayerAccountID(payer)
                         .setMemo(scheduleMemo)
                         .setScheduledTransactionBody(scheduledTxn);
+        if (scheduleAdminKey != null) {
+            creation.setAdminKey(scheduleAdminKey);
+        }
+        if (payer != null) {
+            creation.setPayerAccountID(payer);
+        }
         if (expirationTime != null) {
             creation.setExpirationTime(expirationTime);
         }

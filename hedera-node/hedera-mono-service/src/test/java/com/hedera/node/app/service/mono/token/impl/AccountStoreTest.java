@@ -105,7 +105,7 @@ class AccountStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
-        assertEquals(null, result.key());
+        assertNull(result.key());
     }
 
     @Test
@@ -116,7 +116,7 @@ class AccountStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
-        assertEquals(null, result.key());
+        assertNull(result.key());
     }
 
     @Test
@@ -149,7 +149,7 @@ class AccountStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
-        assertEquals(null, result.key());
+        assertNull(result.key());
     }
 
     @Test
@@ -187,7 +187,7 @@ class AccountStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
-        assertEquals(null, result.key());
+        assertNull(result.key());
     }
 
     @Test
@@ -198,7 +198,7 @@ class AccountStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
-        assertEquals(null, result.key());
+        assertNull(result.key());
     }
 
     @Test

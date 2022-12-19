@@ -135,7 +135,6 @@ public abstract class HapiSuite {
     private boolean onlyLogHeader = false;
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
-    private int suiteRunnerCounter = 0;
 
     public String name() {
         String simpleName = this.getClass().getSimpleName();
@@ -192,7 +191,6 @@ public abstract class HapiSuite {
 
     @SuppressWarnings("java:S2629")
     private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
-        suiteRunnerCounter++;
         if (!getDeferResultsSummary() || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
