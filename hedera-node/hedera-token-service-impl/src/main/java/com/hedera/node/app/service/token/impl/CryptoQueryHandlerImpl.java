@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,7 +39,7 @@ public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
      * @param states the {@link States} object
      * @throws NullPointerException if {@code states} is {@code null}
      */
-    public CryptoQueryHandlerImpl(@NonNull States states) {
+    public CryptoQueryHandlerImpl(@NonNull final States states) {
         requireNonNull(states);
     }
 

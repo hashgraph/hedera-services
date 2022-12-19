@@ -51,6 +51,8 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -175,7 +177,8 @@ public abstract class AbstractAutoCreationLogic {
         final var maxAutoAssociations =
                 tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         customizer.maxAutomaticAssociations(maxAutoAssociations);
-        if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+        final var isAliasEVMAddress = alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE;
+        if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
@@ -204,7 +207,10 @@ public abstract class AbstractAutoCreationLogic {
                 .isSmartContract(false)
                 .alias(alias);
 
-        final var fee = autoCreationFeeFor(syntheticCreation);
+        var fee = autoCreationFeeFor(syntheticCreation);
+        if (isAliasEVMAddress) {
+            fee += getLazyCreationFinalizationFee();
+        }
 
         final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
@@ -237,6 +243,17 @@ public abstract class AbstractAutoCreationLogic {
             change.setNewBalance(change.getAggregatedUnits());
         }
         change.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountId));
+    }
+
+    public long getLazyCreationFinalizationFee() {
+        // an AccountID is already accounted for in the
+        // fee estimator, so we just need to pass a stub ECDSA key
+        // in the synthetic crypto update body
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
+        return autoCreationFeeFor(
+                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody));
     }
 
     private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn) {

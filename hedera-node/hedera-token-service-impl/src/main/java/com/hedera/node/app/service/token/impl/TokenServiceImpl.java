@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,32 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.service.token.CryptoQueryHandler;
-import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.TokenPreTransactionHandler;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
-/** An implementation of the {@link CryptoService} interface. */
-public final class CryptoServiceImpl implements CryptoService {
+/** An implementation of the {@link TokenService} interface. */
+public class TokenServiceImpl implements TokenService {
     @NonNull
     @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(
+    public TokenPreTransactionHandler createPreTransactionHandler(
             @NonNull final States states, @NonNull final PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        final var store = new AccountStore(states);
-        return new CryptoPreTransactionHandlerImpl(store, ctx);
-    }
-
-    @NonNull
-    @Override
-    public CryptoQueryHandler createQueryHandler(@NonNull final States states) {
-        Objects.requireNonNull(states);
-        return new CryptoQueryHandlerImpl(states);
+        final var accountStore = new AccountStore(states);
+        final var tokenStore = new TokenStore(states);
+        return new TokenPreTransactionHandlerImpl(accountStore, tokenStore, ctx);
     }
 }

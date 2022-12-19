@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.txns.crypto;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
@@ -49,6 +50,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.TransferLogic;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -91,6 +93,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final AliasManager aliasManager;
+    private final AutoCreationLogic autoCreationLogic;
+    private final TransferLogic transferLogic;
 
     @Inject
     public CryptoCreateTransitionLogic(
@@ -102,7 +106,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties dynamicProperties,
             final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            final AutoCreationLogic autoCreationLogic,
+            final TransferLogic transferLogic) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
@@ -112,6 +118,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
         this.aliasManager = aliasManager;
+        this.autoCreationLogic = autoCreationLogic;
+        this.transferLogic = transferLogic;
     }
 
     @Override
@@ -127,7 +135,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
+            final var isLazyCreation = op.getAlias().size() == EVM_ADDRESS_SIZE && !op.hasKey();
+            final var lazyCreationFinalizationFee =
+                    autoCreationLogic.getLazyCreationFinalizationFee();
+            final var minPayerBalanceRequired =
+                    balance + (isLazyCreation ? lazyCreationFinalizationFee : 0);
+            if (minPayerBalanceRequired > (long) ledger.getAccountsLedger().get(sponsor, BALANCE)) {
+                throw new InsufficientFundsException(txnCtx.activePayer(), minPayerBalanceRequired);
+            }
             final var created = ledger.create(sponsor, balance, customizer);
+            if (isLazyCreation) {
+                transferLogic.payAutoCreationFee(lazyCreationFinalizationFee);
+            }
             sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
             txnCtx.setCreated(created);
