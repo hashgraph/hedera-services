@@ -15,49 +15,50 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 class UniqueTokenKeySupplierTest {
-    @Test
-    void tokenSupplier_whenCalledMultipleTimes_producesNewCopies() {
-        final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
-        final UniqueTokenKey key1 = supplier.get();
-        final UniqueTokenKey key2 = supplier.get();
-        assertThat(key1).isNotNull();
-        assertThat(key2).isNotNull();
-        assertThat(key1).isNotSameInstanceAs(key2);
-    }
+	@Test
+	void tokenSupplier_whenCalledMultipleTimes_producesNewCopies() {
+		final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
+		final UniqueTokenKey key1 = supplier.get();
+		final UniqueTokenKey key2 = supplier.get();
+		assertThat(key1).isNotNull();
+		assertThat(key2).isNotNull();
+		assertThat(key1).isNotSameAs(key2);
+	}
 
-    // Test invariants. The below tests are designed to fail if one accidentally modifies specified
-    // constants.
-    @Test
-    void checkClassId_isExpected() {
-        assertThat(new UniqueTokenKeySupplier().getClassId()).isEqualTo(0x8232d5e6ed77cc5cL);
-    }
+	// Test invariants. The below tests are designed to fail if one accidentally modifies specified
+	// constants.
+	@Test
+	void checkClassId_isExpected() {
+		assertThat(new UniqueTokenKeySupplier().getClassId()).isEqualTo(0x8232d5e6ed77cc5cL);
+	}
 
-    @Test
-    void checkCurrentVersion_isExpected() {
-        assertThat(new UniqueTokenKeySupplier().getVersion()).isEqualTo(1);
-    }
+	@Test
+	void checkCurrentVersion_isExpected() {
+		assertThat(new UniqueTokenKeySupplier().getVersion()).isEqualTo(1);
+	}
 
-    @Test
-    void noopFunctions_forTestCoverage() {
-        final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final SerializableDataOutputStream dataOutputStream =
-                new SerializableDataOutputStream(outputStream);
-        supplier.serialize(dataOutputStream);
-        assertThat(outputStream.toByteArray()).isEmpty();
+	@Test
+	void noopFunctions_forTestCoverage() {
+		final UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final SerializableDataOutputStream dataOutputStream =
+				new SerializableDataOutputStream(outputStream);
+		supplier.serialize(dataOutputStream);
+		assertThat(outputStream.toByteArray()).isEmpty();
 
-        final SerializableDataInputStream dataInputStream =
-                new SerializableDataInputStream(
-                        new ByteArrayInputStream(outputStream.toByteArray()));
-        supplier.deserialize(dataInputStream, 1);
-    }
+		final SerializableDataInputStream dataInputStream =
+				new SerializableDataInputStream(
+						new ByteArrayInputStream(outputStream.toByteArray()));
+		supplier.deserialize(dataInputStream, 1);
+	}
 }
