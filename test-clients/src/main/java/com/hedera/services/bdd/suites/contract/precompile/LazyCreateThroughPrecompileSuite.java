@@ -113,7 +113,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     public static final ByteString SECOND_META =
             ByteString.copyFrom(FIRST.getBytes(StandardCharsets.UTF_8));
     private static final String TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT =
-            "TransferToAliasPrecompileContract";
+            "PrecompileAliasXfer";
     private static final String SPENDER = "spender";
     private static final String TRANSFER_TOKEN_REVERT_TXN = "transferTokenThanRevertTxn";
     private static final String TRANSFER_TOKENS_REVERT_TXN = "transferTokensThanRevertTxn";

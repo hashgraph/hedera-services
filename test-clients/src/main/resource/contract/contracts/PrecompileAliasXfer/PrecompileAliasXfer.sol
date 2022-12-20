@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaTokenService.sol";
 import "./IHederaTokenService.sol";
 import "./HederaResponseCodes.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IERC20.sol";
 
 contract NestedCalls is HederaTokenService {
 
@@ -26,7 +26,7 @@ contract NestedCalls is HederaTokenService {
     }
 }
 
-contract TransferToAliasPrecompileContract is HederaTokenService {
+contract PrecompileAliasXfer is HederaTokenService {
 
     NestedCalls nested;
 
