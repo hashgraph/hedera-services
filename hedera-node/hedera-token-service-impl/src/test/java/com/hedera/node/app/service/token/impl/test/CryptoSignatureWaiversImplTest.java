@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -42,7 +43,7 @@ class CryptoSignatureWaiversImplTest {
 
     @Test
     void notImplementedStuffIsntImplemented() {
-        final var account = asAccount("0.0.3000");
+        final var account = IdUtils.asAccount("0.0.3000");
         final var txn = cryptoUpdateTransaction(account, account);
         assertThrows(
                 NotImplementedException.class, () -> subject.isNewKeySignatureWaived(txn, account));

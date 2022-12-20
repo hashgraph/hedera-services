@@ -123,10 +123,8 @@ class RewardCalculatorTest {
     void doesntComputeRewardReturnsZeroIfNotInRange() {
         final var changes = new HashMap<AccountProperty, Object>();
 
-        given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
         given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(todayNumber - 1);
         given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-        given(stakeInfoManager.mutableStakeInfoFor(anyLong())).willReturn(new MerkleStakingInfo());
         willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
         final var reward = subject.computePendingReward(account);
@@ -229,7 +227,7 @@ class RewardCalculatorTest {
         given(account.isDeclinedReward()).willReturn(false);
         given(account.totalStake()).willReturn(100 * Units.HBARS_TO_TINYBARS);
         given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
-        given(stakePeriodManager.isRewardable(todayNum - 2)).willReturn(true);
+        given(stakePeriodManager.isEstimatedRewardable(todayNum - 2)).willReturn(true);
 
         subject.setRewardsPaidInThisTxn(100L);
         final long reward = subject.estimatePendingRewards(account, merkleStakingInfo);

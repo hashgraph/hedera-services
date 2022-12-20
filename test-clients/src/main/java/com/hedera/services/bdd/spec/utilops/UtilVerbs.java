@@ -669,6 +669,15 @@ public class UtilVerbs {
             long tinyBarMaxNodeFee,
             long tinyBarMaxNetworkFee,
             long tinyBarMaxServiceFee) {
+        return reduceFeeFor(
+                List.of(function), tinyBarMaxNodeFee, tinyBarMaxNetworkFee, tinyBarMaxServiceFee);
+    }
+
+    public static HapiSpecOperation reduceFeeFor(
+            List<HederaFunctionality> functions,
+            long tinyBarMaxNodeFee,
+            long tinyBarMaxNetworkFee,
+            long tinyBarMaxServiceFee) {
         return withOpContext(
                 (spec, opLog) -> {
                     if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
@@ -680,7 +689,7 @@ public class UtilVerbs {
                             "Sleeping so not to spoil/fail the fee initializations on other"
                                     + " clients...");
                     Thread.sleep(10000);
-                    opLog.info("Reducing fee for {}...", function);
+                    opLog.info("Reducing fee for {}...", functions);
                     var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
                     allRunFor(spec, query);
                     byte[] rawSchedules =
@@ -700,18 +709,20 @@ public class UtilVerbs {
 
                     var perturbedSchedules =
                             CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-                    reduceFeeComponentsFor(
-                            perturbedSchedules.getCurrentFeeScheduleBuilder(),
-                            function,
-                            maxNodeFee,
-                            maxNetworkFee,
-                            maxServiceFee);
-                    reduceFeeComponentsFor(
-                            perturbedSchedules.getNextFeeScheduleBuilder(),
-                            function,
-                            maxNodeFee,
-                            maxNetworkFee,
-                            maxServiceFee);
+                    for (final var function : functions) {
+                        reduceFeeComponentsFor(
+                                perturbedSchedules.getCurrentFeeScheduleBuilder(),
+                                function,
+                                maxNodeFee,
+                                maxNetworkFee,
+                                maxServiceFee);
+                        reduceFeeComponentsFor(
+                                perturbedSchedules.getNextFeeScheduleBuilder(),
+                                function,
+                                maxNodeFee,
+                                maxNetworkFee,
+                                maxServiceFee);
+                    }
                     var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
                     allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
                 });
@@ -1405,11 +1416,24 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
 
+    public static Tuple accountAmountAlias(final byte[] alias, final Long amount) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
+
         return Tuple.of(
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender, final byte[] alias, final Long serialNumber) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
     }
 
