@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.txns.crypto;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.aliasAndEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasAndEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasProvided;
@@ -92,7 +91,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final AliasManager aliasManager,
             final AutoCreationLogic autoCreationLogic,
             final TransferLogic transferLogic,
-        final CryptoCreateChecks cryptoCreateChecks) {
+            final CryptoCreateChecks cryptoCreateChecks) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
@@ -117,7 +116,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
-            final var isLazyCreation = op.getAlias().size() == EVM_ADDRESS_SIZE && !op.hasKey();
+            final var isLazyCreation = !op.getEvmAddress().isEmpty() && !op.hasKey();
             final var lazyCreationFinalizationFee =
                     autoCreationLogic.getLazyCreationFinalizationFee();
             final var minPayerBalanceRequired =

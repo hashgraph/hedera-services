@@ -182,8 +182,8 @@ class CryptoCreateTransitionLogicTest {
                         txnCtx,
                         dynamicProperties,
                         aliasManager,
-                    autoCreationLogic,
-                    transferLogic,
+                        autoCreationLogic,
+                        transferLogic,
                         cryptoCreateChecks);
     }
 
@@ -839,6 +839,11 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        final var lazyCreationFinalizationFee = 100L;
+        given(autoCreationLogic.getLazyCreationFinalizationFee())
+                .willReturn(lazyCreationFinalizationFee);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
@@ -853,8 +858,6 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
         assertEquals(0L, (long) changes.get(AUTO_RENEW_PERIOD));
         assertEquals(consensusTime.getEpochSecond(), (long) changes.get(EXPIRY));
-        //        assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES),
-        // changes.get(AccountProperty.ALIAS));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
         assertEquals(false, changes.get(DECLINE_REWARD));
         assertEquals("", changes.get(AccountProperty.MEMO));
@@ -985,7 +988,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathEVMAddress() throws DecoderException {
+    void followsHappyPathEVMAddress() {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
@@ -1001,10 +1004,16 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var lazyCreationFinalizationFee = 100L;
+        given(autoCreationLogic.getLazyCreationFinalizationFee())
+                .willReturn(lazyCreationFinalizationFee);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
@@ -1061,7 +1070,6 @@ class CryptoCreateTransitionLogicTest {
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
-        verify(transferLogic).payAutoCreationFee(lazyCreationFinalizationFee);
 
         final var changes = captor.getValue().getChanges();
         assertEquals(8, changes.size());
@@ -1100,9 +1108,9 @@ class CryptoCreateTransitionLogicTest {
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var lazyCreationFinalizationFee = 100L;
         given(autoCreationLogic.getLazyCreationFinalizationFee())
-            .willReturn(lazyCreationFinalizationFee);
+                .willReturn(lazyCreationFinalizationFee);
         given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
-            .willReturn(lazyCreationFinalizationFee + 1);
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
@@ -1127,12 +1135,12 @@ class CryptoCreateTransitionLogicTest {
     @Test
     void followsEVMAddressAsAliasInsufficientBalanceForFinalizationFee() {
         final var opBuilder =
-            CryptoCreateTransactionBody.newBuilder()
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setEvmAddress(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+                CryptoCreateTransactionBody.newBuilder()
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
+                        .setEvmAddress(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -1147,12 +1155,12 @@ class CryptoCreateTransitionLogicTest {
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var lazyCreationFinalizationFee = 100L;
         given(autoCreationLogic.getLazyCreationFinalizationFee())
-            .willReturn(lazyCreationFinalizationFee);
+                .willReturn(lazyCreationFinalizationFee);
         given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
-            .willReturn(lazyCreationFinalizationFee - 1);
+                .willReturn(lazyCreationFinalizationFee - 1);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
-            .willReturn(lazyCreationFinalizationFee - 5);
+                .willReturn(lazyCreationFinalizationFee - 5);
 
         subject.doStateTransition();
 
@@ -1182,10 +1190,16 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var lazyCreationFinalizationFee = 100L;
+        given(autoCreationLogic.getLazyCreationFinalizationFee())
+                .willReturn(lazyCreationFinalizationFee);
+        given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 

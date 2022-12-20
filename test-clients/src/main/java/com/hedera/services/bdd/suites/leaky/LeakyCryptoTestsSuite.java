@@ -726,12 +726,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var payer = "payer";
         final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
                                 "true",
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
