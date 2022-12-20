@@ -55,7 +55,7 @@ we can add information about the stable testnet. And we can override the
 default payer account or default node account for any network using the 
 `defaultPayer` and `defaultNodeAccount` fields, respectively. 
 
-We can add also allowList of beneficiaries that the funds can be sent to and the format is  list example:`[123,456,789]` 
+We can add also allowList of beneficiaries that the funds can be sent to and the format is list example:`[123,456,789]`
 or it can be `null` by default.
 
 We can also use the command line option `-p` to override `defaultPayer`, and 
