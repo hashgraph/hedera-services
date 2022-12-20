@@ -172,6 +172,10 @@ public class QueryVerbs {
         return new HapiGetAccountBalance(hexedAlias, ReferenceType.HEXED_CONTRACT_ALIAS);
     }
 
+    public static HapiGetAccountBalance getAliasedAccountBalance(final ByteString alias) {
+        return new HapiGetAccountBalance(alias, ReferenceType.RAW_ALIAS);
+    }
+
     public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {
         return new HapiGetAccountBalance(supplier);
     }

@@ -37,6 +37,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.Infrastructur
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -69,6 +70,8 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils) {
         super(
+                KeyActivationUtils::validateKey,
+                KeyActivationUtils::validateLegacyKey,
                 ledgers,
                 aliases,
                 sigsVerifier,

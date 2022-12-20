@@ -131,6 +131,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
     @Nullable private Consumer<List<String>> createdIdsObserver = null;
+    @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -182,6 +183,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
         this.createdIdsObserver = creationObserver;
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingTokenCreationsTo(
+            final Consumer<List<TokenID>> createdTokenIdsObserver) {
+        this.createdTokenIdsObserver = createdTokenIdsObserver;
         return this;
     }
 
@@ -881,9 +888,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     }
                 });
         final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
+        final List<TokenID> tokenCreations =
+                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
             if (rec.getReceipt().hasAccountID() && creations != null) {
                 creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+            }
+            if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
+                tokenCreations.add(rec.getReceipt().getTokenID());
             }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
@@ -907,6 +919,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (createdIdsObserver != null) {
             createdIdsObserver.accept(creations);
         }
+        if (createdTokenIdsObserver != null) {
+            createdTokenIdsObserver.accept(tokenCreations);
+        }
 
         if (verboseLoggingOn) {
             if (format.isPresent()) {
@@ -914,9 +929,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             } else {
                 final var fee = rcd.getTransactionFee();
                 final var rates = spec.ratesProvider();
-                final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
-                LOG.info(
-                        "{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
+                if (rates.hasRateSet()) {
+                    final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
+                    LOG.info(
+                            "{}Record (charged ${}): {}",
+                            spec::logPrefix,
+                            () -> priceInUsd,
+                            () -> rcd);
+                }
                 LOG.info(
                         "{}  And {} child record{}: {}",
                         spec::logPrefix,

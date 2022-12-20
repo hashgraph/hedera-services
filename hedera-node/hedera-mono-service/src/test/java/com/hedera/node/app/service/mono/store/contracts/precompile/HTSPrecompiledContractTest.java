@@ -1081,7 +1081,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1104,7 +1104,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1127,7 +1127,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1150,7 +1150,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
