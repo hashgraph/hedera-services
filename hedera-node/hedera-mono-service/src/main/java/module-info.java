@@ -51,7 +51,6 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;
-    exports com.hedera.node.app.service.mono.token.impl;
 
     opens com.hedera.node.app.service.mono to
             com.swirlds.common;

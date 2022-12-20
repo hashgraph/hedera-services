@@ -17,7 +17,7 @@ package com.hedera.node.app.workflows;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

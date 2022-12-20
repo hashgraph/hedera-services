@@ -27,7 +27,7 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;

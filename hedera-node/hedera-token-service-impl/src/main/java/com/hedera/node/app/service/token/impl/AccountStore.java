@@ -30,6 +30,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
@@ -142,8 +143,7 @@ public class AccountStore implements AccountKeyLookup {
         return withKey(key);
     }
 
-    // package-private for testing
-    Account mapAccount(final AccountID idOrAlias, final MerkleAccount account) {
+    private Account mapAccount(final AccountID idOrAlias, final MerkleAccount account) {
         final var builder =
                 new AccountBuilderImpl()
                         .key(account.getAccountKey())

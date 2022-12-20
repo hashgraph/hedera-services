@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
