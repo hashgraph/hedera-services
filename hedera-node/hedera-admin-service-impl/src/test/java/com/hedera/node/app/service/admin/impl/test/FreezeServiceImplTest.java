@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.network.impl.test;
+package com.hedera.node.app.service.admin.impl.test;
 
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.network.impl.StandardNetworkService;
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardNetworkServiceTest {
+class FreezeServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final NetworkService service = NetworkService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final FreezeService service = FreezeService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                StandardNetworkService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardNetworkService");
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				FreezeServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardFreezeService");
+	}
 }

@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.network.impl;
+package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
-import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
+ * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class StandardNetworkService implements NetworkService {
-    @NonNull
-    @Override
-    public NetworkPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+public final class ContractServiceImpl implements ContractService {
+	@NonNull
+	@Override
+	public ContractPreTransactionHandler createPreTransactionHandler(
+			@NonNull final States states, @NonNull final PreHandleContext ctx) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }

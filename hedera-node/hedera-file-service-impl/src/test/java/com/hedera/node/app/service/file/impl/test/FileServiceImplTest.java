@@ -16,22 +16,22 @@
 package com.hedera.node.app.service.file.impl.test;
 
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.StandardFileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardFileServiceTest {
+class FileServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final FileService service = FileService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final FileService service = FileService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                StandardFileService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardFileService");
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				FileServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardFileService");
+	}
 }

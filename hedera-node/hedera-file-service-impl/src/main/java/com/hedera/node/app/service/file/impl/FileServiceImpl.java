@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.contract.impl;
+package com.hedera.node.app.service.file.impl;
 
-import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
-import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.file.FilePreTransactionHandler;
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardContractService implements ContractService {
-    @NonNull
-    @Override
-    public ContractPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+public final class FileServiceImpl implements FileService {
+	@NonNull
+	@Override
+	public FilePreTransactionHandler createPreTransactionHandler(
+			@NonNull final States states, @NonNull final PreHandleContext ctx) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }

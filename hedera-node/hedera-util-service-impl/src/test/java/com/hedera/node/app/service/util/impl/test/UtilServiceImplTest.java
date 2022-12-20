@@ -13,20 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.app.service.util.impl.test;
 
-import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardUtilService implements UtilService {
-    @NonNull
-    @Override
-    public UtilPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+class UtilServiceImplTest {
+
+	@Test
+	void testSpi() {
+		// when
+		final UtilService service = UtilService.getInstance();
+
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				UtilServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardUtilService");
+	}
 }

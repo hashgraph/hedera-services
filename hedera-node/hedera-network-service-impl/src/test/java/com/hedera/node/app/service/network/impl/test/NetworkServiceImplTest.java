@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.test;
+package com.hedera.node.app.service.network.impl.test;
 
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.StandardTokenService;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardTokenServiceTest {
+class NetworkServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final TokenService service = TokenService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final NetworkService service = NetworkService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                StandardTokenService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardTokenService");
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				NetworkServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardNetworkService");
+	}
 }

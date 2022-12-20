@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.contract.impl.test;
+package com.hedera.node.app.service.consensus.impl.test;
 
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.StandardContractService;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardContractServiceTest {
+class ConsensusServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final ContractService service = ContractService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final ConsensusService service = ConsensusService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                StandardContractService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardContractService");
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				ConsensusServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardConsensusService");
+	}
 }

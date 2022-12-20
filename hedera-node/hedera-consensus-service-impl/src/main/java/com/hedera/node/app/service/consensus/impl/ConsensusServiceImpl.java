@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.file.impl;
+package com.hedera.node.app.service.consensus.impl;
 
-import com.hedera.node.app.service.file.FilePreTransactionHandler;
-import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
+import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardFileService implements FileService {
-    @NonNull
-    @Override
-    public FilePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+/**
+ * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
+ */
+public final class ConsensusServiceImpl implements ConsensusService {
+	@NonNull
+	@Override
+	public ConsensusPreTransactionHandler createPreTransactionHandler(
+			@NonNull final States states, @NonNull final PreHandleContext ctx) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }

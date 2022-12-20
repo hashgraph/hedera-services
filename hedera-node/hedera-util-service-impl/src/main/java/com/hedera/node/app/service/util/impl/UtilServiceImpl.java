@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl;
+package com.hedera.node.app.service.util.impl;
 
-import com.hedera.node.app.service.token.TokenPreTransactionHandler;
-import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.util.UtilPreTransactionHandler;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link TokenService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardTokenService implements TokenService {
-    @NonNull
-    @Override
-    public TokenPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
+public final class UtilServiceImpl implements UtilService {
+	@NonNull
+	@Override
+	public UtilPreTransactionHandler createPreTransactionHandler(
+			@NonNull final States states, @NonNull final PreHandleContext ctx) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }
