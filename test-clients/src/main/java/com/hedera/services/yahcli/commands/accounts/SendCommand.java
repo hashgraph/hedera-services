@@ -74,7 +74,7 @@ public class SendCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         var config = configFrom(accountsCommand.getYahcli());
 
-        if (!config.allowListExist(Long.parseLong(beneficiary))) {
+        if (!config.isAllowListEmptyOrContainsAccount(Long.parseLong(beneficiary))) {
             throw new CommandLine.ParameterException(
                     accountsCommand.getYahcli().getSpec().commandLine(),
                     "Beneficiary " + beneficiary + " supposed to be in allow list");

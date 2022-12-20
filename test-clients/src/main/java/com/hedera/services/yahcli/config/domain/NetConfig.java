@@ -15,20 +15,21 @@
  */
 package com.hedera.services.yahcli.config.domain;
 
-import static java.util.stream.Collectors.joining;
-
 import com.google.common.base.MoreObjects;
 import com.hedera.services.yahcli.output.CommonMessages;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.stream.Collectors.joining;
 
 public class NetConfig {
     public static final Integer TRADITIONAL_DEFAULT_NODE_ACCOUNT = 3;
 
     private String defaultPayer;
     private Integer defaultNodeAccount = TRADITIONAL_DEFAULT_NODE_ACCOUNT;
-    private List<Long> allowList;
+    private List<Long> allowedReceiverAccountIds;
     private List<NodeConfig> nodes;
 
     public String getDefaultPayer() {
@@ -55,12 +56,12 @@ public class NetConfig {
         this.nodes = nodes;
     }
 
-    public List<Long> getAllowList() {
-        return allowList;
+    public List<Long> getAllowedReceiverAccountIds() {
+        return allowedReceiverAccountIds;
     }
 
-    public void setAllowList(List<Long> allowList) {
-        this.allowList = allowList;
+    public void setAllowedReceiverAccountIds(List<Long> allowedReceiverAccountIds) {
+        this.allowedReceiverAccountIds = allowedReceiverAccountIds;
     }
 
     public String fqDefaultNodeAccount() {
@@ -79,7 +80,7 @@ public class NetConfig {
                 .add("defaultPayer", defaultPayer)
                 .add("defaultNodeAccount", "0.0." + defaultNodeAccount)
                 .add("nodes", nodes)
-                .add("allowList", allowList)
+                .add("allowedReceiverAccountIds", allowedReceiverAccountIds)
                 .omitNullValues()
                 .toString();
     }
