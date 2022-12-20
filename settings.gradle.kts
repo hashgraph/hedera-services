@@ -226,7 +226,6 @@ dependencyResolutionManagement {
                     "mockito-jupiter",
                     "hamcrest",
                     "awaitility",
-                    "google-truth",
                     "assertj-core"
                 )
             )
@@ -247,6 +246,7 @@ dependencyResolutionManagement {
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")

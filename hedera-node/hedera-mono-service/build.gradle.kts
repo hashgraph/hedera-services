@@ -38,18 +38,20 @@ configurations.all {
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
-    implementation(project(":hedera-node:hedera-evm"))
-    implementation(project(":hedera-node:hedera-app-spi"))
-    implementation(project(":hedera-node:hedera-admin-service"))
-    implementation(project(":hedera-node:hedera-consensus-service"))
-    implementation(project(":hedera-node:hedera-file-service"))
-    implementation(project(":hedera-node:hedera-network-service"))
-    implementation(project(":hedera-node:hedera-schedule-service"))
-    implementation(project(":hedera-node:hedera-smart-contract-service"))
-    implementation(project(":hedera-node:hedera-token-service"))
-    implementation(project(":hedera-node:hedera-util-service"))
+    api(project(":hedera-node:hedera-evm"))
+    api(project(":hedera-node:hedera-app-spi"))
+    api(project(":hedera-node:hedera-admin-service"))
+    api(project(":hedera-node:hedera-consensus-service"))
+    api(project(":hedera-node:hedera-file-service"))
+    api(project(":hedera-node:hedera-network-service"))
+    api(project(":hedera-node:hedera-schedule-service"))
+    api(project(":hedera-node:hedera-smart-contract-service"))
+    api(project(":hedera-node:hedera-token-service"))
+    api(project(":hedera-node:hedera-util-service"))
+
     implementation(project(":hedera-node:hapi-fees"))
     implementation(project(":hedera-node:hapi-utils"))
+
     implementation(libs.bundles.besu) {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }
@@ -72,11 +74,13 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
+    testImplementation(testLibs.google.truth)
 
     testFixturesApi(project(":hedera-node:hedera-app-spi"))
     testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)
+    testFixturesApi(libs.hapi)
     testFixturesApi(libs.commons.codec)
     testFixturesImplementation(testLibs.bundles.testing)
 

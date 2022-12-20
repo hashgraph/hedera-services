@@ -40,19 +40,19 @@ public class FileCreateFactory extends SignedTxnFactory<FileCreateFactory> {
     }
 
     @Override
-    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    protected long feeFor(final Transaction signedTxn, final int numPayerKeys) {
         return 0;
     }
 
     @Override
-    protected void customizeTxn(TransactionBody.Builder txn) {
-        FileCreateTransactionBody.Builder op =
+    protected void customizeTxn(final TransactionBody.Builder txn) {
+        final FileCreateTransactionBody.Builder op =
                 FileCreateTransactionBody.newBuilder()
                         .setKeys(waclKt.asKey(keyFactory).getKeyList());
         txn.setFileCreate(op);
     }
 
-    public FileCreateFactory waclKt(KeyTree waclKt) {
+    public FileCreateFactory waclKt(final KeyTree waclKt) {
         this.waclKt = waclKt;
         return this;
     }
