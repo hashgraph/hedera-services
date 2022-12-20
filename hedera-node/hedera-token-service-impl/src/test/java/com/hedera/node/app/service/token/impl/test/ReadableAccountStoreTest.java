@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.test.utils.KeyUtils;
@@ -54,7 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
-class AccountStoreTest {
+class ReadableAccountStoreTest {
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
 
@@ -68,13 +68,13 @@ class AccountStoreTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    private AccountStore subject;
+    private ReadableAccountStore subject;
 
     @BeforeEach
     public void setUp() {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
-        subject = new AccountStore(states);
+        subject = new ReadableAccountStore(states);
     }
 
     @Test
