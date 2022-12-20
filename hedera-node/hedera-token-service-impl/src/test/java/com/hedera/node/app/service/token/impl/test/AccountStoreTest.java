@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -34,9 +34,10 @@ import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.KeyUtils;
+import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
+import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
@@ -55,11 +56,11 @@ class AccountStoreTest {
 
     @Mock private MerkleAccount account;
     @Mock private States states;
-    private Key payerKey = KeyUtils.A_COMPLEX_KEY;
-    private HederaKey payerHederaKey = asHederaKey(payerKey).get();
-    private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
-    private AccountID payer = asAccount("0.0.3");
-    private Long payerNum = 3L;
+    private final Key payerKey = KeyUtils.A_COMPLEX_KEY;
+    private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
+    private final AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
+    private final AccountID payer = asAccount("0.0.3");
+    private final Long payerNum = 3L;
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 

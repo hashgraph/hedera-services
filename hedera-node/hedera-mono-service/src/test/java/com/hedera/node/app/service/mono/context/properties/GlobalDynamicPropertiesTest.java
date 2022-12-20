@@ -113,6 +113,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isLazyCreationEnabled());
         assertFalse(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
+        assertFalse(subject.isImplicitCreationEnabled());
     }
 
     @Test
@@ -273,6 +274,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isLazyCreationEnabled());
         assertTrue(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
+        assertFalse(subject.isImplicitCreationEnabled());
     }
 
     @Test
