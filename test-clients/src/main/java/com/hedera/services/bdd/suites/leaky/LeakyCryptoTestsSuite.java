@@ -131,14 +131,16 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                maxAutoAssociationSpec(),
-                canDissociateFromMultipleExpiredTokens(),
-                cannotExceedAccountAllowanceLimit(),
-                cannotExceedAllowancesTransactionLimit(),
-                createAnAccountWithEVMAddressAliasAndECKey(),
-                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
-                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+                //                maxAutoAssociationSpec(),
+                //                canDissociateFromMultipleExpiredTokens(),
+                //                cannotExceedAccountAllowanceLimit(),
+                //                cannotExceedAllowancesTransactionLimit(),
+                //                createAnAccountWithEVMAddressAliasAndECKey(),
+                //                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
+                //
+                // txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+                //
+                // getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
                 hollowAccountCreationChargesExpectedFees());
     }
 
@@ -752,7 +754,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                                                     .balance(ONE_HUNDRED_HBARS);
@@ -762,7 +764,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(SUCCESS)
                                                     .balance(ONE_HUNDRED_HBARS);
