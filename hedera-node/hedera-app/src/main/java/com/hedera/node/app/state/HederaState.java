@@ -20,15 +20,5 @@ import com.hedera.node.app.spi.state.States;
 // Placeholder until the state-implementation is added
 public interface HederaState {
 
-    String CONSENSUS_SERVICE = "ConsensusService";
-    String CONTRACT_SERVICE = "ContractService";
-    String CRYPTO_SERVICE = "CryptoService";
-    String FILE_SERVICE = "FileService";
-    String FREEZE_SERVICE = "FreezeService";
-    String NETWORK_SERVICE = "NetworkService";
-    String SCHEDULE_SERVICE = "ScheduleService";
-    String TOKEN_SERVICE = "TokenService";
-    String UTIL_SERVICE = "UtilService";
-
     States createReadableStates(String serviceName);
 }

@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
@@ -28,6 +29,7 @@ import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCrea
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -35,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
@@ -48,15 +51,21 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -133,47 +142,41 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             txnCtx.setCreated(created);
             txnCtx.setStatus(SUCCESS);
 
+            final List<ByteString> aliasesToLink = new ArrayList<>();
             if (!op.getAlias().isEmpty()) {
-                aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
-                sigImpactHistorian.markAliasChanged(op.getAlias());
-
+                aliasesToLink.add(op.getAlias());
                 final var key = asPrimitiveKeyUnchecked(op.getAlias());
-                if (!key.getECDSASecp256K1().isEmpty()) {
-                    final var jKey = asFcKeyUnchecked(key);
-                    aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
-                    txnCtx.setEvmAddress(
-                            ByteStringUtils.wrapUnsafely(
-                                    Objects.requireNonNull(
-                                            recoverAddressFromPubKey(
-                                                    key.getECDSASecp256K1().toByteArray()))));
-                }
+                maybeLinkEvmAddressFrom(key, aliasesToLink);
             } else {
                 if (!op.getEvmAddress().isEmpty()) {
-                    aliasManager.link(op.getEvmAddress(), EntityNum.fromAccountId(created));
-                    sigImpactHistorian.markAliasChanged(op.getAlias());
-                } else {
-                    final var evmAddress =
-                            ByteStringUtils.wrapUnsafely(
-                                    Objects.requireNonNull(
-                                            recoverAddressFromPubKey(
-                                                    op.getKey()
-                                                            .getECDSASecp256K1()
-                                                            .toByteArray())));
-                    if (op.hasKey()
-                            && !op.getKey().getECDSASecp256K1().isEmpty()
-                            && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()
-                            && aliasManager.lookupIdBy(evmAddress).equals(MISSING_NUM)) {
-                        aliasManager.link(evmAddress, EntityNum.fromAccountId(created));
-                        sigImpactHistorian.markAliasChanged(evmAddress);
-                        txnCtx.setEvmAddress(evmAddress);
-                    }
+                    aliasesToLink.add(op.getEvmAddress());
+                } else if (op.hasKey() && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+                    maybeLinkEvmAddressFrom(op.getKey(), aliasesToLink);
                 }
             }
+            aliasesToLink.forEach(alias -> {
+                aliasManager.link(alias, EntityNum.fromAccountId(created));
+                sigImpactHistorian.markAliasChanged(alias);
+            });
         } catch (InsufficientFundsException ife) {
             txnCtx.setStatus(INSUFFICIENT_PAYER_BALANCE);
         } catch (Exception e) {
             log.warn("Avoidable exception!", e);
             txnCtx.setStatus(FAIL_INVALID);
+        }
+    }
+
+    private void maybeLinkEvmAddressFrom(final Key key, final List<ByteString> aliasesToLink) {
+        if (key.getECDSASecp256K1().isEmpty()) {
+            return;
+        }
+        final var evmAddress = recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray());
+        if (isRecoveredEvmAddress(evmAddress)) {
+            final var protoEvmAddress = ByteStringUtils.wrapUnsafely(evmAddress);
+            if (aliasManager.lookupIdBy(protoEvmAddress) == MISSING_NUM) {
+                aliasesToLink.add(protoEvmAddress);
+                txnCtx.setEvmAddress(protoEvmAddress);
+            }
         }
     }
 
@@ -198,11 +201,11 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
-                if (recoveredEvmAddressFromPrimitiveKey.length > 0
+                if (isRecoveredEvmAddress(recoveredEvmAddressFromPrimitiveKey)
                         && aliasManager
-                                .lookupIdBy(
-                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                                .equals(MISSING_NUM)) {
+                        .lookupIdBy(
+                                ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
+                        .equals(MISSING_NUM)) {
                     customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
             }

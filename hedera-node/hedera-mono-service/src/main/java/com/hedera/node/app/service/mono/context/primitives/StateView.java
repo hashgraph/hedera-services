@@ -23,11 +23,13 @@ import static com.hedera.node.app.service.mono.store.schedule.ScheduleStore.MISS
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
@@ -404,7 +406,6 @@ public class StateView {
                         .setLedgerId(networkInfo.ledgerId())
                         .setKey(asKeyUnchecked(account.getAccountKey()))
                         .setAccountID(accountID)
-                        .setAlias(account.getAlias())
                         .setReceiverSigRequired(account.isReceiverSigRequired())
                         .setDeleted(account.isDeleted())
                         .setMemo(account.getMemo())
@@ -420,6 +421,9 @@ public class StateView {
         Optional.ofNullable(account.getProxy())
                 .map(EntityId::toGrpcAccountId)
                 .ifPresent(info::setProxyAccountID);
+        if (account.getAlias().size() != EVM_ADDRESS_SIZE) {
+            info.setAlias(account.getAlias());
+        }
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
         if (!tokenRels.isEmpty()) {
             info.addAllTokenRelationships(tokenRels);
@@ -432,7 +436,7 @@ public class StateView {
     private String getContractAccountId(final JKey key, final AccountID accountID) {
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-        if (evmAddress != null) {
+        if (isRecoveredEvmAddress(evmAddress)) {
             return Bytes.wrap(evmAddress).toUnprefixedHexString();
         } else {
             return asHexedEvmAddress(accountID);
