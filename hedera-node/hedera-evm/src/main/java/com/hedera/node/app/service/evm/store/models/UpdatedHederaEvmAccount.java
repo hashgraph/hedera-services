@@ -15,31 +15,48 @@
  */
 package com.hedera.node.app.service.evm.store.models;
 
+import static org.apache.tuweni.units.bigints.UInt256.ZERO;
+
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdatedHederaEvmAccount implements Account {
-
+public class UpdatedHederaEvmAccount implements MutableAccount, EvmAccount {
+    protected Hash addressHash;
     private Address address;
     private long nonce;
     private Wei balance;
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
+    protected final NavigableMap<UInt256, UInt256> updatedStorage;
+
+    @Nullable protected Bytes updatedCode;
+    @Nullable private Hash updatedCodeHash;
 
     public UpdatedHederaEvmAccount(Address address) {
-        this.address = address;
+        this(address, 0L, Wei.ZERO);
+        this.updatedCode = Bytes.EMPTY;
     }
 
     public UpdatedHederaEvmAccount(Address address, long nonce, Wei balance) {
         this.address = address;
+        this.addressHash = Hash.hash(address);
         this.nonce = nonce;
         this.balance = balance;
+        this.updatedStorage = new TreeMap<>();
+        this.updatedCode = null;
     }
 
     @Override
@@ -53,16 +70,7 @@ public class UpdatedHederaEvmAccount implements Account {
 
     @Override
     public Hash getAddressHash() {
-        return null;
-    }
-
-    @Override
-    public long getNonce() {
-        return nonce;
-    }
-
-    public void setNonce(final long value) {
-        this.nonce = value;
+        return addressHash;
     }
 
     @Override
@@ -76,27 +84,86 @@ public class UpdatedHederaEvmAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return null;
+        return updatedCode;
     }
 
     @Override
     public Hash getCodeHash() {
-        return null;
+        if (updatedCodeHash == null) {
+            updatedCodeHash = Hash.hash(updatedCode);
+        }
+        return updatedCodeHash;
     }
 
     @Override
-    public UInt256 getStorageValue(UInt256 key) {
-        return null;
+    public long getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(final long value) {
+        this.nonce = value;
     }
 
     @Override
     public UInt256 getOriginalStorageValue(UInt256 key) {
-        return null;
+        return getStorageValue(key);
+    }
+
+    /**
+     * A map of the storage entries that were modified.
+     *
+     * @return a map containing all entries that have been modified. This <b>may</b> contain entries
+     *     with a value of 0 to signify deletion.
+     */
+    @Override
+    public Map<UInt256, UInt256> getUpdatedStorage() {
+        return updatedStorage;
+    }
+
+    @Override
+    public UInt256 getStorageValue(UInt256 key) {
+        UInt256 value = updatedStorage.get(key);
+        if (value != null) {
+            return value;
+        } else if (hederaEvmEntityAccess != null) {
+            value = UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
+        }
+        // Temporary with future PR we could read the whole mirror-node db ContractState table
+        if (value != null) {
+            setStorageValue(key, value);
+            return value;
+        }
+        return ZERO;
+    }
+
+    @Override
+    public void setCode(Bytes code) {
+        this.updatedCode = code;
+        this.updatedCodeHash = null;
+    }
+
+    @Override
+    public void setStorageValue(final UInt256 key, final UInt256 value) {
+        updatedStorage.put(key, value);
+    }
+
+    @Override
+    public void clearStorage() {
+        updatedStorage.clear();
     }
 
     @Override
     public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
             Bytes32 startKeyHash, int limit) {
         return Collections.emptyNavigableMap();
+    }
+
+    @Override
+    public MutableAccount getMutable() throws ModificationNotAllowedException {
+        return this;
+    }
+
+    public void setEvmEntityAccess(HederaEvmEntityAccess hederaEvmEntityAccess) {
+        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }
 }
