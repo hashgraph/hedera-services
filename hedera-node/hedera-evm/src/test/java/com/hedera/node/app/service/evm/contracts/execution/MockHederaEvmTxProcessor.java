@@ -17,8 +17,6 @@ package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Map;
-import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
@@ -28,43 +26,43 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import javax.inject.Provider;
+import java.util.Map;
+
 public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
-    protected MockHederaEvmTxProcessor(
-            final HederaEvmMutableWorldState worldState,
-            final PricesAndFeesProvider livePricesSource,
-            final EvmProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final Map<String, Supplier<MessageCallProcessor>> mcps,
-            final Map<String, Supplier<ContractCreationProcessor>> ccps,
-            final BlockMetaSource blockMetaSource) {
-        super(
-                worldState,
-                livePricesSource,
-                dynamicProperties,
-                gasCalculator,
-                mcps,
-                ccps,
-                blockMetaSource);
-    }
+	protected MockHederaEvmTxProcessor(
+			final HederaEvmMutableWorldState worldState,
+			final PricesAndFeesProvider livePricesSource,
+			final EvmProperties dynamicProperties,
+			final GasCalculator gasCalculator,
+			final Map<String, Provider<MessageCallProcessor>> mcps,
+			final Map<String, Provider<ContractCreationProcessor>> ccps,
+			final BlockMetaSource blockMetaSource) {
+		super(
+				worldState,
+				livePricesSource,
+				dynamicProperties,
+				gasCalculator,
+				mcps,
+				ccps,
+				blockMetaSource);
+	}
 
-    @Override
-    protected HederaFunctionality getFunctionType() {
-        return HederaFunctionality.ContractCall;
-    }
+	@Override
+	protected HederaFunctionality getFunctionType() {
+		return HederaFunctionality.ContractCall;
+	}
 
-    @Override
-    public MessageFrame buildInitialFrame(
-            final Builder baseInitialFrame,
-            final Address to,
-            final Bytes payload,
-            final long value) {
-        return baseInitialFrame
-                .type(MessageFrame.Type.MESSAGE_CALL)
-                .address(to)
-                .contract(to)
-                .inputData(payload)
-                .code(CodeV0.EMPTY_CODE)
-                .build();
-    }
+	@Override
+	public MessageFrame buildInitialFrame(
+			final Builder baseInitialFrame, final Address to, final Bytes payload, final long value) {
+		return baseInitialFrame
+				.type(MessageFrame.Type.MESSAGE_CALL)
+				.address(to)
+				.contract(to)
+				.inputData(payload)
+				.code(CodeV0.EMPTY_CODE)
+				.build();
+	}
 }
