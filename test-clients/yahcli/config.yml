@@ -1,7 +1,7 @@
 defaultNetwork: localhost
 networks:
   localhost:
-    allowedReceiverAccountIds:
+    allowedReceiverAccountIds: []
     nodes:
       - { id: 0, account: 3, ipv4Addr: host.docker.internal }
   previewnet:
