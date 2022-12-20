@@ -363,15 +363,7 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenKeyWrapper(fungible, 1));
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
         given(ledgers.keyOf(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519())
-                .willReturn(
-                        new byte[] {
-                            -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
-                            69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
-                            98
-                        });
-        given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
+        given(evmEncodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
 
         assertEquals(Pair.of(gas, getTokenKeyEncoded), subject.computeCosted());
     }
