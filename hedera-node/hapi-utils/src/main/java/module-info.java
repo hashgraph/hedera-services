@@ -32,5 +32,4 @@ module com.hedera.node.app.hapi.utils {
     requires net.i2p.crypto.eddsa;
     requires javax.inject;
     requires com.hedera.node.app.service.evm;
-    requires com.github.spotbugs.annotations;
 }
