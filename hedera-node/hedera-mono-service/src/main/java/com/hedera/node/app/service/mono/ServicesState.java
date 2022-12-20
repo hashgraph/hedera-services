@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable final SoftwareVersion deserializedVersion) {
+            final SoftwareVersion deserializedVersion) {
         if (trigger == GENESIS) {
             genesisInit(platform, addressBook, dualState);
         } else {
@@ -348,11 +348,16 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.systemExits().fail(1);
         } else {
             final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
-            if (trigger == RESTART && isUpgrade) {
-                dualState.setFreezeTime(null);
-                networkCtx().discardPreparedUpgradeMeta();
-                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
-                    networkCtx().markMigrationRecordsNotYetStreamed();
+            if (trigger == RESTART) {
+                // We may still want to change the address book without an upgrade. But note
+                // that without a dynamic address book, this MUST be a no-op during reconnect.
+                app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                if (isUpgrade) {
+                    dualState.setFreezeTime(null);
+                    networkCtx().discardPreparedUpgradeMeta();
+                    if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
+                        networkCtx().markMigrationRecordsNotYetStreamed();
+                    }
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -362,6 +367,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             logStateChildrenSizes();
             // This updates the working state accessor with our children
             app.initializationFlow().runWith(this, bootstrapProps);
+            if (trigger == RESTART && isUpgrade) {
+                app.stakeStartupHelper()
+                        .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+            }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place
@@ -376,6 +385,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         .ensureSystemAccounts(
                                 app.backingAccounts(), app.workingState().addressBook());
                 app.sysFilesManager().createManagedFilesIfMissing();
+                app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
             if (trigger != RECONNECT) {
                 // Once we have a dynamic address book, this will run unconditionally

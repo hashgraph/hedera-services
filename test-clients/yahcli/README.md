@@ -45,6 +45,7 @@ defaultNetwork: previewnet
 
 networks:
   previewnet:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
 ```
@@ -53,6 +54,9 @@ We can add details for multiple networks to this config file; for example,
 we can add information about the stable testnet. And we can override the 
 default payer account or default node account for any network using the 
 `defaultPayer` and `defaultNodeAccount` fields, respectively. 
+
+We can add also allowList of beneficiaries that the funds can be sent to and the format is  list example:`[123,456,789]` 
+or it can be `null` by default.
 
 We can also use the command line option `-p` to override `defaultPayer`, and 
 the command line option `-a/--node-account` to override `defaultNodeAccount`. 
@@ -78,11 +82,13 @@ defaultNetwork: previewnet
 
 networks:
   previewnet:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
   stabletestnet:
     defaultPayer: 50
     defaultNodeAccount: 4
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }
       - { id: 1, account: 4, ipv4Addr: 35.237.119.55 }
@@ -100,7 +106,7 @@ Please enter the passphrase for key file localhost/keys/account2.pem:
 ```
 
 :turtle: &nbsp; The docker image needs to launch a JAR, which is fairly slow. 
-Please allow a few seconds for the the above command to run.
+Please allow a few seconds for the above command to run.
 
 :warning:&nbsp;Without the `-it` flags above, Docker will not attach
 STDIN as a TTY, and you will either not be prompted for the passphrase,
