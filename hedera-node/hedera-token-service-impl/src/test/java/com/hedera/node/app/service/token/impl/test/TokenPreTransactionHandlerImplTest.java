@@ -20,6 +20,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -118,7 +119,7 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(meta, 1, false, OK);
+        basicMetadataAssertions(meta, 1, false, OK);
         assertEquals(payerKey, meta.payerKey());
         assertIterableEquals(List.of(wipeKey), meta.requiredNonPayerKeys());
     }
@@ -136,7 +137,7 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(meta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(meta, 0, true, INVALID_TOKEN_ID);
         assertEquals(payerKey, meta.payerKey());
     }
 
@@ -160,7 +161,7 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(meta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(meta, 0, true, INVALID_TOKEN_ID);
         assertEquals(payerKey, meta.payerKey());
     }
 
@@ -192,7 +193,7 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
-        basicMetaAssertions(meta, 0, true, TOKEN_HAS_NO_WIPE_KEY);
+        basicMetadataAssertions(meta, 0, true, TOKEN_HAS_NO_WIPE_KEY);
         assertEquals(payerKey, meta.payerKey());
     }
 
@@ -232,8 +233,8 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
         assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
-        basicMetaAssertions(pauseMeta, 1, false, OK);
-        basicMetaAssertions(unpauseMeta, 1, false, OK);
+        basicMetadataAssertions(pauseMeta, 1, false, OK);
+        basicMetadataAssertions(unpauseMeta, 1, false, OK);
         assertEquals(payerKey, pauseMeta.payerKey());
         assertEquals(payerKey, unpauseMeta.payerKey());
         assertIterableEquals(List.of(pauseKey), pauseMeta.requiredNonPayerKeys());
@@ -260,15 +261,14 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
         assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
-        basicMetaAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
-        basicMetaAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
         assertEquals(payerKey, pauseMeta.payerKey());
         assertEquals(payerKey, unpauseMeta.payerKey());
     }
 
     @Test
     void tokenPauseUnpauseNoKeyAddedIfTokenMetaFailed() {
-        final var pauseKey = (JKey) randomKey;
         final var pauseTxn = tokenPauseTransaction(true);
         final var unpauseTxn = tokenUnpauseTransaction(true);
         final var expectedPauseMeta =
@@ -294,8 +294,49 @@ class TokenPreTransactionHandlerImplTest {
 
         assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
         assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
-        basicMetaAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
-        basicMetaAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(pauseMeta, 0, true, INVALID_TOKEN_ID);
+        basicMetadataAssertions(unpauseMeta, 0, true, INVALID_TOKEN_ID);
+        assertEquals(payerKey, pauseMeta.payerKey());
+        assertEquals(payerKey, unpauseMeta.payerKey());
+    }
+
+    @Test
+    void tokenPauseUnpauseNoPauseKeyFails() {
+        final var pauseTxn = tokenPauseTransaction(true);
+        final var unpauseTxn = tokenUnpauseTransaction(true);
+        final var expectedPauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(pauseTxn)
+                        .build();
+        final var expectedUnpauseMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(unpauseTxn)
+                        .build();
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        Optional.empty(),
+                                        false,
+                                        null),
+                                null));
+
+        final var pauseMeta = subject.preHandlePauseToken(pauseTxn, payer);
+        final var unpauseMeta = subject.preHandleUnpauseToken(unpauseTxn, payer);
+
+        assertEquals(expectedPauseMeta.txnBody(), pauseMeta.txnBody());
+        assertEquals(expectedUnpauseMeta.txnBody(), unpauseMeta.txnBody());
+        basicMetadataAssertions(pauseMeta, 0, true, TOKEN_HAS_NO_PAUSE_KEY);
+        basicMetadataAssertions(unpauseMeta, 0, true, TOKEN_HAS_NO_PAUSE_KEY);
         assertEquals(payerKey, pauseMeta.payerKey());
         assertEquals(payerKey, unpauseMeta.payerKey());
     }
@@ -369,7 +410,7 @@ class TokenPreTransactionHandlerImplTest {
                 .build();
     }
 
-    private void basicMetaAssertions(
+    private void basicMetadataAssertions(
             final TransactionMetadata meta,
             final int keysSize,
             final boolean failed,

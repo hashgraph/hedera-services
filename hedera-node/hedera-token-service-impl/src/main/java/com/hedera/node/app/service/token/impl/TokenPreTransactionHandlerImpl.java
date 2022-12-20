@@ -177,7 +177,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
         if (op.hasToken()) {
-            handlePauseUnpause(op.getToken(), meta);
+            addPauseKey(op.getToken(), meta);
         } else {
             meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
         }
@@ -194,7 +194,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
         if (op.hasToken()) {
-            handlePauseUnpause(op.getToken(), meta);
+            addPauseKey(op.getToken(), meta);
         } else {
             meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
         }
@@ -202,7 +202,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         return meta.build();
     }
 
-    private void handlePauseUnpause(TokenID tokenId, SigTransactionMetadataBuilder meta) {
+    private void addPauseKey(TokenID tokenId, SigTransactionMetadataBuilder meta) {
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (!tokenMeta.failed()) {
             if (tokenMeta.metadata().pauseKey().isPresent()) {
