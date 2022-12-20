@@ -51,6 +51,6 @@ public class EvmKey {
     }
 
     public Address getDelegatableContractId() {
-        return delegatableContractId != null ? delegatableContractId : Address.ZERO ;
+        return delegatableContractId != null ? delegatableContractId : Address.ZERO;
     }
 }

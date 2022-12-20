@@ -73,23 +73,23 @@ public class EvmParsingConstants {
                     + ",string"
                     + ")";
     public static final String NON_FUNGIBLE_TOKEN_INFO =
-        "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
+            "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
     public static final TupleType getNonFungibleTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
     public static final TupleType getTokenCustomFeesType =
-        TupleType.parse(
-            RESPONSE_STATUS_AT_BEGINNING
-                + FIXED_FEE
-                + ARRAY_BRACKETS
-                + ","
-                + FRACTIONAL_FEE
-                + ARRAY_BRACKETS
-                + ","
-                + ROYALTY_FEE
-                + ARRAY_BRACKETS
-                + ")");
+            TupleType.parse(
+                    RESPONSE_STATUS_AT_BEGINNING
+                            + FIXED_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + FRACTIONAL_FEE
+                            + ARRAY_BRACKETS
+                            + ","
+                            + ROYALTY_FEE
+                            + ARRAY_BRACKETS
+                            + ")");
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
 
     public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
@@ -105,10 +105,10 @@ public class EvmParsingConstants {
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
 
     public static final TupleType getTokenExpiryInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
 
     public static final TupleType getTokenKeyType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
 
     public enum FunctionType {
         ERC_DECIMALS,

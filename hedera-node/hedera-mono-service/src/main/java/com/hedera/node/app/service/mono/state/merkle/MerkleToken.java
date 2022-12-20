@@ -810,11 +810,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return info;
     }
 
-    public List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees() {
+    public List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            evmCustomFees() {
         final var customFees = grpcFeeSchedule();
 
         List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-            evmCustomFees = new ArrayList<>();
+                evmCustomFees = new ArrayList<>();
         for (final var customFee : customFees) {
             extractFees(customFee, evmCustomFees);
         }

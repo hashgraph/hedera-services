@@ -184,36 +184,36 @@ public class EvmEncodingFacade {
 
     public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
-            .withStatus(SUCCESS.getNumber())
-            .withCustomFees(customFees)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                .withStatus(SUCCESS.getNumber())
+                .withCustomFees(customFees)
+                .build();
     }
 
     public Bytes encodeGetNonFungibleTokenInfo(
-        final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
+            final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
-            .withStatus(SUCCESS.getNumber())
-            .withTokenInfo(tokenInfo)
-            .withNftTokenInfo(nonFungibleTokenInfo)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .withNftTokenInfo(nonFungibleTokenInfo)
+                .build();
     }
 
     public Bytes encodeGetTokenExpiryInfo(final TokenExpiryInfo tokenExpiryWrapper) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
-            .withStatus(SUCCESS.getNumber())
-            .withExpiry(tokenExpiryWrapper)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
     }
 
     public Bytes encodeGetTokenKey(final EvmKey keyValue) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
-            .withStatus(SUCCESS.getNumber())
-            .withKey(keyValue)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                .withStatus(SUCCESS.getNumber())
+                .withKey(keyValue)
+                .build();
     }
 
     private FunctionResultBuilder functionResultBuilder() {
@@ -385,21 +385,23 @@ public class EvmEncodingFacade {
 
         private FunctionResultBuilder withExpiry(final TokenExpiryInfo tokenExpiryInfo) {
             this.tokenExpiryInfo =
-                Tuple.of(
-                    tokenExpiryInfo.getSecond(),
-                    convertBesuAddressToHeadlongAddress(tokenExpiryInfo.getAutoRenewAccount()),
-                    tokenExpiryInfo.getAutoRenewPeriod());
+                    Tuple.of(
+                            tokenExpiryInfo.getSecond(),
+                            convertBesuAddressToHeadlongAddress(
+                                    tokenExpiryInfo.getAutoRenewAccount()),
+                            tokenExpiryInfo.getAutoRenewPeriod());
             return this;
         }
 
         private FunctionResultBuilder withKey(final EvmKey wrapper) {
             this.keyValue =
-                Tuple.of(
-                    false,
-                    convertBesuAddressToHeadlongAddress(wrapper.getContractId()),
-                    wrapper.getEd25519(),
-                    wrapper.getECDSASecp256K1(),
-                    convertBesuAddressToHeadlongAddress(wrapper.getDelegatableContractId()));
+                    Tuple.of(
+                            false,
+                            convertBesuAddressToHeadlongAddress(wrapper.getContractId()),
+                            wrapper.getEd25519(),
+                            wrapper.getECDSASecp256K1(),
+                            convertBesuAddressToHeadlongAddress(
+                                    wrapper.getDelegatableContractId()));
             return this;
         }
 
@@ -447,14 +449,15 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForGetNonFungibleTokenInfo() {
             return Tuple.of(
-                status,
-                Tuple.of(
-                    getTupleForTokenInfo(),
-                    nonFungibleTokenInfo.getSerialNumber(),
-                    convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getAccount()),
-                    nonFungibleTokenInfo.getCreationTime(),
-                    nonFungibleTokenInfo.getMetadata(),
-                    convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getSpender())));
+                    status,
+                    Tuple.of(
+                            getTupleForTokenInfo(),
+                            nonFungibleTokenInfo.getSerialNumber(),
+                            convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getAccount()),
+                            nonFungibleTokenInfo.getCreationTime(),
+                            nonFungibleTokenInfo.getMetadata(),
+                            convertBesuAddressToHeadlongAddress(
+                                    nonFungibleTokenInfo.getSpender())));
         }
 
         private Tuple getTupleForTokenGetCustomFees() {
@@ -478,10 +481,10 @@ public class EvmEncodingFacade {
                 extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
             }
             return Tuple.of(
-                responseCode,
-                fixedFees.toArray(new Tuple[fixedFees.size()]),
-                fractionalFees.toArray(new Tuple[fractionalFees.size()]),
-                royaltyFees.toArray(new Tuple[royaltyFees.size()]));
+                    responseCode,
+                    fixedFees.toArray(new Tuple[fixedFees.size()]),
+                    fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                    royaltyFees.toArray(new Tuple[royaltyFees.size()]));
         }
 
         private Tuple getTupleForTokenInfo() {

@@ -169,7 +169,11 @@ class WorldLedgersTest {
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private TokenInfo tokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
-    @Mock private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees;
+
+    @Mock
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees;
+
     @Mock private JKey key;
 
     private WorldLedgers subject;

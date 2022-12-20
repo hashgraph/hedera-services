@@ -83,7 +83,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import org.apache.commons.collections4.functors.IfClosure;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -179,10 +178,13 @@ public class WorldLedgers {
         Optional<TokenNftInfo> infoForNft = infoForNft(target, ledgerId);
         if (infoForNft.isPresent()) {
             TokenNftInfo info = infoForNft.get();
-            return Optional.of(new EvmNftInfo(info.getNftID().getSerialNumber(),
-                EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
-                info.getCreationTime().getSeconds(), info.getMetadata().toByteArray(),
-                EntityIdUtils.asTypedEvmAddress(info.getSpenderId())));
+            return Optional.of(
+                    new EvmNftInfo(
+                            info.getNftID().getSerialNumber(),
+                            EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                            info.getCreationTime().getSeconds(),
+                            info.getMetadata().toByteArray(),
+                            EntityIdUtils.asTypedEvmAddress(info.getSpenderId())));
         }
 
         return Optional.empty();

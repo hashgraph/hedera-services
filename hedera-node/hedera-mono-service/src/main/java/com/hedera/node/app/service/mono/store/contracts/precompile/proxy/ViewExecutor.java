@@ -29,7 +29,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -40,7 +39,6 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
@@ -134,7 +132,8 @@ public class ViewExecutor {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.evmInfoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -235,7 +234,7 @@ public class ViewExecutor {
                 final var expiryInfo =
                         new TokenExpiryInfo(
                                 tokenInfo.getExpiry().getSeconds(),
-                            EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
+                                EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
                                 tokenInfo.getAutoRenewPeriod().getSeconds());
 
                 return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
