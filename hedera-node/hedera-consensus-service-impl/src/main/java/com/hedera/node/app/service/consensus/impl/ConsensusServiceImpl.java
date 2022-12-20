@@ -25,10 +25,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ConsensusServiceImpl implements ConsensusService {
-	@NonNull
-	@Override
-	public ConsensusPreTransactionHandler createPreTransactionHandler(
-			@NonNull final States states, @NonNull final PreHandleContext ctx) {
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
+    @NonNull
+    @Override
+    public ConsensusPreTransactionHandler createPreTransactionHandler(
+            @NonNull final States states, @NonNull final PreHandleContext ctx) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

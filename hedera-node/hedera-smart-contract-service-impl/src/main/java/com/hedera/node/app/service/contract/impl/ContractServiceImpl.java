@@ -25,10 +25,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ContractServiceImpl implements ContractService {
-	@NonNull
-	@Override
-	public ContractPreTransactionHandler createPreTransactionHandler(
-			@NonNull final States states, @NonNull final PreHandleContext ctx) {
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
+    @NonNull
+    @Override
+    public ContractPreTransactionHandler createPreTransactionHandler(
+            @NonNull final States states, @NonNull final PreHandleContext ctx) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

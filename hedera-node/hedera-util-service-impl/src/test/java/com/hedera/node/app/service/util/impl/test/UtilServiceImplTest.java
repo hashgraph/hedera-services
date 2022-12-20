@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 class UtilServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final UtilService service = UtilService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final UtilService service = UtilService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				UtilServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type StandardUtilService");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                UtilServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type StandardUtilService");
+    }
 }

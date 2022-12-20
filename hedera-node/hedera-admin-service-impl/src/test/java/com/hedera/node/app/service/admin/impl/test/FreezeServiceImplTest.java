@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 class FreezeServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final FreezeService service = FreezeService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final FreezeService service = FreezeService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				FreezeServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type StandardFreezeService");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                FreezeServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type StandardFreezeService");
+    }
 }

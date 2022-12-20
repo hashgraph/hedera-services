@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 class ContractServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final ContractService service = ContractService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final ContractService service = ContractService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				ContractServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type StandardContractService");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                ContractServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type StandardContractService");
+    }
 }

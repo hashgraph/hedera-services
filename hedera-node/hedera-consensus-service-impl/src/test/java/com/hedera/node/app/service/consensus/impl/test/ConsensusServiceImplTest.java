@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 class ConsensusServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final ConsensusService service = ConsensusService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final ConsensusService service = ConsensusService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				ConsensusServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type StandardConsensusService");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                ConsensusServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type StandardConsensusService");
+    }
 }

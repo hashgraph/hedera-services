@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl.test;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.token.CryptoService;
@@ -28,45 +30,39 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 @ExtendWith(MockitoExtension.class)
 class CryptoServiceImplTest {
-	@Mock
-	private RebuiltStateImpl aliases;
-	@Mock
-	private InMemoryStateImpl accounts;
-	@Mock
-	States states;
-	@Mock
-	PreHandleContext ctx;
+    @Mock private RebuiltStateImpl aliases;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock States states;
+    @Mock PreHandleContext ctx;
 
-	private static final String ACCOUNTS = "ACCOUNTS";
-	private static final String ALIASES = "ALIASES";
-	private CryptoServiceImpl subject;
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
+    private CryptoServiceImpl subject;
 
-	@Test
-	void createsNewInstance() {
-		subject = new CryptoServiceImpl();
+    @Test
+    void createsNewInstance() {
+        subject = new CryptoServiceImpl();
 
-		BDDMockito.given(states.get(ACCOUNTS)).willReturn(accounts);
-		BDDMockito.given(states.get(ALIASES)).willReturn(aliases);
+        BDDMockito.given(states.get(ACCOUNTS)).willReturn(accounts);
+        BDDMockito.given(states.get(ALIASES)).willReturn(aliases);
 
-		final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
-		final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
-		assertNotEquals(serviceImpl1, serviceImpl);
-	}
+        final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
+        assertNotEquals(serviceImpl1, serviceImpl);
+    }
 
-	@Test
-	void testSpi() {
-		// when
-		final CryptoService service = CryptoService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final CryptoService service = CryptoService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				CryptoServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type CryptoServiceImpl");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                CryptoServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type CryptoServiceImpl");
+    }
 }
