@@ -170,7 +170,8 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandlePauseToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandlePauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         final var op = txn.getTokenPause();
         final var meta =
@@ -187,7 +188,8 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUnpauseToken(@NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+    public TransactionMetadata preHandleUnpauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
         final var op = txn.getTokenUnpause();
         final var meta =
