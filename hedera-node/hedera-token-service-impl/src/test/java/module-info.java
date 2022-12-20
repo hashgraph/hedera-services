@@ -10,6 +10,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.hyperledger.besu.datatypes;
+    requires org.assertj.core;
 
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons;

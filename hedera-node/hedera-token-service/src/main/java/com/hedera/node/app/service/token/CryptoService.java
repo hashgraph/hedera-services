@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
@@ -42,26 +40,6 @@ public interface CryptoService extends Service {
     default String getServiceName() {
         return CryptoService.class.getSimpleName();
     }
-
-    /**
-     * Creates the crypto service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding crypto service pre-handler
-     */
-    @Override
-    @NonNull
-    CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
-     * Creates and returns a new {@link CryptoQueryHandler}
-     *
-     * @return A new {@link CryptoQueryHandler}
-     */
-    @Override
-    @NonNull
-    CryptoQueryHandler createQueryHandler(@NonNull States states);
 
     /**
      * Returns the concrete implementation instance of the service
