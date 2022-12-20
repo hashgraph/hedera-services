@@ -1330,28 +1330,40 @@ class StateViewTest {
                     customFixedFeeSameToken,
                     customFractionalFee);
 
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+                customFees = new ArrayList<>();
+        FixedFee fixedFeeInHbar =
+                new FixedFee(
+                        100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts =
+                new FixedFee(
+                        100,
+                        EntityIdUtils.asTypedEvmAddress(tokenId),
+                        false,
+                        false,
+                        EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeSameToken =
+                new FixedFee(
+                        50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FractionalFee fractionalFee =
+                new FractionalFee(
+                        15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
-
-    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees() {
-         List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees = new ArrayList<>();
-        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
-        FixedFee fixedFeeInHts = new FixedFee(100, EntityIdUtils.asTypedEvmAddress(tokenId), false, false,
-            EntityIdUtils.asTypedEvmAddress(payerAccountId));
-        FixedFee fixedFeeSameToken = new FixedFee(50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
-        FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
-
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee2.setFixedFee(fixedFeeInHts);
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee3.setFixedFee(fixedFeeSameToken);
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee4.setFractionalFee(fractionalFee);
 
         return List.of(customFee1, customFee2, customFee3, customFee4);
     }
-
-
-
 }

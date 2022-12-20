@@ -75,12 +75,24 @@ public class FractionalFee {
         }
         FractionalFee other = (FractionalFee) o;
 
-        if (getNumerator() != other.getNumerator()) {return false;}
-        if (getDenominator() != other.getDenominator()) {return false;}
-        if (getMinimumAmount() != other.getMinimumAmount) {return false;}
-        if (getMaximumAmount() != other.getMaximumAmount) {return false;}
-        if (getNetOfTransfers() != other.getNetOfTransfers()) {return false;}
-        if (getFeeCollector() != other.getFeeCollector()) {return false;}
+        if (getNumerator() != other.getNumerator()) {
+            return false;
+        }
+        if (getDenominator() != other.getDenominator()) {
+            return false;
+        }
+        if (getMinimumAmount() != other.getMinimumAmount) {
+            return false;
+        }
+        if (getMaximumAmount() != other.getMaximumAmount) {
+            return false;
+        }
+        if (getNetOfTransfers() != other.getNetOfTransfers()) {
+            return false;
+        }
+        if (getFeeCollector() != other.getFeeCollector()) {
+            return false;
+        }
 
         return true;
     }

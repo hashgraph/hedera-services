@@ -54,12 +54,21 @@ public class CustomFee {
             return false;
         }
         CustomFee other = (CustomFee) o;
-        if (getFixedFee() != null && other.getFixedFee() != null
-            && getFixedFee().equals(other.getFixedFee())) {return false;}
-        if (getFractionalFee() != null && other.getFractionalFee() != null
-            && getFractionalFee().equals(other.getFractionalFee())) {return false;}
-        if (getRoyaltyFee() != null && other.getRoyaltyFee() != null
-            && getRoyaltyFee().equals(other.getRoyaltyFee())) {return false;}
+        if (getFixedFee() != null
+                && other.getFixedFee() != null
+                && getFixedFee().equals(other.getFixedFee())) {
+            return false;
+        }
+        if (getFractionalFee() != null
+                && other.getFractionalFee() != null
+                && getFractionalFee().equals(other.getFractionalFee())) {
+            return false;
+        }
+        if (getRoyaltyFee() != null
+                && other.getRoyaltyFee() != null
+                && getRoyaltyFee().equals(other.getRoyaltyFee())) {
+            return false;
+        }
 
         return true;
     }

@@ -75,14 +75,25 @@ public class RoyaltyFee {
         }
         RoyaltyFee other = (RoyaltyFee) o;
 
-        if (getNumerator() != other.getNumerator()) {return false;}
-        if (getDenominator() != other.getDenominator()) {return false;}
-        if (getAmount() != other.getAmount()) {return false;}
-        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {return false;}
-        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {return false;}
-        if (getFeeCollector() != other.getFeeCollector()) {return false;}
+        if (getNumerator() != other.getNumerator()) {
+            return false;
+        }
+        if (getDenominator() != other.getDenominator()) {
+            return false;
+        }
+        if (getAmount() != other.getAmount()) {
+            return false;
+        }
+        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {
+            return false;
+        }
+        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {
+            return false;
+        }
+        if (getFeeCollector() != other.getFeeCollector()) {
+            return false;
+        }
 
         return true;
     }
-
 }
