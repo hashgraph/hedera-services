@@ -83,6 +83,12 @@ public class ConfigManager {
         return specConfig;
     }
 
+    public boolean allowListExist(long account) {
+        return targetNet.getAllowList() == null
+                || targetNet.getAllowList().isEmpty()
+                || targetNet.getAllowList().contains(account);
+    }
+
     private void addPayerConfig(Map<String, String> specConfig, String payerId) {
         specConfig.put("default.payer", payerId);
         var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);

@@ -29,6 +29,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
@@ -43,7 +45,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public final class ReadableAccountStore implements AccountKeyLookup {
+public class ReadableAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
     private final State<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
@@ -81,6 +83,17 @@ public final class ReadableAccountStore implements AccountKeyLookup {
             return PRESENT_BUT_NOT_REQUIRED;
         }
         return validateKey(account.get().getAccountKey());
+    }
+
+    /**
+     * Returns the {@link Account} for a given {@link AccountID}
+     *
+     * @param idOrAlias the {@code AccountID} which {@code Account is requested}
+     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
+     *     Optional} otherwise
+     */
+    public Optional<Account> getAccount(@NonNull final AccountID idOrAlias) {
+        return getAccountLeaf(idOrAlias).map(accountLeaf -> mapAccount(idOrAlias, accountLeaf));
     }
 
     /**
@@ -128,5 +141,37 @@ public final class ReadableAccountStore implements AccountKeyLookup {
             return withFailureReason(ALIAS_IS_IMMUTABLE);
         }
         return withKey(key);
+    }
+
+    private Account mapAccount(final AccountID idOrAlias, final MerkleAccount account) {
+        final var builder =
+                new AccountBuilderImpl()
+                        .key(account.getAccountKey())
+                        .expiry(account.getExpiry())
+                        .balance(account.getBalance())
+                        .memo(account.getMemo())
+                        .deleted(account.isDeleted())
+                        .receiverSigRequired(account.isReceiverSigRequired())
+                        .numberOfOwnedNfts(account.getNftsOwned())
+                        .maxAutoAssociations(account.getMaxAutomaticAssociations())
+                        .usedAutoAssociations(account.getUsedAutoAssociations())
+                        .numAssociations(account.getNumAssociations())
+                        .numPositiveBalances(account.getNumPositiveBalances())
+                        .ethereumNonce(account.getEthereumNonce())
+                        .stakedToMe(account.getStakedToMe())
+                        .stakePeriodStart(account.getStakePeriodStart())
+                        .stakedNum(account.totalStake())
+                        .declineReward(account.isDeclinedReward())
+                        .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
+                        .autoRenewSecs(account.getAutoRenewSecs())
+                        .accountNumber(idOrAlias.getAccountNum())
+                        .isSmartContract(account.isSmartContract());
+        if (account.getAutoRenewAccount() != null) {
+            builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
+        }
+        if (account.getAlias() != null) {
+            builder.alias(account.getAlias().toByteArray());
+        }
+        return builder.build();
     }
 }
