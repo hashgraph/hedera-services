@@ -57,4 +57,23 @@ public class FixedFee {
     public boolean isUseCurrentTokenForPayment() {
         return useCurrentTokenForPayment;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (FixedFee.class != o.getClass()) {
+            return false;
+        }
+        FixedFee other = (FixedFee) o;
+
+        if (getAmount() != other.getAmount()) {return false;}
+        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {return false;}
+        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {return false;}
+        if (isUseCurrentTokenForPayment() != other.isUseCurrentTokenForPayment()) {return false;}
+        if (getFeeCollector() != other.getFeeCollector()) {return false;}
+
+        return true;
+    }
 }

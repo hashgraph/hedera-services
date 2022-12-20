@@ -64,4 +64,25 @@ public class RoyaltyFee {
     public Address getFeeCollector() {
         return feeCollector != null ? feeCollector : Address.ZERO;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (RoyaltyFee.class != o.getClass()) {
+            return false;
+        }
+        RoyaltyFee other = (RoyaltyFee) o;
+
+        if (getNumerator() != other.getNumerator()) {return false;}
+        if (getDenominator() != other.getDenominator()) {return false;}
+        if (getAmount() != other.getAmount()) {return false;}
+        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {return false;}
+        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {return false;}
+        if (getFeeCollector() != other.getFeeCollector()) {return false;}
+
+        return true;
+    }
+
 }

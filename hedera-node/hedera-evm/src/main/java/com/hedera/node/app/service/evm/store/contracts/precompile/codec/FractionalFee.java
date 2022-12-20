@@ -64,4 +64,24 @@ public class FractionalFee {
     public Address getFeeCollector() {
         return feeCollector != null ? feeCollector : Address.ZERO;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (FractionalFee.class != o.getClass()) {
+            return false;
+        }
+        FractionalFee other = (FractionalFee) o;
+
+        if (getNumerator() != other.getNumerator()) {return false;}
+        if (getDenominator() != other.getDenominator()) {return false;}
+        if (getMinimumAmount() != other.getMinimumAmount) {return false;}
+        if (getMaximumAmount() != other.getMaximumAmount) {return false;}
+        if (getNetOfTransfers() != other.getNetOfTransfers()) {return false;}
+        if (getFeeCollector() != other.getFeeCollector()) {return false;}
+
+        return true;
+    }
 }

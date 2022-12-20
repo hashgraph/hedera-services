@@ -44,4 +44,23 @@ public class CustomFee {
     public RoyaltyFee getRoyaltyFee() {
         return royaltyFee;
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (CustomFee.class != o.getClass()) {
+            return false;
+        }
+        CustomFee other = (CustomFee) o;
+        if (getFixedFee() != null && other.getFixedFee() != null
+            && getFixedFee().equals(other.getFixedFee())) {return false;}
+        if (getFractionalFee() != null && other.getFractionalFee() != null
+            && getFractionalFee().equals(other.getFractionalFee())) {return false;}
+        if (getRoyaltyFee() != null && other.getRoyaltyFee() != null
+            && getRoyaltyFee().equals(other.getRoyaltyFee())) {return false;}
+
+        return true;
+    }
 }
