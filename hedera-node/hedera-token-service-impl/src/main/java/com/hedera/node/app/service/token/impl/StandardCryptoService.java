@@ -15,30 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /** An implementation of the {@link CryptoService} interface. */
-public final class StandardCryptoService implements CryptoService {
-    @NonNull
-    @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull final States states, @NonNull final PreHandleContext ctx) {
-        Objects.requireNonNull(states);
-        Objects.requireNonNull(ctx);
-        final var store = new AccountStore(states);
-        return new CryptoPreTransactionHandlerImpl(store, ctx);
-    }
-
-    @NonNull
-    @Override
-    public CryptoQueryHandler createQueryHandler(@NonNull final States states) {
-        Objects.requireNonNull(states);
-        return new CryptoQueryHandlerImpl(states);
-    }
-}
+public final class StandardCryptoService implements CryptoService {}
