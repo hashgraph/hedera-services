@@ -22,6 +22,7 @@ public class Scenarios {
     SysFilesDownScenario sysFilesDown;
     ContractScenario contract;
     ConsensusScenario consensus;
+    StakingScenario staking;
     VersionInfoScenario versions;
     FeeSnapshotsScenario feeSnapshots;
 
@@ -75,6 +76,14 @@ public class Scenarios {
 
     public ConsensusScenario getConsensus() {
         return consensus;
+    }
+
+    public StakingScenario getStaking() {
+        return staking;
+    }
+
+    public void setStaking(StakingScenario staking) {
+        this.staking = staking;
     }
 
     public void setConsensus(ConsensusScenario consensus) {

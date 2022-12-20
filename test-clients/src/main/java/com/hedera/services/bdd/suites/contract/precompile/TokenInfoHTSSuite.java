@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -292,7 +293,10 @@ public class TokenInfoHTSSuite extends HapiSuite {
         return defaultHapiSpec("HappyPathUpdateTokenInfoAndGetLatestInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(3),
+                        cryptoCreate(UPDATED_TREASURY)
+                                .keyShape(ED25519_ON)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(3),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(HTS_COLLECTOR),
                         cryptoCreate(ACCOUNT),
@@ -354,7 +358,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -585,7 +590,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -780,10 +786,13 @@ public class TokenInfoHTSSuite extends HapiSuite {
     private HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
+        return defaultHapiSpec("HappyPathUpdateNonFungibleTokenInfoAndGetLatestInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(UPDATED_TREASURY)
+                                .balance(0L)
+                                .keyShape(ED25519_ON)
+                                .maxAutomaticTokenAssociations(2),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(NFT_OWNER),
                         cryptoCreate(NFT_SPENDER),
@@ -865,7 +874,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .via(
                                                                 UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))

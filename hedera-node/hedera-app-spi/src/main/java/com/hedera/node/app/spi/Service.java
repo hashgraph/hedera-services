@@ -23,6 +23,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * crypto-service, token-service etc.,
  */
 public interface Service {
+
+    /**
+     * Returns the name of the service. This name must be unique for each service deployed on the
+     * application.
+     *
+     * @return the name
+     */
+    @NonNull
+    String getServiceName();
+
     /**
      * Creates and returns a new {@link PreTransactionHandler}
      *

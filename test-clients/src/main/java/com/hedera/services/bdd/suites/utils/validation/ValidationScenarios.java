@@ -81,6 +81,7 @@ import static com.hedera.services.bdd.suites.utils.validation.ValidationScenario
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.CRYPTO;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.FEE_SNAPSHOTS;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.FILE;
+import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.STAKE_TO_EVERYBODY;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYSTEM_KEYS;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYS_FILES_DOWN;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.Scenario.SYS_FILES_UP;
@@ -131,6 +132,7 @@ import com.hedera.services.bdd.suites.utils.validation.domain.Node;
 import com.hedera.services.bdd.suites.utils.validation.domain.PersistentContract;
 import com.hedera.services.bdd.suites.utils.validation.domain.PersistentFile;
 import com.hedera.services.bdd.suites.utils.validation.domain.Scenarios;
+import com.hedera.services.bdd.suites.utils.validation.domain.StakingScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesDownScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesUpScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.UpdateAction;
@@ -141,6 +143,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -199,7 +202,8 @@ public class ValidationScenarios extends HapiSuite {
         VERSIONS,
         SYS_FILES_UP,
         SYS_FILES_DOWN,
-        FEE_SNAPSHOTS
+        FEE_SNAPSHOTS,
+        STAKE_TO_EVERYBODY,
     }
 
     private static Scenarios scenarios;
@@ -257,6 +261,10 @@ public class ValidationScenarios extends HapiSuite {
                                 ofNullable(
                                         params.getScenarios().contains(CONSENSUS)
                                                 ? consensusScenario()
+                                                : null),
+                                ofNullable(
+                                        params.getScenarios().contains(STAKE_TO_EVERYBODY)
+                                                ? stakingScenario()
                                                 : null),
                                 ofNullable(
                                         params.getScenarios().contains(SYSTEM_KEYS)
@@ -1663,6 +1671,78 @@ public class ValidationScenarios extends HapiSuite {
         }
     }
 
+    private static HapiSpec stakingScenario() {
+        try {
+            ensureScenarios();
+            if (scenarios.getStaking() == null) {
+                scenarios.setStaking(new StakingScenario());
+            }
+            var staking = scenarios.getStaking();
+
+            return customHapiSpec("StakingScenario")
+                    .withProperties(
+                            Map.of(
+                                    "nodes", nodes(),
+                                    "default.payer", primaryPayer(),
+                                    "default.node", defaultNode(),
+                                    "fees.useFixedOffer", "true",
+                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "default.payer.key", payerKeySeed()))
+                    .given(
+                            keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
+                                    .name(SCENARIO_PAYER_NAME)
+                                    .linkedTo(
+                                            () ->
+                                                    String.format(
+                                                            "0.0.%d",
+                                                            targetNetwork().getScenarioPayer())))
+                    .when()
+                    .then(
+                            withOpContext(
+                                    (spec, opLog) -> {
+                                        final AtomicReference<NodeAddressBook> addressBook =
+                                                new AtomicReference<>();
+                                        final var getNodeDetails =
+                                                getFileContents(NODE_DETAILS)
+                                                        .payingWith(SCENARIO_PAYER_NAME)
+                                                        .alertingPost(
+                                                                response -> {
+                                                                    try {
+                                                                        addressBook.set(
+                                                                                NodeAddressBook
+                                                                                        .parseFrom(
+                                                                                                response.getFileGetContents()
+                                                                                                        .getFileContents()
+                                                                                                        .getContents()));
+                                                                    } catch (
+                                                                            InvalidProtocolBufferException
+                                                                                    e) {
+                                                                        throw new RuntimeException(
+                                                                                e);
+                                                                    }
+                                                                });
+                                        allRunFor(spec, getNodeDetails);
+                                        final var allUpdates =
+                                                addressBook.get().getNodeAddressList().stream()
+                                                        .map(
+                                                                nodeAddress ->
+                                                                        cryptoUpdate(
+                                                                                        SCENARIO_PAYER_NAME)
+                                                                                .payingWith(
+                                                                                        SCENARIO_PAYER_NAME)
+                                                                                .newStakedNodeId(
+                                                                                        nodeAddress
+                                                                                                .getNodeId()))
+                                                        .toArray(HapiSpecOperation[]::new);
+                                        allRunFor(spec, allUpdates);
+                                    }));
+        } catch (Exception e) {
+            log.warn("Unable to initialize staking scenario, skipping it!", e);
+            errorsOccurred.set(true);
+            return null;
+        }
+    }
+
     private static HapiSpecOperation[] novelTopicIfDesired() {
         if (!params.isNovelContent()) {
             return new HapiSpecOperation[0];
@@ -1782,6 +1862,11 @@ public class ValidationScenarios extends HapiSuite {
                                     .collect(Collectors.toSet());
                     List<String> listed =
                             Arrays.stream(valueOf(matcher).split(","))
+                                    .map(
+                                            name ->
+                                                    name.equalsIgnoreCase("staking")
+                                                            ? STAKE_TO_EVERYBODY.name()
+                                                            : name)
                                     .map(name -> name.equals("fees") ? "FEE_SNAPSHOTS" : name)
                                     .map(name -> name.equals("syskeys") ? "SYSTEM_KEYS" : name)
                                     .map(name -> name.equals("xfers") ? "TRANSFERS_ONLY" : name)
