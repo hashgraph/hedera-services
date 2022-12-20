@@ -323,8 +323,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                     if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                         networkCtx().markMigrationRecordsNotYetStreamed();
                     }
-                    app.stakeStartupHelper()
-                            .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
