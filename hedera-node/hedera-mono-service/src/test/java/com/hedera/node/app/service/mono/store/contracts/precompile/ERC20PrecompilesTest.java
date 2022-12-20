@@ -44,7 +44,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
@@ -81,6 +80,9 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -114,10 +116,8 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.ApproveWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
@@ -182,6 +182,7 @@ class ERC20PrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -220,6 +221,7 @@ class ERC20PrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private Account account;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -254,6 +256,7 @@ class ERC20PrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -473,7 +476,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeName(any())).willReturn(successResult);
+        given(evmEncoder.encodeName(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
@@ -537,7 +540,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -546,7 +549,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -592,7 +595,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeName(any())).willReturn(successResult);
+        given(evmEncoder.encodeName(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 
@@ -636,7 +639,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeSymbol(any())).willReturn(successResult);
+        given(evmEncoder.encodeSymbol(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -676,7 +679,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(wrappedLedgers.decimalsOf(token)).willReturn(10);
-        given(encoder.encodeDecimals(10)).willReturn(successResult);
+        given(evmEncoder.encodeDecimals(10)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -716,7 +719,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(wrappedLedgers.totalSupplyOf(token)).willReturn(10L);
-        given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
+        given(evmEncoder.encodeTotalSupply(10L)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -765,13 +768,10 @@ class ERC20PrecompilesTest {
 
         given(accounts.contains(any())).willReturn(true);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedPretendArguments), any(), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(allowances);
-        given(encoder.encodeAllowance(10L)).willReturn(successResult);
+        given(evmEncoder.encodeAllowance(10L)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -869,7 +869,7 @@ class ERC20PrecompilesTest {
                 .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedPretendArguments), any()))
                 .thenReturn(BALANCE_OF_WRAPPER);
         given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
-        given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(evmEncoder.encodeBalance(10L)).willReturn(successResult);
 
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray()))
@@ -981,7 +981,7 @@ class ERC20PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -990,7 +990,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1061,8 +1061,8 @@ class ERC20PrecompilesTest {
                 .willReturn(tokenStore);
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
-        given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -1071,7 +1071,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1149,7 +1149,7 @@ class ERC20PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -1159,7 +1159,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1242,7 +1242,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1251,7 +1251,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))
@@ -1334,7 +1334,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1347,6 +1347,7 @@ class ERC20PrecompilesTest {
                                         eq(nestedPretendArguments),
                                         any(),
                                         eq(true),
+                                        any(),
                                         any(),
                                         any(),
                                         any()))
@@ -1421,7 +1422,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1434,6 +1435,7 @@ class ERC20PrecompilesTest {
                                         eq(pretendArguments),
                                         eq(null),
                                         eq(true),
+                                        any(),
                                         any(),
                                         any(),
                                         any()))
@@ -1485,6 +1487,8 @@ class ERC20PrecompilesTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
         given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
@@ -1513,7 +1517,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1528,6 +1532,7 @@ class ERC20PrecompilesTest {
                                         eq(pretendArguments),
                                         eq(null),
                                         eq(false),
+                                        any(),
                                         any(),
                                         any(),
                                         any()))
@@ -1603,7 +1608,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1612,7 +1617,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransfer(
-                                        eq(nestedPretendArguments), any(), any(), any()))
+                                        eq(nestedPretendArguments), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
         given(aliases.resolveForEvm(any()))
@@ -1700,10 +1705,11 @@ class ERC20PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
+    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER =
+            new BalanceOfWrapper<>(sender);
 
-    public static final TokenAllowanceWrapper ALLOWANCE_WRAPPER =
-            new TokenAllowanceWrapper(token, sender, receiver);
+    public static final TokenAllowanceWrapper<TokenID, AccountID, AccountID> ALLOWANCE_WRAPPER =
+            new TokenAllowanceWrapper<>(token, sender, receiver);
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER =
             new TokenTransferWrapper(

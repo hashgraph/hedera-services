@@ -25,6 +25,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
+import org.hyperledger.besu.evm.code.CodeFactory;
 
 public class HederaEvmWorldStateTokenAccount implements Account {
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
@@ -44,7 +45,7 @@ public class HederaEvmWorldStateTokenAccount implements Account {
 
     @Override
     public Bytes getCode() {
-        return interpolatedCode().getBytes();
+        return interpolatedCode().getContainerBytes();
     }
 
     @Override
@@ -101,7 +102,8 @@ public class HederaEvmWorldStateTokenAccount implements Account {
         if (interpolatedCode == null) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
             interpolatedCode =
-                    Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
+                    CodeFactory.createCode(
+                            interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
         }
         return interpolatedCode;
     }

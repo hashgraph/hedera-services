@@ -17,10 +17,12 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
 import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
@@ -37,7 +39,9 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.records.RecordSubmissions;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
@@ -45,6 +49,7 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -52,8 +57,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExe
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
+import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.EvmAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
@@ -80,6 +87,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -90,6 +98,7 @@ public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
+    private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -104,12 +113,17 @@ public class InfrastructureFactory {
     private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
     private final Predicate<CryptoTransferTransactionBody> aliasCheck;
     private final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory;
+    private final Provider<FeeCalculator> feeCalculator;
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    private final StateView view;
+    private final EntityCreator entityCreator;
 
     @Inject
     public InfrastructureFactory(
             final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
@@ -119,9 +133,14 @@ public class InfrastructureFactory {
             final AliasManager aliasManager,
             final FeeDistribution feeDistribution,
             final FeeAssessor feeAssessor,
-            final PureTransferSemanticChecks checks) {
+            final PureTransferSemanticChecks checks,
+            final Provider<FeeCalculator> feeCalculator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final StateView view,
+            final EntityCreator entityCreator) {
         this.ids = ids;
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -137,6 +156,10 @@ public class InfrastructureFactory {
         this.changeManagerFactory = BalanceChangeManager::new;
         this.aliasCheck = AliasResolver::usesAliases;
         this.schedulesManagerFactory = CustomSchedulesManager::new;
+        this.feeCalculator = feeCalculator;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.view = view;
+        this.entityCreator = entityCreator;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -248,7 +271,7 @@ public class InfrastructureFactory {
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, encoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(
@@ -326,5 +349,29 @@ public class InfrastructureFactory {
                 ledgers,
                 sideEffects,
                 sigImpactHistorian);
+    }
+
+    public AbstractAutoCreationLogic newAutoCreationLogicScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
+        final var autoCreationLogic =
+                new EvmAutoCreationLogic(
+                        usageLimits,
+                        syntheticTxnFactory,
+                        entityCreator,
+                        ids,
+                        () -> view,
+                        txnCtx,
+                        dynamicProperties,
+                        updater.aliases());
+        autoCreationLogic.setFeeCalculator(feeCalculator.get());
+        return autoCreationLogic;
+    }
+
+    public RecordSubmissions newRecordSubmissionsScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
+        return (txnBody, txnRecord) -> {
+            txnRecord.onlyExternalizeIfSuccessful();
+            updater.manageInProgressPrecedingRecord(recordsHistorian, txnRecord, txnBody);
+        };
     }
 }

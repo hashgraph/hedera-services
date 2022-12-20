@@ -22,19 +22,22 @@ plugins {
 }
 
 extraJavaModuleInfo {
-    failOnMissingModuleInfo.set(false)
+    failOnMissingModuleInfo.set(true)
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
     automaticModule("com.goterl:resource-loader", "resource.loader")
 
     automaticModule("io.grpc:grpc-api", "io.grpc.api")
+    automaticModule("io.grpc:grpc-core", "io.grpc.core")
     automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-context", "io.grpc.context")
     automaticModule("io.grpc:grpc-stub", "grpc.stub")
     automaticModule("io.grpc:grpc-protobuf", "grpc.protobuf")
     automaticModule("io.grpc:grpc-services", "grpc.services")
-    automaticModule("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
-    automaticModule("io.grpc:grpc-netty", "grpc.netty")
+    automaticModule("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
+    automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-testing", "io.grpc.testing")
 
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
     automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
@@ -72,6 +75,40 @@ extraJavaModuleInfo {
     automaticModule("com.google.guava:listenablefuture", "listenablefuture")
     automaticModule("com.google.guava:failureaccess", "failureaccess")
     automaticModule("com.google.auto.value:auto-value-annotations", "auto.value.annotations")
+    automaticModule("com.google.api.grpc:proto-google-common-protos", "com.google.api.grpc.proto.common")
+
+    automaticModule("org.connid:framework", "org.connid.framework")
+    automaticModule("org.connid:framework-internal", "org.connid.framework.internal")
+
+    automaticModule("org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains.kotlin.stdlib.common")
+    automaticModule("junit:junit", "junit.old")
+    automaticModule("org.codehaus.mojo:animal-sniffer-annotations", "org.codehaus.mojo.animalsniffer.annotations")
+    automaticModule("org.checkerframework:checker-compat-qual", "org.checkerframework.checker.compat.qual")
+    automaticModule("com.google.code.gson:gson", "com.google.code.gson")
+    automaticModule("com.google.android:annotations", "com.google.android.annotations")
+    automaticModule("com.google.errorprone:error_prone_annotations", "com.google.errorprone.annotations")
+    automaticModule("com.google.j2objc:j2objc-annotations", "com.google.j2objc.annotations")
+    automaticModule("com.google.dagger:dagger-compiler", "dagger.compiler")
+    automaticModule("com.google.dagger:dagger-spi", "dagger.spi")
+    automaticModule("com.google.dagger:dagger-producers", "dagger.producers")
+    automaticModule("com.google.googlejavaformat:google-java-format", "com.google.googlejavaformat")
+    automaticModule("com.google.devtools.ksp:symbol-processing-api", "com.google.devtools.ksp.symbolprocessingapi")
+    automaticModule("org.jetbrains.kotlinx:kotlinx-metadata-jvm", "org.jetbrains.kotlinx.metadata.jvm")
+    automaticModule("net.ltgt.gradle.incap:incap", "net.ltgt.gradle.incap")
+    automaticModule("com.google.errorprone:javac-shaded", "com.google.errorprone.javac.shaded")
+    automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
+    automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
+    automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
+    automaticModule("com.google.truth.extensions:truth-java8-extension", "com.google.truth.extensions.java8")
+    automaticModule("org.apache.commons:commons-math3", "org.apache.commons.math3")
+
+    automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
+    automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
+    automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
+    automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
+    automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
+    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
+
 
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")

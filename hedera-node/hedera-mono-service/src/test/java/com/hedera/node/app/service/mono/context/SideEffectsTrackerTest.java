@@ -16,11 +16,7 @@
 package com.hedera.node.app.service.mono.context;
 
 import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
@@ -145,14 +141,12 @@ class SideEffectsTrackerTest {
     void tracksAndResetsNewAccountIdAsExpected() {
         final var createdAutoAccount =
                 AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
-        final var alias = ByteString.copyFromUtf8("abcdefg");
 
-        subject.trackAutoCreation(createdAutoAccount, alias);
+        subject.trackAutoCreation(createdAutoAccount);
 
         assertTrue(subject.hasTrackedAutoCreation());
         assertFalse(subject.hasTrackedContractCreation());
         assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
-        assertEquals(alias, subject.getNewEntityAlias());
 
         subject.reset();
         assertFalse(subject.hasTrackedAutoCreation());
@@ -403,7 +397,7 @@ class SideEffectsTrackerTest {
         subject.reset();
         assertFalse(subject.hasTrackedRandomData());
         assertEquals(-1, subject.getPseudorandomNumber());
-        assertEquals(null, subject.getPseudorandomBytes());
+        assertNull(subject.getPseudorandomBytes());
     }
 
     @Test

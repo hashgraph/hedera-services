@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -38,13 +38,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenDeleteSpecs extends HapiApiSuite {
+public class TokenDeleteSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
 
     private static final String FIRST_TBD = "firstTbd";
@@ -63,7 +63,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 deletionValidatesMissingAdminKey(),
                 deletionWorksAsExpected(),
@@ -72,7 +72,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                 deletionValidatesRef());
     }
 
-    private HapiApiSpec treasuryBecomesDeletableAfterTokenDelete() {
+    private HapiSpec treasuryBecomesDeletableAfterTokenDelete() {
         return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
                 .given(
                         newKeyNamed(TOKEN_ADMIN),
@@ -90,7 +90,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                 .then(tokenDissociate(TOKEN_TREASURY, SECOND_TBD), cryptoDelete(TOKEN_TREASURY));
     }
 
-    private HapiApiSpec deletionValidatesAlreadyDeletedToken() {
+    private HapiSpec deletionValidatesAlreadyDeletedToken() {
         return defaultHapiSpec("DeletionValidatesAlreadyDeletedToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -101,7 +101,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                 .then(tokenDelete("tbd").hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
-    private HapiApiSpec deletionValidatesMissingAdminKey() {
+    private HapiSpec deletionValidatesMissingAdminKey() {
         return defaultHapiSpec("DeletionValidatesMissingAdminKey")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -119,7 +119,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
-    public HapiApiSpec deletionWorksAsExpected() {
+    public HapiSpec deletionWorksAsExpected() {
         return defaultHapiSpec("DeletionWorksAsExpected")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -158,7 +158,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
                         tokenUnfreeze("tbd", GENESIS).hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
-    public HapiApiSpec deletionValidatesRef() {
+    public HapiSpec deletionValidatesRef() {
         return defaultHapiSpec("DeletionValidatesRef")
                 .given(cryptoCreate(PAYER))
                 .when()

@@ -6469,7 +6469,7 @@ public class SigRequirementsTest {
                 id -> null);
     }
 
-    public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
+    private static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
                 .map(
                         jKey -> {

@@ -28,8 +28,9 @@ import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.ConsensusTransaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -82,48 +83,51 @@ public class StandardProcessLogic implements ProcessLogic {
     }
 
     @Override
-    public void incorporateConsensusTxn(
-            Transaction platformTxn, Instant consensusTime, long submittingMember) {
+    public void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember) {
         try {
-            // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
-            // preceding,
-            // following child records and any long term scheduled transactions triggered by the
-            // current transaction
-            // in the balance file with consensus timestamp X to include all transactions whose
-            // consensus time T <= X.
-            consensusTime = consensusTime.minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
-
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
-            accessor.setStateView(workingView);
-            if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
-                return;
-            }
-
-            consensusTimeTracker.reset(consensusTime);
-
-            sigImpactHistorian.setChangeTime(consensusTime);
-            expiries.purge(consensusTime.getEpochSecond());
-            sigImpactHistorian.purge();
-            recordStreaming.resetBlockNo();
-
-            doProcess(
-                    submittingMember,
-                    consensusTimeTracker.isFirstUsed()
-                            ? consensusTimeTracker.nextTransactionTime(true)
-                            : consensusTimeTracker.firstTransactionTime(),
-                    accessor);
-
-            if (scheduleProcessing.shouldProcessScheduledTransactions(consensusTime)) {
-                processScheduledTransactions(consensusTime, submittingMember);
-            }
-
-            autoRenewal.execute(consensusTime);
-            platformTxn.clearSignatures();
+            incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
         } catch (Exception internal) {
             log.error("Unhandled internal process failure", internal);
         }
+    }
+
+    void incorporate(
+            final SwirldsTxnAccessor accessor, Instant consensusTime, final long submittingMember) {
+        // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
+        // preceding,
+        // following child records and any long term scheduled transactions triggered by the
+        // current transaction
+        // in the balance file with consensus timestamp X to include all transactions whose
+        // consensus time T <= X.
+        consensusTime = consensusTime.minusNanos(MIN_TRANS_TIMESTAMP_INCR_NANOS);
+
+        accessor.setStateView(workingView);
+        if (!invariantChecks.holdFor(accessor, consensusTime, submittingMember)) {
+            return;
+        }
+
+        consensusTimeTracker.reset(consensusTime);
+
+        sigImpactHistorian.setChangeTime(consensusTime);
+        expiries.purge(consensusTime.getEpochSecond());
+        sigImpactHistorian.purge();
+        recordStreaming.resetBlockNo();
+
+        doProcess(
+                submittingMember,
+                consensusTimeTracker.isFirstUsed()
+                        ? consensusTimeTracker.nextTransactionTime(true)
+                        : consensusTimeTracker.firstTransactionTime(),
+                accessor);
+
+        if (scheduleProcessing.shouldProcessScheduledTransactions(consensusTime)) {
+            processScheduledTransactions(consensusTime, submittingMember);
+        }
+
+        autoRenewal.execute(consensusTime);
     }
 
     private void processScheduledTransactions(Instant consensusTime, long submittingMember) {

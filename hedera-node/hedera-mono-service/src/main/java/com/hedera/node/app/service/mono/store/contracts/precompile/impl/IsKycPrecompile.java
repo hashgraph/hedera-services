@@ -15,21 +15,16 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,13 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function IS_KYC_TOKEN_FUNCTION =
-            new Function("isKyc(address,address)", INT_BOOL_PAIR);
-    private static final Bytes IS_KYC_TOKEN_FUNCTION_SELECTOR =
-            Bytes.wrap(IS_KYC_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> IS_KYC_TOKEN_FUNCTION_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIsKycPrecompile {
+
     private AccountID accountId;
 
     public IsKycPrecompile(
@@ -51,8 +41,9 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -70,16 +61,12 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeIsKyc(isKyc);
     }
 
-    public static GrantRevokeKycWrapper decodeIsKyc(
+    public static GrantRevokeKycWrapper<TokenID, AccountID> decodeIsKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, IS_KYC_TOKEN_FUNCTION_SELECTOR, IS_KYC_TOKEN_FUNCTION_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-
-        return new GrantRevokeKycWrapper(tokenID, accountID);
+        final var rawGrantRevokeKycWrapper = EvmIsKycPrecompile.decodeIsKyc(input);
+        return new GrantRevokeKycWrapper<>(
+                convertAddressBytesToTokenID(rawGrantRevokeKycWrapper.token()),
+                convertLeftPaddedAddressToAccountId(
+                        rawGrantRevokeKycWrapper.account(), aliasResolver));
     }
 }

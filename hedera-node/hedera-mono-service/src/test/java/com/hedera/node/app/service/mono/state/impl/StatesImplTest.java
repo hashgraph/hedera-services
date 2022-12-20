@@ -38,6 +38,11 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
@@ -56,6 +61,9 @@ class StatesImplTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
     private static final String TOKENS = "TOKENS";
+    private static final String SCHEDULES_BY_ID = "SCHEDULES-BY-ID";
+    private static final String SCHEDULES_BY_EQUALITY = "SCHEDULES-BY-EQUALITY";
+    private static final String SCHEDULES_BY_EXPIRY = "SCHEDULES-BY-EXPIRY";
     @Mock private ServicesState state;
     @Mock private MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
     @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
@@ -64,6 +72,12 @@ class StatesImplTest {
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
+    @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> scheduleById;
+    @Mock private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> scheduleByExpiry;
+
+    @Mock
+    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> scheduleByEquality;
+
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleScheduledTransactions scheduleTxs;
     @Mock private MerkleNetworkContext networkCtx;
@@ -85,6 +99,10 @@ class StatesImplTest {
     void updatesChildrenFromImmutableState() {
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
+        given(scheduleTxs.byId()).willReturn(scheduleById);
+        given(scheduleTxs.byEquality()).willReturn(scheduleByEquality);
+        given(scheduleTxs.byExpirationSecond()).willReturn(scheduleByExpiry);
+
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
         given(state.isInitialized()).willReturn(true);
 
@@ -95,7 +113,6 @@ class StatesImplTest {
 
     @Test
     void returnsInMemoryAccountsWhenAppropriate() {
-
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
@@ -133,11 +150,37 @@ class StatesImplTest {
         given(state.isInitialized()).willReturn(true);
 
         subject.updateChildren(state);
-
         final var state = subject.get(TOKENS);
 
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof InMemoryStateImpl);
+    }
+
+    @Test
+    void returnsSchedulesFromChildren() {
+        final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
+        givenStateWithMockChildren();
+        given(scheduleTxs.byId()).willReturn(scheduleById);
+        given(scheduleTxs.byEquality()).willReturn(scheduleByEquality);
+        given(scheduleTxs.byExpirationSecond()).willReturn(scheduleByExpiry);
+
+        given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
+        given(state.isInitialized()).willReturn(true);
+
+        subject.updateChildren(state);
+
+        final var schedulesById = subject.get(SCHEDULES_BY_ID);
+        final var schedulesByEquality = subject.get(SCHEDULES_BY_EQUALITY);
+        final var schedulesByExpiry = subject.get(SCHEDULES_BY_EXPIRY);
+
+        assertEquals(lastHandledTime, schedulesById.getLastModifiedTime());
+        assertTrue(schedulesById instanceof InMemoryStateImpl);
+
+        assertEquals(lastHandledTime, schedulesByEquality.getLastModifiedTime());
+        assertTrue(schedulesByEquality instanceof InMemoryStateImpl);
+
+        assertEquals(lastHandledTime, schedulesByExpiry.getLastModifiedTime());
+        assertTrue(schedulesByExpiry instanceof InMemoryStateImpl);
     }
 
     @Test
@@ -184,6 +227,9 @@ class StatesImplTest {
         assertSame(tokens, children.tokens());
         assertSame(tokenAssociations, children.tokenAssociations());
         assertSame(scheduleTxs, children.schedules());
+        assertSame(scheduleById, children.schedules().byId());
+        assertSame(scheduleByEquality, children.schedules().byEquality());
+        assertSame(scheduleByExpiry, children.schedules().byExpirationSecond());
         assertSame(networkCtx, children.networkCtx());
         assertSame(addressBook, children.addressBook());
         assertSame(specialFiles, children.specialFiles());

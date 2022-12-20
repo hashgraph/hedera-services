@@ -90,6 +90,13 @@ class MerkleStakingInfoTest {
     }
 
     @Test
+    void syncsFromRecomputedAsExpected() {
+        subject.syncRecomputedStakeValues(1L, 2L);
+        assertEquals(1L, subject.getStakeToReward());
+        assertEquals(2L, subject.getStakeToNotReward());
+    }
+
+    @Test
     void objectContractsWork() {
         final long otherMinStake = 101L;
         final long otherMaxStake = 10_001L;

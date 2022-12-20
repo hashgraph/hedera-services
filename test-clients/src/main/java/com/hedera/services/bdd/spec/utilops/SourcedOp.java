@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import java.util.function.Supplier;
 
@@ -29,7 +29,7 @@ public class SourcedOp extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         allRunFor(spec, source.get());
         return false;
     }

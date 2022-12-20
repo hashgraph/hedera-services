@@ -34,7 +34,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory;
@@ -431,7 +431,7 @@ public class StateView {
 
     private String getContractAccountId(final JKey key, final AccountID accountID) {
         // If we can recover an Ethereum EOA address from the account key, we should return that
-        final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+        final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
         if (evmAddress != null) {
             return Bytes.wrap(evmAddress).toUnprefixedHexString();
         } else {

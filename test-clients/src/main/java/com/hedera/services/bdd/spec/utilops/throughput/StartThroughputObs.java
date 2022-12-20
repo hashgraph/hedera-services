@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.spec.utilops.throughput;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class StartThroughputObs extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         long saturationTime =
                 System.currentTimeMillis()
                         + expectedTimeToSaturateQueue.orElse(

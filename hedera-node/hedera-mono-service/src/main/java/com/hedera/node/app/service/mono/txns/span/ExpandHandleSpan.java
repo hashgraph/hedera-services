@@ -58,7 +58,7 @@ public class ExpandHandleSpan {
 
     public SwirldsTxnAccessor track(final Transaction transaction)
             throws InvalidProtocolBufferException {
-        final var accessor = spanAccessorFor(transaction);
+        final var accessor = spanAccessorFor(transaction.getContents());
         transaction.setMetadata(accessor);
         return accessor;
     }
@@ -71,14 +71,14 @@ public class ExpandHandleSpan {
             transaction.setMetadata(null);
             return cachedAccessor;
         } else {
-            return spanAccessorFor(transaction);
+            return spanAccessorFor(transaction.getContents());
         }
     }
 
-    private SwirldsTxnAccessor spanAccessorFor(final Transaction transaction)
+    SwirldsTxnAccessor spanAccessorFor(final byte[] contents)
             throws InvalidProtocolBufferException {
-        final var accessor = factory.nonTriggeredTxn(transaction.getContents());
+        final var accessor = factory.nonTriggeredTxn(contents);
         spanMapManager.expandSpan(accessor);
-        return PlatformTxnAccessor.from(accessor, transaction);
+        return PlatformTxnAccessor.from(accessor);
     }
 }

@@ -35,9 +35,9 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -164,7 +164,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                         .sender(frame.getRecipientAddress())
                         .value(value)
                         .apparentValue(value)
-                        .code(Code.createLegacyCode(inputData, Hash.EMPTY))
+                        .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
                         .blockValues(frame.getBlockValues())
                         .depth(frame.getMessageStackDepth() + 1)
                         .completer(child -> complete(frame, child))
@@ -210,7 +210,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                 final var contractBytecodeSidecar =
                         SidecarUtils.createContractBytecodeSidecarFrom(
                                 updater.idOfLastNewAddress(),
-                                childFrame.getCode().getBytes().toArrayUnsafe(),
+                                childFrame.getCode().getContainerBytes().toArrayUnsafe(),
                                 updater.get(childFrame.getContractAddress())
                                         .getCode()
                                         .toArrayUnsafe());

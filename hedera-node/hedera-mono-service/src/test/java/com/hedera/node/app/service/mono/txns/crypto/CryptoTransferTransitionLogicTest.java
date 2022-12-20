@@ -76,6 +76,7 @@ class CryptoTransferTransitionLogicTest {
     private final int maxOwnershipChanges = 15;
     private final boolean areNftsEnabled = false;
     private final boolean autoCreationEnabled = true;
+    private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesEnabled = true;
     private final int maxFeeNesting = 20;
     private final int maxBalanceChanges = 20;
@@ -88,6 +89,7 @@ class CryptoTransferTransitionLogicTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
     private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
@@ -289,6 +291,7 @@ class CryptoTransferTransitionLogicTest {
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
         given(accessor.getTxn()).willReturn(pretendXferTxn);
         given(

@@ -15,41 +15,34 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
-    private static final Function GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION =
-            new Function("getTokenDefaultKycStatus(address)", INT);
-    private static final Bytes GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR =
-            Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER =
-            TypeFactory.create(BYTES32);
-    private GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper;
+public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
+        implements EvmGetTokenDefaultKycStatus {
+
+    private GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper;
 
     public GetTokenDefaultKycStatus(
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(null, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -65,19 +58,15 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile {
                 defaultKycStatusWrapper,
                 "`body` method should be called before `getSuccessResultsFor`");
 
-        final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.tokenID());
+        final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
-    public static GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
-                        GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-
-        return new GetTokenDefaultKycStatusWrapper(tokenID);
+    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(
+            final Bytes input) {
+        final var rawGetTokenDefaultKycStatusWrapper =
+                EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
+        return new GetTokenDefaultKycStatusWrapper<>(
+                convertAddressBytesToTokenID(rawGetTokenDefaultKycStatusWrapper.token()));
     }
 }

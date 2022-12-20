@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.sigs;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -39,8 +40,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,8 +59,6 @@ class ExpansionTest {
     @Mock private TransactionSignature secp256k1Sig;
     @Mock private AccountID payer;
     @Mock private Expansion.CryptoSigsCreation cryptoSigsCreation;
-
-    private Transaction txn = new SwirldTransaction();
 
     private Expansion subject;
 
@@ -93,11 +90,10 @@ class ExpansionTest {
                         });
         given(txnAccessor.getPayer()).willReturn(payer);
         given(txnAccessor.getTxn()).willReturn(mockTxn);
-        given(txnAccessor.getPlatformTxn()).willReturn(new SwirldTransaction());
 
         subject.execute();
 
-        final ArgumentCaptor<LinkedRefs> captor = ArgumentCaptor.forClass(LinkedRefs.class);
+        final ArgumentCaptor<LinkedRefs> captor = forClass(LinkedRefs.class);
         verify(txnAccessor).setLinkedRefs(captor.capture());
         final var linkedRefs = captor.getValue();
         assertArrayEquals(new long[] {1L, 2L}, linkedRefs.linkedNumbers());
@@ -119,6 +115,7 @@ class ExpansionTest {
         final var pretendEd25519FullSig = "NONSENSE".getBytes(StandardCharsets.UTF_8);
         final var pretendSecp256k1FullKey = "ALSO_COMPLETE".getBytes(StandardCharsets.UTF_8);
         final var pretendSecp256k1FullSig = "ALSO_NONSENSE".getBytes(StandardCharsets.UTF_8);
+        final ArgumentCaptor<List<TransactionSignature>> captor = forClass(List.class);
 
         given(
                         sigFactory.signAppropriately(
@@ -149,7 +146,8 @@ class ExpansionTest {
         subject.execute();
 
         final var allSigs = List.of(ed25519Sig, secp256k1Sig);
-        assertEquals(allSigs, txn.getSignatures());
+        verify(txnAccessor).addAllCryptoSigs(captor.capture());
+        assertEquals(allSigs, captor.getValue());
     }
 
     private void setupDegenerateMocks() {
@@ -163,7 +161,6 @@ class ExpansionTest {
                         sigReqs.keysForOtherParties(
                                 eq(degenTxnBody), eq(CODE_ORDER_RESULT_FACTORY), any(), eq(payer)))
                 .willReturn(mockOtherPartiesResponse);
-        given(txnAccessor.getPlatformTxn()).willReturn(txn);
         given(txnAccessor.getPayer()).willReturn(payer);
     }
 

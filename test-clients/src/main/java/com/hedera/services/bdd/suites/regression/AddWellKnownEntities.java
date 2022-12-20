@@ -19,14 +19,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AddWellKnownEntities extends HapiApiSuite {
+public class AddWellKnownEntities extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AddWellKnownEntities.class);
 
     public static void main(String... args) {
@@ -36,15 +36,15 @@ public class AddWellKnownEntities extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     instantiateEntities(),
                 });
     }
 
-    private HapiApiSpec instantiateEntities() {
-        return HapiApiSpec.customHapiSpec("AddWellKnownEntities")
+    private HapiSpec instantiateEntities() {
+        return HapiSpec.customHapiSpec("AddWellKnownEntities")
                 .withProperties(
                         Map.of(
                                 "fees.useFixedOffer", "true",

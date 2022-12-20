@@ -15,7 +15,6 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenPauseFactory.newSignedTokenPause;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -25,11 +24,10 @@ public enum TokenPauseScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenPause()
-                                    .pausing(KNOWN_TOKEN_WITH_PAUSE)
-                                    .nonPayerKts(TOKEN_PAUSE_KT)
-                                    .get()));
+                    newSignedTokenPause()
+                            .pausing(KNOWN_TOKEN_WITH_PAUSE)
+                            .nonPayerKts(TOKEN_PAUSE_KT)
+                            .get());
         }
     },
 }

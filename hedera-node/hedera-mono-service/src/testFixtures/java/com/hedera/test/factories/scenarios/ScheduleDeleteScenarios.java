@@ -15,7 +15,6 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleDeleteFactory.newSignedScheduleDelete;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -25,21 +24,21 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_WITH_ADMIN).get()));
+                    newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_WITH_ADMIN).get());
         }
     },
     SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedScheduleDelete().deleting(UNKNOWN_SCHEDULE).get()));
+                    newSignedScheduleDelete().deleting(UNKNOWN_SCHEDULE).get());
         }
     },
     SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_IMMUTABLE).get()));
+                    newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_IMMUTABLE).get());
         }
     }
 }

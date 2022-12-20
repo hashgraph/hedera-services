@@ -16,7 +16,6 @@
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
@@ -31,26 +30,26 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get()));
+                    newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get());
         }
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_ADMIN).get()));
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_ADMIN).get());
         }
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()
@@ -63,22 +62,19 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
-                                    .get()));
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER).get());
         }
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()
@@ -91,22 +87,19 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF)
-                                    .get()));
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF).get());
         }
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()
@@ -119,10 +112,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
-                                    .get()));
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER).get());
         }
     }
 }

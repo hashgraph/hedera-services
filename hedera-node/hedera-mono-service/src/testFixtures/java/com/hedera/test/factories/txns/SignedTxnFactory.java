@@ -76,22 +76,22 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
     protected abstract void customizeTxn(TransactionBody.Builder txn);
 
     public Transaction get() throws Throwable {
-        Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
+        final Transaction provisional = signed(signableTxn(customFee.orElse(0L)));
         return customFee.isPresent()
                 ? provisional
                 : signed(signableTxn(feeFor(provisional, payerKt.numLeaves())));
     }
 
-    private Transaction.Builder signableTxn(long fee) {
-        TransactionBody.Builder txn = baseTxn();
+    private Transaction.Builder signableTxn(final long fee) {
+        final TransactionBody.Builder txn = baseTxn();
         customizeTxn(txn);
         txn.setTransactionFee(fee);
         return Transaction.newBuilder()
                 .setBodyBytes(ByteString.copyFrom(txn.build().toByteArray()));
     }
 
-    private Transaction signed(Transaction.Builder txnWithSigs) throws Throwable {
-        List<KeyTree> signers = allKts();
+    private Transaction signed(final Transaction.Builder txnWithSigs) throws Throwable {
+        final List<KeyTree> signers = allKts();
         return sigFactory.signWithSigMap(txnWithSigs, signers, keyFactory);
     }
 
@@ -104,7 +104,7 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
     }
 
     private TransactionBody.Builder baseTxn() {
-        TransactionBody.Builder txn =
+        final TransactionBody.Builder txn =
                 TransactionBody.newBuilder()
                         .setNodeAccountID(asAccount(node))
                         .setTransactionValidDuration(validDuration())
@@ -133,22 +133,22 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
         return Duration.newBuilder().setSeconds(validDuration).build();
     }
 
-    public T payer(String payer) {
+    public T payer(final String payer) {
         this.payer = payer;
         return self();
     }
 
-    public T payerKt(KeyTree payerKt) {
+    public T payerKt(final KeyTree payerKt) {
         this.payerKt = payerKt;
         return self();
     }
 
-    public T nonPayerKts(KeyTree... otherKts) {
+    public T nonPayerKts(final KeyTree... otherKts) {
         this.otherKts = List.of(otherKts);
         return self();
     }
 
-    public T fee(long amount) {
+    public T fee(final long amount) {
         customFee = Optional.of(amount);
         return self();
     }
@@ -158,17 +158,17 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
         return self();
     }
 
-    public T keyFactory(KeyFactory keyFactory) {
+    public T keyFactory(final KeyFactory keyFactory) {
         this.keyFactory = keyFactory;
         return self();
     }
 
-    public T sigMapGen(SigMapGenerator sigMapGen) {
+    public T sigMapGen(final SigMapGenerator sigMapGen) {
         this.sigFactory = new SigFactory(sigMapGen);
         return self();
     }
 
-    public T txnValidStart(Timestamp at) {
+    public T txnValidStart(final Timestamp at) {
         start = Instant.ofEpochSecond(at.getSeconds(), at.getNanos());
         return self();
     }

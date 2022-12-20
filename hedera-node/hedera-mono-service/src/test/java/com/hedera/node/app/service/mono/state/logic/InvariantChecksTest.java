@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -34,7 +33,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,10 +67,7 @@ class InvariantChecksTest {
 
     @BeforeEach
     void setUp() throws InvalidProtocolBufferException {
-        final var swirldsTxn = new SwirldTransaction(mockTxn.toByteArray());
-        accessor =
-                PlatformTxnAccessor.from(
-                        SignedTxnAccessor.from(swirldsTxn.getContents()), swirldsTxn);
+        accessor = PlatformTxnAccessor.from(mockTxn.toByteArray());
         subject = new InvariantChecks(nodeInfo, () -> networkCtx);
     }
 

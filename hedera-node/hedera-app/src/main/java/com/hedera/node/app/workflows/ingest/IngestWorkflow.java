@@ -38,7 +38,7 @@ public interface IngestWorkflow {
      * @param requestBuffer The raw protobuf transaction bytes. Must be a transaction object.
      * @param responseBuffer The raw protobuf response bytes.
      */
-    void handleTransaction(
+    void submitTransaction(
             @NonNull SessionContext session,
             @NonNull ByteBuffer requestBuffer,
             @NonNull ByteBuffer responseBuffer);

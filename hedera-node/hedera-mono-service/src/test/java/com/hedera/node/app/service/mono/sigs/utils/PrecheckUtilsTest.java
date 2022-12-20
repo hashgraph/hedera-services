@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.sigs.utils;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
@@ -50,8 +49,7 @@ class PrecheckUtilsTest {
 
     @Test
     void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-        final var txn =
-                PlatformTxnAccessor.from(from(newSignedCryptoUpdate("0.0.2").get())).getTxn();
+        final var txn = PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
 
         assertFalse(subject.test(txn));
     }
@@ -61,12 +59,9 @@ class PrecheckUtilsTest {
         given(nodeInfo.selfAccount()).willReturn(node);
         final var txn =
                 PlatformTxnAccessor.from(
-                                from(
-                                        newSignedCryptoTransfer()
-                                                .transfers(
-                                                        tinyBarsFromTo(
-                                                                "0.0.1024", "0.0.2048", 1_000L))
-                                                .get()))
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
+                                        .get())
                         .getTxn();
 
         assertFalse(subject.test(txn));
@@ -77,11 +72,9 @@ class PrecheckUtilsTest {
         given(nodeInfo.selfAccount()).willReturn(node);
         final var txn =
                 PlatformTxnAccessor.from(
-                                from(
-                                        newSignedCryptoTransfer()
-                                                .transfers(
-                                                        tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
-                                                .get()))
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
+                                        .get())
                         .getTxn();
 
         assertFalse(subject.test(txn));
