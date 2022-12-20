@@ -36,6 +36,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
@@ -104,6 +105,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
@@ -414,7 +416,10 @@ public class StateView {
                         .setBalance(account.getBalance())
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
                         .setContractAccountID(
-                                getContractAccountId(account.getAccountKey(), accountID))
+                                getContractAccountId(
+                                        account.getAccountKey(),
+                                        accountID,
+                                        account.getAlias()))
                         .setOwnedNfts(account.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                         .setEthereumNonce(account.getEthereumNonce());
@@ -433,7 +438,13 @@ public class StateView {
         return Optional.of(info.build());
     }
 
-    private String getContractAccountId(final JKey key, final AccountID accountID) {
+    private String getContractAccountId(
+            final JKey key,
+            final AccountID accountID,
+            final ByteString alias) {
+        if (alias.size() == EVM_ADDRESS_SIZE) {
+            return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
+        }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
         if (isRecoveredEvmAddress(evmAddress)) {

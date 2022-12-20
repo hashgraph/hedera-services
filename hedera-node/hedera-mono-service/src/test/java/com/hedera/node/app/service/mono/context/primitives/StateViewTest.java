@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.context.primitives;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
@@ -135,6 +136,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -850,6 +852,53 @@ class StateViewTest {
     }
 
     @Test
+    void infoForHollowAccount() {
+        final var pretendAddress = "0000ffffffffff0000dd".getBytes();
+        given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+        tokenAccount.setAccountKey(EMPTY_KEY);
+        tokenAccount.setAlias(ByteString.copyFrom(pretendAddress));
+        final var expectedAddress = CommonUtils.hex(pretendAddress);
+
+        mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        final var expectedResponse =
+                CryptoGetInfoResponse.AccountInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                        .setAccountID(tokenAccountId)
+                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                        .setDeleted(tokenAccount.isDeleted())
+                        .setMemo(tokenAccount.getMemo())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setBalance(tokenAccount.getBalance())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                        .setContractAccountID(expectedAddress)
+                        .setOwnedNfts(tokenAccount.getNftsOwned())
+                        .setMaxAutomaticTokenAssociations(
+                                tokenAccount.getMaxAutomaticAssociations())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setStakedAccountId(
+                                                AccountID.newBuilder().setAccountNum(10).build())
+                                        .setDeclineReward(true)
+                                        .build())
+                        .build();
+
+        final var actualResponse =
+                subject.infoForAccount(
+                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+        mockedStatic.close();
+
+        assertEquals(expectedResponse, actualResponse.get());
+    }
+
+    @Test
     void accountDetails() {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
@@ -934,6 +983,7 @@ class StateViewTest {
 
     @Test
     void infoForAccountWithEVMAddressAlias() {
+        final var pretendAddress = "0000ffffffffff0000dd".getBytes();
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         mockedStatic = mockStatic(StateView.class);
@@ -942,7 +992,7 @@ class StateViewTest {
                 .thenReturn(Collections.emptyList());
         given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-        tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]));
+        tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(pretendAddress));
         final var expectedResponse =
                 CryptoGetInfoResponse.AccountInfo.newBuilder()
                         .setLedgerId(ledgerId)
@@ -956,7 +1006,7 @@ class StateViewTest {
                         .setBalance(tokenAccount.getBalance())
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
-                        .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                        .setContractAccountID(CommonUtils.hex(pretendAddress))
                         .setOwnedNfts(tokenAccount.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(
                                 tokenAccount.getMaxAutomaticAssociations())

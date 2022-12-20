@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
+
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -302,9 +304,12 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts evmAddressAlias(ByteString evmAddress) {
+    public AccountInfoAsserts evmAddress(ByteString evmAddress) {
         registerProvider(
-                (spec, o) -> assertEquals(evmAddress, ((AccountInfo) o).getAlias(), BAD_ALIAS));
+                (spec, o) -> assertEquals(
+                        CommonUtils.hex(evmAddress.toByteArray()),
+                        ((AccountInfo) o).getContractAccountID(),
+                        BAD_ALIAS));
         return this;
     }
 
