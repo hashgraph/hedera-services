@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -48,7 +48,7 @@ public class UsableTxnId extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         TransactionBody.Builder usable = TransactionBody.newBuilder();
         spec.txns().defaultBodySpec().accept(usable);
         if (payerId.isPresent()) {

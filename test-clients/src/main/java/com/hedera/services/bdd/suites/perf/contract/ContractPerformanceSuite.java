@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
@@ -29,11 +29,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.io.Files;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractPerformanceSuite extends HapiApiSuite {
+public class ContractPerformanceSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractPerformanceSuite.class);
 
     private static final String PERF_RESOURCES = "src/main/resource/contract/performance/";
@@ -95,7 +95,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         List<String> perfTests;
         try {
             perfTests =
@@ -108,7 +108,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
         } catch (IOException e) {
             return List.of();
         }
-        List<HapiApiSpec> hapiSpecs = new ArrayList<>();
+        List<HapiSpec> hapiSpecs = new ArrayList<>();
         for (String line : perfTests) {
             String[] values = line.split(",", 2);
             String test = values[0];

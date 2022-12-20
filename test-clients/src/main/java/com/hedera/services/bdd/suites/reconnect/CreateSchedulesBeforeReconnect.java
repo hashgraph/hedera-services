@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -35,9 +35,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRAN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static org.apache.commons.lang3.SystemUtils.getHostName;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
+public class CreateSchedulesBeforeReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateSchedulesBeforeReconnect.class);
 
     private static final int SCHEDULE_CREATION_LIMIT = 20000;
@@ -59,7 +59,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
     private static final AtomicInteger scheduleNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCreateSchedules());
     }
 
@@ -82,7 +82,7 @@ public class CreateSchedulesBeforeReconnect extends HapiApiSuite {
                 .advertisingCreation();
     }
 
-    private HapiApiSpec runCreateSchedules() {
+    private HapiSpec runCreateSchedules() {
         PerfTestLoadSettings settings =
                 new PerfTestLoadSettings(
                         SCHEDULE_CREATION_RECONNECT_TPS,

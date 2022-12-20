@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -39,9 +39,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenAndTypeCheckSuite extends HapiApiSuite {
+public class TokenAndTypeCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenAndTypeCheckSuite.class);
     private static final String TOKEN_AND_TYPE_CHECK_CONTRACT = "TokenAndTypeCheck";
     private static final String ACCOUNT = "anybody";
@@ -58,7 +58,12 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
     private static final String IS_TOKEN = "isAToken";
 
     public static void main(String... args) {
-        new TokenAndTypeCheckSuite().runSuiteSync();
+        new TokenAndTypeCheckSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
@@ -67,11 +72,11 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(checkTokenAndTypeStandardCases(), checkTokenAndTypeNegativeCases());
     }
 
-    private HapiApiSpec checkTokenAndTypeStandardCases() {
+    private HapiSpec checkTokenAndTypeStandardCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("checkTokenAndTypeStandardCases")
@@ -133,7 +138,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec checkTokenAndTypeNegativeCases() {
+    private HapiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAddress = new byte[20];
 

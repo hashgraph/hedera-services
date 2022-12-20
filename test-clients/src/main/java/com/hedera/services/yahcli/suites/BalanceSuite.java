@@ -17,8 +17,8 @@ package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BalanceSuite extends HapiApiSuite {
+public class BalanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceSuite.class);
 
     private final Map<String, String> specConfig;
@@ -43,14 +43,14 @@ public class BalanceSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        List<HapiApiSpec> specToRun = new ArrayList<>();
+    public List<HapiSpec> getSpecsInSuite() {
+        List<HapiSpec> specToRun = new ArrayList<>();
         accounts.forEach(s -> specToRun.add(getBalance(s)));
         return specToRun;
     }
 
-    private HapiApiSpec getBalance(String accountID) {
-        return HapiApiSpec.customHapiSpec("getBalance")
+    private HapiSpec getBalance(String accountID) {
+        return HapiSpec.customHapiSpec("getBalance")
                 .withProperties(specConfig)
                 .given()
                 .when()

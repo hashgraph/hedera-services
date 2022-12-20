@@ -15,13 +15,45 @@
  */
 package com.hedera.node.app.workflows.onset;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-// TODO: Implemented as part of ingest workflow, needs to be merged
+/**
+ * Results of the workflow onset
+ *
+ * @param txBody the deserialized {@link TransactionBody}
+ * @param signatureMap the contained {@link SignatureMap}
+ * @param functionality the {@link HederaFunctionality} of the transaction
+ */
 public record OnsetResult(
         @NonNull TransactionBody txBody,
+        @NonNull ResponseCodeEnum errorCode,
         @NonNull SignatureMap signatureMap,
-        @NonNull HederaFunctionality functionality) {}
+        @NonNull HederaFunctionality functionality) {
+
+    /**
+     * The constructor of {@code OnsetResult}
+     *
+     * @param txBody the deserialized {@link TransactionBody}
+     * @param errorCode the {@link ResponseCodeEnum}, if a validation failed, {@link
+     *     ResponseCodeEnum#OK} otherwise
+     * @param signatureMap the contained {@link SignatureMap}
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public OnsetResult(
+            @NonNull final TransactionBody txBody,
+            @NonNull final ResponseCodeEnum errorCode,
+            @NonNull final SignatureMap signatureMap,
+            @NonNull final HederaFunctionality functionality) {
+        this.txBody = requireNonNull(txBody);
+        this.errorCode = requireNonNull(errorCode);
+        this.signatureMap = requireNonNull(signatureMap);
+        this.functionality = requireNonNull(functionality);
+    }
+}

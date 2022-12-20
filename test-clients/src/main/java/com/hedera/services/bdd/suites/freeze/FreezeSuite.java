@@ -15,14 +15,14 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,7 +30,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FreezeSuite extends HapiApiSuite {
+public class FreezeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
     private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
@@ -51,11 +51,11 @@ public class FreezeSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(uploadNewFile());
     }
 
-    private HapiApiSpec uploadNewFile() {
+    private HapiSpec uploadNewFile() {
         String uploadFile = UPDATE_NEW_FILE;
         if (uploadPath != null) {
             log.info("Creating zip file from " + uploadPath);

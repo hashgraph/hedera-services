@@ -72,7 +72,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.0-SNAPSHOT")
+            version("hapi-version", "0.33.0-grpc-1.45.1-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
@@ -225,7 +225,6 @@ dependencyResolutionManagement {
                     "mockito-jupiter",
                     "hamcrest",
                     "awaitility",
-                    "google-truth",
                     "assertj-core"
                 )
             )
@@ -246,6 +245,7 @@ dependencyResolutionManagement {
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")

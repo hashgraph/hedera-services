@@ -77,6 +77,8 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -189,7 +191,7 @@ class AutoCreationLogicTest {
                         DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
-        assertTrue(subject.getTokenAliasMap().isEmpty());
+        Assertions.assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
     @Test
@@ -204,6 +206,8 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
+        final var pretendAddress = Address.BLS12_G2MUL.toArray();
+        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -216,6 +220,7 @@ class AutoCreationLogicTest {
         assertEquals(initialTransfer, input.getNewBalance());
         verify(aliasManager).link(ecKeyAlias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(ecKeyAlias);
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(pretendAddress));
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
@@ -272,8 +277,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
@@ -319,8 +324,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
     }
 
     @Test
@@ -365,8 +370,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
     }
 
     @Test
@@ -407,6 +412,51 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
+    void happyPathWithFungibleTokenChangeWorksWithCustomRecordSubmissions() {
+        givenCollaborators(mockBuilder, AUTO_MEMO);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+        final var cryptoCreateAccount =
+                TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+                .willReturn(cryptoCreateAccount);
+
+        final var input = wellKnownTokenChange(edKeyAlias);
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
+        final var sourceId = 55;
+
+        final var result = subject.create(input, accountsLedger, changes);
+        subject.submitRecords(
+                (txnBody, txnRecord) ->
+                        recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord));
+
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
+
+        verify(aliasManager).link(edKeyAlias, createdNum);
+        verify(accountsLedger).create(createdNum.toGrpcAccountId());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
+        verify(accountsLedger)
+                .set(
+                        createdNum.toGrpcAccountId(),
+                        AccountProperty.AUTO_RENEW_PERIOD,
+                        THREE_MONTHS_IN_SECONDS);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
     }
@@ -553,36 +603,62 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void reclaimClearsTriesToUnlinkIfAliasLengthBiggerTHanEvmAddressLength() {
+    void reclaimClearsEvmAddress() {
         final var pendingCreations = subject.getPendingCreations();
+        final var evmAddress = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         pendingCreations.add(
                 new InProgressChildRecord(
                         1,
-                        TransactionBody.newBuilder(),
-                        ExpirableTxnRecord.newBuilder().setAlias(edKeyAlias),
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder()
+                                                .setEvmAddress(evmAddress)),
+                        ExpirableTxnRecord.newBuilder(),
                         List.of()));
 
         subject.reclaimPendingAliases();
 
-        verify(aliasManager).unlink(edKeyAlias);
-        verify(aliasManager).forgetEvmAddress(edKeyAlias);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     @Test
-    void reclaimClearsEvmAddress() {
+    void reclaimClearsAlias() {
         final var pendingCreations = subject.getPendingCreations();
-        final ByteString alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        final ByteString alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 5]);
         pendingCreations.add(
                 new InProgressChildRecord(
                         1,
-                        TransactionBody.newBuilder(),
-                        ExpirableTxnRecord.newBuilder().setAlias(alias),
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder().setAlias(alias)),
+                        ExpirableTxnRecord.newBuilder(),
                         List.of()));
 
         subject.reclaimPendingAliases();
 
         verify(aliasManager).unlink(alias);
-        verify(aliasManager, never()).forgetEvmAddress(alias);
+    }
+
+    @Test
+    void reclaimClearsBothEvmAddressAndAlias() {
+        final var pendingCreations = subject.getPendingCreations();
+        final var evmAddress = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 5]);
+        pendingCreations.add(
+                new InProgressChildRecord(
+                        1,
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder()
+                                                .setEvmAddress(evmAddress)
+                                                .setAlias(alias)),
+                        ExpirableTxnRecord.newBuilder(),
+                        List.of()));
+
+        subject.reclaimPendingAliases();
+
+        verify(aliasManager).unlink(alias);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     private final TransactionBody.Builder syntheticEDAliasCreation =

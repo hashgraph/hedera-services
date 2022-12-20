@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -51,9 +51,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -65,7 +65,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class DissociatePrecompileSuite extends HapiApiSuite {
+public class DissociatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 2_000_000L;
@@ -88,25 +88,15 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiApiSpec> negativeSpecs() {
-        return List.of();
-    }
-
-    List<HapiApiSpec> positiveSpecs() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
-                    nestedDissociateWorksAsExpected(),
-                    multiplePrecompileDissociationWithSigsForFungibleWorks()
-                });
+                dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
+                nestedDissociateWorksAsExpected(),
+                multiplePrecompileDissociationWithSigsForFungibleWorks());
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    public HapiApiSpec dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
+    public HapiSpec dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
         final var tbdUniqToken = "UniqToBeDeleted";
         final var zeroBalanceFrozen = "0bFrozen";
         final var zeroBalanceUnfrozen = "0bUnfrozen";
@@ -332,7 +322,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    private HapiApiSpec nestedDissociateWorksAsExpected() {
+    private HapiSpec nestedDissociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -397,7 +387,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
-    public HapiApiSpec multiplePrecompileDissociationWithSigsForFungibleWorks() {
+    public HapiSpec multiplePrecompileDissociationWithSigsForFungibleWorks() {
         final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
@@ -492,7 +482,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+    private String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
         return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
     }
 }

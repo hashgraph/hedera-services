@@ -17,8 +17,8 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 
 public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T> {
-    List<Function<HapiApiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
+    List<Function<HapiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
 
     protected void registerProvider(AssertUtils.ThrowingAssert throwing) {
         testProviders.add(
@@ -80,7 +80,7 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
     }
 
     @Override
-    public ErroringAsserts<T> assertsFor(HapiApiSpec spec) {
+    public ErroringAsserts<T> assertsFor(HapiSpec spec) {
         return new BaseErroringAsserts<>(
                 testProviders.stream().map(p -> p.apply(spec)).collect(Collectors.toList()));
     }

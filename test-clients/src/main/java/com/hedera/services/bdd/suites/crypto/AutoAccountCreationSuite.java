@@ -17,8 +17,8 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -54,8 +54,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -63,10 +61,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -80,7 +77,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,7 +84,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoAccountCreationSuite extends HapiApiSuite {
+public class AutoAccountCreationSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
     private static final long INITIAL_BALANCE = 1000L;
     private static final ByteString ALIAS_CONTENT =
@@ -99,7 +95,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
     private static final String AUTO_MEMO = "auto-created account";
     public static final String LAZY_MEMO = "lazy-created account";
-    private static final String VALID_ALIAS = "validAlias";
+    public static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String ALIAS = "alias";
@@ -108,25 +104,21 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String PAYER_4 = "payer4";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_ALIAS = "transferAlias";
-    private static final String A_TOKEN = "tokenA";
+    public static final String A_TOKEN = "tokenA";
     private static final String B_TOKEN = "tokenB";
-    private static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
+    public static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
     private static final String NFT_FINITE_SUPPLY_TOKEN = "nftB";
     private static final String MULTI_KEY = "multi";
     private static final String PARTY = "party";
     private static final String COUNTERPARTY = "counterparty";
 
     private static final String CIVILIAN = "somebody";
-    private static final String TOKEN_A_CREATE = "tokenACreateTxn";
+    public static final String TOKEN_A_CREATE = "tokenACreateTxn";
 
     private static final String TOKEN_B_CREATE = "tokenBCreateTxn";
-    private static final String NFT_CREATE = "nftCreateTxn";
+    public static final String NFT_CREATE = "nftCreateTxn";
     private static final String SPONSOR = "autoCreateSponsor";
-    private static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
-
-    private static final String FEATURE_FLAG = "tokens.autoCreations.isEnabled";
-    private static final String AUTO_CREATE_FEATURE_FLAG = "autoCreation.enabled";
-    private static final String LAZY_CREATE_FEATURE_FLAG = "lazyCreation.enabled";
+    public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
@@ -136,12 +128,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String FT_XFER = "ftXfer";
 
     public static void main(String... args) {
-        new AutoAccountCreationSuite().runSuiteSync();
+        new AutoAccountCreationSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -150,7 +142,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 /* --- Hbar auto creates */
                 autoAccountCreationsHappyPath(),
@@ -167,14 +159,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 canGetBalanceAndInfoViaAlias(),
                 noStakePeriodStartIfNotStakingToNode(),
                 hollowAccountCreationWithCryptoTransfer(),
-                hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled(),
+                failureAfterHollowAccountCreationReclaimsAlias(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
                 nftTransfersToAlias(),
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
-                tokenTransfersFailWhenFeatureFlagDisabled(),
                 canAutoCreateWithHbarAndTokenTransfers(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
@@ -182,11 +173,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 payerBalanceIsReflectsAllChangesBeforeFeeCharging());
     }
 
-    private HapiApiSpec canAutoCreateWithHbarAndTokenTransfers() {
+    private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("hbarAndTokenTransfers")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN)
@@ -217,76 +207,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .hasToken(relationshipWith(A_TOKEN)));
     }
 
-    private HapiApiSpec tokenTransfersFailWhenFeatureFlagDisabled() {
-        final var initialTokenSupply = 1000;
-        final var fungibleTokenXfer = "fungibleTokenXfer";
-
-        return defaultHapiSpec("tokenTransfersFailWhenFeatureFlagDisabled")
-                .given(
-                        overriding(FEATURE_FLAG, "false"),
-                        newKeyNamed(VALID_ALIAS),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        mintToken(
-                                NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"))),
-                        cryptoCreate(CIVILIAN)
-                                .balance(10 * ONE_HBAR)
-                                .maxAutomaticTokenAssociations(2))
-                .when(
-                        tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
-                        cryptoTransfer(
-                                moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
-
-                        /* --- transfer token type to alias and expected to fail as the feature flag is off  --- */
-                        cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via(fungibleTokenXfer)
-                                .payingWith(CIVILIAN)
-                                .hasKnownStatus(NOT_SUPPORTED)
-                                .logged(),
-                        cryptoTransfer(
-                                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                                .between(CIVILIAN, VALID_ALIAS))
-                                .via(NFT_XFER)
-                                .payingWith(CIVILIAN)
-                                .hasKnownStatus(NOT_SUPPORTED)
-                                .logged(),
-                        getTxnRecord(fungibleTokenXfer).andAllChildRecords().hasChildRecordCount(0),
-                        getTxnRecord(NFT_XFER)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0),
-                        /* --- hbar auto creations should still pass */
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS)
-                                .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1))
-                .then(overriding(FEATURE_FLAG, "true"));
-    }
-
-    private HapiApiSpec repeatedAliasInSameTransferListFails() {
+    private HapiSpec repeatedAliasInSameTransferListFails() {
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
@@ -378,7 +299,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec autoCreateWithNftFallBackFeeFails() {
+    private HapiSpec autoCreateWithNftFallBackFeeFails() {
         final var firstRoyaltyCollector = "firstRoyaltyCollector";
         return defaultHapiSpec("autoCreateWithNftFallBackFeeFails")
                 .given(
@@ -458,14 +379,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
 
-    private HapiApiSpec nftTransfersToAlias() {
+    private HapiSpec nftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
         final var transferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -543,13 +463,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec multipleTokenTransfersSucceed() {
+    private HapiSpec multipleTokenTransfersSucceed() {
         final var initialTokenSupply = 1000;
         final var multiTokenXfer = "multiTokenXfer";
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -643,14 +562,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
     }
 
-    private HapiApiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
+    private HapiSpec payerBalanceIsReflectsAllChangesBeforeFeeCharging() {
         final var secondAliasKey = "secondAlias";
         final var secondPayer = "secondPayer";
         final AtomicLong totalAutoCreationFees = new AtomicLong();
 
         return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -712,14 +630,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                             + " over-charged!")));
     }
 
-    private HapiApiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
+    private HapiSpec canAutoCreateWithFungibleTokenTransfersToAlias() {
         final var initialTokenSupply = 1000;
         final var sameTokenXfer = "sameTokenXfer";
         final long transferFee = 1163019L;
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -799,7 +716,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
-    private HapiApiSpec noStakePeriodStartIfNotStakingToNode() {
+    private HapiSpec noStakePeriodStartIfNotStakingToNode() {
         final var user = "user";
         final var contract = "contract";
         return defaultHapiSpec("NoStakePeriodStartIfNotStakingToNode")
@@ -817,10 +734,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getContractInfo(contract).has(contractWith().noStakePeriodStart()));
     }
 
-    private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
+    private HapiSpec hollowAccountCreationWithCryptoTransfer() {
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
@@ -857,20 +773,18 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
-                                }),
-                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
+                                }));
     }
 
-    private HapiApiSpec
-            hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled() {
-        return defaultHapiSpec(
-                        "HollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled")
+    private HapiSpec failureAfterHollowAccountCreationReclaimsAlias() {
+        final var underfunded = "underfunded";
+        final var secondTransferTxn = "SecondTransferTxn";
+        final AtomicReference<ByteString> targetAddress = new AtomicReference<>();
+        return defaultHapiSpec("FailureAfterHollowAccountCreationReclaimsAlias")
                 .given(
-                        overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when()
+                .when(cryptoCreate(underfunded).balance(10 * ONE_HBAR))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -881,22 +795,69 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .toByteArray();
                                     final var evmAddress =
                                             ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                    final var op =
+                                    targetAddress.set(evmAddress);
+                                    final var controlledOp =
                                             cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    ONE_HUNDRED_HBARS))
-                                                    .hasKnownStatus(NOT_SUPPORTED)
+                                                            (sameSpec, b) -> {
+                                                                final var sponsorId =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        LAZY_CREATE_SPONSOR);
+                                                                final var underfundedId =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        underfunded);
+                                                                final var funding =
+                                                                        spec.registry()
+                                                                                .getAccountID(
+                                                                                        FUNDING);
+                                                                b.setTransfers(
+                                                                        TransferList.newBuilder()
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                sponsorId,
+                                                                                                -ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                evmAddress,
+                                                                                                +ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                underfundedId,
+                                                                                                -ONE_HUNDRED_HBARS))
+                                                                                .addAccountAmounts(
+                                                                                        aaWith(
+                                                                                                funding,
+                                                                                                +ONE_HUNDRED_HBARS))
+                                                                                .build());
+                                                            })
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .memo("QUESTIONABLE")
+                                                    .signedBy(
+                                                            DEFAULT_PAYER,
+                                                            LAZY_CREATE_SPONSOR,
+                                                            underfunded)
+                                                    .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE)
                                                     .via(TRANSFER_TXN);
-
-                                    allRunFor(spec, op);
+                                    allRunFor(spec, controlledOp);
                                 }),
-                        resetToDefault(LAZY_CREATE_FEATURE_FLAG),
-                        resetToDefault(AUTO_CREATE_FEATURE_FLAG));
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .nodePayment(123)
+                                .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
+                        sourcing(
+                                () ->
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                LAZY_CREATE_SPONSOR,
+                                                                targetAddress.get(),
+                                                                ONE_HUNDRED_HBARS))
+                                                .signedBy(DEFAULT_PAYER, LAZY_CREATE_SPONSOR)
+                                                .via(secondTransferTxn)),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged());
     }
 
-    private HapiApiSpec canGetBalanceAndInfoViaAlias() {
+    private HapiSpec canGetBalanceAndInfoViaAlias() {
         final var ed25519SourceKey = "ed25519Alias";
         final var secp256k1SourceKey = "secp256k1Alias";
         final var secp256k1Shape = KeyShape.SECP256K1;
@@ -952,7 +913,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
+    private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
         return defaultHapiSpec("AliasCanBeUsedOnManyAccountsNotAsAlias")
                 .given(
                         /* have alias key on other accounts and tokens not as alias */
@@ -992,7 +953,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                 .memo(AUTO_MEMO)));
     }
 
-    private HapiApiSpec accountCreatedIfAliasUsedAsPubKey() {
+    private HapiSpec accountCreatedIfAliasUsedAsPubKey() {
         return defaultHapiSpec("AccountCreatedIfAliasUsedAsPubKey")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1024,7 +985,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
+    private HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
         return defaultHapiSpec("AutoAccountCreationWorksWhenUsingAliasOfDeletedAccount")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1055,7 +1016,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         );
     }
 
-    private HapiApiSpec transferFromAliasToAlias() {
+    private HapiSpec transferFromAliasToAlias() {
         return defaultHapiSpec("transferFromAliasToAlias")
                 .given(
                         newKeyNamed(ALIAS),
@@ -1090,7 +1051,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         ONE_HUNDRED_HBARS, 0, 0)));
     }
 
-    private HapiApiSpec transferFromAliasToAccount() {
+    private HapiSpec transferFromAliasToAccount() {
         final var payer = PAYER_4;
         final var alias = ALIAS;
         return defaultHapiSpec("transferFromAliasToAccount")
@@ -1124,7 +1085,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         ONE_HUNDRED_HBARS, 0, 0)));
     }
 
-    private HapiApiSpec transferToAccountAutoCreatedUsingAccount() {
+    private HapiSpec transferToAccountAutoCreatedUsingAccount() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAccount")
                 .given(
                         newKeyNamed(TRANSFER_ALIAS),
@@ -1180,7 +1141,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec transferToAccountAutoCreatedUsingAlias() {
+    private HapiSpec transferToAccountAutoCreatedUsingAlias() {
         return defaultHapiSpec("transferToAccountAutoCreatedUsingAlias")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1219,7 +1180,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                         (2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
-    private HapiApiSpec autoAccountCreationUnsupportedAlias() {
+    private HapiSpec autoAccountCreationUnsupportedAlias() {
         final var threshKeyAlias =
                 Key.newBuilder()
                         .setThresholdKey(
@@ -1294,7 +1255,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec autoAccountCreationBadAlias() {
+    private HapiSpec autoAccountCreationBadAlias() {
         final var invalidAlias = VALID_25519_ALIAS.substring(0, 10);
 
         return defaultHapiSpec("AutoAccountCreationBadAlias")
@@ -1306,15 +1267,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec autoAccountCreationsHappyPath() {
+    private HapiSpec autoAccountCreationsHappyPath() {
         final var creationTime = new AtomicLong();
         final long transferFee = 185030L;
         return defaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10")),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1433,7 +1390,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         assertEquals(0, payerBalWithAutoCreationFee, "Auto creation fee is deducted from payer");
     }
 
-    private HapiApiSpec multipleAutoAccountCreations() {
+    private HapiSpec multipleAutoAccountCreations() {
         return defaultHapiSpec("MultipleAutoAccountCreations")
                 .given(cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1472,7 +1429,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                 - 3 * ONE_HUNDRED_HBARS)));
     }
 
-    private HapiApiSpec transferHbarsToEVMAddressAlias() {
+    private HapiSpec transferHbarsToEVMAddressAlias() {
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -1480,7 +1437,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("TransferHbarsToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext(
@@ -1514,11 +1470,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then(
                         getTxnRecord(HBAR_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
-    private HapiApiSpec transferFungibleToEVMAddressAlias() {
+    private HapiSpec transferFungibleToEVMAddressAlias() {
 
         final var fungibleToken = "fungibleToken";
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
@@ -1528,7 +1483,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1565,11 +1519,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then(
                         getTxnRecord(FT_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
-    private HapiApiSpec transferNonFungibleToEVMAddressAlias() {
+    private HapiSpec transferNonFungibleToEVMAddressAlias() {
 
         final var nonFungibleToken = "nonFungibleToken";
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
@@ -1579,7 +1532,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("TransferNonFungibleToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -1625,7 +1577,6 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .then(
                         getTxnRecord(NFT_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 }

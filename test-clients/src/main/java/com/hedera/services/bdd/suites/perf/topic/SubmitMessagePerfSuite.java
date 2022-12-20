@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.topic;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
@@ -24,14 +24,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startThroughputObs;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SubmitMessagePerfSuite extends HapiApiSuite {
+public class SubmitMessagePerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SubmitMessagePerfSuite.class);
 
     public static void main(String... args) {
@@ -40,7 +40,7 @@ public class SubmitMessagePerfSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return Arrays.asList(submitMessagePerf());
     }
 
@@ -49,7 +49,7 @@ public class SubmitMessagePerfSuite extends HapiApiSuite {
         return false;
     }
 
-    private HapiApiSpec submitMessagePerf() {
+    private HapiSpec submitMessagePerf() {
         final int NUM_SUBMISSIONS = 100_000;
 
         return defaultHapiSpec("submitMessagePerf")

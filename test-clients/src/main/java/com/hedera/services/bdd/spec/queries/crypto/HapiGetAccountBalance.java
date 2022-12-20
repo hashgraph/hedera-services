@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.stream.proto.SingleAccountBalances;
@@ -65,7 +65,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private boolean exportAccount = false;
     Optional<Long> expected = Optional.empty();
     Optional<Supplier<String>> entityFn = Optional.empty();
-    Optional<Function<HapiApiSpec, Function<Long, Optional<String>>>> expectedCondition =
+    Optional<Function<HapiSpec, Function<Long, Optional<String>>>> expectedCondition =
             Optional.empty();
     Optional<Map<String, LongConsumer>> tokenBalanceObservers = Optional.empty();
     @Nullable LongConsumer balanceObserver;
@@ -76,6 +76,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private String literalHexedAlias = null;
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
     private boolean assertAccountIDIsNotAlias = false;
+    private ByteString rawAlias;
 
     List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
@@ -97,6 +98,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         }
     }
 
+    public HapiGetAccountBalance(ByteString rawAlias, ReferenceType type) {
+        this.rawAlias = rawAlias;
+        this.referenceType = type;
+    }
+
     public HapiGetAccountBalance(Supplier<String> supplier) {
         this.entityFn = Optional.of(supplier);
     }
@@ -107,7 +113,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     }
 
     public HapiGetAccountBalance hasTinyBars(
-            Function<HapiApiSpec, Function<Long, Optional<String>>> condition) {
+            Function<HapiSpec, Function<Long, Optional<String>>> condition) {
         expectedCondition = Optional.of(condition);
         return this;
     }
@@ -168,7 +174,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         final var balanceResponse = response.getCryptogetAccountBalance();
         long actual = balanceResponse.getBalance();
         if (balanceObserver != null) {
@@ -266,7 +272,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountBalanceQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -297,9 +303,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         }
     }
 
-    private Query getAccountBalanceQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getAccountBalanceQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (entityFn.isPresent()) {
             account = entityFn.get().get();
+            repr = account;
         }
 
         Consumer<CryptoGetAccountBalanceQuery.Builder> config;
@@ -316,6 +323,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             AccountID id;
             if (referenceType == ReferenceType.REGISTRY_NAME) {
                 id = TxnUtils.asId(account, spec);
+            } else if (referenceType == ReferenceType.RAW_ALIAS) {
+                id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
                 id = spec.registry().aliasIdFor(aliasKeySource);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.service.consensus;
 
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
@@ -28,16 +26,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface ConsensusService extends Service {
-    /**
-     * Creates the consensus service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding consensus service pre-handler
-     */
-    @Override
+
     @NonNull
-    ConsensusPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
+    @Override
+    default String getServiceName() {
+        return ConsensusService.class.getSimpleName();
+    }
 
     /**
      * Returns the concrete implementation instance of the service
