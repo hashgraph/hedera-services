@@ -27,7 +27,6 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -132,7 +131,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final AccountID payerID = txBody.getTransactionID().getAccountID();
-                final AccountStore accountStore = storeCache.getAccountStore(state);
+                final var accountStore = storeCache.getAccountStore(state);
                 final var payer =
                         accountStore
                                 .getAccount(payerID)
