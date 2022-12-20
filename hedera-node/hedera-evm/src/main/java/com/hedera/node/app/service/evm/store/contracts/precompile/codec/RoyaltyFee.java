@@ -54,7 +54,7 @@ public class RoyaltyFee {
     }
 
     public Address getDenominatingTokenId() {
-        return denominatingTokenId;
+        return denominatingTokenId != null ? denominatingTokenId : Address.ZERO;
     }
 
     public boolean isUseHbarsForPayment() {
@@ -62,6 +62,6 @@ public class RoyaltyFee {
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
     }
 }

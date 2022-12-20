@@ -882,7 +882,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 feeCollector);
     }
 
-    public EvmKey convertToEvmKey(Key key) {
+    public static EvmKey convertToEvmKey(Key key) {
         final var contractId =
                 key.getContractID().getContractNum() > 0
                         ? EntityIdUtils.asTypedEvmAddress(key.getContractID())

@@ -43,11 +43,11 @@ public class FixedFee {
     }
 
     public Address getDenominatingTokenId() {
-        return denominatingTokenId;
+        return denominatingTokenId != null ? denominatingTokenId : Address.ZERO;
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
     }
 
     public boolean isUseHbarsForPayment() {

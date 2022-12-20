@@ -39,7 +39,7 @@ public class EvmKey {
     }
 
     public Address getContractId() {
-        return contractId;
+        return contractId != null ? contractId : Address.ZERO;
     }
 
     public byte[] getEd25519() {
@@ -51,6 +51,6 @@ public class EvmKey {
     }
 
     public Address getDelegatableContractId() {
-        return delegatableContractId;
+        return delegatableContractId != null ? delegatableContractId : Address.ZERO ;
     }
 }

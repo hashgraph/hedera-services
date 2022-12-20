@@ -62,6 +62,6 @@ public class FractionalFee {
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
     }
 }
