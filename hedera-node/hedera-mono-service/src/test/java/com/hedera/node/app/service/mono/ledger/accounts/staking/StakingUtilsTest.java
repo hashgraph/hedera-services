@@ -161,6 +161,12 @@ public class StakingUtilsTest {
     }
 
     @Test
+    void getsIsDeletedCorrectlyFromPendingChanges() {
+        final var changes = Map.<AccountProperty, Object>of(AccountProperty.IS_DELETED, true);
+        assertTrue(StakingUtils.finalIsDeletedGiven(counterparty, changes));
+    }
+
+    @Test
     void getsFieldsCorrectlyIfNotFromChanges() {
         final var changes = randomNotStakeFieldChanges();
         final long[] stakedToMeUpdates = new long[] {NA};

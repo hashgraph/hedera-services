@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +33,9 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.token.impl.TokenStore;
 import com.hedera.node.app.spi.state.States;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +50,7 @@ class TokenStoreTest {
     @Mock private InMemoryStateImpl tokens;
     @Mock private States states;
     private static final String TOKENS = "TOKENS";
-    private final TokenID tokenId = asToken("0.0.2000");
+    private final TokenID tokenId = IdUtils.asToken("0.0.2000");
     private final String symbol = "TestToken";
     private final String name = "TestTokenName";
     private final int decimals = 2;
@@ -65,7 +66,7 @@ class TokenStoreTest {
     private final JKey supplyKey = new JEd25519Key("not-a-real-supplyKey".getBytes());
     private final JKey feeScheduleKey = new JEd25519Key("not-a-real-feeScheduleKey".getBytes());
     private final JKey pauseKey = new JEd25519Key("not-a-real-pauseKey".getBytes());
-    private MerkleToken token =
+    private final MerkleToken token =
             new MerkleToken(
                     expiry,
                     otherTotalSupply,

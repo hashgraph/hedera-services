@@ -35,6 +35,11 @@ contract ERC20Contract {
         IERC20(token).transfer(recipient, amount);
     }
 
+    function transferThenRevert(address token, address recipient, uint256 amount) public {
+        IERC20(token).transfer(recipient, amount);
+        revert();
+    }
+
     function delegateTransfer(address token, address recipient, uint256 amount) public {
         (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }

@@ -33,4 +33,8 @@ dependencies {
     implementation(project(":hedera-node:hedera-mono-service"))
     implementation(libs.hapi)
     compileOnly(libs.spotbugs.annotations)
+
+    testImplementation(testLibs.bundles.testing)
+    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testLibs.mockito.inline)
 }

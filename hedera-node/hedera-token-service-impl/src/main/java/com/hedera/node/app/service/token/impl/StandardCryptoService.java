@@ -17,5 +17,5 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoService;
 
-/** Standard implementation of the {@link CryptoService} {@link com.hedera.node.app.spi.Service}. */
+/** An implementation of the {@link CryptoService} interface. */
 public final class StandardCryptoService implements CryptoService {}
