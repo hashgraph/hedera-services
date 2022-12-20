@@ -131,16 +131,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                //                maxAutoAssociationSpec(),
-                //                canDissociateFromMultipleExpiredTokens(),
-                //                cannotExceedAccountAllowanceLimit(),
-                //                cannotExceedAllowancesTransactionLimit(),
-                //                createAnAccountWithEVMAddressAliasAndECKey(),
-                //                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
-                //
-                // txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                //
-                // getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+                maxAutoAssociationSpec(),
+                canDissociateFromMultipleExpiredTokens(),
+                cannotExceedAccountAllowanceLimit(),
+                cannotExceedAllowancesTransactionLimit(),
+                createAnAccountWithEVMAddressAliasAndECKey(),
+                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
+                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
                 hollowAccountCreationChargesExpectedFees());
     }
 
