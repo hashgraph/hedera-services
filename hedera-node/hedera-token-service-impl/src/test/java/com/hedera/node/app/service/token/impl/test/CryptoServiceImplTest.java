@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.service.token.impl.StandardCryptoService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,14 +37,14 @@ class CryptoServiceImplTest {
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
-    private CryptoServiceImpl subject;
+    private StandardCryptoService subject;
 
     @Test
     void createsNewInstance() {
-        subject = new CryptoServiceImpl();
+        subject = new StandardCryptoService();
 
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
+        BDDMockito.given(states.get(ACCOUNTS)).willReturn(accounts);
+        BDDMockito.given(states.get(ALIASES)).willReturn(aliases);
 
         final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
         final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);

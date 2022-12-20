@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -35,92 +37,153 @@ import org.apache.commons.lang3.NotImplementedException;
  * (but not the candidate signatures) for each token operation.
  */
 public final class TokenPreTransactionHandlerImpl implements TokenPreTransactionHandler {
-
     private final AccountStore accountStore;
+    private final TokenStore tokenStore;
     private final PreHandleContext preHandleContext;
 
     public TokenPreTransactionHandlerImpl(
-            @NonNull final AccountStore accountStore, PreHandleContext preHandleContext) {
+            @NonNull final AccountStore accountStore,
+            @NonNull final TokenStore tokenStore,
+            @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
-
-        this.preHandleContext = preHandleContext;
+        this.tokenStore = Objects.requireNonNull(=-);
+        this.preHandleContext = Objects.requireNonNull(ctx);
     }
 
     @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleCreateToken(TransactionBody txn, AccountID payer) {
         return buildSigTransactionMetadata(txn, payer);
     }
 
     @Override
-    public TransactionMetadata preHandleUpdateToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleUpdateToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleMintToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleMintToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleBurnToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleBurnToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleDeleteToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDeleteToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleWipeTokenAccount(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleWipeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
+        final var op = txn.getTokenWipe();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        if (op.hasToken()) {
+            final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+            if (!tokenMeta.failed()) {
+                if (tokenMeta.metadata().wipeKey().isPresent()) {
+                    meta.addToReqNonPayerKeys(tokenMeta.metadata().wipeKey().get());
+                } else {
+                    meta.status(ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY);
+                }
+            } else {
+                meta.status(tokenMeta.failureReason());
+            }
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+
+        return meta.build();
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleFreezeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleFreezeTokenAccount(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleUnfreezeTokenAccount(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleUnfreezeTokenAccount(TransactionBody txn, AccountID payer) {
-        throw new NotImplementedException();
-    }
-
-    @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleGrantKycToTokenAccount(
-            TransactionBody txn, AccountID payer) {
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleRevokeKycFromTokenAccount(
-            TransactionBody txn, AccountID payer) {
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleAssociateTokens(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleAssociateTokens(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleDissociateTokens(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDissociateTokens(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleUpdateTokenFeeSchedule(
-            TransactionBody txn, AccountID payer) {
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandlePauseToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandlePauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleUnpauseToken(TransactionBody txn, AccountID payer) {
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleUnpauseToken(
+            @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
@@ -191,5 +254,4 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                 }
             }
         }
-    }
 }
