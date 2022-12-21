@@ -35,6 +35,7 @@ class InvalidTransactionMetadataTest {
         assertEquals(payer, subject.payer());
         assertNull(subject.payerKey());
         assertEquals(List.of(), subject.requiredNonPayerKeys());
+        assertNull(subject.scheduledMeta());
     }
 
     @Test

@@ -3,16 +3,20 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app,
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.mono.exceptions to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.schedule.impl.test;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.schedule.impl.test;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -36,7 +40,9 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.files to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.schedule.impl.test;
     exports com.hedera.node.app.service.mono.store.schedule to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.tokens to

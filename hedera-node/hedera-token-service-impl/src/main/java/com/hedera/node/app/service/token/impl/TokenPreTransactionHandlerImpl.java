@@ -37,13 +37,13 @@ import org.apache.commons.lang3.NotImplementedException;
  * (but not the candidate signatures) for each token operation.
  */
 public final class TokenPreTransactionHandlerImpl implements TokenPreTransactionHandler {
-    private final AccountStore accountStore;
-    private final TokenStore tokenStore;
+    private final ReadableAccountStore accountStore;
+    private final ReadableTokenStore tokenStore;
     private final PreHandleContext preHandleContext;
 
     public TokenPreTransactionHandlerImpl(
-            @NonNull final AccountStore accountStore,
-            @NonNull final TokenStore tokenStore,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.tokenStore = Objects.requireNonNull(=-);

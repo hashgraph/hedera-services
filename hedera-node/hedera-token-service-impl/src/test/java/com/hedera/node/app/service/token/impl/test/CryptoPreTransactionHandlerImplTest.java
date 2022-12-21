@@ -38,9 +38,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.token.impl.CryptoPreTransactionHandlerImpl;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
@@ -135,7 +135,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private CryptoSignatureWaiversImpl waivers;
     private PreHandleContext context;
-    private AccountStore store;
+    private ReadableAccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
@@ -143,7 +143,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        store = new AccountStore(states);
+        store = new ReadableAccountStore(states);
 
         context = new PreHandleContext(accountNumbers, fileNumbers, store);
 
