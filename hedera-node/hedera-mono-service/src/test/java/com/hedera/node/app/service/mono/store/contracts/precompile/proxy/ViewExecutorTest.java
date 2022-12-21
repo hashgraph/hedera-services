@@ -42,6 +42,8 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
@@ -131,6 +133,7 @@ class ViewExecutorTest {
     private static final long gas = 100L;
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
     private TokenInfo tokenInfo;
+    private EvmTokenInfo evmTokenInfo;
     private Bytes tokenInfoEncoded;
     private Bytes isFrozenEncoded;
 
@@ -172,6 +175,10 @@ class ViewExecutorTest {
                         .setTotalSupply(1L)
                         .setMaxSupply(1000L)
                         .build();
+        evmTokenInfo = new EvmTokenInfo(fromString("0x03").toByteArray(), 1, false,
+            "FT", "NAME", "MEMO", Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+            1L, 1000L, 0, 0L);
+
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
@@ -267,9 +274,9 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
-        given(encodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmEncodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
     }
@@ -285,10 +292,10 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
+        given(evmEncodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
     }
@@ -305,17 +312,17 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(nonfungibletoken, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(ledgers.evmInfoForToken(nonfungibletoken, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(
-                        ledgers.infoForNft(
+                        ledgers.evmNftInfo(
                                 NftID.newBuilder()
                                         .setTokenID(nonfungibletoken)
                                         .setSerialNumber(1L)
                                         .build(),
                                 networkInfo.ledgerId()))
-                .willReturn(Optional.of(TokenNftInfo.newBuilder().build()));
-        given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
+                .willReturn(Optional.of(new EvmNftInfo()));
+        given(evmEncodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
                 .willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -496,7 +503,7 @@ class ViewExecutorTest {
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo));
-        given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+        given(evmEncodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
     }
