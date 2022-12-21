@@ -83,7 +83,8 @@ import org.apache.logging.log4j.Logger;
 public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
-    private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = null;
+    private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS =
+            Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 
     private boolean logResolvedStatus = false;
@@ -566,7 +567,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
         return spec -> {
             final Set<Key> partyKeys = new HashSet<>();
             final Map<String, Long> partyInvolvements =
-                    tokenAwareProviders.stream()
+                    Optional.ofNullable(tokenAwareProviders)
+                            .orElse(Collections.emptyList())
+                            .stream()
                             .map(TokenMovement::generallyInvolved)
                             .flatMap(List::stream)
                             .collect(

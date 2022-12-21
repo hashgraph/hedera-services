@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class RecordStreamingUtilsTest {
@@ -56,6 +57,23 @@ class RecordStreamingUtilsTest {
 
         assertEquals(6, recordFilePair.getLeft());
         assertTrue(recordFilePair.getRight().isPresent());
+    }
+
+    @Test
+    void ordersSidecarsAsExpected() {
+        final var aSidecar = "2022-08-15T14_02_58.158861963Z_02.rcd.gz";
+        final var aSameTimeSidecarLaterSeq = "2022-08-15T14_02_58.158861963Z_03.rcd.gz";
+        final var anEarlierSidecar = "2022-08-15T14_02_54.158861963Z_99.rcd.gz";
+        final var aLaterSidecar = "2022-08-15T14_03_04.158861963Z_01.rcd.gz";
+
+        final List<String> allSidecars =
+                List.of(aSameTimeSidecarLaterSeq, aSidecar, anEarlierSidecar, aLaterSidecar);
+
+        final List<String> expected =
+                List.of(anEarlierSidecar, aSidecar, aSameTimeSidecarLaterSeq, aLaterSidecar);
+        final var actual =
+                allSidecars.stream().sorted(RecordStreamingUtils.SIDECAR_FILE_COMPARATOR).toList();
+        assertEquals(expected, actual);
     }
 
     @Test
