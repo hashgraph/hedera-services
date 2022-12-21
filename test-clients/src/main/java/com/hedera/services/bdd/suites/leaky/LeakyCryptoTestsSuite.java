@@ -612,12 +612,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
                                     allRunFor(spec, op, op2, op3, op4, op5);
                                     var hapiGetAccountInfo =
-                                            getAccountInfo(ACCOUNT)
+                                            getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));

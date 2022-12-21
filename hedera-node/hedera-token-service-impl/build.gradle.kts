@@ -21,11 +21,17 @@ description = "Default Hedera Token Service Implementation"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
     api(project(":hedera-node:hedera-token-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.hapi)
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
