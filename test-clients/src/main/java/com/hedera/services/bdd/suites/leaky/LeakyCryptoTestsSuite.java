@@ -711,7 +711,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
     private HapiSpec hollowAccountCompletionNotAcceptedWhenFlagIsDisabled() {
         final Map<String, String> startingProps = new HashMap<>();
-        return defaultHapiSpec("HollowAccountCompletionWithCryptoTransfer")
+        return defaultHapiSpec("HollowAccountCompletionNotAcceptedWhenFlagIsDisabled")
                 .given(
                         remembering(startingProps, LAZY_CREATION_ENABLED),
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -737,11 +737,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN);
                                     final var op2 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(evmAddress)
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
@@ -966,11 +966,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)

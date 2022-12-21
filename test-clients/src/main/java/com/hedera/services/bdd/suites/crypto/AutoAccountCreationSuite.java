@@ -832,7 +832,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final var getHollowAccountInfoAfterCreation =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress.get())
                                                     .hasToken(relationshipWith(A_TOKEN).balance(5))
                                                     .hasToken(
                                                             relationshipWith(
@@ -841,8 +841,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            evmAddress.get())
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
@@ -887,7 +886,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var getHollowAccountInfoAfterTransfers =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress.get())
                                                     .hasToken(relationshipWith(A_TOKEN).balance(10))
                                                     .hasToken(
                                                             relationshipWith(
@@ -896,8 +895,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            evmAddress.get())
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             2 * ONE_HUNDRED_HBARS,
                                                                             0,
@@ -986,11 +984,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op4 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)
@@ -1054,11 +1052,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)
@@ -1125,11 +1123,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)
@@ -1195,11 +1193,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)
@@ -2107,15 +2105,14 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(FT_XFER);
 
                                     final var getHollowAccountInfoAfterCreation =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(counterAlias.get())
                                                     .hasToken(
                                                             relationshipWith(fungibleToken)
                                                                     .balance(500))
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            counterAlias.get())
+                                                                    .noAlias()
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
@@ -2146,15 +2143,14 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var getHollowAccountInfoAfterTransfers =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(counterAlias.get())
                                                     .hasToken(
                                                             relationshipWith(fungibleToken)
                                                                     .balance(505))
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            counterAlias.get())
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS,
                                                                             0,
@@ -2233,15 +2229,14 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(NFT_XFER);
 
                                     final var getHollowAccountInfoAfterCreation =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(counterAlias.get())
                                                     .hasToken(
                                                             relationshipWith(nonFungibleToken)
                                                                     .balance(1))
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            counterAlias.get())
+                                                                    .noAlias()
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
@@ -2273,15 +2268,14 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var getHollowAccountInfoAfterTransfers =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(counterAlias.get())
                                                     .hasToken(
                                                             relationshipWith(nonFungibleToken)
                                                                     .balance(2))
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(
-                                                                            counterAlias.get())
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS,
                                                                             0,
