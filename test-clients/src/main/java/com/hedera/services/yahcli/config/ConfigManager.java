@@ -83,10 +83,10 @@ public class ConfigManager {
         return specConfig;
     }
 
-    public boolean allowListExist(long account) {
-        return targetNet.getAllowList() == null
-                || targetNet.getAllowList().isEmpty()
-                || targetNet.getAllowList().contains(account);
+    public boolean isAllowListEmptyOrContainsAccount(long account) {
+        return targetNet.getAllowedReceiverAccountIds() == null
+                || targetNet.getAllowedReceiverAccountIds().isEmpty()
+                || targetNet.getAllowedReceiverAccountIds().contains(account);
     }
 
     private void addPayerConfig(Map<String, String> specConfig, String payerId) {

@@ -73,14 +73,14 @@ public class SendCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         var config = configFrom(accountsCommand.getYahcli());
 
-        if (!config.allowListExist(Long.parseLong(beneficiary))) {
+        if (!config.isAllowListEmptyOrContainsAccount(Long.parseLong(beneficiary))) {
             throw new CommandLine.ParameterException(
                     accountsCommand.getYahcli().getSpec().commandLine(),
                     "Beneficiary " + beneficiary + " supposed to be in allow list");
         }
 
         long amount;
-        String originaldomination = denomination;
+        String originalDenomination = denomination;
         if (isHbarDenomination(denomination)) {
             amount = validatedTinybars(accountsCommand.getYahcli(), amountRepr, denomination);
             denomination = null;
@@ -100,7 +100,7 @@ public class SendCommand implements Callable<Integer> {
                             + "sent "
                             + amountRepr
                             + " "
-                            + originaldomination
+                            + originalDenomination
                             + " to account "
                             + beneficiary
                             + " with memo: '"
@@ -112,7 +112,7 @@ public class SendCommand implements Callable<Integer> {
                             + "could not send "
                             + amountRepr
                             + " "
-                            + originaldomination
+                            + originalDenomination
                             + " to account "
                             + beneficiary
                             + " with memo: '"
