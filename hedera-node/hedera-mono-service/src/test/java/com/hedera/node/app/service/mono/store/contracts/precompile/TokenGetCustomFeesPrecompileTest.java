@@ -36,7 +36,6 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -175,13 +174,13 @@ class TokenGetCustomFeesPrecompileTest {
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
-                          tokenMerkleAddress);
+                        tokenMerkleAddress);
         tokenGetCustomFeesPrecompile
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
-                given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
-                        .willReturn(Optional.of(fractionalFee));
+        given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
+                .willReturn(Optional.of(fractionalFee));
         given(evmEncoder.encodeTokenGetCustomFees(fractionalFee)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -323,14 +322,22 @@ class TokenGetCustomFeesPrecompileTest {
                 .build();
     }
 
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee
+                fractionalFee =
+                        new com.hedera.node.app.service.evm.store.contracts.precompile.codec
+                                .FractionalFee(
+                                1L,
+                                2L,
+                                10_000L,
+                                400_000_000L,
+                                false,
+                                EntityIdUtils.asTypedEvmAddress(payer));
 
-    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees() {
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee fractionalFee = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee(1L, 2L, 10_000L,
-        400_000_000L, false, EntityIdUtils.asTypedEvmAddress(payer));
-
-        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFractionalFee(fractionalFee);
-
 
         return List.of(customFee1);
     }

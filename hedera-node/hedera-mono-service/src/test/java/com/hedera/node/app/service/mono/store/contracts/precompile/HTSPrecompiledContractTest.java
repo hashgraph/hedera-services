@@ -376,9 +376,20 @@ class HTSPrecompiledContractTest {
 
     @Test
     void computeCostedWorksForView() {
-        EvmTokenInfo evmTokenInfo = new EvmTokenInfo(fromString("0x03").toByteArray(), 1, false,
-            "FT", "NAME", "MEMO", Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-            1L, 1000L, 0, 0L);
+        EvmTokenInfo evmTokenInfo =
+                new EvmTokenInfo(
+                        fromString("0x03").toByteArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
 
         final Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
         tokenInfoPrecompile
