@@ -130,7 +130,7 @@ public class SigsAndPayerKeyScreen {
             final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
             if (callerNum != EntityNum.MISSING_NUM) {
                 final var account = accounts.get().get(callerNum);
-                if (account.getAccountKey() == EMPTY_KEY) {
+                if (EMPTY_KEY.equals(account.getAccountKey())) {
                     var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
                     var accountToModify = accounts.get().getForModify(callerNum);
                     accountToModify.setAccountKey(key);
