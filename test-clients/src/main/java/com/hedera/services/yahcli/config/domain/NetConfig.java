@@ -28,6 +28,7 @@ public class NetConfig {
 
     private String defaultPayer;
     private Integer defaultNodeAccount = TRADITIONAL_DEFAULT_NODE_ACCOUNT;
+    private List<Long> allowedReceiverAccountIds;
     private List<NodeConfig> nodes;
 
     public String getDefaultPayer() {
@@ -54,6 +55,14 @@ public class NetConfig {
         this.nodes = nodes;
     }
 
+    public List<Long> getAllowedReceiverAccountIds() {
+        return allowedReceiverAccountIds;
+    }
+
+    public void setAllowedReceiverAccountIds(List<Long> allowedReceiverAccountIds) {
+        this.allowedReceiverAccountIds = allowedReceiverAccountIds;
+    }
+
     public String fqDefaultNodeAccount() {
         return CommonMessages.COMMON_MESSAGES.fq(defaultNodeAccount);
     }
@@ -70,6 +79,7 @@ public class NetConfig {
                 .add("defaultPayer", defaultPayer)
                 .add("defaultNodeAccount", "0.0." + defaultNodeAccount)
                 .add("nodes", nodes)
+                .add("allowedReceiverAccountIds", allowedReceiverAccountIds)
                 .omitNullValues()
                 .toString();
     }

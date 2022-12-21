@@ -38,7 +38,7 @@ public record InvalidTransactionMetadata(
         @NonNull TransactionBody txnBody,
         @NonNull AccountID payer,
         @NonNull ResponseCodeEnum status)
-        implements TransactionMetadata {
+        implements ScheduleTransactionMetadata {
     public InvalidTransactionMetadata {
         requireNonNull(txnBody);
         requireNonNull(payer);
@@ -52,6 +52,11 @@ public record InvalidTransactionMetadata(
 
     @Override
     public HederaKey payerKey() {
+        return null;
+    }
+
+    @Override
+    public TransactionMetadata scheduledMeta() {
         return null;
     }
 }

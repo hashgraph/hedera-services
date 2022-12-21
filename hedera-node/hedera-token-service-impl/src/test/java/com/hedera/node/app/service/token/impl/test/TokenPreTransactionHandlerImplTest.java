@@ -32,9 +32,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.TokenPreTransactionHandlerImpl;
-import com.hedera.node.app.service.token.impl.TokenStore;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
@@ -72,10 +72,10 @@ class TokenPreTransactionHandlerImplTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
     @Mock private MerkleAccount payerAccount;
-    @Mock private TokenStore tokenStore;
+    @Mock private ReadableTokenStore tokenStore;
     @Mock private PreHandleContext context;
 
-    private AccountStore accountStore;
+    private ReadableAccountStore accountStore;
     private TokenPreTransactionHandlerImpl subject;
 
     @BeforeEach
@@ -85,7 +85,7 @@ class TokenPreTransactionHandlerImplTest {
         given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
         given(payerAccount.getAccountKey()).willReturn((JKey) payerKey);
 
-        accountStore = new AccountStore(states);
+        accountStore = new ReadableAccountStore(states);
 
         subject = new TokenPreTransactionHandlerImpl(accountStore, tokenStore, context);
     }
@@ -102,8 +102,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null,
                                         null,
                                         Optional.of(wipeKey),
@@ -152,8 +152,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null, null, null, null, null, null, null, false, null),
                                 INVALID_TOKEN_ID));
 
@@ -176,8 +176,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null,
                                         null,
                                         Optional.empty(),
@@ -215,8 +215,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null,
                                         null,
                                         null,
@@ -284,8 +284,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null, null, null, null, null, null, null, false, null),
                                 INVALID_TOKEN_ID));
 
@@ -317,8 +317,8 @@ class TokenPreTransactionHandlerImplTest {
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
-                        new TokenStore.TokenMetaOrLookupFailureReason(
-                                new TokenStore.TokenMetadata(
+                        new ReadableTokenStore.TokenMetaOrLookupFailureReason(
+                                new ReadableTokenStore.TokenMetadata(
                                         null,
                                         null,
                                         null,

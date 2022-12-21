@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJ
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
@@ -59,6 +60,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -903,6 +905,49 @@ class StateViewTest {
                         .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
                         .setAccountID(tokenAccountId)
                         .setAlias(tokenAccount.getAlias())
+                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                        .setDeleted(tokenAccount.isDeleted())
+                        .setMemo(tokenAccount.getMemo())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setBalance(tokenAccount.getBalance())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                        .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                        .setOwnedNfts(tokenAccount.getNftsOwned())
+                        .setMaxAutomaticTokenAssociations(
+                                tokenAccount.getMaxAutomaticAssociations())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setDeclineReward(true)
+                                        .setStakedAccountId(
+                                                AccountID.newBuilder().setAccountNum(10L).build())
+                                        .build())
+                        .build();
+
+        final var actualResponse =
+                subject.infoForAccount(
+                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+        mockedStatic.close();
+        assertEquals(expectedResponse, actualResponse.get());
+    }
+
+    @Test
+    void infoForAccountWithEVMAddressAlias() {
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+        given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+        mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]));
+        final var expectedResponse =
+                CryptoGetInfoResponse.AccountInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                        .setAccountID(tokenAccountId)
                         .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
                         .setDeleted(tokenAccount.isDeleted())
                         .setMemo(tokenAccount.getMemo())

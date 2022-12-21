@@ -17,8 +17,8 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.token.impl.CryptoPreTransactionHandlerImpl;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.PreHandleContext;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
-    @Mock private AccountStore store;
+    @Mock private ReadableAccountStore store;
     @Mock private PreHandleContext context;
 
     private CryptoPreTransactionHandlerImpl subject;
