@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -44,6 +45,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
@@ -179,9 +182,9 @@ class ViewExecutorTest {
             "FT", "NAME", "MEMO", Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
             1L, 1000L, 0, 0L);
 
-        tokenInfoEncoded =
-                Bytes.fromHexString(
-                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
+//        tokenInfoEncoded =
+//                Bytes.fromHexString(
+//                        "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
         isFrozenEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
@@ -353,8 +356,8 @@ class ViewExecutorTest {
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
                 .thenReturn(new TokenGetCustomFeesWrapper<>(fungible));
-        //        given(ledgers.infoForTokenCustomFees(fungible)).willReturn(getCustomFees());
-        given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
+                given(ledgers.infoForTokenCustomFees(fungible)).willReturn(Optional.ofNullable(customFees()));
+        given(evmEncodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
     }
@@ -429,7 +432,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -446,7 +448,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -464,7 +465,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -482,8 +482,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.of(tokenInfo));
-        given(ledgers.infoForNft(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -562,23 +560,24 @@ class ViewExecutorTest {
         return input;
     }
 
-    private Optional<List<CustomFee>> getCustomFees() {
-
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees() {
         final var payerAccountId = asAccount("0.0.9");
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> customFees = new ArrayList<>();
+        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts = new FixedFee(100, EntityIdUtils.asTypedEvmAddress(fungible), false, false,
+            EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeSameToken = new FixedFee(50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
-        final var builder = new CustomFeeBuilder(payerAccountId);
-        final var customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-        final var customFixedFeeInHts = builder.withFixedFee(fixedHts(fungible, 100L));
-        final var customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-        final var customFractionalFee =
-                builder.withFractionalFee(
-                        fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
-        final var customFees = new ArrayList<CustomFee>();
-        customFees.add(customFixedFeeInHbar);
-        customFees.add(customFixedFeeInHts);
-        customFees.add(customFixedFeeSameToken);
-        customFees.add(customFractionalFee);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee2.setFixedFee(fixedFeeInHts);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee3.setFixedFee(fixedFeeSameToken);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee4.setFractionalFee(fractionalFee);
 
-        return Optional.of(customFees);
+        return List.of(customFee1, customFee2, customFee3, customFee4);
     }
 }
