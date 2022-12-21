@@ -146,8 +146,7 @@ public final class HederaKeyActivation {
     }
 
     public static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
-        if (sourceKey.length == ED25519_PUBLIC_KEY_LEN
-                || sourceKey.length == UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
+        if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
             return Arrays.equals(sourceKey, sigKey);
         } else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
             final var xCoordsMatch =
