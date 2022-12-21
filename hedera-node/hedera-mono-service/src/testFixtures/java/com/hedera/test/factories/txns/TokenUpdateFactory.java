@@ -38,22 +38,22 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
         return new TokenUpdateFactory();
     }
 
-    public TokenUpdateFactory updating(TokenID id) {
+    public TokenUpdateFactory updating(final TokenID id) {
         this.id = id;
         return this;
     }
 
-    public TokenUpdateFactory newAdmin(KeyTree kt) {
+    public TokenUpdateFactory newAdmin(final KeyTree kt) {
         newAdminKt = Optional.of(kt);
         return this;
     }
 
-    public TokenUpdateFactory newAutoRenew(AccountID account) {
+    public TokenUpdateFactory newAutoRenew(final AccountID account) {
         newAutoRenew = Optional.of(account);
         return this;
     }
 
-    public TokenUpdateFactory newTreasury(AccountID account) {
+    public TokenUpdateFactory newTreasury(final AccountID account) {
         newTreasury = Optional.of(account);
         return this;
     }
@@ -84,13 +84,13 @@ public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
     }
 
     @Override
-    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
+    protected long feeFor(final Transaction signedTxn, final int numPayerKeys) {
         return 0;
     }
 
     @Override
-    protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = TokenUpdateTransactionBody.newBuilder();
+    protected void customizeTxn(final TransactionBody.Builder txn) {
+        final var op = TokenUpdateTransactionBody.newBuilder();
         op.setToken(id);
         newAdminKt.ifPresent(kt -> op.setAdminKey(kt.asKey()));
         if (replaceFreeze) {

@@ -103,6 +103,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts hasDefaultKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                ((AccountInfo) o).getKey(),
+                                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
+                                "Has non-default key!"));
+        return this;
+    }
+
     public AccountInfoAsserts noStakedAccountId() {
         registerProvider(
                 (spec, o) ->
@@ -277,7 +287,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts alias(final ByteString alias) {
+    public AccountInfoAsserts alias(ByteString alias) {
         registerProvider((spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), BAD_ALIAS));
         return this;
     }
