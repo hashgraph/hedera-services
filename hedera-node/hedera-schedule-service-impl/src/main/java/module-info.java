@@ -8,8 +8,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.node.app.service.mono;
 
     exports com.hedera.node.app.service.schedule.impl to
-            com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.scheduled.impl.test;
+            com.hedera.node.app.service.schedule.impl.test;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             ScheduleServiceImpl;

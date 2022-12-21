@@ -20,14 +20,12 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 
 @SuppressWarnings("DanglingJavadoc")
@@ -42,25 +40,21 @@ public class ConsensusPreTransactionHandlerImpl implements ConsensusPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCreateTopic(TransactionBody txn, AccountID payer) {
+        final var metaBuilder = new SigTransactionMetadataBuilder(keyFinder);
+        metaBuilder.txnBody(txn);
+        metaBuilder.payerKeyFor(payer);
+
         final var op = txn.getConsensusCreateTopic();
-
-        final var payerKeyLookup = keyFinder.getKey(payer);
-        final var payerKey = payerKeyLookup.key();
-        if (payerKeyLookup.failed()) {
-            return new SigTransactionMetadata(
-                    txn, payer, payerKeyLookup.failureReason(), payerKey, List.of());
-        }
-
         final var adminKey = asHederaKey(op.getAdminKey());
         final var submitKey = asHederaKey(op.getSubmitKey());
         if (adminKey.isPresent() || submitKey.isPresent()) {
             final var otherReqs = new ArrayList<HederaKey>();
             adminKey.ifPresent(otherReqs::add);
             submitKey.ifPresent(otherReqs::add);
-            return new SigTransactionMetadata(txn, payer, ResponseCodeEnum.OK, payerKey, otherReqs);
+            metaBuilder.addAllReqKeys(otherReqs);
         }
 
-        return new SigTransactionMetadata(txn, payer, ResponseCodeEnum.OK, payerKey, List.of());
+        return metaBuilder.build();
     }
 
     @Override

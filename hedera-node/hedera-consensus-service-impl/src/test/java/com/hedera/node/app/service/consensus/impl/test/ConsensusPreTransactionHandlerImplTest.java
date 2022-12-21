@@ -160,7 +160,7 @@ class ConsensusPreTransactionHandlerImplTest {
 
         final var result = subject.preHandleCreateTopic(inputTxn, ACCOUNT_ID_3);
 
-        Assertions.assertEquals(ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST, result.status());
+        Assertions.assertEquals(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID, result.status());
         Assertions.assertNull(result.payerKey());
         Assertions.assertTrue(result.failed());
         Assertions.assertTrue(result.requiredNonPayerKeys().isEmpty());
