@@ -199,17 +199,6 @@ class RationalizedSigMetaTest {
     }
 
     @Test
-    void shouldNotReplacePayerHollowKeyWhenRationalizedSigsAreNull() {
-        var bytes = new byte[20];
-        var hollowKey = new JHollowKey(bytes);
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, null, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded(SignatureMap.getDefaultInstance());
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
     void shouldNotReplacePayerHollowKeyHollowKeyAddressNotMatchingRationalizedSig() {
         var bytes = new byte[20];
         var hollowKey = new JHollowKey(bytes);

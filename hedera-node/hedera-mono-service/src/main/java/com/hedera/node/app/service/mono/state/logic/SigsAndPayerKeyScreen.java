@@ -107,14 +107,12 @@ public class SigsAndPayerKeyScreen {
         }
 
         final var sigMeta = accessor.getSigMeta();
-        if (sigMeta != null) {
-            sigMeta.replacePayerHollowKeyIfNeeded(accessor.getSigMap());
-        }
+        sigMeta.replacePayerHollowKeyIfNeeded(accessor.getSigMap());
 
         if (hasActivePayerSig(accessor)) {
             txnCtx.payerSigIsKnownActive();
 
-            if (sigMeta != null && sigMeta.hasReplacedHollowKey()) {
+            if (sigMeta.hasReplacedHollowKey()) {
                 accounts.get()
                         .getForModify(EntityNum.fromAccountId(txnCtx.activePayer()))
                         .setAccountKey(sigMeta.payerKey());

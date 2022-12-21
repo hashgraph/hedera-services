@@ -226,13 +226,13 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             return SafeLookupResult.failure(MISSING_ACCOUNT);
         } else {
             final var key = account.getAccountKey();
-            if (key == null || key.isEmpty()) {
+            if (key.isEmpty()) {
                 if (!properties.isLazyCreationEnabled()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 }
 
                 final var accountAlias = account.getAlias();
-                if (accountAlias == null || accountAlias.isEmpty()) {
+                if (accountAlias.isEmpty()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 } else {
                     return new SafeLookupResult<>(
