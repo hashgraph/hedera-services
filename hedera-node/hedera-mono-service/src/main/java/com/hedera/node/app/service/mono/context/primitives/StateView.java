@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAdd
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
@@ -442,7 +443,7 @@ public class StateView {
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-        if (evmAddress != null) {
+        if (isRecoveredEvmAddress(evmAddress)) {
             return Bytes.wrap(evmAddress).toUnprefixedHexString();
         } else {
             return asHexedEvmAddress(accountID);
