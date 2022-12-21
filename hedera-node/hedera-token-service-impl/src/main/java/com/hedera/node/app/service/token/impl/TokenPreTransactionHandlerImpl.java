@@ -204,6 +204,14 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         return meta.build();
     }
 
+    /**
+     * Gets the token meta for a given {@link TokenID} and attempts to add a pause key to the list
+     * of required keys for a given pause or unpause transaction. Upon failure the status of the
+     * {@link SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
+     *
+     * @param tokenId given token id
+     * @param meta given transaction metadata builder
+     */
     private void addPauseKey(TokenID tokenId, SigTransactionMetadataBuilder meta) {
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (!tokenMeta.failed()) {
