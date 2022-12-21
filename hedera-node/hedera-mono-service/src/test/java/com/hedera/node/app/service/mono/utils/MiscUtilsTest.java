@@ -277,14 +277,15 @@ class MiscUtilsTest {
         assertEquals(expected, actual);
     }
 
-
     @Test
     void distinguishesRecoveredEvmAddressses() {
         assertFalse(MiscUtils.isRecoveredEvmAddress(null));
         assertFalse(MiscUtils.isRecoveredEvmAddress(new byte[0]));
-        assertFalse(MiscUtils.isRecoveredEvmAddress(new byte[] { (byte) 0xab }));
-        assertTrue(MiscUtils.isRecoveredEvmAddress(
-                org.hyperledger.besu.datatypes.Address.BLAKE2B_F_COMPRESSION.toArrayUnsafe()));
+        assertFalse(MiscUtils.isRecoveredEvmAddress(new byte[] {(byte) 0xab}));
+        assertTrue(
+                MiscUtils.isRecoveredEvmAddress(
+                        org.hyperledger.besu.datatypes.Address.BLAKE2B_F_COMPRESSION
+                                .toArrayUnsafe()));
     }
 
     @Test

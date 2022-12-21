@@ -417,9 +417,7 @@ public class StateView {
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
                         .setContractAccountID(
                                 getContractAccountId(
-                                        account.getAccountKey(),
-                                        accountID,
-                                        account.getAlias()))
+                                        account.getAccountKey(), accountID, account.getAlias()))
                         .setOwnedNfts(account.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                         .setEthereumNonce(account.getEthereumNonce());
@@ -439,9 +437,7 @@ public class StateView {
     }
 
     private String getContractAccountId(
-            final JKey key,
-            final AccountID accountID,
-            final ByteString alias) {
+            final JKey key, final AccountID accountID, final ByteString alias) {
         if (alias.size() == EVM_ADDRESS_SIZE) {
             return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
         }

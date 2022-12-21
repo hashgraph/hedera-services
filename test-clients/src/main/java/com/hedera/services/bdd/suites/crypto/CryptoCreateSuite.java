@@ -17,7 +17,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -510,8 +509,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .logged()
                                                     .has(
                                                             accountWith()
-                                                                    .evmAddress(
-                                                                            evmAddressBytes)
+                                                                    .evmAddress(evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
@@ -585,8 +583,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddress(
-                                                                            evmAddressBytes));
+                                                                    .evmAddress(evmAddressBytes));
                                     var hapiGetAnotherAccountInfo =
                                             getAccountInfo(ANOTHER_ACCOUNT)
                                                     .has(
