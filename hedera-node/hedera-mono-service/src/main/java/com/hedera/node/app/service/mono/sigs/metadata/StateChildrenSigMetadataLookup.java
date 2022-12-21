@@ -31,6 +31,7 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -236,7 +237,8 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                 } else {
                     return new SafeLookupResult<>(
                             new AccountSigningMetadata(
-                                    new JHollowKey(accountAlias.toByteArray()),
+                                    new JHollowKey(
+                                            ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
                                     account.isReceiverSigRequired()));
                 }
             }
