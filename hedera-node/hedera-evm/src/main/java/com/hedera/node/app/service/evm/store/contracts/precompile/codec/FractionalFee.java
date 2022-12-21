@@ -68,9 +68,13 @@ public class FractionalFee {
 
     @Override
     public int hashCode() {
-        return Objects.hash(numerator, denominator, getMinimumAmount, getMaximumAmount,
-            netOfTransfers,
-            feeCollector);
+        return Objects.hash(
+                numerator,
+                denominator,
+                getMinimumAmount,
+                getMaximumAmount,
+                netOfTransfers,
+                feeCollector);
     }
 
     @Override

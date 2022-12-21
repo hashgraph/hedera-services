@@ -68,8 +68,13 @@ public class RoyaltyFee {
 
     @Override
     public int hashCode() {
-        return Objects.hash(numerator, denominator, amount, denominatingTokenId, useHbarsForPayment,
-            feeCollector);
+        return Objects.hash(
+                numerator,
+                denominator,
+                amount,
+                denominatingTokenId,
+                useHbarsForPayment,
+                feeCollector);
     }
 
     @Override

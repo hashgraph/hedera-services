@@ -61,9 +61,12 @@ public class FixedFee {
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount, denominatingTokenId, useHbarsForPayment,
-            useCurrentTokenForPayment,
-            feeCollector);
+        return Objects.hash(
+                amount,
+                denominatingTokenId,
+                useHbarsForPayment,
+                useCurrentTokenForPayment,
+                feeCollector);
     }
 
     @Override
