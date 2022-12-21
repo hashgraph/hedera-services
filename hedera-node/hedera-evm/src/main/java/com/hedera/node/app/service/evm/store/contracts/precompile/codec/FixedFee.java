@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class FixedFee {
@@ -59,11 +60,18 @@ public class FixedFee {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(amount, denominatingTokenId, useHbarsForPayment,
+            useCurrentTokenForPayment,
+            feeCollector);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
         }
-        if (FixedFee.class != o.getClass()) {
+        if (o == null || FixedFee.class != o.getClass()) {
             return false;
         }
         FixedFee other = (FixedFee) o;

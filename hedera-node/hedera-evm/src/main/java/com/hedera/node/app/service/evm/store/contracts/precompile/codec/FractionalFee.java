@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class FractionalFee {
@@ -66,11 +67,18 @@ public class FractionalFee {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(numerator, denominator, getMinimumAmount, getMaximumAmount,
+            netOfTransfers,
+            feeCollector);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
         }
-        if (FractionalFee.class != o.getClass()) {
+        if (o == null || FractionalFee.class != o.getClass()) {
             return false;
         }
         FractionalFee other = (FractionalFee) o;

@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
+
 public class CustomFee {
 
     private FixedFee fixedFee;
@@ -46,11 +48,16 @@ public class CustomFee {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(fixedFee, fractionalFee, royaltyFee);
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (o == this) {
             return true;
         }
-        if (CustomFee.class != o.getClass()) {
+        if (o == null || CustomFee.class != o.getClass()) {
             return false;
         }
         CustomFee other = (CustomFee) o;

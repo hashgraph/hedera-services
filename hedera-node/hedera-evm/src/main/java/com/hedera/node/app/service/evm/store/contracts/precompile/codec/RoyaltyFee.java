@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class RoyaltyFee {
@@ -66,11 +67,17 @@ public class RoyaltyFee {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(numerator, denominator, amount, denominatingTokenId, useHbarsForPayment,
+            feeCollector);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (o == this) {
             return true;
         }
-        if (RoyaltyFee.class != o.getClass()) {
+        if (o == null || RoyaltyFee.class != o.getClass()) {
             return false;
         }
         RoyaltyFee other = (RoyaltyFee) o;
