@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
@@ -72,14 +73,14 @@ public class ViewExecutor {
             final MessageFrame frame,
             final EncodingFacade encoder,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView,
-            final WorldLedgers ledgers) {
+            final StateView stateView) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
-        this.ledgers = ledgers;
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        this.ledgers = updater.trackingLedgers();
     }
 
     public Pair<Long, Bytes> computeCosted() {
