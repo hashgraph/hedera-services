@@ -29,12 +29,11 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
-
-import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
@@ -306,10 +305,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
     public AccountInfoAsserts evmAddress(ByteString evmAddress) {
         registerProvider(
-                (spec, o) -> assertEquals(
-                        CommonUtils.hex(evmAddress.toByteArray()),
-                        ((AccountInfo) o).getContractAccountID(),
-                        BAD_ALIAS));
+                (spec, o) ->
+                        assertEquals(
+                                CommonUtils.hex(evmAddress.toByteArray()),
+                                ((AccountInfo) o).getContractAccountID(),
+                                BAD_ALIAS));
         return this;
     }
 
