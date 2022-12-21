@@ -56,7 +56,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -146,7 +145,6 @@ class SigsAndPayerKeyScreenTest {
     void hollowAccountCompletionSucceeds() {
         givenOkRationalization();
         given(accessor.getSigMeta()).willReturn(sigMeta);
-        given(accessor.getSigMap()).willReturn(SignatureMap.getDefaultInstance());
         given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
         given(sigMeta.hasReplacedHollowKey()).willReturn(true);
         given(accounts.get()).willReturn(accountStorage);

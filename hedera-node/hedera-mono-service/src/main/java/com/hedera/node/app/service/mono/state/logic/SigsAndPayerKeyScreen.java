@@ -107,7 +107,7 @@ public class SigsAndPayerKeyScreen {
         }
 
         final var sigMeta = accessor.getSigMeta();
-        sigMeta.replacePayerHollowKeyIfNeeded(accessor.getSigMap());
+        sigMeta.replacePayerHollowKeyIfNeeded();
 
         if (hasActivePayerSig(accessor)) {
             txnCtx.payerSigIsKnownActive();
