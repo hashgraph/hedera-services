@@ -227,7 +227,7 @@ class SigsAndPayerKeyScreenTest {
                 .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
         given(accounts.get()).willReturn(accountStorage);
-        given(accountStorage.getForModify(any())).willReturn(account);
+        given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey())
                 .willReturn(new JEd25519Key(ByteString.copyFromUtf8("accountKey").toByteArray()));
 
@@ -250,8 +250,9 @@ class SigsAndPayerKeyScreenTest {
                 .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
         given(accounts.get()).willReturn(accountStorage);
-        given(accountStorage.getForModify(any())).willReturn(account);
+        given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey()).willReturn(EMPTY_KEY);
+        given(accountStorage.getForModify(any())).willReturn(account);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
                 .willReturn(childRecordBuilder);
         given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);

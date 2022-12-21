@@ -129,10 +129,11 @@ public class SigsAndPayerKeyScreen {
             final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
             final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
             if (callerNum != EntityNum.MISSING_NUM) {
-                var account = accounts.get().getForModify(callerNum);
+                final var account = accounts.get().get(callerNum);
                 if (account.getAccountKey() == EMPTY_KEY) {
                     var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
-                    account.setAccountKey(key);
+                    var accountToModify = accounts.get().getForModify(callerNum);
+                    accountToModify.setAccountKey(key);
                     trackHollowAccountCompletion(callerNum.toGrpcAccountId(), key);
                 }
             }
