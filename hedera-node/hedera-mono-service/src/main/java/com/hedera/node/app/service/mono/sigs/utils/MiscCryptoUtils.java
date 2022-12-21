@@ -63,12 +63,6 @@ public class MiscCryptoUtils {
         decompressedBytes[0] = 0x04;
         System.arraycopy(decompressedKey, 0, decompressedBytes, 1, 32);
         System.arraycopy(decompressedKey, 32, decompressedBytes, 33, 32);
-
-        final var pk = curveSecp256k1.decodePoint(decompressedBytes);
-        final var rawKey = new byte[33];
-        final var parity = (pk.getRawYCoord().getEncoded()[31] & ((byte) 0x01)) != 0;
-        rawKey[0] = (byte) (parity ? 0x03 : 0x02);
-        System.arraycopy(pk.getRawXCoord().getEncoded(), 0, rawKey, 1, 32);
-        return rawKey;
+        return curveSecp256k1.decodePoint(decompressedBytes).getEncoded(true);
     }
 }
