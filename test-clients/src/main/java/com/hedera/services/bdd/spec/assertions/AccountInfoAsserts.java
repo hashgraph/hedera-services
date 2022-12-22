@@ -293,11 +293,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts alias(final ByteString alias) {
-        registerProvider((spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), BAD_ALIAS));
-        return this;
-    }
-
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
                 (spec, o) ->
