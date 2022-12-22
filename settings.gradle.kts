@@ -93,6 +93,7 @@ dependencyResolutionManagement {
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
             version("eclipse-collections-version", "10.4.0")
+
             version("commons-codec-version", "1.15")
             version("commons-io-version", "2.11.0")
             version("commons-collections4-version", "4.4")
