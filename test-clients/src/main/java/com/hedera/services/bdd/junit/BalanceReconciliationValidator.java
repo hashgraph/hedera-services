@@ -49,7 +49,6 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
                 TestBase.extractContextualizedSpecsFrom(
                         List.of(() -> new BalanceValidation(expectedBalances, accountClassifier)),
                         TestBase::contextualizedSpecsFromConcurrent);
-
         concurrentExecutionOf(validationSpecs);
     }
 

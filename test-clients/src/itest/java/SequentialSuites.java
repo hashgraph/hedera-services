@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.records.LogsSuite;
-import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
-import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
-import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
-import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
-import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import java.util.function.Supplier;
 
 public class SequentialSuites {
@@ -33,18 +24,16 @@ public class SequentialSuites {
     static Supplier<HapiSuite>[] all() {
         return (Supplier<HapiSuite>[])
                 new Supplier[] {
-                    TargetNetworkPrep::new,
-                    FeatureFlagSuite::new,
-                    AutoAccountUpdateSuite::new,
-                    SpecialAccountsAreExempted::new,
-                    CryptoUpdateSuite::new,
-                    PrivilegedOpsSuite::new,
-                    TraceabilitySuite::new,
-                    LogsSuite::new,
-                    SelfDestructSuite::new,
-                    LeakyContractTestsSuite::new,
-                    LeakyCryptoTestsSuite::new,
-                    Create2OperationSuite::new,
+                    TargetNetworkPrep::new, FeatureFlagSuite::new, AutoAccountUpdateSuite::new,
+                    //                    SpecialAccountsAreExempted::new,
+                    //                    CryptoUpdateSuite::new,
+                    //                    PrivilegedOpsSuite::new,
+                    //                    TraceabilitySuite::new,
+                    //                    LogsSuite::new,
+                    //                    SelfDestructSuite::new,
+                    //                    LeakyContractTestsSuite::new,
+                    //                    LeakyCryptoTestsSuite::new,
+                    //                    Create2OperationSuite::new,
                 };
     }
 }

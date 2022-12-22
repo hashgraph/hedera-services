@@ -16,9 +16,7 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -65,7 +63,7 @@ public class BalanceValidation extends HapiSuite {
                         Map.of(
                                 "fees.useFixedOffer", "true",
                                 "fees.fixedOffer", "100000000"))
-                .given(sleepFor(2000), cryptoTransfer((spec, b) -> {}).payingWith(GENESIS))
+                .given()
                 .when()
                 .then(
                         inParallel(

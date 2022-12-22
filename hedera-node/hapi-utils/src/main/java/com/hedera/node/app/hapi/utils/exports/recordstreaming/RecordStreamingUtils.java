@@ -40,9 +40,16 @@ public class RecordStreamingUtils {
     // from record stream files whose names do *not* include a _XX index
     // like _01, _02, etc.
     public static final String SIDECAR_ONLY_TOKEN = "Z_";
-    public static final String V6_FILE_EXT = ".rcd.gz";
+    public static final String V6_FILE_EXT = ".rcd";
+    public static final String V6_GZ_FILE_EXT = ".rcd.gz";
 
     private RecordStreamingUtils() {}
+
+    public static Pair<Integer, Optional<RecordStreamFile>> readMaybeCompressedRecordStreamFile(
+            final String loc) throws IOException {
+        final var isCompressed = loc.endsWith(V6_GZ_FILE_EXT);
+        return isCompressed ? readRecordStreamFile(loc) : readUncompressedRecordStreamFile(loc);
+    }
 
     public static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
             final String fileLoc) throws IOException {
@@ -74,6 +81,11 @@ public class RecordStreamingUtils {
         }
     }
 
+    public static SidecarFile readMaybeCompressedSidecarFile(final String loc) throws IOException {
+        final var isCompressed = loc.endsWith(V6_GZ_FILE_EXT);
+        return isCompressed ? readSidecarFile(loc) : readUncompressedSidecarFile(loc);
+    }
+
     public static SidecarFile readUncompressedSidecarFile(final String fileLoc) throws IOException {
         try (final var fin = new FileInputStream(fileLoc)) {
             return SidecarFile.parseFrom(fin);
@@ -87,7 +99,13 @@ public class RecordStreamingUtils {
     public static Instant parseRecordFileConsensusTime(final String recordFile) {
         final var s = recordFile.lastIndexOf("/");
         final var n = recordFile.length();
-        return parseInstantFrom(recordFile, s + 1, n - V6_FILE_EXT.length());
+        if (recordFile.endsWith(V6_FILE_EXT)) {
+            return parseInstantFrom(recordFile, s + 1, n - V6_FILE_EXT.length());
+        } else if (recordFile.endsWith(V6_GZ_FILE_EXT)) {
+            return parseInstantFrom(recordFile, s + 1, n - V6_GZ_FILE_EXT.length());
+        } else {
+            throw new IllegalArgumentException("Invalid record file name '" + recordFile + "'");
+        }
     }
 
     public static Pair<Instant, Integer> parseSidecarFileConsensusTimeAndSequenceNo(
@@ -121,15 +139,27 @@ public class RecordStreamingUtils {
     public static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && !s.contains(SIDECAR_ONLY_TOKEN),
+                RecordStreamingUtils::isRecordFile,
                 comparing(RecordStreamingUtils::parseRecordFileConsensusTime));
     }
 
     public static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && s.contains(SIDECAR_ONLY_TOKEN),
+                RecordStreamingUtils::isSidecarFile,
                 RecordStreamingUtils::compareSidecarFiles);
+    }
+
+    private static boolean isRecordFile(final String file) {
+        return isRelevant(file) && !file.contains(SIDECAR_ONLY_TOKEN);
+    }
+
+    private static boolean isSidecarFile(final String file) {
+        return isRelevant(file) && file.contains(SIDECAR_ONLY_TOKEN);
+    }
+
+    private static boolean isRelevant(final String file) {
+        return file.endsWith(V6_FILE_EXT) || file.endsWith(V6_GZ_FILE_EXT);
     }
 
     public static int compareSidecarFiles(final String a, final String b) {

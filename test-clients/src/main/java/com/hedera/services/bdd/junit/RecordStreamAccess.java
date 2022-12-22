@@ -19,6 +19,7 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedSidecarFilesFrom;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseSidecarFileConsensusTimeAndSequenceNo;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -74,7 +75,7 @@ public class RecordStreamAccess {
 
     private RecordStreamFile ensurePresentRecordFile(final String f) {
         try {
-            final var contents = RecordStreamingUtils.readRecordStreamFile(f);
+            final var contents = readMaybeCompressedRecordStreamFile(f);
             if (contents.getRight().isEmpty()) {
                 throw new IllegalArgumentException("No record found in " + f);
             }
@@ -86,7 +87,7 @@ public class RecordStreamAccess {
 
     private SidecarFile ensurePresentSidecarFile(final String f) {
         try {
-            return RecordStreamingUtils.readSidecarFile(f);
+            return RecordStreamingUtils.readMaybeCompressedSidecarFile(f);
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read record stream file " + f, e);
         }

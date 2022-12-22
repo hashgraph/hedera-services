@@ -45,4 +45,11 @@ public record RecordStreamEntry(
     public HederaFunctionality function() {
         return accessor.getFunction();
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "RecordStreamEntry{consensusTime=%s, txn=%s, status=%s}",
+                consensusTime, body(), txnRecord);
+    }
 }

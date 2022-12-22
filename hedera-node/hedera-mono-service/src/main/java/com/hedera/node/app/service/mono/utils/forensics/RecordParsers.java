@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
-import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readSidecarFile;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
@@ -59,7 +59,7 @@ public class RecordParsers {
         final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir);
         final List<RecordStreamEntry> entries = new ArrayList<>();
         for (final var recordFile : recordFiles) {
-            final var readResult = readRecordStreamFile(recordFile);
+            final var readResult = readMaybeCompressedRecordStreamFile(recordFile);
             assert readResult.getRight().isPresent();
             final var records = readResult.getRight().get();
             records.getRecordStreamItemsList()

@@ -26,6 +26,7 @@ import com.hedera.services.bdd.junit.validators.HgcaaLogValidator;
 import com.hedera.services.bdd.junit.validators.QueryLogValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.records.ClosingTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -113,6 +114,12 @@ public abstract class TestBase {
         return dynamicTest(
                 "recordStreamValidation",
                 () -> {
+                    final var closingTimeSpecs =
+                            TestBase.extractContextualizedSpecsFrom(
+                                    List.of(ClosingTime::new),
+                                    TestBase::contextualizedSpecsFromConcurrent);
+                    concurrentExecutionOf(closingTimeSpecs);
+
                     final var access = new RecordStreamAccess();
                     final var streamFiles = access.readStreamFilesFrom(loc, "sidecar");
                     final var errorsIfAny =
