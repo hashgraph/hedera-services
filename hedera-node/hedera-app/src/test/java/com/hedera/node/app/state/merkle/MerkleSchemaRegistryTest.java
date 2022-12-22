@@ -26,7 +26,6 @@ import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
@@ -302,11 +301,11 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @NonNull
                     @Override
                     @SuppressWarnings("rawtypes")
-                    public Map<String, StateDefinition> statesToCreate() {
+                    public Set<StateDefinition> statesToCreate() {
                         final var fruitDef =
                                 new StateDefinition<>(
                                         FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
-                        return Map.of(FRUIT_STATE_KEY, fruitDef);
+                        return Set.of(fruitDef);
                     }
 
                     @Override
@@ -329,11 +328,11 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @NonNull
                     @Override
                     @SuppressWarnings("rawtypes")
-                    public Map<String, StateDefinition> statesToCreate() {
+                    public Set<StateDefinition> statesToCreate() {
                         final var animalDef =
                                 new StateDefinition<>(
                                         ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
-                        return Map.of(ANIMAL_STATE_KEY, animalDef);
+                        return Set.of(animalDef);
                     }
 
                     @Override

@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.state;
 
 import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -53,11 +52,11 @@ public abstract class Schema implements Comparable<Schema> {
     }
 
     /**
-     * Gets a {@link Map} of states to create in this schema. For example, perhaps in this version
-     * of the schema, you need to create a new state FOO. The map will have a key of FOO and a
-     * {@link StateDefinition} as the value specifying the metadata for that state.
+     * Gets a {@link Set} of state definitions for states to create in this schema. For example,
+     * perhaps in this version of the schema, you need to create a new state FOO. The set will have
+     * a {@link StateDefinition} specifying the metadata for that state.
      *
-     * <p>If a state is defined in this map that already exists, it will be redefined based on the
+     * <p>If a state is defined in this set that already exists, it will be redefined based on the
      * returned values. This can be used if a state exists but needs to use a new {@link Serdes},
      * for example.
      *
@@ -65,7 +64,7 @@ public abstract class Schema implements Comparable<Schema> {
      */
     @NonNull
     @SuppressWarnings("rawtypes")
-    public abstract Map<String, StateDefinition> statesToCreate();
+    public abstract Set<StateDefinition> statesToCreate();
 
     /**
      * Called after all new states have been created (as per {@link #statesToCreate()}), this method

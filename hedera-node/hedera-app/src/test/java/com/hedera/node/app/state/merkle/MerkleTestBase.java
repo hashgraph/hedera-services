@@ -44,7 +44,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -432,8 +431,8 @@ public class MerkleTestBase extends TestBase {
         @NonNull
         @Override
         @SuppressWarnings("rawtypes")
-        public Map<String, StateDefinition> statesToCreate() {
-            return Collections.emptyMap();
+        public Set<StateDefinition> statesToCreate() {
+            return Collections.emptySet();
         }
 
         @Override

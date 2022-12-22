@@ -21,7 +21,6 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -87,7 +86,7 @@ class SchemaTest {
     void hashCodeConsistentWithEquals() {
         final var schema1 = new TestSchema(1);
         final var schema2 = new TestSchema(1);
-        assertThat(schema1.hashCode()).isEqualTo(schema2.hashCode());
+        assertThat(schema1).hasSameHashCodeAs(schema2);
     }
 
     @Test
@@ -106,8 +105,8 @@ class SchemaTest {
         @NonNull
         @Override
         @SuppressWarnings("rawtypes")
-        public Map<String, StateDefinition> statesToCreate() {
-            return Collections.emptyMap();
+        public Set<StateDefinition> statesToCreate() {
+            return Collections.emptySet();
         }
 
         @Override

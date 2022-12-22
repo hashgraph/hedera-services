@@ -93,7 +93,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate()
-                .values()
                 .forEach(
                         def -> {
                             //noinspection rawtypes,unchecked
@@ -127,7 +126,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var schemasToApply = computeApplicableSchemas(null, currentVersion);
             final Map<String, StateMetadata<?, ?>> metadata = new HashMap<>();
             for (Schema schema : schemasToApply) {
-                for (var def : schema.statesToCreate().values()) {
+                for (var def : schema.statesToCreate()) {
                     final var md = new StateMetadata<>(serviceName, schema, def);
                     metadata.put(def.stateKey(), md);
                 }
@@ -159,17 +158,17 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // expand the set of states that the migration code will see
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(
-                    (stateKey, definition) -> {
-                        final var md = new StateMetadata<>(serviceName, schema, definition);
-                        if (!definition.onDisk()) {
+                    def -> {
+                        final var md = new StateMetadata<>(serviceName, schema, def);
+                        if (!def.onDisk()) {
                             final var map = new MerkleMap<>();
-                            map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
+                            map.setLabel(StateUtils.computeLabel(serviceName, def.stateKey()));
                             hederaState.putServiceStateIfAbsent(md, map);
                         } else {
                             final var ks = new OnDiskKeySerializer(md);
                             final var ds =
                                     new JasperDbBuilder()
-                                            .maxNumOfKeys(definition.maxKeysHint())
+                                            .maxNumOfKeys(def.maxKeysHint())
                                             .storageDir(storageDir)
                                             .keySerializer(ks)
                                             .virtualLeafRecordSerializer(
@@ -184,7 +183,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                             new OnDiskValueSerializer(md),
                                                             true));
 
-                            final var label = StateUtils.computeLabel(serviceName, stateKey);
+                            final var label = StateUtils.computeLabel(serviceName, def.stateKey());
                             hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
                         }
                     });

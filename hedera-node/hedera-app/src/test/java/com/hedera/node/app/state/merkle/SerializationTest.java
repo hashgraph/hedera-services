@@ -25,7 +25,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,14 +43,14 @@ class SerializationTest extends MerkleTestBase {
             @NonNull
             @Override
             @SuppressWarnings("rawtypes")
-            public Map<String, StateDefinition> statesToCreate() {
+            public Set<StateDefinition> statesToCreate() {
                 final var fruitDef =
                         new StateDefinition<>(
                                 FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
                 final var animalDef =
                         new StateDefinition<>(
                                 ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
-                return Map.of(FRUIT_STATE_KEY, fruitDef, ANIMAL_STATE_KEY, animalDef);
+                return Set.of(fruitDef, animalDef);
             }
 
             @Override
