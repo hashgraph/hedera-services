@@ -42,6 +42,8 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,6 +62,7 @@ import org.json.JSONTokener;
 
 public class Utils {
     public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+    public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
 
     public static ByteString eventSignatureOf(String event) {
@@ -138,34 +141,46 @@ public class Utils {
      */
     public static String getABIFor(
             final FunctionType type, final String functionName, final String contractName) {
-        final var path = getResourcePath(contractName, ".json");
-        var ABI = EMPTY;
-        try (final var input = new FileInputStream(path)) {
-            final var array = new JSONArray(new JSONTokener(input));
-            ABI =
-                    IntStream.range(0, array.length())
-                            .mapToObj(array::getJSONObject)
-                            .filter(
-                                    object ->
-                                            type == CONSTRUCTOR
-                                                    ? object.getString("type")
-                                                            .equals(type.toString().toLowerCase())
-                                                    : object.getString("type")
-                                                                    .equals(
-                                                                            type.toString()
-                                                                                    .toLowerCase())
-                                                            && object.getString("name")
-                                                                    .equals(functionName))
-                            .map(JSONObject::toString)
-                            .findFirst()
-                            .orElseThrow(
-                                    () ->
-                                            new IllegalArgumentException(
-                                                    "No such function found: " + functionName));
-        } catch (IOException e) {
-            e.getStackTrace();
+        try {
+            final var path = getResourcePath(contractName, ".json");
+            try (final var input = new FileInputStream(path)) {
+                return getFunctionAbiFrom(input, functionName, type);
+            }
+        } catch (final Exception ignore) {
+            return getResourceABIFor(type, functionName, contractName);
         }
-        return ABI;
+    }
+
+    public static String getResourceABIFor(
+            final FunctionType type, final String functionName, final String contractName) {
+        final var resourcePath =
+                String.format(UNIQUE_CLASSPATH_RESOURCE_TPL, contractName, contractName + ".json");
+        try (final var input = Utils.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            return getFunctionAbiFrom(input, functionName, type);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static String getFunctionAbiFrom(
+            final InputStream in, final String functionName, final FunctionType type) {
+        final var array = new JSONArray(new JSONTokener(in));
+        return IntStream.range(0, array.length())
+                .mapToObj(array::getJSONObject)
+                .filter(
+                        object ->
+                                type == CONSTRUCTOR
+                                        ? object.getString("type")
+                                                .equals(type.toString().toLowerCase())
+                                        : object.getString("type")
+                                                        .equals(type.toString().toLowerCase())
+                                                && object.getString("name").equals(functionName))
+                .map(JSONObject::toString)
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        "No such function found: " + functionName));
     }
 
     /**

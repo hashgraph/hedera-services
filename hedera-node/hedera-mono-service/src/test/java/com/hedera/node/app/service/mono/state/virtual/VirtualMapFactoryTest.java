@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -49,9 +49,9 @@ class VirtualMapFactoryTest {
 
     @Test
     void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
-        VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
+        final VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
 
-        var map = subject.newVirtualizedUniqueTokenStorage();
+        final var map = subject.newVirtualizedUniqueTokenStorage();
         assertThat(map.isEmpty()).isTrue();
 
         map.put(
@@ -60,7 +60,7 @@ class VirtualMapFactoryTest {
                         789L, 123L, "hello world".getBytes(), RichInstant.MISSING_INSTANT));
 
         assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
-        var value = map.get(new UniqueTokenKey(123L, 456L));
+        final var value = map.get(new UniqueTokenKey(123L, 456L));
         assertThat(value).isNotNull();
         assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
         assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());

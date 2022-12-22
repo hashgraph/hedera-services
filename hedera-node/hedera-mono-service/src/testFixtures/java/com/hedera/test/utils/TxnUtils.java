@@ -15,8 +15,6 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
-import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -40,6 +38,8 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.factories.txns.CryptoTransferFactory;
+import com.hedera.test.factories.txns.TinyBarsFromTo;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.List;
@@ -252,10 +252,10 @@ public class TxnUtils {
 
     public static Transaction payerSponsoredTransfer(
             String payer, KeyTree payerKey, String beneficiary, long amount) throws Throwable {
-        return newSignedCryptoTransfer()
+        return CryptoTransferFactory.newSignedCryptoTransfer()
                 .payer(payer)
                 .payerKt(payerKey)
-                .transfers(tinyBarsFromTo(payer, beneficiary, amount))
+                .transfers(TinyBarsFromTo.tinyBarsFromTo(payer, beneficiary, amount))
                 .get();
     }
 

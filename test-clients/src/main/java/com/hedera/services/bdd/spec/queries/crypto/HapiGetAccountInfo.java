@@ -64,11 +64,13 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     Optional<Integer> maxAutomaticAssociations = Optional.empty();
     Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> idObserver = Optional.empty();
+    @Nullable private Consumer<byte[]> aliasObserver = null;
     private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
     private ReferenceType referenceType;
+    private ByteString literalAlias;
 
     public HapiGetAccountInfo(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
@@ -83,6 +85,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         } else {
             account = reference;
         }
+    }
+
+    public HapiGetAccountInfo(final ByteString literalAlias) {
+        this.referenceType = ReferenceType.LITERAL_ACCOUNT_ALIAS;
+        this.literalAlias = literalAlias;
     }
 
     @Override
@@ -117,6 +124,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
         this.idObserver = Optional.of(obs);
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingAliasTo(Consumer<byte[]> obs) {
+        this.aliasObserver = obs;
         return this;
     }
 
@@ -265,6 +277,14 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             exposingBalanceTo.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
+            Optional.ofNullable(aliasObserver)
+                    .ifPresent(
+                            cb ->
+                                    cb.accept(
+                                            infoResponse
+                                                    .getAccountInfo()
+                                                    .getAlias()
+                                                    .toByteArray()));
             contractAccountIdObserver.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
@@ -301,6 +321,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     AccountID.newBuilder()
                             .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
                             .build();
+        } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
+            target = AccountID.newBuilder().setAlias(literalAlias).build();
         } else {
             target = TxnUtils.asId(account, spec);
         }

@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
+import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -116,6 +118,9 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
                     entry(CONTRACTS_CHAIN_ID, 295),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+                    entry(
+                            CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
+                            LegacyContractIdActivations.from("1058134by[1062784]")),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
                     entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
                     entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
@@ -184,7 +189,7 @@ class BootstrapPropertiesTest {
                     entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
                     entry(AUTO_CREATION_ENABLED, true),
                     entry(LAZY_CREATION_ENABLED, true),
-                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, true),
                     entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
@@ -248,6 +253,9 @@ class BootstrapPropertiesTest {
                     entry(STAKING_PERIOD_MINS, 1440L),
                     entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
                     entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
+                    entry(
+                            STAKING_STARTUP_HELPER_RECOMPUTE,
+                            EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
                     entry(STAKING_REWARD_RATE, 0L),
                     entry(STAKING_START_THRESH, 25000000000000000L),
                     entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),

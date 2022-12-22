@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_CO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,6 +69,20 @@ class SideEffectsTrackerTest {
 
         subject.reset();
         assertFalse(subject.hasTrackedNewTokenId());
+    }
+
+    @Test
+    void tracksAndResetsHollowAccountUpdateExpected() {
+        final var updatedHollowAccount =
+                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
+        subject.trackHollowAccountUpdate(updatedHollowAccount);
+
+        assertTrue(subject.hasTrackedHollowAccountUpdate());
+        assertEquals(updatedHollowAccount, subject.getTrackedHollowAccountId());
+
+        subject.reset();
+        assertFalse(subject.hasTrackedHollowAccountUpdate());
+        assertNull(subject.getTrackedHollowAccountId());
     }
 
     @Test
@@ -401,7 +416,7 @@ class SideEffectsTrackerTest {
         subject.reset();
         assertFalse(subject.hasTrackedRandomData());
         assertEquals(-1, subject.getPseudorandomNumber());
-        assertEquals(null, subject.getPseudorandomBytes());
+        assertNull(subject.getPseudorandomBytes());
     }
 
     @Test

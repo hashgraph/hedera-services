@@ -75,7 +75,8 @@ public abstract class HapiSuite {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
+            "cryptoCreateWithAliasAndEvmAddress.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
@@ -134,7 +135,6 @@ public abstract class HapiSuite {
     private boolean onlyLogHeader = false;
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
-    private int suiteRunnerCounter = 0;
 
     public String name() {
         String simpleName = this.getClass().getSimpleName();
@@ -191,7 +191,6 @@ public abstract class HapiSuite {
 
     @SuppressWarnings("java:S2629")
     private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
-        suiteRunnerCounter++;
         if (!getDeferResultsSummary() || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }

@@ -99,7 +99,6 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
     automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
-    automaticModule("com.google.truth.extensions:truth-java8-extension", "com.google.truth.extensions.java8")
     automaticModule("org.apache.commons:commons-math3", "org.apache.commons.math3")
 
     automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
@@ -107,12 +106,12 @@ extraJavaModuleInfo {
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
     automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
+    automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
 
 
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
     automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
-    automaticModule("com.google.truth:truth", "truth")
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")

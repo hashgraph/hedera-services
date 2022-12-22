@@ -38,6 +38,6 @@ dependencies {
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
 }

@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -31,7 +31,7 @@ class UniqueTokenKeySupplierTest {
         final UniqueTokenKey key2 = supplier.get();
         assertThat(key1).isNotNull();
         assertThat(key2).isNotNull();
-        assertThat(key1).isNotSameInstanceAs(key2);
+        assertThat(key1).isNotSameAs(key2);
     }
 
     // Test invariants. The below tests are designed to fail if one accidentally modifies specified

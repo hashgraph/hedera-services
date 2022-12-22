@@ -88,10 +88,11 @@ public interface SigsModule {
             final FileNumbers fileNumbers,
             final SignatureWaivers signatureWaivers,
             final MutableStateChildren workingState,
+            final GlobalDynamicProperties properties,
             final Supplier<MapWarmer> mapWarmer) {
         final var sigMetaLookup =
                 new StateChildrenSigMetadataLookup(
-                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
+                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom, properties);
         return new SigRequirements(sigMetaLookup, signatureWaivers, mapWarmer);
     }
 
