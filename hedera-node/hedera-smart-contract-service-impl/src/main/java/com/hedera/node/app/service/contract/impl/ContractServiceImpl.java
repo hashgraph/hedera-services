@@ -20,5 +20,4 @@ import com.hedera.node.app.service.contract.ContractService;
 /**
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ContractServiceImpl implements ContractService {
-}
+public final class ContractServiceImpl implements ContractService {}

@@ -18,5 +18,4 @@ package com.hedera.node.app.service.util.impl;
 import com.hedera.node.app.service.util.UtilService;
 
 /** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
-public final class UtilServiceImpl implements UtilService {
-}
+public final class UtilServiceImpl implements UtilService {}
