@@ -699,6 +699,7 @@ public class SigRequirements {
         final List<JKey> required = new ArrayList<>();
 
         KeyOrderingFailure failure;
+        final var linkedRefsLoaded = linkedRefs != null;
         for (final TokenTransferList xfers : op.getTokenTransfersList()) {
             for (final AccountAmount adjust : xfers.getTransfersList()) {
                 if ((failure = includeIfNecessary(payer, adjust, required, true, linkedRefs, false))
@@ -709,7 +710,10 @@ public class SigRequirements {
             final var token = xfers.getToken();
             for (final NftTransfer adjust : xfers.getNftTransfersList()) {
                 final var sender = adjust.getSenderAccountID();
-                mapWarmer.warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                if (linkedRefsLoaded) {
+                    mapWarmer.warmAccount(
+                        EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                }
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -725,11 +729,14 @@ public class SigRequirements {
                     return accountFailure(failure, factory);
                 }
                 final var receiver = adjust.getReceiverAccountID();
-                mapWarmer.warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
-                mapWarmer.warmNft(
+                if (linkedRefsLoaded) {
+                    mapWarmer.warmAccount(
+                        EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+                    mapWarmer.warmNft(
                         UniqueTokenKey.from(
-                                NftNumPair.fromLongs(
-                                        token.getTokenNum(), receiver.getAccountNum())));
+                            NftNumPair.fromLongs(
+                                token.getTokenNum(), receiver.getAccountNum())));
+                }
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -746,10 +753,12 @@ public class SigRequirements {
                             ? factory.forMissingToken()
                             : accountFailure(failure, factory);
                 }
-                mapWarmer.warmTokenRel(
+                if (linkedRefsLoaded) {
+                    mapWarmer.warmTokenRel(
                         EntityNumVirtualKey.fromPair(
-                                EntityNumPair.fromLongs(
-                                        token.getTokenNum(), adjust.getSerialNumber())));
+                            EntityNumPair.fromLongs(
+                                token.getTokenNum(), adjust.getSerialNumber())));
+                }
             }
         }
         for (final AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {
