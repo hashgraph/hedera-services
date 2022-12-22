@@ -58,12 +58,13 @@ public class ReadableScheduleStore {
         final var schedule = schedulesById.get(id.getScheduleNum());
         return schedule == null
                 ? Optional.empty()
-                : Optional.of(new ScheduleMetadata(
-                    schedule.adminKey(),
-                    schedule.ordinaryViewOfScheduledTxn(),
-                    schedule.hasExplicitPayer()
-                            ? Optional.of(schedule.payer().toGrpcAccountId())
-                            : Optional.empty()));
+                : Optional.of(
+                        new ScheduleMetadata(
+                                schedule.adminKey(),
+                                schedule.ordinaryViewOfScheduledTxn(),
+                                schedule.hasExplicitPayer()
+                                        ? Optional.of(schedule.payer().toGrpcAccountId())
+                                        : Optional.empty()));
     }
 
     /**
