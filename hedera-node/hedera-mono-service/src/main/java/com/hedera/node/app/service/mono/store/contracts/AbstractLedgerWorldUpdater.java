@@ -347,6 +347,11 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return account;
     }
 
+    public void trackLazilyCreatedAccount(final Address address) {
+        final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
+        track(newMutable);
+    }
+
     protected W wrappedWorldView() {
         return world;
     }

@@ -204,7 +204,11 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public void countImplicitCreationsWith(final AliasManager aliasManager) {
         final var resolver = new AliasResolver();
-        resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+        if (txn.hasEthereumTransaction()) {
+            resolver.perceiveEthTxn(getSpanMapAccessor().getEthTxDataMeta(this), aliasManager);
+        } else {
+            resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+        }
         numImplicitCreations =
                 resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }
