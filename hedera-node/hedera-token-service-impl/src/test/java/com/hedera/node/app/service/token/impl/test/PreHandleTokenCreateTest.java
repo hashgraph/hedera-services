@@ -13,109 +13,246 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.impl.test.util.AdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.*;
-import static com.hedera.test.utils.AdapterUtils.txnFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.TokenPreTransactionHandlerImpl;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.test.utils.AdapterUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.time.Instant;
+import com.hedera.node.app.spi.state.States;
+import com.hederahashgraph.api.proto.java.*;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class PreHandleTokenCreateTest {
 
-    private final HederaKey adminKey = asHederaKey(TOKEN_ADMIN_KT.asKey()).get();
-    private final HederaKey miscKey = asHederaKey(MISC_ACCOUNT_KT.asKey()).get();
-    private final HederaKey customPayerKey = asHederaKey(CUSTOM_PAYER_ACCOUNT_KT.asKey()).get();
+    private final Timestamp consensusTimestamp =
+            Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final AccountID payer = asAccount("0.0.3");
 
-    private TokenPreTransactionHandlerImpl subject;
+    private final AccountID receiverSigRequiredAcc = asAccount("0.0.1338");
 
-    private PreHandleContext context;
+    private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
+
+    private final HederaKey adminKeyAsHederaKey = asHederaKey(A_COMPLEX_KEY).get();
+    private final Key adminKey = A_COMPLEX_KEY;
+    private final Long payerNum = payer.getAccountNum();
+
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
+
+    @Mock private RebuiltStateImpl aliases;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock private States states;
+    @Mock private MerkleAccount payerAccount;
+    @Mock private ReadableTokenStore tokenStore;
+    @Mock private PreHandleContext context;
+
+    private ReadableAccountStore accountStore;
+    private TokenPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-        subject =
-                new TokenPreTransactionHandlerImpl(
-                        AdapterUtils.wellKnownAccountStoreAt(now), context);
+        given(states.get(ACCOUNTS)).willReturn(accounts);
+        given(states.get(ALIASES)).willReturn(aliases);
+        given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
+        given(payerAccount.getAccountKey()).willReturn((JKey) payerKey);
+
+        accountStore = new ReadableAccountStore(states);
+
+        subject = new TokenPreTransactionHandlerImpl(accountStore, tokenStore, context);
     }
 
     @Test
-    void getsTokenCreateAdminKeyOnly() {
+    void tokenCreateAdminKeyOnly() {
+        final var createTxBody =
+                TokenCreateTransactionBody.newBuilder()
+                        .setTreasury(payer)
+                        .setAutoRenewAccount(payer)
+                        .setAdminKey(adminKey)
+                        .build();
+
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
+
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+        assertEquals(meta.payerKey(), payerKey);
+    }
+
+    @Test
+    void tokenCreateWithAdminKeyOnlyOld() {
         final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY), payer);
 
-        assertTrue(meta.requiredNonPayerKeys().contains(adminKey));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.OK);
     }
 
     @Test
-    void tokenCreateMissingAdmin() {
-        final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_MISSING_ADMIN), payer);
+    void getsTokenCreateMissingAdminKey() {
+        final var createTxBody =
+                TokenCreateTransactionBody.newBuilder()
+                        .setTreasury(payer)
+                        .setAutoRenewAccount(payer)
+                        .build();
 
-        assertFalse(meta.requiredNonPayerKeys().contains(adminKey));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
+
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 0, false, ResponseCodeEnum.OK);
     }
 
     @Test
-    void tokenCreateMissingTreasury() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_MISSING_TREASURY), payer);
+    void getsTokenCreateMissingTreasuryKey() {
+        final var createTxBody =
+                TokenCreateTransactionBody.newBuilder().setAutoRenewAccount(payer).build();
 
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST);
-    }
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
-    @Test
-    void tokenCreateTreasuryAsPayer() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_PAYER), payer);
-
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateTreasuryAsCustomPayer() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER), payer);
-
-        assertTrue(meta.requiredNonPayerKeys().contains(customPayerKey));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
     @Test
     void tokenCreateWithMissingAutoRenew() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW), payer);
+        final var createTxBody = TokenCreateTransactionBody.newBuilder().setTreasury(payer).build();
 
-        basicMetaAssertions(meta, 1, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
+
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+    }
+
+    //    @Test
+    //    void tokenCreateTreasuryAsCustomPayer() {
+    //
+    //        final var createTxBody = TokenCreateTransactionBody.newBuilder()
+    //                .setTreasury(customPayer)
+    //                .setAutoRenewAccount(payer)
+    //                .build();
+    //
+    //        final var txn = tokenCreateTransaction(createTxBody);
+    //        final var expectedMeta =
+    //                new SigTransactionMetadataBuilder(accountStore)
+    //                        .payerKeyFor(customPayer)
+    //                        .txnBody(txn)
+    //                        .build();
+    //
+    //        final var meta = subject.preHandleCreateToken(txn, customPayer);
+    //        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+    //        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.OK);
+    //    }
+
+    //    @Test
+    //    void tokenCreateWithAutoRenewAsCustomPayer() throws Throwable {
+    //        final var meta =
+    //
+    // subject.preHandleCreateToken(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER.platformTxn().getTxn(), payer);
+    //
+    ////        assertTrue(meta.requiredNonPayerKeys().contains(customPayerKey));
+    //        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    //    }
+
+    @Test
+    void tokenCreateCustomFeeAndCollectorMissing() {
+        final FixedFee fixedFee = FixedFee.newBuilder().setAmount(5).build();
+        final CustomFee customFee = CustomFee.newBuilder().setFixedFee(fixedFee).build();
+        final var createTxBody =
+                TokenCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccount(payer)
+                        .setTreasury(payer)
+                        .addCustomFees(customFee)
+                        .build();
+
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
+
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test
-    void tokenCreateWithAutoRenew() {
-        final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW), payer);
-
-        assertTrue(meta.requiredNonPayerKeys().contains(miscKey));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateWithAutoRenewAsCustomPayer() {
+    void tokenCreateCustomFixedFeeNoCollectorSigReq() {
         final var meta =
                 subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER), payer);
+                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ), payer);
 
-        assertTrue(meta.requiredNonPayerKeys().contains(customPayerKey));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.OK);
+    }
+
+    // TODO
+    @Test
+    void tokenCreateCustomFixedFeeAndCollectorSigReq() {
+        final FixedFee fixedFee = FixedFee.newBuilder().build();
+        final CustomFee customFee =
+                CustomFee.newBuilder()
+                        .setFixedFee(fixedFee)
+                        .setFeeCollectorAccountId(receiverSigRequiredAcc)
+                        .build();
+        final var createTxBody =
+                TokenCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccount(payer)
+                        .setTreasury(payer)
+                        .addCustomFees(customFee)
+                        .build();
+
+        final var txn = tokenCreateTransaction(createTxBody);
+        final var expectedMeta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
+
+        final var meta = subject.preHandleCreateToken(txn, payer);
+        assertEquals(expectedMeta.txnBody(), meta.txnBody());
+        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -125,102 +262,96 @@ public class PreHandleTokenCreateTest {
 
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
+    //
 
-    @Test
-    void tokenCreateCustomFeeAndCollectorMissing() {
-        final var meta =
-                subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_MISSING_COLLECTOR), payer);
+    //    @Test
+    //    void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER),
+    // payer);
+    //
+    //        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    //    }
 
-        basicMetaAssertions(meta, 1, true, ResponseCodeEnum.RECEIVER_SIG_REQUIRED);
-    }
+    //
+    //    @Test
+    //    void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(
+    //
+    // TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM),
+    //                        payer);
+    //
+    //        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    //    }
+    //
+    //    @Test
+    //    void tokenCreateCustomFractionalFeeNoCollectorSigReq() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ),
+    // payer);
+    //
+    //        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    //    }
+    //
+    //    @Test
+    //    void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(
+    //
+    // TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ),
+    //                        payer);
+    //
+    //        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    //    }
+    //
+    //    @Test
+    //    void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(
+    //
+    // TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ),
+    //                        payer);
+    //
+    //        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    //    }
+    //
+    //    @Test
+    //    void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //
+    // txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK),
+    //                        payer);
+    //
+    //        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    //    }
+    //
+    //    @Test
+    //    void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() {
+    //        final var meta =
+    //                subject.preHandleCreateToken(
+    //                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK),
+    //                        payer);
+    //
+    //        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    //    }
 
-    @Test
-    void tokenCreateCustomFixedFeeAndCollectorSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ), payer);
+    private TransactionBody tokenCreateTransaction(final TokenCreateTransactionBody createTxBody) {
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payer)
+                        .setTransactionValidStart(consensusTimestamp);
 
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER), payer);
-
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomFixedFeeNoCollectorSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ), payer);
-
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcard() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(
-                                TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM),
-                        payer);
-
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomFractionalFeeNoCollectorSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ), payer);
-
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(
-                                TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ),
-                        payer);
-
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomRoyaltyFeeFallbackWildcardNoSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(
-                                TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ),
-                        payer);
-
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK),
-                        payer);
-
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() {
-        final var meta =
-                subject.preHandleCreateToken(
-                        txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK),
-                        payer);
-
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setTokenCreation(createTxBody)
+                .build();
     }
 
     private void basicMetaAssertions(

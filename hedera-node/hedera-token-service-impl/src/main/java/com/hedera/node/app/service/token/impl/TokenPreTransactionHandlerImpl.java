@@ -16,19 +16,20 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -46,14 +47,28 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
-        this.tokenStore = Objects.requireNonNull(=-);
+        this.tokenStore = Objects.requireNonNull(tokenStore);
         this.preHandleContext = Objects.requireNonNull(ctx);
     }
 
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCreateToken(TransactionBody txn, AccountID payer) {
-        return buildSigTransactionMetadata(txn, payer);
+        final var tokenCreateTxnBody = txn.getTokenCreation();
+        final var customFees = tokenCreateTxnBody.getCustomFeesList();
+        final var treasuryId = tokenCreateTxnBody.getTreasury();
+        final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
+        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+        meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        meta.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
+        if (tokenCreateTxnBody.hasAdminKey()) {
+            final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
+            adminKey.ifPresent(meta::addToReqNonPayerKeys);
+        }
+        addCustomFeeKey(meta, hasSigRecKey, customFees);
+        return meta.build();
     }
 
     @Override
@@ -187,34 +202,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         throw new NotImplementedException();
     }
 
-    /**
-     * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed for
-     * signing the transaction
-     *
-     * @param txn given transaction body
-     * @param payer payer for the transaction
-     * @return transaction's metadata needed to validate signatures
-     */
-    private TransactionMetadata buildSigTransactionMetadata(
-            final TransactionBody txn, final AccountID payer) {
-        final var tokenCreateTxnBody = txn.getTokenCreation();
-        final var customFees = tokenCreateTxnBody.getCustomFeesList();
-        final var treasuryId = tokenCreateTxnBody.getTreasury();
-        final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
-        meta.addNonPayerKey(treasuryId, ACCOUNT_ID_DOES_NOT_EXIST);
-        meta.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
-        if (tokenCreateTxnBody.hasAdminKey()) {
-            final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
-            adminKey.ifPresent(meta::addToReqNonPayerKeys);
-        }
-        addCustomFeeKey(meta, customFees);
-        return meta.build();
-    }
-
     private void addCustomFeeKey(
-            SigTransactionMetadataBuilder meta, final List<CustomFee> customFeesList) {
+            SigTransactionMetadataBuilder meta,
+            final KeyOrLookupFailureReason hasSigRecKey,
+            final List<CustomFee> customFeesList) {
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
             final var hasCollector = customFee.hasFeeCollectorAccountId();
@@ -229,10 +220,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                     alwaysAdd =
                             fixedFee.hasDenominatingTokenId()
                                     && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                    if (alwaysAdd) {
+                    if (!hasSigRecKey.equals(PRESENT_BUT_NOT_REQUIRED)) {
+                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
+                    } else if (alwaysAdd) {
                         meta.addNonPayerKey(collector, failureStatus);
                     } else {
-                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
+                        meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
                     }
                 } else if (customFee.hasFractionalFee()) {
                     meta.addNonPayerKey(collector, failureStatus);
@@ -243,15 +236,19 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                         alwaysAdd =
                                 fFee.hasDenominatingTokenId()
                                         && fFee.getDenominatingTokenId().getTokenNum() == 0;
-                        if (alwaysAdd) {
+                        if (!hasSigRecKey.equals(PRESENT_BUT_NOT_REQUIRED)) {
+                            meta.addNonPayerKeyIfReceiverSigRequired(
+                                    collector, RECEIVER_SIG_REQUIRED);
+                        } else if (alwaysAdd) {
                             meta.addNonPayerKey(collector, failureStatus);
+                        } else {
+                            meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
                         }
-                    } else {
-                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
                     }
-                } else {
-                    meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
                 }
+            } else {
+                meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
             }
         }
+    }
 }
