@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.test;
+package com.hedera.node.app.service.token.impl.itest;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.StandardTokenService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardTokenServiceTest {
+public class StandardTokenServiceTest {
 
     @Test
     void testSpi() {

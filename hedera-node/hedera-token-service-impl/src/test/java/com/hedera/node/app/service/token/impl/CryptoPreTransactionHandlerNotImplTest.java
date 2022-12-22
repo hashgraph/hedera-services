@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.test;
+package com.hedera.node.app.service.token.impl;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.token.impl.CryptoPreTransactionHandlerImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.PreHandleContext;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;

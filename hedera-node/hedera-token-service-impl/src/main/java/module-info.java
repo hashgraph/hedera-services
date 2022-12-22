@@ -1,7 +1,7 @@
 import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
 
 module com.hedera.node.app.service.token.impl {
-    requires com.hedera.node.app.service.token;
+    requires transitive com.hedera.node.app.service.token;
     requires static com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
     requires com.google.common;
@@ -17,7 +17,7 @@ module com.hedera.node.app.service.token.impl {
             CryptoServiceImpl;
 
     exports com.hedera.node.app.service.token.impl to
-            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.token.impl.itest,
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.entity to
             com.hedera.node.app.service.token.impl.test;
