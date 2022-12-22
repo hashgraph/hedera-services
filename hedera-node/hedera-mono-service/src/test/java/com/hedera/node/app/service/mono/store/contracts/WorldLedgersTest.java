@@ -381,7 +381,8 @@ class WorldLedgersTest {
     void staticEvmTokenInfoWorks() {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
-        given(staticEntityAccess.evmInfoForToken(fungibleToken)).willReturn(Optional.of(evmTokenInfo));
+        given(staticEntityAccess.evmInfoForToken(fungibleToken))
+                .willReturn(Optional.of(evmTokenInfo));
         given(evmTokenInfo.getMemo()).willReturn(tokenMemo);
         given(evmTokenInfo.getSymbol()).willReturn("UnfrozenToken");
         given(evmTokenInfo.getName()).willReturn("UnfrozenTokenName");
