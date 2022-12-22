@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.file.impl;
+package com.hedera.node.app.service.consensus.impl;
 
-import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.consensus.ConsensusService;
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardFileService implements FileService {}
+/**
+ * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
+ */
+public final class ConsensusServiceImpl implements ConsensusService {}

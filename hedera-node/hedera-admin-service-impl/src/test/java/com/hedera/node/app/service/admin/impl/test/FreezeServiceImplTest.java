@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.consensus.impl.test;
+package com.hedera.node.app.service.admin.impl.test;
 
-import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.StandardConsensusService;
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardConsensusServiceTest {
+class FreezeServiceImplTest {
 
     @Test
     void testSpi() {
         // when
-        final ConsensusService service = ConsensusService.getInstance();
+        final FreezeService service = FreezeService.getInstance();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardConsensusService.class,
+                FreezeServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardConsensusService");
+                "We must always receive an instance of type " + FreezeServiceImpl.class.getName());
     }
 }

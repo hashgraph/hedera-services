@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.admin.impl.test;
+package com.hedera.node.app.service.file.impl.test;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.StandardFreezeService;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardFreezeServiceTest {
+class FileServiceImplTest {
 
     @Test
     void testSpi() {
         // when
-        final FreezeService service = FreezeService.getInstance();
+        final FileService service = FileService.getInstance();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardFreezeService.class,
+                FileServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardFreezeService");
+                "We must always receive an instance of type " + FileServiceImpl.class.getName());
     }
 }

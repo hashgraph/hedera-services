@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.app.service.file.impl;
 
-import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.service.file.FileService;
 
-/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardUtilService implements UtilService {}
+/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
+public final class FileServiceImpl implements FileService {}
