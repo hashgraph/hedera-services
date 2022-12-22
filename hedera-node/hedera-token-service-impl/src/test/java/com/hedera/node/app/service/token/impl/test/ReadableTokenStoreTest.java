@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.service.token.impl.TokenStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenStoreTest {
+class ReadableTokenStoreTest {
     @Mock private InMemoryStateImpl tokens;
     @Mock private States states;
     private static final String TOKENS = "TOKENS";
@@ -77,12 +77,12 @@ class TokenStoreTest {
                     accountsKycGrantedByDefault,
                     treasury);
 
-    private TokenStore subject;
+    private ReadableTokenStore subject;
 
     @BeforeEach
     public void setUp() {
         initializeToken();
-        subject = new TokenStore(states);
+        subject = new ReadableTokenStore(states);
     }
 
     private void initializeToken() {

@@ -43,7 +43,7 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -112,7 +112,7 @@ class IngestWorkflowImplTest {
     @BeforeEach
     void setup(
             @Mock(strictness = LENIENT) HederaState state,
-            @Mock(strictness = LENIENT) AccountStore accountStore,
+            @Mock(strictness = LENIENT) ReadableAccountStore accountStore,
             @Mock Account account)
             throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
@@ -379,7 +379,7 @@ class IngestWorkflowImplTest {
     @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
     void testPayerAccountNotFoundFails(
-            @Mock StoreCache localStoreCache, @Mock AccountStore localAccountStore)
+            @Mock StoreCache localStoreCache, @Mock ReadableAccountStore localAccountStore)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(localStoreCache.getAccountStore(any())).thenReturn(localAccountStore);

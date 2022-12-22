@@ -6,6 +6,7 @@ module com.hedera.node.app.service.schedule.impl {
     requires static com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.service.mono;
+    requires com.swirlds.virtualmap;
 
     exports com.hedera.node.app.service.schedule.impl to
             com.hedera.node.app.service.schedule.impl.test,

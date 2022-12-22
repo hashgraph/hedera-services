@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,7 +40,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      *
      * @param txBody the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link AccountStore} with the current data
+     * @param accountStore the {@link ReadableAccountStore} with the current data
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -48,7 +48,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     public TransactionMetadata preHandle(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payer,
-            @NonNull final AccountStore accountStore) {
+            @NonNull final ReadableAccountStore accountStore) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
