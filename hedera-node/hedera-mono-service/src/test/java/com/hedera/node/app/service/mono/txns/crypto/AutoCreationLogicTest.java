@@ -277,8 +277,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
@@ -324,8 +324,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
     }
 
     @Test
@@ -370,8 +370,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, totalFee), result);
+        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee * 2), result);
     }
 
     @Test
@@ -603,36 +603,62 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void reclaimClearsTriesToUnlinkIfAliasLengthBiggerTHanEvmAddressLength() {
+    void reclaimClearsEvmAddress() {
         final var pendingCreations = subject.getPendingCreations();
+        final var evmAddress = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
         pendingCreations.add(
                 new InProgressChildRecord(
                         1,
-                        TransactionBody.newBuilder(),
-                        ExpirableTxnRecord.newBuilder().setAlias(edKeyAlias),
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder()
+                                                .setEvmAddress(evmAddress)),
+                        ExpirableTxnRecord.newBuilder(),
                         List.of()));
 
         subject.reclaimPendingAliases();
 
-        verify(aliasManager).unlink(edKeyAlias);
-        verify(aliasManager).forgetEvmAddress(edKeyAlias);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     @Test
-    void reclaimClearsEvmAddress() {
+    void reclaimClearsAlias() {
         final var pendingCreations = subject.getPendingCreations();
-        final ByteString alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        final ByteString alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 5]);
         pendingCreations.add(
                 new InProgressChildRecord(
                         1,
-                        TransactionBody.newBuilder(),
-                        ExpirableTxnRecord.newBuilder().setAlias(alias),
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder().setAlias(alias)),
+                        ExpirableTxnRecord.newBuilder(),
                         List.of()));
 
         subject.reclaimPendingAliases();
 
         verify(aliasManager).unlink(alias);
-        verify(aliasManager, never()).forgetEvmAddress(alias);
+    }
+
+    @Test
+    void reclaimClearsBothEvmAddressAndAlias() {
+        final var pendingCreations = subject.getPendingCreations();
+        final var evmAddress = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 5]);
+        pendingCreations.add(
+                new InProgressChildRecord(
+                        1,
+                        TransactionBody.newBuilder()
+                                .setCryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder()
+                                                .setEvmAddress(evmAddress)
+                                                .setAlias(alias)),
+                        ExpirableTxnRecord.newBuilder(),
+                        List.of()));
+
+        subject.reclaimPendingAliases();
+
+        verify(aliasManager).unlink(alias);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     private final TransactionBody.Builder syntheticEDAliasCreation =

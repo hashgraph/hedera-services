@@ -53,6 +53,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
@@ -151,6 +152,15 @@ class InfrastructureFactoryTest {
                         syntheticTxnFactory,
                         view,
                         entityCreator);
+    }
+
+    @Test
+    void canCreateViewExecutor() {
+        final var fakeInput = Bytes.of(1, 2, 3);
+        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
+        given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
+        assertInstanceOf(
+                ViewExecutor.class, subject.newViewExecutor(fakeInput, frame, gasCalculator, view));
     }
 
     @Test
