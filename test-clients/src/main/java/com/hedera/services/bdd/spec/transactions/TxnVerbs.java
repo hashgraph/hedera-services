@@ -372,6 +372,10 @@ public class TxnVerbs {
         return new HapiEthereumCall(account, amount);
     }
 
+    public static HapiEthereumCall ethereumCryptoTransferToAlias(ByteString alias, long amount) {
+        return new HapiEthereumCall(alias, amount);
+    }
+
     /**
      * This method provides for the proper execution of specs, which execute contract calls with a
      * function ABI instead of function name

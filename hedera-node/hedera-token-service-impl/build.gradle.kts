@@ -31,8 +31,6 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-token-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(libs.hapi)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))

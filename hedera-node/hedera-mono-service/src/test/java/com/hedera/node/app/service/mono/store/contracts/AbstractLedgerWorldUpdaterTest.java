@@ -625,6 +625,16 @@ class AbstractLedgerWorldUpdaterTest {
         assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
     }
 
+    @Test
+    void tracksLazyCreateAccountAsExpected() {
+        subject.trackLazilyCreatedAccount(Address.ALTBN128_MUL);
+
+        final var lazyAccount = subject.updatedAccounts.get(Address.ALTBN128_MUL);
+        assertNotNull(lazyAccount);
+        assertEquals(Wei.ZERO, lazyAccount.getBalance());
+        assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
+    }
+
     private void setupLedgers() {
         final var tokenRelsLedger =
                 new TransactionalLedger<>(
