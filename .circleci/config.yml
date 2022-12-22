@@ -644,7 +644,7 @@ workflows:
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - jrs_gcp_machine_cleanup:
           name: GCP-Machine-Cleanup
@@ -802,11 +802,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "20 21 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -854,11 +854,11 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "25 21 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -877,11 +877,11 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "30 21 * * *"
+          cron: "0 3 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -900,11 +900,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -923,11 +923,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 21 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -946,11 +946,11 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "45 21 * * *"
+          cron: "45 3 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -992,11 +992,11 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "50 21 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1015,11 +1015,11 @@ workflows:
   GCP-Daily-Services-Update-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "35 21 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1038,11 +1038,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "45 21 * * *"
+          cron: "45 22 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1061,11 +1061,11 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "55 21 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1084,11 +1084,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "15 22 * * *"
+          cron: "15 23 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1107,11 +1107,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "30 22 * * *"
+          cron: "30 23 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1130,11 +1130,11 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "50 22 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1154,11 +1154,11 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "40 22 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
-                - 4468-update-clients
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1429,29 +1429,6 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Personal:
-    triggers:
-      - schedule:
-          cron: "30 21 * * *"
-          filters:
-            branches:
-              only:
-                - develop
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression/assets
-          result_path: assets/results/Personal
-          config_type: "personal"
-          workflow-name: "GCP-Personal-Neeha-4N"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
 jobs:
 #  build-artifact:
 #    parameters:
@@ -1562,7 +1539,7 @@ jobs:
             
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
-            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression;
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
             
             # Build Platform
             cd /swirlds-platform
@@ -1570,7 +1547,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            ./gradlew assemble --scan --parallel; git checkout neeha-personal-testing;
+            ./gradlew assemble --scan --parallel
 
       - run:
           name: Save PEM file to keys folder
@@ -1647,10 +1624,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
