@@ -15,30 +15,32 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.LoadTest;
+import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private static final Logger log =
             LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
-    private Random r = new Random();
+    private Random RANDOM = new Random();
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
     private static final int STAKED_CREATIONS = 50;
 
@@ -63,10 +65,10 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                     String sender = "sender";
                     String receiver = "receiver";
                     if (settings.getTotalAccounts() > 2) {
-                        int s = r.nextInt(settings.getTotalAccounts());
+                        int s = RANDOM.nextInt(settings.getTotalAccounts());
                         int re = 0;
                         do {
-                            re = r.nextInt(settings.getTotalAccounts());
+                            re = RANDOM.nextInt(settings.getTotalAccounts());
                         } while (re == s);
                         sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
                         receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
