@@ -54,10 +54,12 @@ public enum FeatureFlags {
         "utilPrng.isEnabled",
         "tokens.autoCreations.isEnabled",
         "lazyCreation.enabled",
-        "cryptoCreateWithAlias.enabled",
+        "cryptoCreateWithAliasAndEvmAddress.enabled",
         "contracts.allowAutoAssociations",
         "contracts.enforceCreationThrottle",
         "contracts.precompile.atomicCryptoTransfer.enabled",
         "scheduling.longTermEnabled",
+        // Not being tested
+        "contracts.evm.version.dynamic"
     };
 }

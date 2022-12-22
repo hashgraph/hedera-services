@@ -19,12 +19,6 @@ plugins {
 
 description = "Hedera Scheduled Service API"
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
-}
-
 dependencies {
     api(project(":hedera-node:hedera-app-spi"))
-    api(libs.slf4j.api)
-    compileOnly(libs.spotbugs.annotations)
 }

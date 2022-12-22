@@ -33,10 +33,8 @@ configurations.all {
 
 dependencies {
     api(project(":hedera-node:hedera-schedule-service"))
+    implementation(libs.swirlds.virtualmap)
     implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(libs.hapi)
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.mockito)
-    compileOnly(libs.spotbugs.annotations)
-    implementation(libs.swirlds.virtualmap)
 }

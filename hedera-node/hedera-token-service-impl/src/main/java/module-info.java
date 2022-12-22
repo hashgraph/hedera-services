@@ -2,7 +2,6 @@ import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
 
 module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.service.token;
-    requires static com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
     requires com.google.common;
     requires com.hedera.node.app.service.mono;
@@ -12,7 +11,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.spi;
 
     provides com.hedera.node.app.service.token.TokenService with
-            com.hedera.node.app.service.token.impl.StandardTokenService;
+            com.hedera.node.app.service.token.impl.TokenServiceImpl;
     provides com.hedera.node.app.service.token.CryptoService with
             CryptoServiceImpl;
 
