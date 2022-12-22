@@ -1103,7 +1103,6 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
-                                                                    .alias(aliasAsByteString)
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     allRunFor(spec, lazyAccountInfoCheck);
