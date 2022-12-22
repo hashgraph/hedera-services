@@ -51,8 +51,11 @@ public class PreHandleTokenCreateTest {
     private final AccountID payer = asAccount("0.0.3");
 
     private final AccountID receiverSigRequiredAcc = asAccount("0.0.1338");
+    private final AccountID treasuryAccountId = asAccount("0.0.1341");
 
     private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
+
+    private final HederaKey randomKey = asHederaKey(A_COMPLEX_KEY).get();
 
     private final HederaKey adminKeyAsHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     private final Key adminKey = A_COMPLEX_KEY;
@@ -65,6 +68,7 @@ public class PreHandleTokenCreateTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
     @Mock private MerkleAccount payerAccount;
+    @Mock private MerkleAccount treasuryAccount;
     @Mock private ReadableTokenStore tokenStore;
     @Mock private PreHandleContext context;
 
@@ -107,9 +111,12 @@ public class PreHandleTokenCreateTest {
 
     @Test
     void tokenCreateWithAdminKeyOnlyOld() {
+        given(accounts.get(treasuryAccountId.getAccountNum())).willReturn(Optional.of(treasuryAccount));
+        given(treasuryAccount.getAccountKey()).willReturn((JKey) randomKey);
+
         final var meta = subject.preHandleCreateToken(txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY), payer);
 
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.OK);
+        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
