@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.hedera.services.bdd.junit.RecordBalanceValidator;
+import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -70,6 +70,7 @@ class AllIntegrationTests extends IntegrationTestBase {
     List<DynamicTest> recordStreamValidation() {
         return List.of(
                 recordStreamValidation(
-                        "build/network/itest/records/node_0", new RecordBalanceValidator()));
+                        "build/network/itest/records/node_0",
+                        new BalanceReconciliationValidator()));
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 
+import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -33,14 +34,19 @@ public class BalanceValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceValidation.class);
 
     private final Map<Long, Long> expectedBalances;
+    private final AccountClassifier accountClassifier;
 
-    public BalanceValidation(final Map<Long, Long> expectedBalances) {
+    public BalanceValidation(
+            final Map<Long, Long> expectedBalances, final AccountClassifier accountClassifier) {
         this.expectedBalances = expectedBalances;
+        this.accountClassifier = accountClassifier;
     }
 
     public static void main(String... args) {
         // Treasury starts with 50B hbar
-        new BalanceValidation(Map.of(2L, 50_000_000_000L * TINY_PARTS_PER_WHOLE)).runSuiteSync();
+        new BalanceValidation(
+                        Map.of(2L, 50_000_000_000L * TINY_PARTS_PER_WHOLE), new AccountClassifier())
+                .runSuiteSync();
     }
 
     @Override
@@ -65,13 +71,15 @@ public class BalanceValidation extends HapiSuite {
                         inParallel(
                                         expectedBalances.entrySet().stream()
                                                 .map(
-                                                        entry ->
-                                                                QueryVerbs.getAccountBalance(
-                                                                                "0.0."
-                                                                                        + entry
-                                                                                                .getKey())
-                                                                        .hasTinyBars(
-                                                                                entry.getValue()))
+                                                        entry -> {
+                                                            final var accountNum = entry.getKey();
+                                                            return QueryVerbs.getAccountBalance(
+                                                                            "0.0." + accountNum,
+                                                                            accountClassifier
+                                                                                    .isContract(
+                                                                                            accountNum))
+                                                                    .hasTinyBars(entry.getValue());
+                                                        })
                                                 .toArray(HapiSpecOperation[]::new))
                                 .failOnErrors());
     }
