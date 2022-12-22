@@ -38,6 +38,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -103,6 +104,7 @@ class StaticEntityAccessTest {
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
     @Mock private TokenInfo tokenInfo;
+    @Mock private EvmTokenInfo evmTokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
     @Mock private List<CustomFee> customFees;
 
@@ -207,6 +209,14 @@ class StaticEntityAccessTest {
         given(nfts.get(nftKey)).willReturn(treasuryOwned);
         final var actual = subject.metadataOf(nft);
         assertEquals("There, the eyes are", actual);
+    }
+
+    @Test
+    void evmInfoForToken() {
+        given(stateView.evmInfoForToken(tokenId)).willReturn(Optional.of(evmTokenInfo));
+
+        final var tokenInfo = subject.evmInfoForToken(tokenId);
+        assertNotNull(tokenInfo.get());
     }
 
     @Test

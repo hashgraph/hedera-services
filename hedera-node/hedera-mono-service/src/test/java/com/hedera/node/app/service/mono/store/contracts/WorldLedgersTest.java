@@ -54,6 +54,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -168,7 +170,9 @@ class WorldLedgersTest {
     @Mock private StaticEntityAccess staticEntityAccess;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private TokenInfo tokenInfo;
+    @Mock private EvmTokenInfo evmTokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
+    @Mock private EvmNftInfo evmNftInfo;
 
     @Mock
     private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
@@ -374,6 +378,39 @@ class WorldLedgersTest {
     }
 
     @Test
+    void staticEvmTokenInfoWorks() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+        given(staticEntityAccess.evmInfoForToken(fungibleToken)).willReturn(Optional.of(evmTokenInfo));
+        given(evmTokenInfo.getMemo()).willReturn(tokenMemo);
+        given(evmTokenInfo.getSymbol()).willReturn("UnfrozenToken");
+        given(evmTokenInfo.getName()).willReturn("UnfrozenTokenName");
+        given(evmTokenInfo.getTotalSupply()).willReturn(100L);
+        given(evmTokenInfo.getDecimals()).willReturn(1);
+
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+
+        assertEquals(token.memo(), tokenInfo.getMemo());
+        assertEquals(token.symbol(), tokenInfo.getSymbol());
+        assertEquals(token.name(), tokenInfo.getName());
+        assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
+        assertEquals(token.decimals(), tokenInfo.getDecimals());
+    }
+
+    @Test
+    void nonStaticEvmTokenInfoWorks() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
+
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+
+        assertEquals(token.memo(), tokenInfo.getMemo());
+        assertEquals(token.symbol(), tokenInfo.getSymbol());
+        assertEquals(token.name(), tokenInfo.getName());
+        assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
+        assertEquals(token.decimals(), tokenInfo.getDecimals());
+    }
+
+    @Test
     void nonStaticTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
@@ -388,6 +425,14 @@ class WorldLedgersTest {
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
         assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+    }
+
+    @Test
+    void nonStaticTokenEvmInfoWorksForMissingToken() {
+        given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
+
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId);
+        assertEquals(Optional.empty(), tokenInfo);
     }
 
     @Test
@@ -420,6 +465,28 @@ class WorldLedgersTest {
         assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(tokenNftInfo.getSpenderId()));
         assertEquals(fromJava(nftCreation).toGrpc(), tokenNftInfo.getCreationTime());
         assertArrayEquals(nftMeta, tokenNftInfo.getMetadata().toByteArray());
+    }
+
+    @Test
+    void staticEvmNftTokenInfoWorks() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+
+        given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
+
+        given(tokenNftInfo.getNftID()).willReturn(nftId);
+        given(tokenNftInfo.getAccountID()).willReturn(accountID);
+        given(tokenNftInfo.getCreationTime()).willReturn(fromJava(nftCreation).toGrpc());
+        given(tokenNftInfo.getMetadata()).willReturn(ByteString.copyFrom(nftMeta));
+        given(tokenNftInfo.getSpenderId()).willReturn(spenderId);
+
+        final var tokenNftInfo = subject.evmNftInfo(nftId, ledgerId).get();
+
+        assertEquals(nftId.getSerialNumber(), tokenNftInfo.getSerialNumber());
+        assertEquals(EntityIdUtils.asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
+        assertEquals(fromJava(nftCreation).toGrpc().getSeconds(), tokenNftInfo.getCreationTime());
+        assertArrayEquals(nftMeta, tokenNftInfo.getMetadata());
+        assertEquals(EntityIdUtils.asTypedEvmAddress(spenderId), tokenNftInfo.getSpender());
     }
 
     @Test
