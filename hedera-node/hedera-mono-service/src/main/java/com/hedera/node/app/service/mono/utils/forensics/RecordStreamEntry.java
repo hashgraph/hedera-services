@@ -49,7 +49,7 @@ public record RecordStreamEntry(
     @Override
     public String toString() {
         return String.format(
-                "RecordStreamEntry{consensusTime=%s, txn=%s, status=%s}",
+                "RecordStreamEntry{consensusTime=%s, txn=%s, record=%s}",
                 consensusTime, body(), txnRecord);
     }
 }
