@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.file.impl.test;
+package com.hedera.node.app.service.token.impl.test;
 
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.StandardFileService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardFileServiceTest {
+class TokenServiceImplTest {
 
     @Test
     void testSpi() {
         // when
-        final FileService service = FileService.getInstance();
+        final TokenService service = TokenService.getInstance();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardFileService.class,
+                TokenServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardFileService");
+                "We must always receive an instance of type " + TokenServiceImpl.class.getName());
     }
 }

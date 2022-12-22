@@ -11,7 +11,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.hedera.node.app.spi;
 
     provides com.hedera.node.app.service.token.TokenService with
-            com.hedera.node.app.service.token.impl.StandardTokenService;
+            com.hedera.node.app.service.token.impl.TokenServiceImpl;
     provides com.hedera.node.app.service.token.CryptoService with
             CryptoServiceImpl;
 

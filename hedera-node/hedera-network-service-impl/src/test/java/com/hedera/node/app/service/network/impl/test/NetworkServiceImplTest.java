@@ -13,11 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.network.impl;
+package com.hedera.node.app.service.network.impl.test;
 
 import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardNetworkService implements NetworkService {}
+class NetworkServiceImplTest {
+
+    @Test
+    void testSpi() {
+        // when
+        final NetworkService service = NetworkService.getInstance();
+
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                NetworkServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + NetworkServiceImpl.class.getName());
+    }
+}
