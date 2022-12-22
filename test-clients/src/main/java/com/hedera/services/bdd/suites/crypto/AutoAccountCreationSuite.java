@@ -760,11 +760,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final var op2 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(

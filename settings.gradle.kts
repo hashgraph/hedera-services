@@ -13,8 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import me.champeau.gradle.igp.gitRepositories
+
+// Add local maven build directory to plugin repos
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        }
+    }
+}
+
 plugins {
-    id("com.gradle.enterprise").version("3.10.3")
+    id("com.gradle.enterprise").version("3.11.4")
+    // Use GIT plugin to clone HAPI protobuf files
+    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
+    id("me.champeau.includegit").version("0.1.5")
+}
+
+gitRepositories {
+    checkoutsDirectory.set(file(rootProject.projectDir.getAbsolutePath() + "/hedera-node/hapi/"))
+    include("hedera-protobufs") {
+        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+        // choose tag or branch of HAPI you would like to test with
+        tag.set("main")
+        // do not load project from repo
+        autoInclude.set(false)
+    }
 }
 
 include(":hedera-node")
@@ -36,6 +64,7 @@ include(":hedera-node:hedera-util-service")
 include(":hedera-node:hedera-util-service-impl")
 include(":hedera-node:hapi-utils")
 include(":hedera-node:hapi-fees")
+include(":hedera-node:hapi")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
@@ -72,7 +101,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.0-grpc-1.45.1-SNAPSHOT")
+            version("hapi-version", "0.33.1-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
