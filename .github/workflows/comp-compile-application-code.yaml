@@ -153,7 +153,7 @@ jobs:
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: check --scan -x :hedera-node:hapi:test
+          arguments: check --scan
 
       - name: Publish Unit Test Report
         uses: mikepenz/action-junit-report@v3
