@@ -87,25 +87,9 @@ public class RoyaltyFee {
         }
         RoyaltyFee other = (RoyaltyFee) o;
 
-        if (getNumerator() != other.getNumerator()) {
-            return false;
-        }
-        if (getDenominator() != other.getDenominator()) {
-            return false;
-        }
-        if (getAmount() != other.getAmount()) {
-            return false;
-        }
-        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {
-            return false;
-        }
-        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {
-            return false;
-        }
-        if (getFeeCollector() != other.getFeeCollector()) {
-            return false;
-        }
-
-        return true;
+        return this.numerator == other.numerator
+                && this.denominator == other.denominator
+                && this.amount == other.amount
+                && this.useHbarsForPayment == other.useHbarsForPayment;
     }
 }

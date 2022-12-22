@@ -79,22 +79,8 @@ public class FixedFee {
         }
         FixedFee other = (FixedFee) o;
 
-        if (getAmount() != other.getAmount()) {
-            return false;
-        }
-        if (getDenominatingTokenId() != other.getDenominatingTokenId()) {
-            return false;
-        }
-        if (isUseHbarsForPayment() != other.isUseHbarsForPayment()) {
-            return false;
-        }
-        if (isUseCurrentTokenForPayment() != other.isUseCurrentTokenForPayment()) {
-            return false;
-        }
-        if (getFeeCollector() != other.getFeeCollector()) {
-            return false;
-        }
-
-        return true;
+        return this.amount == other.amount
+                && this.useHbarsForPayment == other.useHbarsForPayment
+                && this.useCurrentTokenForPayment == other.useCurrentTokenForPayment;
     }
 }
