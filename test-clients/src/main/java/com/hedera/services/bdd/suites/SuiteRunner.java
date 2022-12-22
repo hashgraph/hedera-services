@@ -313,7 +313,9 @@ public class SuiteRunner {
                     put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
                     put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
                     put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
-                    put("CryptoTransferLoadTestWithStakedAccounts", aof(CryptoTransferLoadTestWithStakedAccounts::new));
+                    put(
+                            "CryptoTransferLoadTestWithStakedAccounts",
+                            aof(CryptoTransferLoadTestWithStakedAccounts::new));
                     put(
                             "CryptoTransferLoadTestWithAutoAccounts",
                             aof(CryptoTransferLoadTestWithAutoAccounts::new));
