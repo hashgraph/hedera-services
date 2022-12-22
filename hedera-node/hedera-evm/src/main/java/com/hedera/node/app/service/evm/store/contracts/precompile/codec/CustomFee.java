@@ -47,6 +47,19 @@ public class CustomFee {
         return royaltyFee;
     }
 
+    public boolean hasFixedFee() {
+        return fixedFee != null;
+    }
+
+    public boolean hasFractionalFee() {
+        return fractionalFee != null;
+    }
+
+    public boolean hasRoyaltyFee() {
+        return royaltyFee != null;
+    }
+
+
     @Override
     public int hashCode() {
         return Objects.hash(fixedFee, fractionalFee, royaltyFee);
@@ -61,19 +74,31 @@ public class CustomFee {
             return false;
         }
         CustomFee other = (CustomFee) o;
-        if (getFixedFee() != null
-                && other.getFixedFee() != null
-                && getFixedFee().equals(other.getFixedFee())) {
+
+        if (hasFixedFee() != other.hasFixedFee()) {
             return false;
         }
-        if (getFractionalFee() != null
-                && other.getFractionalFee() != null
-                && getFractionalFee().equals(other.getFractionalFee())) {
+        if (hasFixedFee()
+                && other.hasFixedFee()
+                && !getFixedFee().equals(other.getFixedFee())) {
             return false;
         }
-        if (getRoyaltyFee() != null
-                && other.getRoyaltyFee() != null
-                && getRoyaltyFee().equals(other.getRoyaltyFee())) {
+
+        if (hasFractionalFee() != other.hasFractionalFee()) {
+            return false;
+        }
+        if (hasFractionalFee()
+                && other.hasFractionalFee()
+                && !getFractionalFee().equals(other.getFractionalFee())) {
+            return false;
+        }
+
+        if (hasRoyaltyFee() != other.hasRoyaltyFee()) {
+            return false;
+        }
+        if (hasRoyaltyFee()
+                && other.hasRoyaltyFee()
+                && !getRoyaltyFee().equals(other.getRoyaltyFee())) {
             return false;
         }
 
