@@ -17,6 +17,9 @@ package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -76,6 +79,10 @@ public class BalanceValidation extends HapiSuite {
                                                                             accountClassifier
                                                                                     .isContract(
                                                                                             accountNum))
+                                                                    .hasAnswerOnlyPrecheckFrom(
+                                                                            CONTRACT_DELETED,
+                                                                            ACCOUNT_DELETED,
+                                                                            OK)
                                                                     .hasTinyBars(entry.getValue());
                                                         })
                                                 .toArray(HapiSpecOperation[]::new))
