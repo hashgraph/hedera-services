@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -499,11 +500,10 @@ public class CryptoCreateSuite extends HapiSuite {
 
                                     allRunFor(spec, op, op2, op3);
                                     var hapiGetAccountInfo =
-                                            getAccountInfo(ACCOUNT)
+                                            getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
                                                             accountWith()
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
+                                                                    .noAlias()
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
@@ -574,12 +574,11 @@ public class CryptoCreateSuite extends HapiSuite {
 
                                     allRunFor(spec, op, op2, op3, op4);
                                     var hapiGetAccountInfo =
-                                            getAccountInfo(ACCOUNT)
+                                            getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes));
+                                                                    .noAlias());
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
