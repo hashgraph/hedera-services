@@ -712,7 +712,7 @@ public class SigRequirements {
                 final var sender = adjust.getSenderAccountID();
                 if (linkedRefsLoaded) {
                     mapWarmer.warmAccount(
-                        EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                            EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
                 }
                 if ((failure =
                                 nftIncludeIfNecessary(
@@ -731,11 +731,11 @@ public class SigRequirements {
                 final var receiver = adjust.getReceiverAccountID();
                 if (linkedRefsLoaded) {
                     mapWarmer.warmAccount(
-                        EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+                            EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
                     mapWarmer.warmNft(
-                        UniqueTokenKey.from(
-                            NftNumPair.fromLongs(
-                                token.getTokenNum(), receiver.getAccountNum())));
+                            UniqueTokenKey.from(
+                                    NftNumPair.fromLongs(
+                                            token.getTokenNum(), receiver.getAccountNum())));
                 }
                 if ((failure =
                                 nftIncludeIfNecessary(
@@ -755,9 +755,9 @@ public class SigRequirements {
                 }
                 if (linkedRefsLoaded) {
                     mapWarmer.warmTokenRel(
-                        EntityNumVirtualKey.fromPair(
-                            EntityNumPair.fromLongs(
-                                token.getTokenNum(), adjust.getSerialNumber())));
+                            EntityNumVirtualKey.fromPair(
+                                    EntityNumPair.fromLongs(
+                                            token.getTokenNum(), adjust.getSerialNumber())));
                 }
             }
         }
