@@ -7392,7 +7392,6 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
-                                                                    .alias(firstAliasAsByteString)
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     AtomicReference<AccountID> ethSenderAccountReference =
