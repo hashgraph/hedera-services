@@ -59,7 +59,6 @@ public class CustomFee {
         return royaltyFee != null;
     }
 
-
     @Override
     public int hashCode() {
         return Objects.hash(fixedFee, fractionalFee, royaltyFee);
@@ -78,9 +77,7 @@ public class CustomFee {
         if (hasFixedFee() != other.hasFixedFee()) {
             return false;
         }
-        if (hasFixedFee()
-                && other.hasFixedFee()
-                && !getFixedFee().equals(other.getFixedFee())) {
+        if (hasFixedFee() && other.hasFixedFee() && !getFixedFee().equals(other.getFixedFee())) {
             return false;
         }
 
