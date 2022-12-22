@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> {
 
     public static final int HEXED_EVM_ADDRESS_LEN = 40;
-    protected static final String FALLBACK_ABI = "<empty>";
+    public static final String FALLBACK_ABI = "<empty>";
     protected boolean tryAsHexedAddressIfLenMatches = true;
     protected Object[] params;
     protected String abi;

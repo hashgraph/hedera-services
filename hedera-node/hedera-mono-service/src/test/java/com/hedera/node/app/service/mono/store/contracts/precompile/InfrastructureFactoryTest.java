@@ -17,11 +17,15 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.grpc.marshalling.FeeAssessor;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
@@ -36,10 +40,12 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
@@ -47,11 +53,13 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.EvmAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
@@ -73,6 +81,8 @@ import com.hedera.node.app.service.mono.txns.token.validators.CreateChecks;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -113,6 +123,10 @@ class InfrastructureFactoryTest {
     @Mock private FeeAssessor feeAssessor;
     @Mock private PureTransferSemanticChecks checks;
     @Mock private CustomFeeSchedules customFeeSchedules;
+    @Mock private Provider<FeeCalculator> feeCalculator;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private StateView view;
+    @Mock private EntityCreator entityCreator;
 
     private InfrastructureFactory subject;
 
@@ -133,7 +147,20 @@ class InfrastructureFactoryTest {
                         aliasManager,
                         feeDistribution,
                         feeAssessor,
-                        checks);
+                        checks,
+                        feeCalculator,
+                        syntheticTxnFactory,
+                        view,
+                        entityCreator);
+    }
+
+    @Test
+    void canCreateViewExecutor() {
+        final var fakeInput = Bytes.of(1, 2, 3);
+        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
+        given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
+        assertInstanceOf(
+                ViewExecutor.class, subject.newViewExecutor(fakeInput, frame, gasCalculator, view));
     }
 
     @Test
@@ -163,6 +190,13 @@ class InfrastructureFactoryTest {
                         tokens,
                         uniqueTokens,
                         tokenRels));
+    }
+
+    @Test
+    void canCreateNewAutoCreationLogc() {
+        assertInstanceOf(
+                EvmAutoCreationLogic.class,
+                subject.newAutoCreationLogicScopedTo(mock(HederaStackedWorldStateUpdater.class)));
     }
 
     @Test
@@ -390,5 +424,20 @@ class InfrastructureFactoryTest {
                                 sideEffects, tokens, nftsLedger, tokenRelsLedger),
                         ledgers,
                         sideEffects));
+    }
+
+    @Test
+    void canCreateNewRecordSubmissions() {
+        final var updater = mock(HederaStackedWorldStateUpdater.class);
+        final var recordSubmissions = subject.newRecordSubmissionsScopedTo(updater);
+        final var expirableTxnRecord = mock(ExpirableTxnRecord.Builder.class);
+        final var txnBodyBuilder = mock(Builder.class);
+
+        recordSubmissions.submitForTracking(txnBodyBuilder, expirableTxnRecord);
+
+        verify(expirableTxnRecord).onlyExternalizeIfSuccessful();
+        verify(updater)
+                .manageInProgressPrecedingRecord(
+                        recordsHistorian, expirableTxnRecord, txnBodyBuilder);
     }
 }

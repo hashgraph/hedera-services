@@ -27,16 +27,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * detail, and are happy with just the API provided by this interface.
  */
 public interface HederaState {
-    String CONSENSUS_SERVICE = "ConsensusService";
-    String CONTRACT_SERVICE = "ContractService";
-    String CRYPTO_SERVICE = "CryptoService";
-    String FILE_SERVICE = "FileService";
-    String FREEZE_SERVICE = "FreezeService";
-    String NETWORK_SERVICE = "NetworkService";
-    String SCHEDULE_SERVICE = "ScheduleService";
-    String TOKEN_SERVICE = "TokenService";
-    String UTIL_SERVICE = "UtilService";
-
     /**
      * Creates a {@link ReadableStates} for the given named service. If such a service doesn't
      * exist, an empty {@link ReadableStates} is returned.

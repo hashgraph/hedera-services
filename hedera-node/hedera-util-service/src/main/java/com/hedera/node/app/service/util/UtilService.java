@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.service.util;
 
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
-import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
@@ -34,17 +32,6 @@ public interface UtilService extends Service {
     default String getServiceName() {
         return UtilService.class.getSimpleName();
     }
-
-    /**
-     * Creates the util service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding util service pre-handler
-     */
-    @NonNull
-    @Override
-    UtilPreTransactionHandler createPreTransactionHandler(
-            @NonNull ReadableStates states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

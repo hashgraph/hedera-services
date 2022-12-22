@@ -17,8 +17,7 @@ package com.hedera.node.app.service.schedule.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
@@ -27,8 +26,9 @@ import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.meta.*;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -36,17 +36,24 @@ import org.apache.commons.lang3.NotImplementedException;
  * keys (but not the candidate signatures) for each schedule operation.
  */
 public class SchedulePreTransactionHandlerImpl implements SchedulePreTransactionHandler {
+    private ReadableScheduleStore scheduleStore;
     private final AccountKeyLookup keyLookup;
 
-    public SchedulePreTransactionHandlerImpl(final AccountKeyLookup keyLookup) {
+    public SchedulePreTransactionHandlerImpl(
+            @NonNull final ReadableScheduleStore scheduleStore,
+            @NonNull final AccountKeyLookup keyLookup) {
+        Objects.requireNonNull(scheduleStore);
+        Objects.requireNonNull(keyLookup);
+
+        this.scheduleStore = scheduleStore;
         this.keyLookup = keyLookup;
     }
 
     @Override
     public ScheduleTransactionMetadata preHandleCreateSchedule(
-            final TransactionBody txn,
-            final AccountID payer,
-            final PreHandleDispatcher dispatcher) {
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleCreate();
         final var meta =
                 new ScheduleSigTransactionMetadataBuilder(keyLookup)
@@ -75,12 +82,40 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         // to see
         // if provided payer is same as payer in the inner transaction.
 
-        final var innerMeta = preHandleInnerTxn(scheduledTxn, payerForNested, dispatcher);
+        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
         meta.scheduledMeta(innerMeta);
         return meta.build();
     }
 
-    private TransactionMetadata preHandleInnerTxn(
+    @Override
+    public ScheduleTransactionMetadata preHandleSignSchedule(
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final PreHandleDispatcher dispatcher) {
+        final var op = txn.getScheduleSign();
+        final var id = op.getScheduleID();
+
+        final var scheduleLookupResult = scheduleStore.get(id);
+        if (scheduleLookupResult.isEmpty()) {
+            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
+        }
+
+        final var meta =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer);
+
+        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
+        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
+        final var payerForNested =
+                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
+
+        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
+        meta.scheduledMeta(innerMeta);
+        return meta.build();
+    }
+
+    private TransactionMetadata preHandleScheduledTxn(
             final TransactionBody scheduledTxn,
             final AccountID payerForNested,
             PreHandleDispatcher dispatcher) {
@@ -88,11 +123,13 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         try {
             scheduledFunction = functionOf(scheduledTxn);
         } catch (UnknownHederaFunctionality ex) {
-            return failedMeta(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, scheduledTxn, payerForNested);
+            return new InvalidTransactionMetadata(
+                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         if (!isSchedulable(scheduledFunction)) {
-            return failedMeta(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, scheduledTxn, payerForNested);
+            return new InvalidTransactionMetadata(
+                    scheduledTxn, payerForNested, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         }
 
         final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
@@ -104,22 +141,8 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     }
 
     @Override
-    public ScheduleTransactionMetadata preHandleSignSchedule(
-            TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
-        throw new NotImplementedException();
-    }
-
-    @Override
     public ScheduleTransactionMetadata preHandleDeleteSchedule(
             TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
         throw new NotImplementedException();
-    }
-
-    private TransactionMetadata failedMeta(
-            final ResponseCodeEnum response, final TransactionBody txn, final AccountID payer) {
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
-        meta.status(response);
-        return meta.build();
     }
 }

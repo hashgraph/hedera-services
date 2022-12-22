@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.validation.domain;
 
+import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
 import java.util.List;
 
 public class Network {
@@ -25,6 +26,8 @@ public class Network {
 
     long bootstrap;
     long defaultNode = DEFAULT_NODE;
+    long defaultFeeInHbars = ValidationScenarios.FEE_TO_OFFER;
+    long defaultNodePaymentInTinybars = 100;
     long ensureScenarioPayerHbars = DEFAULT_INITIAL_HBARS;
 
     Long scenarioPayer;
@@ -78,5 +81,21 @@ public class Network {
 
     public void setEnsureScenarioPayerHbars(long ensureScenarioPayerHbars) {
         this.ensureScenarioPayerHbars = ensureScenarioPayerHbars;
+    }
+
+    public long getDefaultFeeInHbars() {
+        return defaultFeeInHbars;
+    }
+
+    public void setDefaultFeeInHbars(long defaultFeeInHbars) {
+        this.defaultFeeInHbars = defaultFeeInHbars;
+    }
+
+    public long getDefaultNodePaymentInTinybars() {
+        return defaultNodePaymentInTinybars;
+    }
+
+    public void setDefaultNodePaymentInTinybars(long defaultNodePaymentInTinybars) {
+        this.defaultNodePaymentInTinybars = defaultNodePaymentInTinybars;
     }
 }

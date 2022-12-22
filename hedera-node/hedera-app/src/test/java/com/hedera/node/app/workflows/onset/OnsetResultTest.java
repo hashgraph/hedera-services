@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.workflows.onset;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -33,11 +34,13 @@ class OnsetResultTest {
         final var functionality = HederaFunctionality.NONE;
 
         // then
-        assertThatThrownBy(() -> new OnsetResult(null, signatureMap, functionality))
+        assertThatThrownBy(() -> new OnsetResult(null, OK, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, null, functionality))
+        assertThatThrownBy(() -> new OnsetResult(txBody, null, signatureMap, functionality))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, signatureMap, null))
+        assertThatThrownBy(() -> new OnsetResult(txBody, OK, null, functionality))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new OnsetResult(txBody, OK, signatureMap, null))
                 .isInstanceOf(NullPointerException.class);
     }
 }
