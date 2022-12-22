@@ -164,7 +164,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
                 hollowAccountCompletionWithEthereumTransaction(),
                 hollowAccountCreationChargesExpectedFees(),
-            lazyCreateViaEthereumCryptoTransfer());
+                lazyCreateViaEthereumCryptoTransfer());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
