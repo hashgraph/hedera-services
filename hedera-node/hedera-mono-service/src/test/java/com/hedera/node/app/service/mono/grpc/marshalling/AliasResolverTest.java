@@ -25,6 +25,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -36,6 +38,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,6 +156,91 @@ class AliasResolverTest {
         assertEquals(
                 mirrorNum.toGrpcAccountId(),
                 resolvedOp.getTransfers().getAccountAmounts(0).getAccountID());
+    }
+
+    @Test
+    void resolvesPotentialLazyCreate() {
+        final var to = "to".getBytes();
+        final var lazyCreateData =
+                new EthTxData(
+                        null,
+                        null,
+                        null,
+                        0L,
+                        null,
+                        null,
+                        null,
+                        0L,
+                        to,
+                        BigInteger.TEN,
+                        null,
+                        null,
+                        0,
+                        null,
+                        null,
+                        null);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
+
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
+
+        assertEquals(1, subject.perceivedLazyCreations());
+    }
+
+    @Test
+    void resolvesEthDataWithValidTo() {
+        final var to = "to".getBytes();
+        final var lazyCreateData =
+                new EthTxData(
+                        null,
+                        null,
+                        null,
+                        0L,
+                        null,
+                        null,
+                        null,
+                        0L,
+                        to,
+                        BigInteger.TEN,
+                        null,
+                        null,
+                        0,
+                        null,
+                        null,
+                        null);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to)))
+                .willReturn(EntityNum.fromLong(5));
+
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
+
+        assertEquals(0, subject.perceivedAutoCreations());
+    }
+
+    @Test
+    void resolvesEthDataWithZeroValue() {
+        final var to = "to".getBytes();
+        final var lazyCreateData =
+                new EthTxData(
+                        null,
+                        null,
+                        null,
+                        0L,
+                        null,
+                        null,
+                        null,
+                        0L,
+                        to,
+                        BigInteger.ZERO,
+                        null,
+                        null,
+                        0,
+                        null,
+                        null,
+                        null);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(to))).willReturn(MISSING_NUM);
+
+        subject.perceiveEthTxn(lazyCreateData, aliasManager);
+
+        assertEquals(0, subject.perceivedAutoCreations());
     }
 
     @Test

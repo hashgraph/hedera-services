@@ -100,7 +100,8 @@ public class ExpirableTxnRecordTestHelper {
                         .setAssessedCustomFees(fcAssessedFees)
                         .setNewTokenAssociations(newTokenAssociations)
                         .setAlias(record.getAlias())
-                        .setEthereumHash(record.getEthereumHash().toByteArray());
+                        .setEthereumHash(record.getEthereumHash().toByteArray())
+                        .setEvmAddress(record.getEvmAddress().toByteArray());
         if (!record.getPrngBytes().isEmpty()) {
             builder.setPseudoRandomBytes(record.getPrngBytes().toByteArray());
         }
