@@ -81,6 +81,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.THIRD_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.TOKEN_WITH_CUSTOM_FEE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
@@ -332,12 +333,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-                                FALSE_VALUE),
+                                LAZY_CREATION_ENABLED, FALSE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
@@ -567,11 +566,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
                                 FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
@@ -586,8 +585,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .alias(evmAddressBytes)
-                                                    .balance(100 * ONE_HBAR);
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .via("createTxn");
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -599,9 +599,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
@@ -609,8 +608,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .alias(ByteString.copyFromUtf8("Invalid alias"))
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
-                                    allRunFor(spec, op, op2, op3, op4, op5);
+                                    allRunFor(spec, op, op2, op3, op4, op5, op6);
                                     var hapiGetAccountInfo =
                                             getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
@@ -619,7 +624,23 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    final var getTxnRecord =
+                                            getTxnRecord("createTxn")
+                                                    .hasPriority(recordWith().hasNoAlias());
+                                    allRunFor(
+                                            spec,
+                                            hapiGetAccountInfo,
+                                            hapiGetAnotherAccountInfo,
+                                            getTxnRecord);
                                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
     }
@@ -791,12 +812,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var payer = "payer";
         final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
                                 "true",
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
@@ -817,7 +838,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                                                     .balance(ONE_HUNDRED_HBARS);
@@ -827,7 +848,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(SUCCESS)
                                                     .balance(ONE_HUNDRED_HBARS);

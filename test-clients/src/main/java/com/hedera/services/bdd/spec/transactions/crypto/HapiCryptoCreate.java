@@ -87,6 +87,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
     private Optional<ByteString> alias = Optional.empty();
+    private Optional<ByteString> evmAddress = Optional.empty();
     private Consumer<Address> addressObserver;
 
     @Override
@@ -218,6 +219,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
+    public HapiCryptoCreate evmAddress(final ByteString evmAddress) {
+        this.evmAddress = Optional.of(evmAddress);
+        return this;
+    }
+
     @Override
     protected HapiCryptoCreate self() {
         return this;
@@ -257,9 +263,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (alias.isPresent()) {
-                                        b.setAlias(alias.get());
+                                    if (alias.isPresent() || evmAddress.isPresent()) {
                                         keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                        alias.ifPresent(b::setAlias);
+                                        evmAddress.ifPresent(b::setEvmAddress);
                                     } else {
                                         b.setKey(key);
                                     }
@@ -322,7 +329,17 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
         Optional.ofNullable(addressObserver)
-                .ifPresent(obs -> obs.accept(HapiParserUtil.evmAddressFromSecp256k1Key(key)));
+                .ifPresent(
+                        obs ->
+                                evmAddress.ifPresentOrElse(
+                                        address ->
+                                                obs.accept(
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                address.toByteArray())),
+                                        () ->
+                                                obs.accept(
+                                                        HapiParserUtil.evmAddressFromSecp256k1Key(
+                                                                key))));
 
         if (advertiseCreation) {
             final String banner =
