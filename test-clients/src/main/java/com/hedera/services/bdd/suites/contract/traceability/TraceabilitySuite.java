@@ -7392,7 +7392,6 @@ public class TraceabilitySuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
-                                                                    .alias(firstAliasAsByteString)
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     AtomicReference<AccountID> ethSenderAccountReference =
@@ -7436,7 +7435,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             ethSenderAccountReference
                                                                                     .get())
                                                                     .setGas(1_979_000)
-                                                                    .setGasUsed(554_243)
+                                                                    .setGasUsed(555_112)
                                                                     .setValue(valueToSend)
                                                                     .setRecipientAccount(
                                                                             lazyAccountIdReference

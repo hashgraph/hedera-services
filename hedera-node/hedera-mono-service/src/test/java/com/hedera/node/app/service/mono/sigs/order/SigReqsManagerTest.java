@@ -70,7 +70,9 @@ class SigReqsManagerTest {
 
     @Test
     void usesWorkingStateLookupIfLastHandleTimeIsNull() {
-        given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM))
+        given(
+                        lookupsFactory.from(
+                                fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);
@@ -85,7 +87,9 @@ class SigReqsManagerTest {
 
     @Test
     void usesWorkingStateLookupIfStateVersionIsDifferent() {
-        given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM))
+        given(
+                        lookupsFactory.from(
+                                fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);
@@ -101,7 +105,9 @@ class SigReqsManagerTest {
 
     @Test
     void usesWorkingStateLookupIfStateIsUninitialized() {
-        given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM))
+        given(
+                        lookupsFactory.from(
+                                fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);
@@ -118,11 +124,16 @@ class SigReqsManagerTest {
 
     @Test
     void usesWorkingStateLookupIfImmutableStateExpansionFailsUnexpectedly() {
-        given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM))
+        given(
+                        lookupsFactory.from(
+                                fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
         given(
                         lookupsFactory.from(
-                                fileNumbers, subject.getImmutableChildren(), TOKEN_META_TRANSFORM))
+                                fileNumbers,
+                                subject.getImmutableChildren(),
+                                TOKEN_META_TRANSFORM,
+                                dynamicProperties))
                 .willReturn(immutableStateLookup);
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);
@@ -156,7 +167,10 @@ class SigReqsManagerTest {
     void usesImmutableStateLookupIfEverythingIsSane() {
         given(
                         lookupsFactory.from(
-                                fileNumbers, subject.getImmutableChildren(), TOKEN_META_TRANSFORM))
+                                fileNumbers,
+                                subject.getImmutableChildren(),
+                                TOKEN_META_TRANSFORM,
+                                dynamicProperties))
                 .willReturn(immutableStateLookup);
         given(sigReqsFactory.from(immutableStateLookup, signatureWaivers))
                 .willReturn(immutableStateSigReqs);
@@ -175,7 +189,9 @@ class SigReqsManagerTest {
 
     @Test
     void usesWorkingStateLookupIfPropertiesInsist() {
-        given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM))
+        given(
+                        lookupsFactory.from(
+                                fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties))
                 .willReturn(workingStateLookup);
         given(sigReqsFactory.from(workingStateLookup, signatureWaivers))
                 .willReturn(workingStateSigReqs);

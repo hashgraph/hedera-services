@@ -70,7 +70,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
     private ReferenceType referenceType;
-    private ByteString alias;
+    private ByteString literalAlias;
 
     public HapiGetAccountInfo(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
@@ -87,9 +87,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
     }
 
-    public HapiGetAccountInfo(ByteString evmAlias, ReferenceType evmAddress) {
-        this.referenceType = evmAddress;
-        this.alias = evmAlias;
+    public HapiGetAccountInfo(final ByteString literalAlias) {
+        this.referenceType = ReferenceType.LITERAL_ACCOUNT_ALIAS;
+        this.literalAlias = literalAlias;
     }
 
     @Override
@@ -321,8 +321,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     AccountID.newBuilder()
                             .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
                             .build();
-        } else if (referenceType == ReferenceType.RAW_ALIAS) {
-            target = AccountID.newBuilder().setAlias(alias).build();
+        } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
+            target = AccountID.newBuilder().setAlias(literalAlias).build();
         } else {
             target = TxnUtils.asId(account, spec);
         }

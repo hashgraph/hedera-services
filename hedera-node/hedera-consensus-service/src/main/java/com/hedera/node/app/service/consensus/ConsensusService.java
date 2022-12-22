@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.service.consensus;
 
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
 
@@ -34,17 +32,6 @@ public interface ConsensusService extends Service {
     default String getServiceName() {
         return ConsensusService.class.getSimpleName();
     }
-
-    /**
-     * Creates the consensus service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding consensus service pre-handler
-     */
-    @Override
-    @NonNull
-    ConsensusPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

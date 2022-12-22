@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.spi.QueryHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -31,7 +30,7 @@ import java.util.Optional;
  * "CryptoService" in the protobuf. Some APIs are defined for the use of other modules, or the
  * Hedera application. Some queries are paid, some are free.
  */
-public interface CryptoQueryHandler extends QueryHandler {
+public interface CryptoQueryHandler {
     /**
      * Retrieves an {@link Account} given an {@link AccountID}. This method is not defined in
      * "CryptoService", but exists for the use of other modules, including the Hedera application.
