@@ -7,8 +7,6 @@ module com.hedera.node.app.service.admin.impl {
     provides com.hedera.node.app.service.admin.FreezeService with
             StandardFreezeService;
 
-    requires static com.github.spotbugs.annotations;
-
     exports com.hedera.node.app.service.admin.impl to
             com.hedera.node.app.service.admin.impl.test;
     exports com.hedera.node.app.service.admin.impl.handlers;

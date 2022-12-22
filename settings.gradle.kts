@@ -208,6 +208,7 @@ dependencyResolutionManagement {
             library("protobuf-java", "com.google.protobuf", "protobuf-java").versionRef("protobuf-java-version")
             library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
+            library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core").versionRef("swirlds-version")
             library("swirlds-fchashmap", "com.swirlds", "swirlds-fchashmap").versionRef("swirlds-version")
             library("swirlds-merkle", "com.swirlds", "swirlds-merkle").versionRef("swirlds-version")

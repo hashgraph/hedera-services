@@ -102,17 +102,17 @@ class HederaEvmTxProcessorTest {
 
     @BeforeEach
     void setup() {
-        var operationRegistry = new OperationRegistry();
+        final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 =
+        final var evm30 =
                 new EVM(
                         operationRegistry,
                         gasCalculator,
                         EvmConfiguration.DEFAULT,
                         EvmSpecVersion.LONDON);
-        Map<String, Provider<MessageCallProcessor>> mcps =
+        final Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         EVM_VERSION_0_30,
                         () -> {
@@ -126,7 +126,7 @@ class HederaEvmTxProcessorTest {
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
-        Map<String, Provider<ContractCreationProcessor>> ccps =
+        final Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
                         EVM_VERSION_0_30,
                         () -> {
@@ -162,7 +162,7 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
         evmTxProcessor.setupFields(false);
-        var result =
+        final var result =
                 evmTxProcessor.execute(
                         sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertTrue(result.isSuccessful());
@@ -170,7 +170,7 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void missingCodeBecomesEmptyInInitialFrame() {
-        MessageFrame.Builder protoFrame =
+        final MessageFrame.Builder protoFrame =
                 MessageFrame.builder()
                         .messageFrameStack(new ArrayDeque<>())
                         .worldUpdater(updater)
@@ -186,7 +186,8 @@ class HederaEvmTxProcessorTest {
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(hash -> null);
 
-        var messageFrame = evmTxProcessor.buildInitialFrame(protoFrame, receiver, Bytes.EMPTY, 33L);
+        final var messageFrame =
+                evmTxProcessor.buildInitialFrame(protoFrame, receiver, Bytes.EMPTY, 33L);
 
         assertEquals(CodeV0.EMPTY_CODE, messageFrame.getCode());
     }
@@ -198,7 +199,7 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
         evmTxProcessor.setupFields(false);
-        var result =
+        final var result =
                 evmTxProcessor.execute(
                         sender, receiver, 0L, GAS_LIMIT, 1234L, Bytes.EMPTY, false, mirrorReceiver);
         assertTrue(result.isSuccessful());
@@ -210,13 +211,13 @@ class HederaEvmTxProcessorTest {
         givenValidMock(0L);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 
-        long intrinsicGasCost = 290_000L;
+        final long intrinsicGasCost = 290_000L;
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
                 .willReturn(intrinsicGasCost);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
         evmTxProcessor.setupFields(false);
-        var result =
+        final var result =
                 evmTxProcessor.execute(
                         sender, receiver, 0L, GAS_LIMIT, 1234L, Bytes.EMPTY, false, mirrorReceiver);
         assertTrue(result.isSuccessful());
@@ -258,11 +259,11 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
 
-        var evmAccount = mock(EvmAccount.class);
+        final var evmAccount = mock(EvmAccount.class);
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
+        final var senderMutableAccount = mock(MutableAccount.class);
         given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
@@ -285,7 +286,7 @@ class HederaEvmTxProcessorTest {
     void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
         givenValidMock(100_000L);
 
-        int maxGasLimit = 10_000_000;
+        final int maxGasLimit = 10_000_000;
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
                 .willReturn(maxGasLimit + 1L);
 
@@ -331,7 +332,7 @@ class HederaEvmTxProcessorTest {
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
         // when:
-        MessageFrame buildMessageFrame =
+        final MessageFrame buildMessageFrame =
                 evmTxProcessor.buildInitialFrame(
                         commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
@@ -347,7 +348,7 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
         evmTxProcessor.setupFields(false);
-        var result =
+        final var result =
                 evmTxProcessor.execute(
                         sender, receiver, GAS_LIMIT, 0L, 1234L, Bytes.EMPTY, true, mirrorReceiver);
 
@@ -365,7 +366,7 @@ class HederaEvmTxProcessorTest {
         given(updater.updater()).willReturn(stackedUpdater);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
-        var evmAccount = mock(EvmAccount.class);
+        final var evmAccount = mock(EvmAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
                 .willReturn(intrinsicGasCost);
@@ -373,7 +374,7 @@ class HederaEvmTxProcessorTest {
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
+        final var senderMutableAccount = mock(MutableAccount.class);
         given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
