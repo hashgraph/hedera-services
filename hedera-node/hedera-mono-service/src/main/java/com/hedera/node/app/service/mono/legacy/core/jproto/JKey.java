@@ -259,6 +259,10 @@ public abstract class JKey implements HederaKey {
         return false;
     }
 
+    public boolean hasHollowKey() {
+        return false;
+    }
+
     public boolean hasECDSA384Key() {
         return false;
     }
@@ -296,6 +300,10 @@ public abstract class JKey implements HederaKey {
     }
 
     public JContractIDKey getContractIDKey() {
+        return null;
+    }
+
+    public JHollowKey getHollowKey() {
         return null;
     }
 
