@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -132,26 +133,13 @@ class OrderedComparisonTest {
     }
 
     @Test
-    void hmm() throws IOException {
-        final var loc =
-                "/Users/michaeltinker/AlsoDev/hedera-services/test-clients/build/network/itest/records/node_0";
-        final var entries = parseV6RecordStreamEntriesIn(loc);
-
-        final var histograms = statusHistograms(entries);
-        System.out.println(histograms);
-        entries.stream()
-                .filter(e -> e.accessor().getFunction() != FileAppend)
-                .filter(
-                        e ->
-                                !e.txnRecord().getMemo().contains("clone")
-                                        && !e.txnRecord().getMemo().contains("ynthetic"))
-                .forEach(System.out::println);
-    }
-
-    @Test
     void canInvestigateWithCorrelatedSidecars() throws IOException {
         final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
+        final var firstEntryRepr = entries.get(0).toString();
+        assertTrue(
+                firstEntryRepr.startsWith(
+                        "RecordStreamEntry{consensusTime=2022-12-05T14:23:46.192841556Z"));
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
         visitWithSidecars(
