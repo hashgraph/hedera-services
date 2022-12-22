@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -124,7 +124,7 @@ class UniqueTokensMigratorTest {
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
         final VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
         assertThat(result.isEmpty()).isTrue();
-        assertThat(result).isSameInstanceAs(virtualMap);
+        assertThat(result).isSameAs(virtualMap);
         virtualMap.release();
     }
 }
