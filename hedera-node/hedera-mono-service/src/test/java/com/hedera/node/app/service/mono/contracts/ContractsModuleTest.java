@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
@@ -91,6 +92,7 @@ class ContractsModuleTest {
     @Mock AliasManager aliasManager;
     @Mock MessageCallProcessor messageCallProcessor;
     @Mock ContractCreationProcessor contractCreationProcessor;
+    @Mock AutoCreationLogic autoCreationLogic;
 
     ContractsTestComponent subject;
 
@@ -114,6 +116,7 @@ class ContractsModuleTest {
                         .livePricesSource(livePricesSource)
                         .transactionContext(transactionContext)
                         .entityCreator(entityCreator)
+                        .autoCreationLogic(autoCreationLogic)
                         .build();
     }
 
