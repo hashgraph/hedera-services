@@ -6,4 +6,5 @@ module com.hedera.node.app.service.network.impl {
 
     exports com.hedera.node.app.service.network.impl to
             com.hedera.node.app.service.network.impl.test;
+    exports com.hedera.node.app.service.network.impl.handlers;
 }

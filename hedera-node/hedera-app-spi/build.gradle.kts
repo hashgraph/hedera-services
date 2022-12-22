@@ -32,10 +32,12 @@ configurations.all {
 }
 
 dependencies {
+    implementation(libs.grpc.stub)
     api(libs.hapi)
-    api(libs.swirlds.common)
-    api(libs.slf4j.api)
+    api(libs.helidon.io.grpc)
+    api(libs.jsr305.annotation)
     compileOnlyApi(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.testing)
+    testCompileOnly(libs.spotbugs.annotations)
 }

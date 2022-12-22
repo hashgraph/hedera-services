@@ -6,4 +6,5 @@ module com.hedera.node.app.service.util.impl {
 
     exports com.hedera.node.app.service.util.impl to
             com.hedera.node.app.service.util.impl.test;
+    exports com.hedera.node.app.service.util.impl.handlers;
 }

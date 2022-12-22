@@ -208,8 +208,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input,
                                     frame,
                                     precompilePricingUtils::computeViewFunctionGas,
-                                    currentView,
-                                    ledgers);
+                                    currentView);
                     return executor.computeCosted();
                 }
             }

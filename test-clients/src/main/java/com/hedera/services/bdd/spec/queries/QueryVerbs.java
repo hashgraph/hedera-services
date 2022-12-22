@@ -80,6 +80,10 @@ public class QueryVerbs {
         return new HapiGetAccountInfo(alias, ReferenceType.HEXED_CONTRACT_ALIAS);
     }
 
+    public static HapiGetAccountInfo getAliasedAccountInfo(final ByteString alias) {
+        return new HapiGetAccountInfo(alias);
+    }
+
     public static HapiGetAccountRecords getAccountRecords(final String account) {
         return new HapiGetAccountRecords(account);
     }
