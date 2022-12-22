@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.state;
 
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -40,8 +42,7 @@ public interface HederaState {
      * exist, an empty {@link ReadableStates} is returned.
      *
      * @param serviceName The name of the service.
-     * @return A collection of {@link com.hedera.node.app.spi.state.ReadableState} instances
-     *     belonging to the service.
+     * @return A collection of {@link ReadableKVState} instances belonging to the service.
      */
     @NonNull
     ReadableStates createReadableStates(@NonNull String serviceName);
@@ -51,8 +52,7 @@ public interface HederaState {
      * exist, an empty {@link WritableStates} is returned.
      *
      * @param serviceName The name of the service.
-     * @return A collection of {@link com.hedera.node.app.spi.state.WritableState} instance
-     *     belonging to the service.
+     * @return A collection of {@link WritableKVState} instance belonging to the service.
      */
     @NonNull
     WritableStates createWritableStates(@NonNull String serviceName);

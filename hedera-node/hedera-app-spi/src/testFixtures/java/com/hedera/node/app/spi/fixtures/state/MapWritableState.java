@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.WritableStateBase;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
-public class MapWritableState<K, V> extends WritableStateBase<K, V> {
+public class MapWritableState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
     private final Map<K, V> backingStore;
 
     public MapWritableState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
@@ -57,11 +57,12 @@ public class MapWritableState<K, V> extends WritableStateBase<K, V> {
         backingStore.remove(key);
     }
 
-    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
+    public static <K extends Comparable<K>, V> Builder<K, V> builder(
+            @NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
-    public static final class Builder<K, V> {
+    public static final class Builder<K extends Comparable<K>, V> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 

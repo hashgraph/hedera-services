@@ -26,15 +26,15 @@ import org.mockito.Mockito;
 
 /**
  * This test extends the {@link WritableStateBaseTest}, getting all the test methods used there, but
- * this time executed on a {@link WrappedWritableState}.
+ * this time executed on a {@link WrappedWritableKVState}.
  */
 class WrappedWritableStateTest extends WritableStateBaseTest {
-    private WritableStateBase<String, String> delegate;
+    private WritableKVStateBase<String, String> delegate;
 
-    protected WritableStateBase<String, String> createFruitState(
+    protected WritableKVStateBase<String, String> createFruitState(
             @NonNull final Map<String, String> map) {
         this.delegate = new MapWritableState<>(FRUIT_STATE_KEY, map);
-        this.state = Mockito.spy(new WrappedWritableState<>(delegate));
+        this.state = Mockito.spy(new WrappedWritableKVState<>(delegate));
         return this.state;
     }
 
@@ -47,16 +47,16 @@ class WrappedWritableStateTest extends WritableStateBaseTest {
         state.put(E_KEY, ELDERBERRY);
 
         // These values should be in the wrapped state, but not in the delegate
-        assertThat(state.get(B_KEY)).get().isEqualTo(BLACKBERRY); // Has the new value
-        assertThat(state.get(E_KEY)).get().isEqualTo(ELDERBERRY); // Has the new value
-        assertThat(delegate.get(B_KEY)).get().isEqualTo(BANANA); // Has the old value
-        assertThat(delegate.get(E_KEY)).isEmpty(); // Has no value yet
+        assertThat(state.get(B_KEY)).isEqualTo(BLACKBERRY); // Has the new value
+        assertThat(state.get(E_KEY)).isEqualTo(ELDERBERRY); // Has the new value
+        assertThat(delegate.get(B_KEY)).isEqualTo(BANANA); // Has the old value
+        assertThat(delegate.get(E_KEY)).isNull(); // Has no value yet
 
         // After committing, the values MUST be flushed to the delegate
         state.commit();
-        assertThat(state.get(B_KEY)).get().isEqualTo(BLACKBERRY); // Has the new value
-        assertThat(state.get(E_KEY)).get().isEqualTo(ELDERBERRY); // Has the new value
-        assertThat(delegate.get(B_KEY)).get().isEqualTo(BLACKBERRY); // Has the new value
-        assertThat(delegate.get(E_KEY)).get().isEqualTo(ELDERBERRY); // Has the new value
+        assertThat(state.get(B_KEY)).isEqualTo(BLACKBERRY); // Has the new value
+        assertThat(state.get(E_KEY)).isEqualTo(ELDERBERRY); // Has the new value
+        assertThat(delegate.get(B_KEY)).isEqualTo(BLACKBERRY); // Has the new value
+        assertThat(delegate.get(E_KEY)).isEqualTo(ELDERBERRY); // Has the new value
     }
 }

@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,13 +28,13 @@ import org.mockito.Mockito;
 
 /**
  * Tests for the base class for all mutable states. All non-abstract methods in this class are
- * final, so we can test here very thoroughly with a dummy {@link WritableStateBase}.
+ * final, so we can test here very thoroughly with a dummy {@link WritableKVStateBase}.
  *
  * <p>In this test, we create a backing store with only {(A=APPLE),(B=BANANA)}. We then have a
  * series of tests that will replace the values for A, B, or remove them, or add new values.
  */
 class WritableStateBaseTest extends ReadableStateBaseTest {
-    protected WritableStateBase<String, String> state;
+    protected WritableKVStateBase<String, String> state;
 
     @Override
     protected Map<String, String> createBackingMap() {
@@ -55,7 +54,7 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         return backingMap;
     }
 
-    protected WritableStateBase<String, String> createFruitState(
+    protected WritableKVStateBase<String, String> createFruitState(
             @NonNull final Map<String, String> map) {
         this.state = Mockito.spy(new MapWritableState<>(FRUIT_STATE_KEY, map));
         return state;
@@ -74,17 +73,17 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Call on an unknown value returns null and is a read key")
         void getForModifyUnknownValue() {
             // Before running getForModify, readKeys and modifiedKeys must be empty
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Verify the value is null
-            final var opt = state.getForModify(UNKNOWN_KEY);
-            assertNotNull(opt);
-            assertTrue(opt.isEmpty());
-            assertTrue(state.readKeys().contains(UNKNOWN_KEY));
+            final var value = state.getForModify(UNKNOWN_KEY);
+            assertThat(value).isNull();
+            assertThat(state.readKeys()).contains(UNKNOWN_KEY);
+            assertThat(state.readKeys()).contains(UNKNOWN_KEY);
 
             // Note, it is NOT a modified key, because it didn't exist in the underlying data store
-            assertFalse(state.modifiedKeys().contains(UNKNOWN_KEY));
+            assertThat(state.modifiedKeys()).doesNotContain(UNKNOWN_KEY);
 
             // Commit should cause no changes to the backing store
             state.commit();
@@ -115,18 +114,16 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Call on an existing value gets it and marks it as read and modified")
         void getForModifyKnownValue() {
             // Before running getForModify, readKeys and modifiedKeys must be empty
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Verify the value is what we expected
-            final var opt = state.getForModify(A_KEY);
-            assertNotNull(opt);
-            assertTrue(opt.isPresent());
-            assertEquals(APPLE, opt.get());
+            final var value = state.getForModify(A_KEY);
+            assertThat(value).isEqualTo(APPLE);
 
             // Verify the key used in lookup is now in readKeys and modifiedKeys
-            assertTrue(state.readKeys().contains(A_KEY));
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).contains(A_KEY);
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Commit should cause no changes to the backing store
             state.commit();
@@ -143,19 +140,17 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Called twice on an existing value")
         void getForModifyKnownValueTwice() {
             // Before running getForModify, readKeys and modifiedKeys must be empty
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Verify the value is what we expected
             for (int i = 0; i < 2; i++) {
-                final var opt = state.getForModify(A_KEY);
-                assertNotNull(opt);
-                assertTrue(opt.isPresent());
-                assertEquals(APPLE, opt.get());
+                final var value = state.getForModify(A_KEY);
+                assertThat(value).isEqualTo(APPLE);
 
                 // Verify the key used in lookup is now in readKeys and modifiedKeys
-                assertTrue(state.readKeys().contains(A_KEY));
-                assertFalse(state.modifiedKeys().contains(A_KEY));
+                assertThat(state.readKeys()).contains(A_KEY);
+                assertThat(state.modifiedKeys()).doesNotContain(A_KEY);
             }
         }
 
@@ -179,20 +174,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
             state.put(C_KEY, CHERRY);
 
             // Before running getForModify, readKeys is empty and modified keys contains C_KEY
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(C_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(C_KEY);
 
             // Verify the value is what we expected
-            final var opt = state.getForModify(C_KEY);
-            assertNotNull(opt);
-            assertTrue(opt.isPresent());
-            assertEquals(CHERRY, opt.get());
+            final var value = state.getForModify(C_KEY);
+            assertThat(value).isEqualTo(CHERRY);
 
             // Verify the key used in lookup is not in readKeys and is in modifiedKeys
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(C_KEY));
-            assertEquals(1, state.modifiedKeys().size());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).contains(C_KEY);
+            assertThat(state.modifiedKeys()).hasSize(1);
 
             // Commit should cause the most recent put value to be saved
             state.commit();
@@ -217,20 +210,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
             state.put(B_KEY, BLACKBERRY);
 
             // Before running getForModify, readKeys is empty and modified keys contains B_KEY
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             // Verify the value is what we expected
-            final var opt = state.getForModify(B_KEY);
-            assertNotNull(opt);
-            assertTrue(opt.isPresent());
-            assertEquals(BLACKBERRY, opt.get());
+            final var value = state.getForModify(B_KEY);
+            assertThat(value).isEqualTo(BLACKBERRY);
 
             // Verify the key used in lookup is not in readKeys and is in modifiedKeys
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
-            assertEquals(1, state.modifiedKeys().size());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).contains(B_KEY);
+            assertThat(state.modifiedKeys()).hasSize(1);
 
             // Commit should cause the most recent put value to be saved
             state.commit();
@@ -252,19 +243,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
             state.remove(A_KEY);
 
             // Before running getForModify, readKeys is empty and modified keys contains A_KEY
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Verify the value is null
-            final var opt = state.getForModify(A_KEY);
-            assertNotNull(opt);
-            assertTrue(opt.isEmpty());
+            final var value = state.getForModify(A_KEY);
+            assertThat(value).isNull();
 
             // Verify the key used in lookup is not in readKeys and is in modifiedKeys
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(A_KEY));
-            assertEquals(1, state.modifiedKeys().size());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).contains(A_KEY);
+            assertThat(state.modifiedKeys()).hasSize(1);
 
             // Commit should cause the value to be removed
             state.commit();
@@ -286,16 +276,16 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @Test
         @DisplayName("Put a key that does not already exist in the backing store")
         void putNew() {
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             state.put(C_KEY, CHERRY);
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(C_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(C_KEY);
 
             // We should be able to "get" the modification
-            assertThat(state.get(C_KEY)).get().isEqualTo(CHERRY);
+            assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
 
             // Commit should cause the value to be added
             state.commit();
@@ -313,13 +303,13 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @Test
         @DisplayName("Put a key that already exists in the backing store")
         void putExisting() {
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             state.put(A_KEY, ACAI);
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Commit should cause the value to be updated
             state.commit();
@@ -337,13 +327,13 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Put a key that was previously 'getForModify'")
         void putAfterGetForModify() {
             state.getForModify(B_KEY);
-            assertFalse(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
-            assertTrue(state.readKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isNotEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
+            assertThat(state.readKeys()).contains(B_KEY);
 
             state.put(B_KEY, BLACKBERRY);
-            assertTrue(state.readKeys().contains(B_KEY));
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).contains(B_KEY);
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             // Commit should cause the value to be updated
             state.commit();
@@ -358,13 +348,13 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Put a key twice")
         void putTwice() {
             state.put(B_KEY, BLACKBERRY);
-            assertTrue(state.readKeys().isEmpty());
-            assertFalse(state.modifiedKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isNotEmpty();
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             state.put(B_KEY, BLUEBERRY);
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
@@ -382,13 +372,13 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Put a key after having removed it")
         void putAfterRemove() {
             state.remove(B_KEY);
-            assertTrue(state.readKeys().isEmpty());
-            assertFalse(state.modifiedKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isNotEmpty();
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             state.put(B_KEY, BLACKBERRY);
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().contains(B_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).contains(B_KEY);
 
             // Commit should cause the value to be updated to the latest value
             state.commit();
@@ -415,17 +405,17 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove an unknown key")
         void removeUnknown() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove an unknown key
             state.remove(C_KEY);
 
             // "readKeys" is still empty, but "modifiedKeys" has the new key
-            assertTrue(state.readKeys().isEmpty());
-            assertFalse(state.modifiedKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(C_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isNotEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(C_KEY);
 
             // Commit should cause the value to be removed (even though it doesn't actually exist in
             // the backend)
@@ -446,17 +436,17 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a known key")
         void removeKnown() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key
             state.remove(A_KEY);
 
             // "readKeys" is still empty, but "modifiedKeys" has the key
-            assertTrue(state.readKeys().isEmpty());
-            assertFalse(state.modifiedKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isNotEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Commit should cause the value to be removed
             state.commit();
@@ -475,18 +465,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a known key twice")
         void removeTwice() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key
             for (int i = 0; i < 2; i++) {
                 state.remove(B_KEY);
 
                 // "readKeys" is still empty, but "modifiedKeys" has the key
-                assertTrue(state.readKeys().isEmpty());
-                assertFalse(state.modifiedKeys().isEmpty());
-                assertEquals(1, state.modifiedKeys().size());
-                assertTrue(state.modifiedKeys().contains(B_KEY));
+                assertThat(state.readKeys()).isEmpty();
+                assertThat(state.modifiedKeys()).isNotEmpty();
+                assertThat(state.modifiedKeys()).hasSize(1);
+                assertThat(state.modifiedKeys()).contains(B_KEY);
             }
 
             // Commit should cause the value to be removed
@@ -507,18 +497,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a known key after get")
         void removeAfterGet() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key after getting it
-            assertEquals(APPLE, state.get(A_KEY).orElse(""));
+            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
             state.remove(A_KEY);
 
             // "readKeys" is now populated, and "modifiedKeys" has the key
-            assertEquals(1, state.readKeys().size());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.readKeys().contains(A_KEY));
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.readKeys()).contains(A_KEY);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
@@ -538,18 +528,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a unknown key after get")
         void removeAfterGetUnknown() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key after getting it
-            assertTrue(state.get(C_KEY).isEmpty());
+            assertThat(state.get(C_KEY)).isNull();
             state.remove(C_KEY);
 
             // "readKeys" is now populated, and "modifiedKeys" has the key
-            assertEquals(1, state.readKeys().size());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.readKeys().contains(C_KEY));
-            assertTrue(state.modifiedKeys().contains(C_KEY));
+            assertThat(state.readKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.readKeys()).contains(C_KEY);
+            assertThat(state.modifiedKeys()).contains(C_KEY);
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
@@ -569,18 +559,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a known key after getForModify")
         void removeAfterGetForModify() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key after getting it
-            assertEquals(APPLE, state.getForModify(A_KEY).orElse(""));
+            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
             state.remove(A_KEY);
 
             // "readKeys" is now populated, and "modifiedKeys" has the key
-            assertEquals(1, state.readKeys().size());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.readKeys().contains(A_KEY));
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.readKeys()).contains(A_KEY);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
@@ -600,18 +590,18 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a unknown key after getForModify")
         void removeAfterGetForModifyUnknown() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key after getting it
-            assertTrue(state.getForModify(C_KEY).isEmpty());
+            assertThat(state.getForModify(C_KEY)).isNull();
             state.remove(C_KEY);
 
             // "readKeys" is now populated, and "modifiedKeys" has the key
-            assertEquals(1, state.readKeys().size());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.readKeys().contains(C_KEY));
-            assertTrue(state.modifiedKeys().contains(C_KEY));
+            assertThat(state.readKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.readKeys()).contains(C_KEY);
+            assertThat(state.modifiedKeys()).contains(C_KEY);
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
@@ -632,17 +622,17 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
         @DisplayName("Remove a known key after put")
         void removeAfterPut() {
             // Initially everything is clean
-            assertTrue(state.readKeys().isEmpty());
-            assertTrue(state.modifiedKeys().isEmpty());
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).isEmpty();
 
             // Remove a known key after putting it
             state.put(A_KEY, ACAI);
             state.remove(A_KEY);
 
             // "readKeys" is not populated, and "modifiedKeys" has the key
-            assertTrue(state.readKeys().isEmpty());
-            assertEquals(1, state.modifiedKeys().size());
-            assertTrue(state.modifiedKeys().contains(A_KEY));
+            assertThat(state.readKeys()).isEmpty();
+            assertThat(state.modifiedKeys()).hasSize(1);
+            assertThat(state.modifiedKeys()).contains(A_KEY);
 
             // Commit should cause the value to be removed but not "put"
             state.commit();
@@ -750,29 +740,29 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
     @Test
     @DisplayName("After making many modifications and reads, reset the state")
     void reset() {
-        assertTrue(state.get(C_KEY).isEmpty());
-        assertEquals(APPLE, state.get(A_KEY).orElse(null));
-        assertTrue(state.getForModify(D_KEY).isEmpty());
-        assertEquals(BANANA, state.get(B_KEY).orElse(null));
+        assertThat(state.get(C_KEY)).isNull();
+        assertThat(state.get(A_KEY)).isEqualTo(APPLE);
+        assertThat(state.get(D_KEY)).isNull();
+        assertThat(state.get(B_KEY)).isEqualTo(BANANA);
         state.put(A_KEY, ACAI);
         state.put(E_KEY, ELDERBERRY);
         state.remove(B_KEY);
         state.remove(F_KEY);
 
-        assertEquals(4, state.readKeys().size());
-        assertTrue(state.readKeys().contains(A_KEY));
-        assertTrue(state.readKeys().contains(B_KEY));
-        assertTrue(state.readKeys().contains(C_KEY));
-        assertTrue(state.readKeys().contains(D_KEY));
+        assertThat(state.readKeys()).hasSize(4);
+        assertThat(state.readKeys()).contains(A_KEY);
+        assertThat(state.readKeys()).contains(B_KEY);
+        assertThat(state.readKeys()).contains(C_KEY);
+        assertThat(state.readKeys()).contains(D_KEY);
 
-        assertEquals(4, state.modifiedKeys().size());
-        assertTrue(state.modifiedKeys().contains(A_KEY));
-        assertTrue(state.modifiedKeys().contains(B_KEY));
-        assertTrue(state.modifiedKeys().contains(E_KEY));
-        assertTrue(state.modifiedKeys().contains(F_KEY));
+        assertThat(state.modifiedKeys()).hasSize(4);
+        assertThat(state.modifiedKeys()).contains(A_KEY);
+        assertThat(state.modifiedKeys()).contains(B_KEY);
+        assertThat(state.modifiedKeys()).contains(E_KEY);
+        assertThat(state.modifiedKeys()).contains(F_KEY);
 
         state.reset();
-        assertTrue(state.readKeys().isEmpty());
-        assertTrue(state.modifiedKeys().isEmpty());
+        assertThat(state.readKeys()).isEmpty();
+        assertThat(state.modifiedKeys()).isEmpty();
     }
 }

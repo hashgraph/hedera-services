@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Parser;
-import com.hedera.node.app.spi.state.Writer;
+import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -40,43 +40,26 @@ import java.util.Objects;
  * @param <V> The type of the value (business object) held in this merkel data structure
  */
 public class OnDiskValue<V> implements VirtualValue {
-    private static final long CLASS_ID = 0xc1bf8fb7edb292c7L;
-
+    private final Serdes<V> serdes;
+    private final StateMetadata<?, V> md;
     private V value;
-    private final Parser<V> valueParser;
-    private final Writer<V> valueWriter;
     private boolean immutable = false;
 
-    public OnDiskValue() {
-        // This constructor should NEVER be called, only magically by the
-        // ConstructableRegistry, because it scans the package looking for
-        // everything that is SelfSerializable, throwing an exception if it
-        // encounters any without a default constructor. But this class is
-        // NEVER USED with ConstructableRegistry, so we just need a dummy
-        // implementation.
-        this.valueParser = (input) -> null;
-        this.valueWriter = (item, output) -> {};
+    public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
+        this.md = md;
+        this.serdes = md.stateDefinition().valueSerdes();
     }
 
-    public OnDiskValue(@NonNull final Parser<V> valueParser, @NonNull final Writer<V> valueWriter) {
-        this.valueParser = Objects.requireNonNull(valueParser);
-        this.valueWriter = Objects.requireNonNull(valueWriter);
-    }
-
-    public OnDiskValue(
-            @NonNull final V value,
-            @NonNull final Parser<V> valueParser,
-            @NonNull final Writer<V> valueWriter) {
+    public OnDiskValue(@NonNull final StateMetadata<?, V> md, @NonNull final V value) {
+        this(md);
         this.value = Objects.requireNonNull(value);
-        this.valueParser = Objects.requireNonNull(valueParser);
-        this.valueWriter = Objects.requireNonNull(valueWriter);
     }
 
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
         throwIfImmutable();
-        final var copy = new OnDiskValue<>(value, valueParser, valueWriter);
+        final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;
     }
@@ -93,7 +76,7 @@ public class OnDiskValue<V> implements VirtualValue {
         if (isImmutable()) {
             return this;
         } else {
-            final var copy = new OnDiskValue<>(value, valueParser, valueWriter);
+            final var copy = new OnDiskValue<>(md, value);
             copy.immutable = true;
             return copy;
         }
@@ -103,21 +86,21 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
         final var output = new ByteBufferDataOutput(byteBuffer);
-        valueWriter.write(value, output);
+        serdes.write(value, output);
     }
 
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
-        valueWriter.write(value, serializableDataOutputStream);
+        serdes.write(value, serializableDataOutputStream);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
         final var input = new ByteBufferDataInput(byteBuffer);
-        value = valueParser.parse(input);
+        value = serdes.parse(input);
     }
 
     /** {@inheritDoc} */
@@ -125,13 +108,13 @@ public class OnDiskValue<V> implements VirtualValue {
     public void deserialize(
             @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        value = valueParser.parse(new DataInputStream(serializableDataInputStream));
+        value = serdes.parse(new DataInputStream(serializableDataInputStream));
     }
 
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return CLASS_ID;
+        return md.onDiskValueClassId();
     }
 
     /** {@inheritDoc} */

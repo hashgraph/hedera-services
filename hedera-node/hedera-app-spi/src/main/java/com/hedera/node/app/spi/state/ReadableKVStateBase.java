@@ -20,22 +20,23 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
 
 /**
- * A base class for implementations of {@link ReadableState} and {@link WritableState}.
+ * A base class for implementations of {@link ReadableKVState} and {@link WritableKVState}.
  *
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class ReadableStateBase<K, V> implements ReadableState<K, V> {
+public abstract class ReadableKVStateBase<K extends Comparable<K>, V>
+        implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 
     /**
-     * A cache of all values read from this {@link ReadableState}. If the same value is read twice,
-     * rather than going to the underlying merkle data structures to read the data a second time, we
-     * simply return it from the cache. We also keep track of all keys read, which is critical for
-     * dealing with validating what we read during pre-handle with what may have changed before we
-     * got to handle transaction. If the value is "null", this means it was NOT FOUND when we looked
-     * it up.
+     * A cache of all values read from this {@link ReadableKVState}. If the same value is read
+     * twice, rather than going to the underlying merkle data structures to read the data a second
+     * time, we simply return it from the cache. We also keep track of all keys read, which is
+     * critical for dealing with validating what we read during pre-handle with what may have
+     * changed before we got to handle transaction. If the value is "null", this means it was NOT
+     * FOUND when we looked it up.
      */
     private final Map<K, V> readCache = new HashMap<>();
 
@@ -44,7 +45,7 @@ public abstract class ReadableStateBase<K, V> implements ReadableState<K, V> {
      *
      * @param stateKey The state key. Cannot be null.
      */
-    protected ReadableStateBase(@NonNull String stateKey) {
+    protected ReadableKVStateBase(@NonNull String stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
@@ -57,8 +58,8 @@ public abstract class ReadableStateBase<K, V> implements ReadableState<K, V> {
 
     /** {@inheritDoc} */
     @Override
-    @NonNull
-    public Optional<V> get(@NonNull K key) {
+    @Nullable
+    public V get(@NonNull K key) {
         // We need to cache the item because somebody may perform business logic basic on this
         // contains call, even if they never need the value itself!
         Objects.requireNonNull(key);
@@ -66,11 +67,11 @@ public abstract class ReadableStateBase<K, V> implements ReadableState<K, V> {
             final var value = readFromDataSource(key);
             markRead(key, value);
         }
-        return Optional.ofNullable(readCache.get(key));
+        return readCache.get(key);
     }
 
     /**
-     * Gets the set of keys that a client read from the {@link ReadableState}.
+     * Gets the set of keys that a client read from the {@link ReadableKVState}.
      *
      * @return The possibly empty set of keys.
      */
@@ -110,19 +111,19 @@ public abstract class ReadableStateBase<K, V> implements ReadableState<K, V> {
     protected abstract Iterator<K> iterateFromDataSource();
 
     /**
-     * Records the given key and associated value were read. {@link WritableStateBase} will call
+     * Records the given key and associated value were read. {@link WritableKVStateBase} will call
      * this method in some cases when a key is read as part of a modification (for example, with
-     * {@link WritableStateBase#getForModify(Object)}).
+     * {@link WritableKVStateBase#getForModify(Object)}).
      *
      * @param key The key
-     * @param value The value, which may be null.
+     * @param value The value
      */
     protected final void markRead(@NonNull K key, @Nullable V value) {
         readCache.put(key, value);
     }
 
     /**
-     * Gets whether this key has been read at some point by this {@link ReadableStateBase}.
+     * Gets whether this key has been read at some point by this {@link ReadableKVStateBase}.
      *
      * @param key The key.
      * @return Whether it has been read

@@ -15,21 +15,11 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hedera.node.app.state.merkle.MerkleStateRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInput;
@@ -37,8 +27,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -56,142 +44,143 @@ class OnDiskTest extends MerkleTestBase {
     private VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> virtualMap;
     @TempDir Path storageDir;
 
-    @Override
-    @BeforeEach
-    protected void setUp() {
-        super.setUp();
-        md =
-                new StateMetadata<>(
-                        SERVICE_NAME,
-                        ACCOUNT_STATE_KEY,
-                        OnDiskTest::parseAccountID,
-                        OnDiskTest::parseAccount,
-                        OnDiskTest::writeAccountID,
-                        OnDiskTest::writeAccount,
-                        OnDiskTest::measureAccountID);
-
-        final var builder =
-                new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
-                        // Force all hashes to disk, to make sure we're going through all the
-                        // serialization paths we can
-                        .internalHashesRamToDiskThreshold(0)
-                        .storageDir(storageDir)
-                        .maxNumOfKeys(100)
-                        .preferDiskBasedIndexes(true)
-                        .keySerializer(new OnDiskKeySerializer<>(md))
-                        .virtualLeafRecordSerializer(
-                                new VirtualLeafRecordSerializer<>(
-                                        (short) 1,
-                                        DigestType.SHA_384,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskKeySerializer<>(md),
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskValueSerializer<>(md),
-                                        true));
-
-        virtualMap =
-                new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
-    }
-
-    <K extends Comparable<K>, V> VirtualMap<OnDiskKey<K>, OnDiskValue<V>> copyHashAndFlush(
-            VirtualMap<OnDiskKey<K>, OnDiskValue<V>> map) {
-        // Make the fast copy
-        final var copy = map.copy();
-
-        // Hash the now immutable map
-        CRYPTO.digestTreeSync(map);
-
-        // Flush to disk
-        final VirtualRootNode<?, ?> root = map.getChild(1);
-        root.enableFlush();
-        map.release();
-        try {
-            root.waitUntilFlushed();
-        } catch (InterruptedException e) {
-            System.err.println("Unable to complete the test, the root node never flushed!");
-            throw new RuntimeException(e);
-        }
-
-        // And we're done
-        return copy;
-    }
-
-    @Test
-    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir) throws IOException {
-        // Populate the data set and flush it all to disk
-        final var ws = new OnDiskWritableState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
-            final var id = new AccountID(0, 0, i);
-            final var acct = new Account(id, "Account " + i, i);
-            ws.put(id, acct);
-        }
-        ws.commit();
-        virtualMap = copyHashAndFlush(virtualMap);
-
-        // We will now make another fast copy of our working copy of the tree.
-        // Then we will hash the immutable copy and write it out. Then we will
-        // release the immutable copy.
-        virtualMap.copy(); // throw away the copy, we won't use it
-        CRYPTO.digestTreeSync(virtualMap);
-        final byte[] serializedBytes = writeTree(virtualMap, dir);
-
-        // Before we can read the data back, we need to register the data types
-        // I plan to deserialize.
-        final var r =
-                new MerkleStateRegistry(
-                        registry,
-                        storageDir,
-                        SERVICE_NAME,
-                        new BasicSoftwareVersion(1),
-                        new BasicSoftwareVersion(1));
-        r.register(ACCOUNT_STATE_KEY)
-                .keyLength(OnDiskTest::measureAccountID)
-                .keyParser(OnDiskTest::parseAccountID)
-                .keyWriter(OnDiskTest::writeAccountID)
-                .valueParser(OnDiskTest::parseAccount)
-                .valueWriter(OnDiskTest::writeAccount)
-                .disk()
-                .maxNumOfKeys(100)
-                .complete();
-
-        // read it back now as our map and validate the data come back fine
-        virtualMap = parseTree(serializedBytes, dir);
-        final var rs = new OnDiskReadableState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
-            final var id = new AccountID(0, 0, i);
-            final var opt = rs.get(id);
-            assertThat(opt).isPresent();
-            final var acct = opt.get();
-            assertThat(acct.accountID()).isEqualTo(id);
-            assertThat(acct.memo()).isEqualTo("Account " + i);
-            assertThat(acct.balance).isEqualTo(i);
-        }
-    }
-
-    @Test
-    void populateFlushToDisk() {
-        final var ws = new OnDiskWritableState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
-            final var id = new AccountID(0, 0, i);
-            final var acct = new Account(id, "Account " + i, i);
-            ws.put(id, acct);
-        }
-        ws.commit();
-        virtualMap = copyHashAndFlush(virtualMap);
-
-        final var rs = new OnDiskReadableState<>(md, virtualMap);
-        for (int i = 0; i < 10; i++) {
-            final var id = new AccountID(0, 0, i);
-            final var opt = rs.get(id);
-            assertThat(opt).isPresent();
-            final var acct = opt.get();
-            assertThat(acct.accountID()).isEqualTo(id);
-            assertThat(acct.memo()).isEqualTo("Account " + i);
-            assertThat(acct.balance).isEqualTo(i);
-        }
-    }
+    //    @Override
+    //    @BeforeEach
+    //    protected void setUp() {
+    //        super.setUp();
+    //        md =
+    //                new StateMetadata<>(
+    //                        SERVICE_NAME,
+    //                        ACCOUNT_STATE_KEY,
+    //                        OnDiskTest::parseAccountID,
+    //                        OnDiskTest::parseAccount,
+    //                        OnDiskTest::writeAccountID,
+    //                        OnDiskTest::writeAccount,
+    //                        OnDiskTest::measureAccountID);
+    //
+    //        final var builder =
+    //                new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
+    //                        // Force all hashes to disk, to make sure we're going through all the
+    //                        // serialization paths we can
+    //                        .internalHashesRamToDiskThreshold(0)
+    //                        .storageDir(storageDir)
+    //                        .maxNumOfKeys(100)
+    //                        .preferDiskBasedIndexes(true)
+    //                        .keySerializer(new OnDiskKeySerializer<>(md))
+    //                        .virtualLeafRecordSerializer(
+    //                                new VirtualLeafRecordSerializer<>(
+    //                                        (short) 1,
+    //                                        DigestType.SHA_384,
+    //                                        (short) 1,
+    //                                        DataFileCommon.VARIABLE_DATA_SIZE,
+    //                                        new OnDiskKeySerializer<>(md),
+    //                                        (short) 1,
+    //                                        DataFileCommon.VARIABLE_DATA_SIZE,
+    //                                        new OnDiskValueSerializer<>(md),
+    //                                        true));
+    //
+    //        virtualMap =
+    //                new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY),
+    // builder);
+    //    }
+    //
+    //    <K extends Comparable<K>, V> VirtualMap<OnDiskKey<K>, OnDiskValue<V>> copyHashAndFlush(
+    //            VirtualMap<OnDiskKey<K>, OnDiskValue<V>> map) {
+    //        // Make the fast copy
+    //        final var copy = map.copy();
+    //
+    //        // Hash the now immutable map
+    //        CRYPTO.digestTreeSync(map);
+    //
+    //        // Flush to disk
+    //        final VirtualRootNode<?, ?> root = map.getChild(1);
+    //        root.enableFlush();
+    //        map.release();
+    //        try {
+    //            root.waitUntilFlushed();
+    //        } catch (InterruptedException e) {
+    //            System.err.println("Unable to complete the test, the root node never flushed!");
+    //            throw new RuntimeException(e);
+    //        }
+    //
+    //        // And we're done
+    //        return copy;
+    //    }
+    //
+    //    @Test
+    //    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir) throws IOException {
+    //        // Populate the data set and flush it all to disk
+    //        final var ws = new OnDiskWritableState<>(md, virtualMap);
+    //        for (int i = 0; i < 10; i++) {
+    //            final var id = new AccountID(0, 0, i);
+    //            final var acct = new Account(id, "Account " + i, i);
+    //            ws.put(id, acct);
+    //        }
+    //        ws.commit();
+    //        virtualMap = copyHashAndFlush(virtualMap);
+    //
+    //        // We will now make another fast copy of our working copy of the tree.
+    //        // Then we will hash the immutable copy and write it out. Then we will
+    //        // release the immutable copy.
+    //        virtualMap.copy(); // throw away the copy, we won't use it
+    //        CRYPTO.digestTreeSync(virtualMap);
+    //        final byte[] serializedBytes = writeTree(virtualMap, dir);
+    //
+    //        // Before we can read the data back, we need to register the data types
+    //        // I plan to deserialize.
+    //        final var r =
+    //                new MerkleStateRegistry(
+    //                        registry,
+    //                        storageDir,
+    //                        SERVICE_NAME,
+    //                        new BasicSoftwareVersion(1),
+    //                        new BasicSoftwareVersion(1));
+    //        r.register(ACCOUNT_STATE_KEY)
+    //                .keyLength(OnDiskTest::measureAccountID)
+    //                .keyParser(OnDiskTest::parseAccountID)
+    //                .keyWriter(OnDiskTest::writeAccountID)
+    //                .valueParser(OnDiskTest::parseAccount)
+    //                .valueWriter(OnDiskTest::writeAccount)
+    //                .disk()
+    //                .maxNumOfKeys(100)
+    //                .complete();
+    //
+    //        // read it back now as our map and validate the data come back fine
+    //        virtualMap = parseTree(serializedBytes, dir);
+    //        final var rs = new OnDiskReadableState<>(md, virtualMap);
+    //        for (int i = 0; i < 10; i++) {
+    //            final var id = new AccountID(0, 0, i);
+    //            final var opt = rs.get(id);
+    //            assertThat(opt).isPresent();
+    //            final var acct = opt.get();
+    //            assertThat(acct.accountID()).isEqualTo(id);
+    //            assertThat(acct.memo()).isEqualTo("Account " + i);
+    //            assertThat(acct.balance).isEqualTo(i);
+    //        }
+    //    }
+    //
+    //    @Test
+    //    void populateFlushToDisk() {
+    //        final var ws = new OnDiskWritableState<>(md, virtualMap);
+    //        for (int i = 0; i < 10; i++) {
+    //            final var id = new AccountID(0, 0, i);
+    //            final var acct = new Account(id, "Account " + i, i);
+    //            ws.put(id, acct);
+    //        }
+    //        ws.commit();
+    //        virtualMap = copyHashAndFlush(virtualMap);
+    //
+    //        final var rs = new OnDiskReadableState<>(md, virtualMap);
+    //        for (int i = 0; i < 10; i++) {
+    //            final var id = new AccountID(0, 0, i);
+    //            final var opt = rs.get(id);
+    //            assertThat(opt).isPresent();
+    //            final var acct = opt.get();
+    //            assertThat(acct.accountID()).isEqualTo(id);
+    //            assertThat(acct.memo()).isEqualTo("Account " + i);
+    //            assertThat(acct.balance).isEqualTo(i);
+    //        }
+    //    }
 
     /*****************************************************************************
      * The classes and method below this point are helpers for this test. They

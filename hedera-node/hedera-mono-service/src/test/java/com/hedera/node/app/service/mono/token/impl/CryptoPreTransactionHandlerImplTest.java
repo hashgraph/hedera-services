@@ -33,7 +33,7 @@ import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
@@ -94,8 +94,8 @@ class CryptoPreTransactionHandlerImplTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private ReadableState<Long, MerkleAccount> aliases;
-    @Mock private ReadableState<Long, MerkleAccount> accounts;
+    @Mock private ReadableKVState<Long, MerkleAccount> aliases;
+    @Mock private ReadableKVState<Long, MerkleAccount> accounts;
     @Mock private ReadableStates states;
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;

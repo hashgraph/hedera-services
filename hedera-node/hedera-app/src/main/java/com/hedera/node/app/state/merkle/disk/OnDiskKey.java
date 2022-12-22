@@ -15,38 +15,59 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.Parser;
-import com.hedera.node.app.spi.state.Writer;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
-import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
+import com.hedera.node.app.spi.state.Serdes;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
-    private static final long CLASS_ID = 0xa8d20bd12992d91bL;
-
+/**
+ * An implementation of {@link VirtualKey} for Hedera applications.
+ *
+ * <p>The {@link OnDiskKey} is actually a wrapper for the "real" key, which is some business logic
+ * object of type {@code K}. For example, the "real" key may be {@code AccountID}, but it must be
+ * wrapped by an {@link OnDiskKey} to adapt it for use by the {@link VirtualMap}.
+ *
+ * <p>The {@code AccountID} itself is not directly serializable, and therefore a {@link Serdes} is
+ * provided to handle all serialization needs for the "real" key. The {@link Serdes} is used to
+ * convert the "real" key into bytes for hashing, saving to disk via the {@link VirtualMap}, reading
+ * from disk, reconnect, and for state saving.
+ *
+ * @param <K> The type of key
+ */
+public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
+    /** The metadata */
+    private final StateMetadata<K, ?> md;
+    /** The {@link Serdes} used for handling serialization for the "real" key. */
+    private final Serdes<K> serdes;
+    /** The "real" key, such as AccountID. */
     private K key;
-    private final Parser<K> keyParser;
-    private final Writer<K> keyWriter;
 
-    public OnDiskKey(@NonNull final Parser<K> keyParser, @NonNull final Writer<K> keyWriter) {
-        this.keyWriter = Objects.requireNonNull(keyWriter);
-        this.keyParser = Objects.requireNonNull(keyParser);
+    /**
+     * Creates a new OnDiskKey. Used by {@link OnDiskKeySerializer}.
+     *
+     * @param md The state metadata
+     */
+    public OnDiskKey(final StateMetadata<K, ?> md) {
+        this.md = md;
+        this.serdes = md.stateDefinition().keySerdes();
     }
 
-    public OnDiskKey(
-            @NonNull final K key,
-            @NonNull final Parser<K> keyParser,
-            @NonNull final Writer<K> keyWriter) {
+    /**
+     * Creates a new OnDiskKey.
+     *
+     * @param md The state metadata
+     * @param key The "real" key
+     */
+    public OnDiskKey(final StateMetadata<K, ?> md, @NonNull final K key) {
+        this(md);
         this.key = Objects.requireNonNull(key);
-        this.keyWriter = Objects.requireNonNull(keyWriter);
-        this.keyParser = Objects.requireNonNull(keyParser);
     }
 
     @NonNull
@@ -54,34 +75,35 @@ public class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<
         return key;
     }
 
-    @Override
-    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        final var output = new ByteBufferDataOutput(byteBuffer);
-        keyWriter.write(key, output);
-    }
-
+    /** Writes the "real" key to the given stream. {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
-        keyWriter.write(key, serializableDataOutputStream);
+        serdes.write(key, serializableDataOutputStream);
+    }
+
+    @Override
+    public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException(
+                "Serialization is handled by the OnDiskKeySerializer");
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        final var input = new ByteBufferDataInput(byteBuffer);
-        key = keyParser.parse(input);
+        throw new UnsupportedOperationException(
+                "Deserialization is handled by the OnDiskKeySerializer");
     }
 
     @Override
     public void deserialize(
             @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        key = keyParser.parse(new DataInputStream(serializableDataInputStream));
+        key = serdes.parse(new DataInputStream(serializableDataInputStream));
     }
 
     @Override
     public long getClassId() {
-        return CLASS_ID;
+        return md.onDiskKeyClassId();
     }
 
     @Override

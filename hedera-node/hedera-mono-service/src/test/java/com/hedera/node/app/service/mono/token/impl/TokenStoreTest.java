@@ -29,12 +29,11 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -47,7 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenStoreTest {
-    @Mock private ReadableState<Long, MerkleToken> tokens;
+    @Mock private ReadableKVState<Long, MerkleToken> tokens;
     @Mock private ReadableStates states;
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = asToken("0.0.2000");

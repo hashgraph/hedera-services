@@ -15,31 +15,78 @@
  */
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.spi.state.Parser;
-import com.hedera.node.app.spi.state.Ruler;
-import com.hedera.node.app.spi.state.Writer;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Holds metadata related to a registered service's state.
  *
- * @param serviceName The name of the service
- * @param stateKey The state key associated with the service's state
- * @param keyParser The parser to use for deserializing the key of the state
- * @param valueParser The parser to use for deserializing the value of the state
- * @param keyWriter The writer to use to serialize the key of the state
- * @param valueWriter The writer to use to serialize the value of the state
- * @param keyRuler If used with an on-disk state, the ruler to use to measure and report the number
- *     of bytes in key to be deserialized
  * @param <K> The type of the state key
  * @param <V> The type of the state value
  */
-public record StateMetadata<K, V>(
-        @NonNull String serviceName,
-        @NonNull String stateKey,
-        @NonNull Parser<K> keyParser,
-        @NonNull Parser<V> valueParser,
-        @NonNull Writer<K> keyWriter,
-        @NonNull Writer<V> valueWriter,
-        @Nullable Ruler keyRuler) {}
+public final class StateMetadata<K extends Comparable<K>, V> {
+    private final String serviceName;
+    private final Schema schema;
+    private final StateDefinition<K, V> stateDefinition;
+    private final long onDiskKeyClassId;
+    private final long onDiskKeySerializerClassId;
+    private final long onDiskValueClassId;
+    private final long onDiskValueSerializerClassId;
+    private final long inMemoryValueClassId;
+
+    /**
+     * Create an instance.
+     *
+     * @param serviceName The name of the service
+     * @param schema The {@link Schema} that defined the state
+     * @param stateDefinition The {@link StateDefinition}
+     */
+    public StateMetadata(
+            @NonNull String serviceName,
+            @NonNull Schema schema,
+            @NonNull StateDefinition<K, V> stateDefinition) {
+        this.serviceName = serviceName;
+        this.schema = schema;
+        this.stateDefinition = stateDefinition;
+
+        this.onDiskKeyClassId = StateUtils.computeClassId(this, "OnDiskKey");
+        this.onDiskKeySerializerClassId = StateUtils.computeClassId(this, "OnDiskKeySerializer");
+        this.onDiskValueClassId = StateUtils.computeClassId(this, "OnDiskValue");
+        this.onDiskValueSerializerClassId =
+                StateUtils.computeClassId(this, "OnDiskValueSerializer");
+        this.inMemoryValueClassId = StateUtils.computeClassId(this, "InMemoryValue");
+    }
+
+    public String serviceName() {
+        return serviceName;
+    }
+
+    public Schema schema() {
+        return schema;
+    }
+
+    public StateDefinition<K, V> stateDefinition() {
+        return stateDefinition;
+    }
+
+    public long onDiskKeyClassId() {
+        return onDiskKeyClassId;
+    }
+
+    public long onDiskKeySerializerClassId() {
+        return onDiskKeySerializerClassId;
+    }
+
+    public long onDiskValueClassId() {
+        return onDiskValueClassId;
+    }
+
+    public long onDiskValueSerializerClassId() {
+        return onDiskValueSerializerClassId;
+    }
+
+    public long inMemoryValueClassId() {
+        return inMemoryValueClassId;
+    }
+}

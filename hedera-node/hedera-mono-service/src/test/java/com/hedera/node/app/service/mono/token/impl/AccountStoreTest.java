@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.KeyUtils;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,8 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
-    @Mock private ReadableState aliases;
-    @Mock private ReadableState accounts;
+    @Mock private ReadableKVState aliases;
+    @Mock private ReadableKVState accounts;
 
     @Mock private MerkleAccount account;
     @Mock private ReadableStates states;

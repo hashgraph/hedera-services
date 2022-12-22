@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoServiceImplTest {
-    @Mock private ReadableState<Long, MerkleAccount> aliases;
-    @Mock private ReadableState<Long, MerkleAccount> accounts;
+    @Mock private ReadableKVState<Long, MerkleAccount> aliases;
+    @Mock private ReadableKVState<Long, MerkleAccount> accounts;
     @Mock ReadableStates states;
     @Mock PreHandleContext ctx;
 

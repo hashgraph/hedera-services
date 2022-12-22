@@ -16,13 +16,17 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 /** An implementation of {@link ReadableStates} that is always empty. */
 public class EmptyReadableStates implements ReadableStates {
+    private static final Set<String> EMPTY_SET = Collections.emptySet();
+
     @NonNull
     @Override
-    public <K, V> ReadableState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no states");
     }
@@ -32,8 +36,9 @@ public class EmptyReadableStates implements ReadableStates {
         return false;
     }
 
+    @NonNull
     @Override
-    public int size() {
-        return 0;
+    public Set<String> stateKeys() {
+        return EMPTY_SET;
     }
 }

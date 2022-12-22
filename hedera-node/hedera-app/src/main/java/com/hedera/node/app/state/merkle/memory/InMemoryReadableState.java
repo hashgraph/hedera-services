@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.state.merkle.memory;
 
-import com.hedera.node.app.spi.state.ReadableState;
-import com.hedera.node.app.spi.state.ReadableStateBase;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,30 +24,28 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An implementation of {@link ReadableState} backed by a {@link MerkleMap}, resulting in a state
+ * An implementation of {@link ReadableKVState} backed by a {@link MerkleMap}, resulting in a state
  * that is stored in memory.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class InMemoryReadableState<K, V> extends ReadableStateBase<K, V> {
-    /** The metadata for this state */
-    private final StateMetadata<K, V> md;
+public final class InMemoryReadableState<K extends Comparable<K>, V>
+        extends ReadableKVStateBase<K, V> {
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
 
     /**
      * Create a new instance.
      *
-     * @param md The state metadata
+     * @param md the state metadata
      * @param merkleMap The backing merkle map
      */
     public InMemoryReadableState(
-            @NonNull StateMetadata<K, V> md,
+            @NonNull final StateMetadata<K, V> md,
             @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap) {
-        super(md.stateKey());
+        super(md.stateDefinition().stateKey());
         this.merkle = Objects.requireNonNull(merkleMap);
-        this.md = Objects.requireNonNull(md);
     }
 
     @Override

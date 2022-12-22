@@ -16,13 +16,17 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 /** An implementation of {@link WritableStates} that is always empty. */
 public class EmptyWritableStates implements WritableStates {
+    private static final Set<String> EMPTY_SET = Collections.emptySet();
+
     @NonNull
     @Override
-    public <K, V> WritableState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no states");
     }
@@ -32,8 +36,9 @@ public class EmptyWritableStates implements WritableStates {
         return false;
     }
 
+    @NonNull
     @Override
-    public int size() {
-        return 0;
+    public Set<String> stateKeys() {
+        return EMPTY_SET;
     }
 }

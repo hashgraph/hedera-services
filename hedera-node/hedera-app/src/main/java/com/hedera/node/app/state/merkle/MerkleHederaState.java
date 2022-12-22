@@ -32,10 +32,7 @@ import com.swirlds.common.system.events.Event;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -47,8 +44,8 @@ import java.util.function.Consumer;
  *
  * <p>Among {@link MerkleHederaState}'s child nodes are the various {@link
  * com.swirlds.merkle.map.MerkleMap}'s and {@link com.swirlds.virtualmap.VirtualMap}'s that make up
- * the service's states. Each such child node has a label specified of the form
- * "service-name.state-key". Since both service names and state keys are restricted to characters
+ * the service's states. Each such child node has a label specified that is computed from the
+ * metadata for that state. Since both service names and state keys are restricted to characters
  * that do not include the period, we can use it to separate service name from state key. When we
  * need to find all states for a service, we can do so by iteration and string comparison.
  */
@@ -73,16 +70,25 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * callback. Since this is not serialized and saved to state, it must be restored on application
      * startup. If this is never set, the application will never be able to handle a new round of
      * transactions.
+     *
+     * <p>This reference is moved forward to the working mutable state.
      */
     private BiConsumer<Round, SwirldDualState> onHandleConsensusRound;
 
-    /** This callback is invoked whenever there is an event to pre-handle. */
+    /**
+     * This callback is invoked whenever there is an event to pre-handle.
+     *
+     * <p>This reference is moved forward to the working mutable state.
+     */
     private Consumer<Event> onPreHandle;
 
     /**
      * This callback is invoked when the platform determines it is time to perform a migration. This
      * is supplied via the constructor, and so a custom entry in the ConstructableRegistry has to be
      * made to create this object.
+     *
+     * <p>This reference is only on the first, original state. It is not moved or copied forward to
+     * later working mutable states.
      */
     private final MerkleMigrationHandler onMigrate;
 
@@ -90,27 +96,28 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
-    private final Map<String, Map<String, StateMetadata>> services = new HashMap<>();
+    private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
     /**
      * This constructor is only used by ConstructableRegistry during setup, it should never be used
      * directly, and is not used during deserialization.
      */
+    @SuppressWarnings("unused")
     public MerkleHederaState() {
         this.onMigrate = null;
-        this.onHandleConsensusRound = null;
     }
 
     /**
-     * Create a new HederaState! This constructor must be used for all creations of this class.
+     * Create a new instance. This constructor must be used for all creations of this class.
      *
      * @param onMigrate The callback to invoke when the platform deems it time to migrate
+     * @param onPreHandle The callback to invoke when an event is ready for pre-handle
      * @param onHandleConsensusRound The callback invoked when the platform has
      */
     public MerkleHederaState(
             @NonNull final MerkleMigrationHandler onMigrate,
             @NonNull final Consumer<Event> onPreHandle,
-            @Nullable final BiConsumer<Round, SwirldDualState> onHandleConsensusRound) {
+            @NonNull final BiConsumer<Round, SwirldDualState> onHandleConsensusRound) {
         this.onMigrate = Objects.requireNonNull(onMigrate);
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
@@ -163,8 +170,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return CURRENT_VERSION;
     }
 
-    @NonNull
+    /** {@inheritDoc} */
     @Override
+    @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
         final var stateMetadata = services.get(serviceName);
         return stateMetadata == null
@@ -172,8 +180,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 : new MerkleReadableStates(stateMetadata);
     }
 
-    @NonNull
+    /** {@inheritDoc} */
     @Override
+    @NonNull
     public WritableStates createWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
         final var stateMetadata = services.get(serviceName);
@@ -182,17 +191,25 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 : new MerkleWritableStates(stateMetadata);
     }
 
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<K, V> md) {
+        throwIfImmutable();
+        Objects.requireNonNull(md);
+        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
+        stateMetadata.put(md.stateDefinition().stateKey(), md);
+    }
+
     /**
      * Puts the defined service state and its associated node into the merkle tree. The precondition
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a label applied.
+     * MUST have a correct label applied.
      *
      * @param md The metadata associated with the state
      * @param node The node to add. Cannot be null.
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     *     it doesn't have a label, or if the label isn't expected.
+     *     it doesn't have a label, or if the label isn't right.
      */
-    public <K, V> void putServiceStateIfAbsent(
+    public <K extends Comparable<K>, V> void putServiceStateIfAbsent(
             @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
 
         // Validate the inputs
@@ -209,13 +226,20 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             throw new IllegalArgumentException("`node` must be a VirtualMap or MerkleMap");
         }
 
+        final var def = md.stateDefinition();
+        if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
+            throw new IllegalArgumentException(
+                    "Mismatch: state definition claims on-disk, but "
+                            + "the merkle node is not a VirtualMap");
+        }
+
         if (label == null) {
             // It looks like both MerkleMap and VirtualMap do not allow for a null label.
             // But I want to leave this check in here anyway, in case that is ever changed.
             throw new IllegalArgumentException("A label must be specified on the node");
         }
 
-        if (!label.equals(StateUtils.computeLabel(md.serviceName(), md.stateKey()))) {
+        if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
             throw new IllegalArgumentException(
                     "A label must be computed based on the same "
                             + "service name and state key in the metadata!");
@@ -223,13 +247,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         // Put this metadata into the map
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
-        stateMetadata.put(md.stateKey(), md);
+        stateMetadata.put(def.stateKey(), md);
 
         // Look for a node, and if we don't find it, then insert the one we were given
         // If there is not a node there, then set it. I don't want to overwrite the existing node,
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
-        if (findNodeIndex(md.serviceName(), md.stateKey()) == -1) {
+        if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
             setChild(getNumberOfChildren(), node);
         }
     }
@@ -238,9 +262,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * Removes the node and metadata from the state merkle tree.
      *
      * @param serviceName The service name. Cannot be null.
+     * @param stateKey The state key
      */
     public void removeServiceState(
             @NonNull final String serviceName, @NonNull final String stateKey) {
+
         throwIfImmutable();
         Objects.requireNonNull(serviceName);
         Objects.requireNonNull(stateKey);
@@ -250,6 +276,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         if (stateMetadata != null) {
             stateMetadata.remove(stateKey);
         }
+
         // Remove the node
         final var index = findNodeIndex(serviceName, stateKey);
         if (index != -1) {
@@ -331,18 +358,21 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return -1;
     }
 
-    @Nullable
-    private MerkleNode findNode(@Nullable StateMetadata md, @NonNull String stateKey) {
-        if (md == null) {
-            throw new IllegalArgumentException("Unknown state " + stateKey);
-        }
-
-        final var index = findNodeIndex(md.serviceName(), stateKey);
+    /**
+     * Utility method for finding and returning the given node. Will throw an ISE if such a node
+     * cannot be found!
+     *
+     * @param md The metadata
+     * @return The found node
+     */
+    @NonNull
+    private MerkleNode findNode(@NonNull StateMetadata<?, ?> md) {
+        final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
         if (index == -1) {
             // This can only happen if there WAS a node here, and it was removed!
             throw new IllegalStateException(
                     "State '"
-                            + stateKey
+                            + md.stateDefinition().stateKey()
                             + "' for service '"
                             + md.serviceName()
                             + "' is missing from the merkle tree!");
@@ -353,26 +383,44 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     /** An implementation of {@link ReadableStates} based on the merkle tree. */
     private final class MerkleReadableStates implements ReadableStates {
-        private final Map<String, StateMetadata> stateMetadata;
+        private final Map<String, StateMetadata<?, ?>> stateMetadata;
+        private final Map<String, ReadableKVState<?, ?>> instances;
+        private final Set<String> stateKeys;
 
         /**
          * Create a new instance
          *
          * @param stateMetadata cannot be null
          */
-        MerkleReadableStates(@NonNull final Map<String, StateMetadata> stateMetadata) {
+        MerkleReadableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             this.stateMetadata = Objects.requireNonNull(stateMetadata);
+            this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
+            this.instances = new HashMap<>();
         }
 
         @NonNull
         @Override
-        public <K, V> ReadableState<K, V> get(@NonNull String stateKey) {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+            final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) instances.get(stateKey);
+            if (instance != null) {
+                return instance;
+            }
+
             final var md = stateMetadata.get(stateKey);
-            final var node = findNode(md, stateKey);
+            if (md == null) {
+                throw new IllegalArgumentException("Unknown state key '" + stateKey + ";");
+            }
+
+            final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                return new OnDiskReadableState<>(md, v);
+                final var ret = new OnDiskReadableState<>(md, v);
+                instances.put(stateKey, ret);
+                return ret;
             } else if (node instanceof MerkleMap m) {
-                return new InMemoryReadableState<>(md, m);
+                final var ret = new InMemoryReadableState<>(md, m);
+                instances.put(stateKey, ret);
+                return ret;
             } else {
                 // This method cannot possibly be reached. The findNodeIndex method ONLY
                 // returns an index if the type is VirtualMap or MerkleMap. There is no
@@ -387,34 +435,53 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             return stateMetadata.containsKey(stateKey);
         }
 
+        @NonNull
         @Override
-        public int size() {
-            return stateMetadata.size();
+        public Set<String> stateKeys() {
+            return stateKeys;
         }
     }
 
     /** An implementation of {@link WritableStates} based on the merkle tree. */
     private final class MerkleWritableStates implements WritableStates {
-        private final Map<String, StateMetadata> stateMetadata;
+        private final Map<String, StateMetadata<?, ?>> stateMetadata;
+        private final Map<String, WritableKVState<?, ?>> instances;
+        private final Set<String> stateKeys;
 
         /**
          * Create a new instance
          *
          * @param stateMetadata cannot be null
          */
-        MerkleWritableStates(@NonNull final Map<String, StateMetadata> stateMetadata) {
+        MerkleWritableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             this.stateMetadata = Objects.requireNonNull(stateMetadata);
+            this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
+            this.instances = new HashMap<>();
         }
 
         @NonNull
         @Override
-        public <K, V> WritableState<K, V> get(@NonNull String stateKey) {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+            final WritableKVState<K, V> instance = (WritableKVState<K, V>) instances.get(stateKey);
+            if (instance != null) {
+                return instance;
+            }
+
             final var md = stateMetadata.get(stateKey);
-            final var node = findNode(md, stateKey);
+            if (md == null) {
+                throw new IllegalArgumentException("Unknown state key '" + stateKey + "'");
+            }
+
+            final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                return new OnDiskWritableState<>(md, v);
+                final var ret = new OnDiskWritableState<>(md, v);
+                instances.put(stateKey, ret);
+                return ret;
             } else if (node instanceof MerkleMap m) {
-                return new InMemoryWritableState<>(md, m);
+                final var ret = new InMemoryWritableState<>(md, m);
+                instances.put(stateKey, ret);
+                return ret;
             } else {
                 // This method cannot possibly be reached. The findNodeIndex method ONLY
                 // returns an index if the type is VirtualMap or MerkleMap. There is no
@@ -429,9 +496,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             return stateMetadata.containsKey(stateKey);
         }
 
+        @NonNull
         @Override
-        public int size() {
-            return stateMetadata.size();
+        public Set<String> stateKeys() {
+            return stateKeys;
         }
     }
 }

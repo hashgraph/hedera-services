@@ -72,19 +72,6 @@ public final class StateUtils {
         return serviceName + "." + stateKey;
     }
 
-    public static boolean isForService(
-            @NonNull final String label, @NonNull final String serviceName) {
-        return label.startsWith(serviceName + ".");
-    }
-
-    public static String extractServiceName(@NonNull final String label) {
-        return label.substring(0, label.indexOf('.'));
-    }
-
-    public static String extractStateKey(@NonNull final String label) {
-        return label.substring(label.indexOf('.') + 1);
-    }
-
     /**
      * Given the inputs, compute the corresponding class ID.
      *
@@ -101,6 +88,28 @@ public final class StateUtils {
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
         return hashString(serviceName + ":" + extra + ":" + stateKey);
+    }
+
+    /**
+     * Given the inputs, compute the corresponding class ID.
+     *
+     * @param extra An extra string to bake into the class id
+     * @return the class id
+     */
+    public static long computeClassId(
+            @NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
+        // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
+        // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
+        // this formula, we will need to hardcode known classId that had been previously generated.
+        final var def = md.stateDefinition();
+        return hashString(
+                md.serviceName()
+                        + ":"
+                        + def.stateKey()
+                        + ":v"
+                        + md.schema().getVersion().getVersion()
+                        + ":"
+                        + extra);
     }
 
     // Will be moved to `NonCryptographicHashing` with

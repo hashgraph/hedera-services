@@ -20,6 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class FilteredReadableStatesTest {
-
     @Nested
     @DisplayName("FilteredReadableStates over an empty delegate ReadableStates")
     class EmptyDelegate extends StateTestBase {
@@ -214,6 +214,74 @@ class FilteredReadableStatesTest {
         void missingState() {
             assertThatThrownBy(() -> states.get(STEAM_STATE_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("StateKeys Tests")
+    class StateKeysTest extends StateTestBase {
+        private ReadableStates delegate;
+
+        @BeforeEach
+        void setUp() {
+            delegate =
+                    MapReadableStates.builder()
+                            .state(readableFruitState())
+                            .state(readableAnimalState())
+                            .state(readableSpaceState())
+                            .build();
+        }
+
+        @Test
+        @DisplayName(
+                "The filtered `stateKeys` contains all states that are in the filter and in the"
+                        + " delegate")
+        void filteredStateKeys() {
+            // Given a delegate with multiple k/v states and a set of state keys that are
+            // a subset of keys in the delegate AND contain some keys not in the delegate
+            final var stateKeys = Set.of(SPACE_STATE_KEY, STEAM_STATE_KEY);
+            final var filtered = new FilteredReadableStates(delegate, stateKeys);
+
+            // When we look at the contents of the filtered `stateKeys`
+            final var filteredStateKeys = filtered.stateKeys();
+
+            // Then we find only those states that are both in the state keys passed to
+            // the FilteredReadableStates, and in the delegate.
+            assertThat(filteredStateKeys).containsExactlyInAnyOrder(SPACE_STATE_KEY);
+        }
+
+        @Test
+        @DisplayName(
+                "A modifiable `stateKeys` set provided to a constructor can be changed without"
+                        + " impacting the FilteredReadableStates")
+        void modifiableStateKeys() {
+            // Given a delegate with multiple k/v states and a modifiable set of state keys,
+            final var modifiableStateKeys = new HashSet<String>();
+            modifiableStateKeys.add(SPACE_STATE_KEY);
+
+            // When a FilteredReadableStates is created, and the Set of all state keys for
+            // the filtered set is read and the modifiable state keys map is modified
+            final var filtered = new FilteredReadableStates(delegate, modifiableStateKeys);
+            final var filteredStateKeys = filtered.stateKeys();
+            modifiableStateKeys.add(ANIMAL_STATE_KEY);
+            modifiableStateKeys.remove(SPACE_STATE_KEY);
+
+            // Then these changes are NOT found in the filtered state keys
+            assertThat(filteredStateKeys).containsExactlyInAnyOrder(SPACE_STATE_KEY);
+        }
+
+        @Test
+        @DisplayName("The set of filtered state keys is unmodifiable")
+        void filteredStateKeysAreUnmodifiable() {
+            // Given a FilteredReadableStates
+            final var stateKeys = Set.of(SPACE_STATE_KEY, ANIMAL_STATE_KEY);
+            final var filtered = new FilteredReadableStates(delegate, stateKeys);
+
+            // When the filtered state keys is read and a modification attempted,
+            // then an exception is thrown
+            final var filteredStateKeys = filtered.stateKeys();
+            assertThatThrownBy(() -> filteredStateKeys.add(FRUIT_STATE_KEY))
+                    .isInstanceOf(UnsupportedOperationException.class);
         }
     }
 }

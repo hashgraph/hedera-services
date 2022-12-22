@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.spi.fixtures.state.MapReadableState;
 import java.util.HashMap;
@@ -28,10 +27,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the base class for all states. Most of the methods in this class are final, and can be
  * tested in isolation of specific subclasses. Those that cannot be (such as {@link
- * ReadableStateBase#reset()}) will be covered by other tests in addition to this one.
+ * ReadableKVStateBase#reset()}) will be covered by other tests in addition to this one.
  */
 class ReadableStateBaseTest extends StateTestBase {
-    private ReadableStateBase<String, String> state;
+    private ReadableKVStateBase<String, String> state;
     protected Map<String, String> backingMap;
 
     @BeforeEach
@@ -52,7 +51,7 @@ class ReadableStateBaseTest extends StateTestBase {
         return map;
     }
 
-    protected ReadableStateBase<String, String> createFruitState(Map<String, String> backingMap) {
+    protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
         return new MapReadableState<>(FRUIT_STATE_KEY, backingMap);
     }
 
@@ -60,12 +59,12 @@ class ReadableStateBaseTest extends StateTestBase {
     @Test
     @DisplayName("The state key must match what was provided in the constructor")
     void testStateKey() {
-        assertEquals(FRUIT_STATE_KEY, state.getStateKey());
+        assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
     }
 
     /**
      * When we are asked to get an unknown item (something not in the backing store), the {@link
-     * ReadableStateBase} still needs to remember this key and include it in the set of read keys,
+     * ReadableKVStateBase} still needs to remember this key and include it in the set of read keys,
      * because the fact that the key was missing might be an important piece of information when
      * working in pre-handle. So we keep track in readKeys of ALL keys read, not just those that had
      * values.
@@ -73,9 +72,9 @@ class ReadableStateBaseTest extends StateTestBase {
     @Test
     @DisplayName("`get` of an unknown item returns an empty optional")
     void testNonExistingGet() {
-        assertTrue(state.readKeys().isEmpty());
-        assertTrue(state.get(UNKNOWN_KEY).isEmpty());
-        assertTrue(state.readKeys().contains(UNKNOWN_KEY));
+        assertThat(state.readKeys()).isEmpty();
+        assertThat(state.get(UNKNOWN_KEY)).isNull();
+        assertThat(state.readKeys()).contains(UNKNOWN_KEY);
     }
 
     /**
@@ -85,28 +84,28 @@ class ReadableStateBaseTest extends StateTestBase {
     @Test
     @DisplayName("`get` of a known item returns that item")
     void testExistingGet() {
-        assertTrue(state.readKeys().isEmpty());
-        assertTrue(state.get(A_KEY).isPresent());
-        assertEquals(APPLE, state.get(A_KEY).get());
-        assertTrue(state.readKeys().contains(A_KEY));
+        assertThat(state.readKeys()).isEmpty();
+        assertThat(state.get(A_KEY)).isNotNull();
+        assertThat(state.get(A_KEY)).isEqualTo(APPLE);
+        assertThat(state.readKeys()).contains(A_KEY);
     }
 
     /** Similar to get, but for "contains". We must record this in "readKeys". */
     @Test
     @DisplayName("`contains` of an unknown item returns false")
     void testNonExistingContains() {
-        assertTrue(state.readKeys().isEmpty());
-        assertFalse(state.contains(UNKNOWN_KEY));
-        assertTrue(state.readKeys().contains(UNKNOWN_KEY));
+        assertThat(state.readKeys()).isEmpty();
+        assertThat(state.contains(UNKNOWN_KEY)).isFalse();
+        assertThat(state.readKeys()).contains(UNKNOWN_KEY);
     }
 
     /** Similar to get, but for contains. */
     @Test
     @DisplayName("`contains` of a known item returns true")
     void testExistingContains() {
-        assertTrue(state.readKeys().isEmpty());
-        assertTrue(state.contains(B_KEY));
-        assertTrue(state.readKeys().contains(B_KEY));
+        assertThat(state.readKeys()).isEmpty();
+        assertThat(state.contains(B_KEY)).isTrue();
+        assertThat(state.readKeys()).contains(B_KEY);
     }
 
     /**
@@ -117,18 +116,18 @@ class ReadableStateBaseTest extends StateTestBase {
     @DisplayName("`reset` clears the readKeys cache")
     void testReset() {
         // Populate "readKeys" by reading values
-        assertNotNull(state.get(A_KEY));
-        assertTrue(state.contains(B_KEY));
-        assertEquals(2, state.readKeys().size());
+        assertThat(state.get(A_KEY)).isNotNull();
+        assertThat(state.contains(B_KEY)).isTrue();
+        assertThat(state.readKeys()).hasSize(2);
 
         // Reset and verify the cache is empty
         state.reset();
-        assertTrue(state.readKeys().isEmpty());
+        assertThat(state.readKeys()).isEmpty();
 
         // Repopulate the cache by reading again, proving it is still working after reset
-        assertNotNull(state.get(A_KEY));
-        assertTrue(state.contains(B_KEY));
-        assertEquals(2, state.readKeys().size());
+        assertThat(state.get(A_KEY)).isNotNull();
+        assertThat(state.contains(B_KEY)).isTrue();
+        assertThat(state.readKeys()).hasSize(2);
     }
 
     @Test

@@ -16,29 +16,73 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.fixtures.state.TestBase;
+import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
+import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
+import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
+import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mockito;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ * This base class provides helpful methods and defaults for simplifying the other merkle related
+ * tests in this and sub packages. It is highly recommended to extend from this class.
+ *
+ * <h1>Services</h1>
+ *
+ * <p>This class introduces two real services, and one bad service. The real services are called
+ * (quite unhelpfully) {@link #FIRST_SERVICE} and {@link #SECOND_SERVICE}. There is also an {@link
+ * #UNKNOWN_SERVICE} which is useful for tests where we are trying to look up a service that should
+ * not exist.
+ *
+ * <p>Each service has a number of associated states, based on those defined in {@link TestBase}.
+ * The {@link #FIRST_SERVICE} has "fruit" and "animal" states, while the {@link #SECOND_SERVICE} has
+ * space, steam, and country themed states. Most of these are simple String types for the key and
+ * value, but the space themed state uses Long as the key type.
+ *
+ * <p>This class defines all the {@link Serdes}, {@link StateMetadata}, and {@link MerkleMap}s
+ * required to represent each of these. It does not create a {@link VirtualMap} automatically, but
+ * does provide APIs to make it easy to create them (the {@link VirtualMap} has a lot of setup
+ * complexity, and also requires a storage directory, so rather than creating these for every test
+ * even if they don't need it, I just use it for virtual map specific tests).
+ */
 public class MerkleTestBase extends TestBase {
     public static final String FIRST_SERVICE = "First-Service";
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
+
+    /** A {@link Serdes} to be used with String data types */
+    public static final Serdes<String> STRING_SERDES = new StringSerdes();
+    /** A {@link Serdes} to be used with Long data types */
+    public static final Serdes<Long> LONG_SERDES = new LongSerdes();
+
+    /** Used by some tests that need to hash */
+    protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
+
+    // These longs are used with the "space" k/v state
     public static final long A_LONG_KEY = 0L;
     public static final long B_LONG_KEY = 1L;
     public static final long C_LONG_KEY = 2L;
@@ -47,12 +91,21 @@ public class MerkleTestBase extends TestBase {
     public static final long F_LONG_KEY = 5L;
     public static final long G_LONG_KEY = 6L;
 
-    protected final ConstructableRegistry registry = ConstructableRegistry.getInstance();
+    /**
+     * This {@link ConstructableRegistry} is required for serialization tests. It is expensive to
+     * configure it, so it is null unless {@link #setupConstructableRegistry()} has been called by
+     * the test code.
+     */
+    protected ConstructableRegistry registry;
 
     // The "FRUIT" Map is part of FIRST_SERVICE
     protected String fruitLabel;
     protected StateMetadata<String, String> fruitMetadata;
     protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> fruitMerkleMap;
+
+    // An alternative "FRUIT" Map that is also part of FIRST_SERVICE, but based on VirtualMap
+    protected String fruitVirtualLabel;
+    protected StateMetadata<String, String> fruitVirtualMetadata;
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> fruitVirtualMap;
 
     // The "ANIMAL" map is part of FIRST_SERVICE
@@ -75,111 +128,154 @@ public class MerkleTestBase extends TestBase {
     protected StateMetadata<String, String> countryMetadata;
     protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> countryMerkleMap;
 
-    @BeforeEach
-    protected void setUp() {
-        // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
-        // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
-        // nodes).
-        try {
-            registry.reset();
-            registry.registerConstructables("com.swirlds.merklemap");
-            registry.registerConstructables("com.swirlds.jasperdb");
-            registry.registerConstructables("com.swirlds.virtualmap");
-            registry.registerConstructables("com.swirlds.common.merkle");
-            registry.registerConstructables("com.swirlds.merkle");
-            registry.registerConstructables("com.swirlds.merkle.tree");
-        } catch (ConstructableRegistryException ex) {
-            throw new AssertionError(ex);
-        }
-
+    /** Sets up the "Fruit" merkle map, label, and metadata. */
+    protected void setupFruitMerkleMap() {
         fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
-        fruitVirtualMap = createVirtualMap(fruitLabel);
         fruitMetadata =
                 new StateMetadata<>(
                         FIRST_SERVICE,
-                        FRUIT_STATE_KEY,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::measureString);
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+    }
 
+    /**
+     * Sets up the "Fruit" virtual map, label, and metadata.
+     *
+     * @param storageDir The storage location for the virtual map's database files
+     */
+    protected void setupFruitVirtualMap(Path storageDir) {
+        fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
+        fruitVirtualMetadata =
+                new StateMetadata<>(
+                        FIRST_SERVICE,
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+        fruitVirtualMap = createVirtualMap(fruitLabel, storageDir, fruitVirtualMetadata);
+    }
+
+    /** Sets up the "Animal" merkle map, label, and metadata. */
+    protected void setupAnimalMerkleMap() {
         animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
         animalMerkleMap = createMerkleMap(animalLabel);
         animalMetadata =
                 new StateMetadata<>(
                         FIRST_SERVICE,
-                        ANIMAL_STATE_KEY,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::measureString);
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+    }
 
+    /** Sets up the "Space" merkle map, label, and metadata. */
+    protected void setupSpaceMerkleMap() {
         spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
         spaceMetadata =
                 new StateMetadata<>(
                         SECOND_SERVICE,
-                        SPACE_STATE_KEY,
-                        MerkleHederaStateTest::parseLong,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::writeLong,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::measureString);
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES, 100, false));
+    }
 
+    /** Sets up the "Steam" merkle map, label, and metadata. */
+    protected void setupSteamMerkleMap() {
         steamLabel = StateUtils.computeLabel(SECOND_SERVICE, STEAM_STATE_KEY);
         steamMerkleMap = createMerkleMap(steamLabel);
         steamMetadata =
                 new StateMetadata<>(
                         SECOND_SERVICE,
-                        STEAM_STATE_KEY,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::measureString);
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                STEAM_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+    }
 
+    /** Sets up the "Country" merkle map, label, and metadata. */
+    protected void setupCountryMerkleMap() {
         countryLabel = StateUtils.computeLabel(SECOND_SERVICE, COUNTRY_STATE_KEY);
         countryMerkleMap = createMerkleMap(countryLabel);
         countryMetadata =
                 new StateMetadata<>(
                         SECOND_SERVICE,
-                        COUNTRY_STATE_KEY,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::parseString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::writeString,
-                        MerkleHederaStateTest::measureString);
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                COUNTRY_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
-    protected <K, V> MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(String label) {
+    /** Sets up the {@link #registry}, ready to be used for serialization tests */
+    protected void setupConstructableRegistry() {
+        // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
+        // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
+        // nodes).
+        try {
+            registry = ConstructableRegistry.getInstance();
+
+            // It may have been configured during some other test, so we reset it
+            registry.reset();
+            registry.registerConstructables("com.swirlds.merklemap");
+            registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.virtualmap");
+            registry.registerConstructables("com.swirlds.common.merkle");
+            registry.registerConstructables("com.swirlds.common");
+            registry.registerConstructables("com.swirlds.merkle");
+            registry.registerConstructables("com.swirlds.merkle.tree");
+        } catch (ConstructableRegistryException ex) {
+            throw new AssertionError(ex);
+        }
+    }
+
+    /** Creates a new arbitrary merkle map with the given label. */
+    protected <K extends Comparable<K>, V>
+            MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(String label) {
         final var map = new MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>>();
         map.setLabel(label);
         return map;
     }
 
+    /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     @SuppressWarnings("unchecked")
-    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(String label) {
-        final var builder = Mockito.mock(VirtualDataSourceBuilder.class);
-        return new VirtualMap<OnDiskKey<String>, OnDiskValue<String>>(label, builder);
+    protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
+            String label, Path storageDir, StateMetadata<String, String> md) {
+        final var def = md.stateDefinition();
+        final var keySerializer = new OnDiskKeySerializer<>(md);
+        final var builder =
+                new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
+                        // Force all hashes to disk, to make sure we're going through all the
+                        // serialization paths we can
+                        .internalHashesRamToDiskThreshold(0)
+                        .storageDir(storageDir)
+                        .maxNumOfKeys(100)
+                        .preferDiskBasedIndexes(true)
+                        .keySerializer(keySerializer)
+                        .virtualLeafRecordSerializer(
+                                new VirtualLeafRecordSerializer<>(
+                                        (short) 1,
+                                        DigestType.SHA_384,
+                                        (short) 1,
+                                        DataFileCommon.VARIABLE_DATA_SIZE,
+                                        keySerializer,
+                                        (short) 1,
+                                        DataFileCommon.VARIABLE_DATA_SIZE,
+                                        new OnDiskValueSerializer<>(md),
+                                        true));
+        return new VirtualMap<>(label, builder);
     }
 
-    protected void add(
-            MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> map,
-            StateMetadata<String, String> md,
-            String key,
-            String value) {
-        final var k = new InMemoryKey<>(key);
-        map.put(k, new InMemoryValue<>(md, k, value));
-    }
-
+    /**
+     * Looks within the merkle tree for a node that matches the computed label for this service name
+     * and key
+     */
     protected MerkleNode getNodeForLabel(
             MerkleHederaState hederaMerkle, String serviceName, String stateKey) {
         return getNodeForLabel(hederaMerkle, StateUtils.computeLabel(serviceName, stateKey));
     }
 
+    /**
+     * Looks within the merkle tree for a node with the given label. This is useful for tests that
+     * need to verify some change actually happened in the merkle tree.
+     */
     protected MerkleNode getNodeForLabel(MerkleHederaState hederaMerkle, String label) {
         // This is not idea, as it requires white-box testing -- knowing the
         // internal details of the MerkleHederaState. But lacking a getter
@@ -196,6 +292,28 @@ public class MerkleTestBase extends TestBase {
         return null;
     }
 
+    /** A convenience method for adding a k/v pair to a merkle map */
+    protected void add(
+            MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> map,
+            StateMetadata<String, String> md,
+            String key,
+            String value) {
+        final var def = md.stateDefinition();
+        final var k = new InMemoryKey<>(key);
+        map.put(k, new InMemoryValue<>(md, k, value));
+    }
+
+    /** A convenience method for adding a k/v pair to a virtual map */
+    protected void add(
+            VirtualMap<OnDiskKey<String>, OnDiskValue<String>> map,
+            StateMetadata<String, String> md,
+            String key,
+            String value) {
+        final var k = new OnDiskKey<>(md, key);
+        map.put(k, new OnDiskValue<>(md, value));
+    }
+
+    /** A convenience method used to serialize a merkle tree */
     protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
             throws IOException {
         final var byteOutputStream = new ByteArrayOutputStream();
@@ -205,6 +323,7 @@ public class MerkleTestBase extends TestBase {
         return byteOutputStream.toByteArray();
     }
 
+    /** A convenience method used to deserialize a merkle tree */
     protected <T extends MerkleNode> T parseTree(
             @NonNull final byte[] state, @NonNull final Path tempDir) throws IOException {
         final var byteInputStream = new ByteArrayInputStream(state);
@@ -213,44 +332,122 @@ public class MerkleTestBase extends TestBase {
         }
     }
 
-    public static void writeString(String value, DataOutput output) throws IOException {
-        if (value == null) {
-            output.writeInt(0);
-        } else {
-            final var bytes = value.getBytes(StandardCharsets.UTF_8);
-            output.writeInt(bytes.length);
-            output.write(bytes);
+    /** An implementation of {@link Serdes} for String types */
+    private static final class StringSerdes implements Serdes<String> {
+        @Nullable
+        @Override
+        public String parse(@NonNull DataInput input) throws IOException {
+            final var len = input.readInt();
+            final var bytes = new byte[len];
+            input.readFully(bytes);
+            return len == 0 ? null : new String(bytes, StandardCharsets.UTF_8);
+        }
+
+        @Override
+        public void write(@Nullable String value, @NonNull DataOutput output) throws IOException {
+            if (value == null) {
+                output.writeInt(0);
+            } else {
+                final var bytes = value.getBytes(StandardCharsets.UTF_8);
+                output.writeInt(bytes.length);
+                output.write(bytes);
+            }
+        }
+
+        @Override
+        public int measure(@NonNull DataInput input) throws IOException {
+            return input.readInt();
+        }
+
+        @Override
+        public int typicalSize() {
+            return 255;
+        }
+
+        @Override
+        public boolean fastEquals(@NonNull String value, DataInput input) {
+            try {
+                return value.equals(parse(input));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 
-    public static String parseString(DataInput input) throws IOException {
-        final var len = input.readInt();
-        final var bytes = new byte[len];
-        input.readFully(bytes);
-        return len == 0 ? null : new String(bytes, StandardCharsets.UTF_8);
+    /** An implementation of {@link Serdes} for Long types */
+    private static final class LongSerdes implements Serdes<Long> {
+        @Override
+        public Long parse(@NonNull DataInput input) throws IOException {
+            return input.readLong();
+        }
+
+        @Override
+        public void write(@Nullable Long value, @NonNull DataOutput output) throws IOException {
+            output.writeLong(value);
+        }
+
+        @Override
+        public int measure(@NonNull DataInput input) throws IOException {
+            return 8;
+        }
+
+        @Override
+        public int typicalSize() {
+            return 8;
+        }
+
+        @Override
+        public boolean fastEquals(@NonNull Long value, DataInput input) {
+            try {
+                return value.equals(parse(input));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
     }
 
-    public static int measureString(DataInput input) throws IOException {
-        return input.readInt();
-    }
+    /**
+     * An implementation of {@link Schema} that takes an integer as the version and has no
+     * implementation for the various methods. Test code can subclass this to add the behavior
+     * they'd like to test with.
+     */
+    public static class TestSchema extends Schema {
+        private Runnable onMigrate;
 
-    public static void writeInteger(Integer value, DataOutput output) throws IOException {
-        output.writeInt(value);
-    }
+        public TestSchema(SoftwareVersion version) {
+            super(version);
+        }
 
-    public static int parseInteger(DataInput input) throws IOException {
-        return input.readInt();
-    }
+        public TestSchema(int version) {
+            this(new BasicSoftwareVersion(version));
+        }
 
-    public static void writeLong(Long value, DataOutput output) throws IOException {
-        output.writeLong(value);
-    }
+        public TestSchema(SoftwareVersion version, Runnable onMigrate) {
+            this(version);
+            this.onMigrate = onMigrate;
+        }
 
-    public static long parseLong(DataInput input) throws IOException {
-        return input.readLong();
-    }
+        @NonNull
+        @Override
+        @SuppressWarnings("rawtypes")
+        public Map<String, StateDefinition> statesToCreate() {
+            return Collections.emptyMap();
+        }
 
-    public static int measureLong(DataInput input) throws IOException {
-        return 8;
+        @Override
+        public void migrate(
+                @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+            if (onMigrate != null) {
+                onMigrate.run();
+            }
+        }
+
+        @NonNull
+        @Override
+        public Set<String> statesToRemove() {
+            return Collections.emptySet();
+        }
     }
 }

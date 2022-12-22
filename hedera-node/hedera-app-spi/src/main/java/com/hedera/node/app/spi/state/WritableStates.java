@@ -16,14 +16,15 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
-/** Essentially, a map of {@link WritableState}s. Each state may be retrieved by key. */
+/** Essentially, a map of {@link WritableKVState}s. Each state may be retrieved by key. */
 public interface WritableStates {
     /**
-     * Gets the {@link WritableState} associated with the given stateKey. If the state cannot be
+     * Gets the {@link WritableKVState} associated with the given stateKey. If the state cannot be
      * found, an exception is thrown. This should **never** happen in an application, and represents
      * a fatal bug. Applications must only ask for states that they have previously registered with
-     * the {@link StateRegistry}.
+     * the {@link Schema}.
      *
      * @param stateKey The key used for looking up state
      * @return The state for that key. This will never be null.
@@ -33,7 +34,7 @@ public interface WritableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K, V> WritableState<K, V> get(@NonNull String stateKey);
+    <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
 
     /**
      * Gets whether the given state key is a member of this set.
@@ -44,11 +45,21 @@ public interface WritableStates {
     boolean contains(@NonNull String stateKey);
 
     /**
+     * Gets the set of all state keys supported by this map of states.
+     *
+     * @return The set of all state keys.
+     */
+    @NonNull
+    Set<String> stateKeys();
+
+    /**
      * Gets the number of states contained in this instance.
      *
      * @return The number of states. The value will be non-negative.
      */
-    int size();
+    default int size() {
+        return stateKeys().size();
+    }
 
     /**
      * Gets whether this instance is empty, that is, it has no states.

@@ -49,6 +49,19 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
+    protected MapReadableState<String, String> readableSpaceState() {
+        return MapReadableState.<String, String>builder(SPACE_STATE_KEY)
+                .value(A_KEY, ASTRONAUT)
+                .value(B_KEY, BLASTOFF)
+                .value(C_KEY, COMET)
+                .value(D_KEY, DRACO)
+                .value(E_KEY, EXOPLANET)
+                .value(F_KEY, FORCE)
+                .value(G_KEY, GRAVITY)
+                .build();
+    }
+
+    @NonNull
     protected MapReadableState<String, String> readableSTEAMState() {
         return MapReadableState.<String, String>builder(STEAM_STATE_KEY)
                 .value(A_KEY, ART)

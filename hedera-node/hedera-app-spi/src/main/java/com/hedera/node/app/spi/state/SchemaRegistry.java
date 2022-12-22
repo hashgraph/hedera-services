@@ -15,20 +15,18 @@
  */
 package com.hedera.node.app.spi.state;
 
+import com.hedera.node.app.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.DataInput;
-import java.io.IOException;
 
-/** Measures and returns the number of bytes used to represent an encoded object. */
-public interface Ruler {
+/**
+ * Provided by the application to the {@link Service}, the {@link SchemaRegistry} is used by the
+ * {@link Service} to register all of its {@link Schema}s.
+ */
+public interface SchemaRegistry {
     /**
-     * Reads from this data input the length of the data within the input. The implementation may
-     * read all the data, or just some special serialized data, as needed to find out the length of
-     * the data.
+     * Register the given {@link Schema}. {@link Schema}s do not need to be registered in order.
      *
-     * @param input The input to use
-     * @return The length of the data item in the input
-     * @throws IOException If it is impossible to read from the {@link DataInput}
+     * @param schema The {@link Schema} to register.
      */
-    int measure(@NonNull DataInput input) throws IOException;
+    void register(@NonNull Schema schema);
 }

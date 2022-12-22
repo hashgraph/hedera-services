@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -41,17 +42,19 @@ public class FilteredReadableStates implements ReadableStates {
         this.delegate = Objects.requireNonNull(delegate);
 
         // Only include those state keys that are actually in the underlying delegate
-        this.stateKeys = new HashSet<>(stateKeys.size());
+        final var set = new HashSet<String>(stateKeys.size());
         for (final var stateKey : stateKeys) {
             if (delegate.contains(stateKey)) {
-                this.stateKeys.add(stateKey);
+                set.add(stateKey);
             }
         }
+
+        this.stateKeys = Collections.unmodifiableSet(set);
     }
 
     @NonNull
     @Override
-    public <K, V> ReadableState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!stateKeys.contains(stateKey)) {
             throw new IllegalArgumentException("Could not find state " + stateKey);
@@ -65,8 +68,9 @@ public class FilteredReadableStates implements ReadableStates {
         return stateKeys.contains(stateKey) && delegate.contains(stateKey);
     }
 
+    @NonNull
     @Override
-    public int size() {
-        return stateKeys.size();
+    public Set<String> stateKeys() {
+        return stateKeys;
     }
 }

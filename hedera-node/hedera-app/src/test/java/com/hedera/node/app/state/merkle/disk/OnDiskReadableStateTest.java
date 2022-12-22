@@ -18,35 +18,57 @@ package com.hedera.node.app.state.merkle.disk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
+import com.hedera.node.app.state.merkle.StateMetadata;
+import com.swirlds.virtualmap.VirtualMap;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class OnDiskReadableStateTest extends MerkleTestBase {
+    @TempDir Path storageDir;
+    private StateMetadata<String, String> md;
+    private VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMap;
+
+    @BeforeEach
+    void setUp() {
+        md =
+                new StateMetadata<>(
+                        FIRST_SERVICE,
+                        new TestSchema(1),
+                        new StateDefinition<>(
+                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+        virtualMap = createVirtualMap("TEST LABEL", storageDir, md);
+    }
 
     @Nested
     @DisplayName("Constructor Tests")
     final class ConstructorTest {
+
         @Test
         @DisplayName("You must specify the metadata")
-        void nullMetadataThrows() {
-            assertThatThrownBy(() -> new OnDiskReadableState<>(null, fruitVirtualMap))
+        void nullStateKeyThrows() {
+            //noinspection DataFlowIssue
+            assertThatThrownBy(() -> new OnDiskReadableState<>(null, virtualMap))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        @DisplayName("You must specify the merkle map")
-        void nullMerkleMapThrows() {
-            assertThatThrownBy(() -> new OnDiskReadableState<>(fruitMetadata, null))
+        @DisplayName("You must specify the virtual map")
+        void nullVirtualMapThrows() {
+            //noinspection DataFlowIssue
+            assertThatThrownBy(() -> new OnDiskReadableState<>(md, null))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        @DisplayName("The stateKey matches that supplied by the metadata")
+        @DisplayName("The stateKey matches that supplied")
         void stateKey() {
-            final var state = new OnDiskReadableState<>(fruitMetadata, fruitVirtualMap);
+            final var state = new OnDiskReadableState<>(md, virtualMap);
             assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
         }
     }
@@ -58,28 +80,22 @@ class OnDiskReadableStateTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            state = new OnDiskReadableState<>(fruitMetadata, fruitVirtualMap);
-            add(fruitMerkleMap, fruitMetadata, A_KEY, APPLE);
-            add(fruitMerkleMap, fruitMetadata, B_KEY, BANANA);
-            add(fruitMerkleMap, fruitMetadata, C_KEY, CHERRY);
+            state = new OnDiskReadableState<>(md, virtualMap);
+            add(virtualMap, md, A_KEY, APPLE);
+            add(virtualMap, md, B_KEY, BANANA);
+            add(virtualMap, md, C_KEY, CHERRY);
         }
 
         @Test
-        @DisplayName("Get keys from the merkle map")
+        @DisplayName("Get keys from the virtual map")
         void get() {
-            assertThat(state.get(A_KEY)).get().isEqualTo(APPLE);
-            assertThat(state.get(B_KEY)).get().isEqualTo(BANANA);
-            assertThat(state.get(C_KEY)).get().isEqualTo(CHERRY);
-            assertThat(state.get(D_KEY)).isEmpty();
-            assertThat(state.get(E_KEY)).isEmpty();
-            assertThat(state.get(F_KEY)).isEmpty();
-            assertThat(state.get(G_KEY)).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Iterate over keys in the merkle map")
-        void iterate() {
-            assertThat(state.keys()).toIterable().containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
+            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
+            assertThat(state.get(B_KEY)).isEqualTo(BANANA);
+            assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
+            assertThat(state.get(D_KEY)).isNull();
+            assertThat(state.get(E_KEY)).isNull();
+            assertThat(state.get(F_KEY)).isNull();
+            assertThat(state.get(G_KEY)).isNull();
         }
     }
 }

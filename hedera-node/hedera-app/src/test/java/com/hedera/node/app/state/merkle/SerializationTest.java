@@ -17,40 +17,64 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.node.app.spi.state.WritableStateBase;
+import com.hedera.node.app.spi.state.*;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
-import com.swirlds.common.io.streams.MerkleDataInputStream;
-import com.swirlds.common.io.streams.MerkleDataOutputStream;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SerializationTest extends MerkleTestBase {
 
-    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
-            throws IOException {
-        final var byteOutputStream = new ByteArrayOutputStream();
-        try (final var out = new MerkleDataOutputStream(byteOutputStream)) {
-            out.writeMerkleTree(tempDir, tree);
-        }
-        return byteOutputStream.toByteArray();
+    @BeforeEach
+    void setUp() {
+        setupConstructableRegistry();
     }
 
-    protected <T extends MerkleNode> T parseTree(
-            @NonNull final byte[] state, @NonNull final Path tempDir) throws IOException {
-        final var byteInputStream = new ByteArrayInputStream(state);
-        try (final var in = new MerkleDataInputStream(byteInputStream)) {
-            return in.readMerkleTree(tempDir, 100);
-        }
+    Schema createV1Schema() {
+        return new TestSchema(1) {
+            @NonNull
+            @Override
+            @SuppressWarnings("rawtypes")
+            public Map<String, StateDefinition> statesToCreate() {
+                final var fruitDef =
+                        new StateDefinition<>(
+                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
+                final var animalDef =
+                        new StateDefinition<>(
+                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
+                return Map.of(FRUIT_STATE_KEY, fruitDef, ANIMAL_STATE_KEY, animalDef);
+            }
+
+            @Override
+            public void migrate(
+                    @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+                final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
+                fruit.put(A_KEY, APPLE);
+                fruit.put(B_KEY, BANANA);
+                fruit.put(C_KEY, CHERRY);
+                fruit.put(D_KEY, DATE);
+                fruit.put(E_KEY, EGGPLANT);
+                fruit.put(F_KEY, FIG);
+                fruit.put(G_KEY, GRAPE);
+
+                final WritableKVState<String, String> animals = newStates.get(ANIMAL_STATE_KEY);
+                animals.put(A_KEY, AARDVARK);
+                animals.put(B_KEY, BEAR);
+                animals.put(C_KEY, CUTTLEFISH);
+                animals.put(D_KEY, DOG);
+                animals.put(E_KEY, EMU);
+                animals.put(F_KEY, FOX);
+                animals.put(G_KEY, GOOSE);
+            }
+        };
     }
 
     /**
@@ -59,122 +83,58 @@ class SerializationTest extends MerkleTestBase {
      */
     @Test
     void simpleReadAndWrite(@TempDir Path path) throws IOException, ConstructableRegistryException {
+        // Given a merkle tree with some fruit and animals
+        final var v1 = new BasicSoftwareVersion(1);
         final var originalTree =
                 new MerkleHederaState((tree, ver) -> {}, evt -> {}, (round, dual) -> {});
+        final var originalRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
+        final var schemaV1 = createV1Schema();
+        originalRegistry.register(schemaV1);
+        originalRegistry.migrate(originalTree, null, v1);
 
-        final var originalRegistry =
-                new MerkleStateRegistry(
-                        registry,
-                        path,
-                        FIRST_SERVICE,
-                        new BasicSoftwareVersion(1),
-                        new BasicSoftwareVersion(1));
-
-        originalRegistry
-                .register(FRUIT_STATE_KEY)
-                .memory()
-                .keyParser(SerializationTest::parseString)
-                .keyWriter(SerializationTest::writeString)
-                .valueParser(SerializationTest::parseString)
-                .valueWriter(SerializationTest::writeString)
-                .complete();
-
-        originalRegistry
-                .register(ANIMAL_STATE_KEY)
-                .memory()
-                .keyParser(SerializationTest::parseString)
-                .keyWriter(SerializationTest::writeString)
-                .valueParser(SerializationTest::parseString)
-                .valueWriter(SerializationTest::writeString)
-                .complete();
-
-        originalRegistry.migrate(originalTree);
-
-        // Construct a full looking tree
-        final var writableFruit =
-                originalTree.createWritableStates(FIRST_SERVICE).get(FRUIT_STATE_KEY);
-        writableFruit.put(A_KEY, APPLE);
-        writableFruit.put(B_KEY, BANANA);
-        writableFruit.put(C_KEY, CHERRY);
-        writableFruit.put(D_KEY, DATE);
-        writableFruit.put(E_KEY, EGGPLANT);
-        writableFruit.put(F_KEY, FIG);
-        writableFruit.put(G_KEY, GRAPE);
-        ((WritableStateBase<?, ?>) writableFruit).commit();
-
-        final var writableAnimals =
-                originalTree.createWritableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY);
-        writableAnimals.put(A_KEY, AARDVARK);
-        writableAnimals.put(B_KEY, BEAR);
-        writableAnimals.put(C_KEY, CUTTLEFISH);
-        writableAnimals.put(D_KEY, DOG);
-        writableAnimals.put(E_KEY, EMU);
-        writableAnimals.put(F_KEY, FOX);
-        writableAnimals.put(G_KEY, GOOSE);
-        ((WritableStateBase<?, ?>) writableAnimals).commit();
-
-        // Now serialize it all!
+        // When we serialize it to bytes and deserialize it back into a tree
+        originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
+        CRYPTO.digestTreeSync(originalTree);
         final var serializedBytes = writeTree(originalTree, path);
+        final var newRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
+        newRegistry.register(schemaV1);
 
-        // Now, create a new registry, for the new version that we are loading
-        final var loadedRegistry =
-                new MerkleStateRegistry(
-                        registry,
-                        path,
-                        FIRST_SERVICE,
-                        new BasicSoftwareVersion(2),
-                        new BasicSoftwareVersion(1));
-
-        loadedRegistry
-                .register(FRUIT_STATE_KEY)
-                .memory()
-                .keyParser(SerializationTest::parseString)
-                .keyWriter(SerializationTest::writeString)
-                .valueParser(SerializationTest::parseString)
-                .valueWriter(SerializationTest::writeString)
-                .complete();
-
-        loadedRegistry
-                .register(ANIMAL_STATE_KEY)
-                .memory()
-                .keyParser(SerializationTest::parseString)
-                .keyWriter(SerializationTest::writeString)
-                .valueParser(SerializationTest::parseString)
-                .valueWriter(SerializationTest::writeString)
-                .complete();
-
-        // Register the MerkleHederaState so, when found in serialized bytes,
-        // it will register with our migration callback, etc.
+        // Register the MerkleHederaState so, when found in serialized bytes, it will register with
+        // our
+        // migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor =
                 () ->
                         new MerkleHederaState(
-                                (tree, ver) -> loadedRegistry.migrate(tree),
+                                (tree, ver) ->
+                                        newRegistry.migrate(
+                                                tree, new BasicSoftwareVersion(ver), v1),
                                 event -> {},
                                 (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 
-        // We are NOW READY To read from disk!!
         final MerkleHederaState loadedTree = parseTree(serializedBytes, path);
+        loadedTree.migrate(1);
 
+        // Then, we should be able to see all our original states again
         final var states = loadedTree.createReadableStates(FIRST_SERVICE);
-        final var fruitState = states.get(FRUIT_STATE_KEY);
-        assertThat(fruitState.get(A_KEY)).get().isEqualTo(APPLE);
-        assertThat(fruitState.get(B_KEY)).get().isEqualTo(BANANA);
-        assertThat(fruitState.get(C_KEY)).get().isEqualTo(CHERRY);
-        assertThat(fruitState.get(D_KEY)).get().isEqualTo(DATE);
-        assertThat(fruitState.get(E_KEY)).get().isEqualTo(EGGPLANT);
-        assertThat(fruitState.get(F_KEY)).get().isEqualTo(FIG);
-        assertThat(fruitState.get(G_KEY)).get().isEqualTo(GRAPE);
+        final ReadableKVState<String, String> fruitState = states.get(FRUIT_STATE_KEY);
+        assertThat(fruitState.get(A_KEY)).isEqualTo(APPLE);
+        assertThat(fruitState.get(B_KEY)).isEqualTo(BANANA);
+        assertThat(fruitState.get(C_KEY)).isEqualTo(CHERRY);
+        assertThat(fruitState.get(D_KEY)).isEqualTo(DATE);
+        assertThat(fruitState.get(E_KEY)).isEqualTo(EGGPLANT);
+        assertThat(fruitState.get(F_KEY)).isEqualTo(FIG);
+        assertThat(fruitState.get(G_KEY)).isEqualTo(GRAPE);
 
-        final var animalState = states.get(ANIMAL_STATE_KEY);
-        assertThat(animalState.get(A_KEY)).get().isEqualTo(AARDVARK);
-        assertThat(animalState.get(B_KEY)).get().isEqualTo(BEAR);
-        assertThat(animalState.get(C_KEY)).get().isEqualTo(CUTTLEFISH);
-        assertThat(animalState.get(D_KEY)).get().isEqualTo(DOG);
-        assertThat(animalState.get(E_KEY)).get().isEqualTo(EMU);
-        assertThat(animalState.get(F_KEY)).get().isEqualTo(FOX);
-        assertThat(animalState.get(G_KEY)).get().isEqualTo(GOOSE);
+        final ReadableKVState<String, String> animalState = states.get(ANIMAL_STATE_KEY);
+        assertThat(animalState.get(A_KEY)).isEqualTo(AARDVARK);
+        assertThat(animalState.get(B_KEY)).isEqualTo(BEAR);
+        assertThat(animalState.get(C_KEY)).isEqualTo(CUTTLEFISH);
+        assertThat(animalState.get(D_KEY)).isEqualTo(DOG);
+        assertThat(animalState.get(E_KEY)).isEqualTo(EMU);
+        assertThat(animalState.get(F_KEY)).isEqualTo(FOX);
+        assertThat(animalState.get(G_KEY)).isEqualTo(GOOSE);
     }
 
     /**

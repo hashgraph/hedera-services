@@ -20,19 +20,19 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An implementation of {@link WritableState} that delegates to another {@link WritableState} as
- * though it were the backend data source. Modifications to this {@link WrappedWritableState} are
+ * An implementation of {@link WritableKVState} that delegates to another {@link WritableKVState} as
+ * though it were the backend data source. Modifications to this {@link WrappedWritableKVState} are
  * buffered, along with reads, allowing code to rollback by simply throwing away the wrapper.
  *
  * @param <K> The key
  * @param <V> The value
  */
-public class WrappedWritableState<K, V> extends WritableStateBase<K, V> {
+public class WrappedWritableKVState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
     /**
-     * The {@link WritableState} to delegate to for all read operations on cache miss, and for
+     * The {@link WritableKVState} to delegate to for all read operations on cache miss, and for
      * committing changes
      */
-    private final WritableState<K, V> delegate;
+    private final WritableKVState<K, V> delegate;
 
     /**
      * Create a new instance that will treat the given {@code delegate} as the backend data source.
@@ -42,14 +42,14 @@ public class WrappedWritableState<K, V> extends WritableStateBase<K, V> {
      *
      * @param delegate The delegate. Must not be null.
      */
-    public WrappedWritableState(@NonNull final WritableState<K, V> delegate) {
+    public WrappedWritableKVState(@NonNull final WritableKVState<K, V> delegate) {
         super(delegate.getStateKey());
         this.delegate = Objects.requireNonNull(delegate);
     }
 
     @Override
     protected V getForModifyFromDataSource(@NonNull K key) {
-        return delegate.getForModify(key).orElse(null);
+        return delegate.getForModify(key);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class WrappedWritableState<K, V> extends WritableStateBase<K, V> {
 
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        return delegate.get(key).orElse(null);
+        return delegate.get(key);
     }
 
     @NonNull

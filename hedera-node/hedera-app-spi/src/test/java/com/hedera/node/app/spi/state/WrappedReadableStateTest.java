@@ -19,16 +19,16 @@ import java.util.Map;
 
 /**
  * This test extends the {@link ReadableStateBaseTest}, getting all the test methods used there, but
- * this time executed on a {@link WrappedReadableState}.
+ * this time executed on a {@link WrappedReadableKVState}.
  */
 class WrappedReadableStateTest extends ReadableStateBaseTest {
     @Override
-    protected ReadableStateBase<String, String> createFruitState(Map<String, String> backingMap) {
+    protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
         final var delegate = super.createFruitState(backingMap);
-        return new WrappedReadableState<>(delegate);
+        return new WrappedReadableKVState<>(delegate);
     }
 
-    protected ReadableStateBase<String, String> createFruitState() {
-        return new WrappedReadableState<>(readableFruitState());
+    protected ReadableKVStateBase<String, String> createFruitState() {
+        return new WrappedReadableKVState<>(readableFruitState());
     }
 }

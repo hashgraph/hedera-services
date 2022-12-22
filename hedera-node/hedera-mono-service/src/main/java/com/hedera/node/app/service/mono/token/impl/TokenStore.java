@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -34,7 +34,7 @@ import java.util.Optional;
  */
 public class TokenStore {
     /** The underlying data storage class that holds the token data. */
-    private final ReadableState<Long, MerkleToken> tokenState;
+    private final ReadableKVState<Long, MerkleToken> tokenState;
 
     /**
      * Create a new {@link TokenStore} instance.
@@ -116,9 +116,6 @@ public class TokenStore {
      */
     private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
         final var token = tokenState.get(id.getTokenNum());
-        if (token.isEmpty()) {
-            return Optional.empty();
-        }
-        return token;
+        return Optional.ofNullable(token);
     }
 }

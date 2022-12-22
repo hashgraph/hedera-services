@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.ReadableState;
-import com.hedera.node.app.spi.state.ReadableStateBase;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,36 +24,37 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An implementation of {@link ReadableState} backed by a {@link VirtualMap}, resulting in a state
+ * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
  * that is stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskReadableState<K extends Comparable<K>, V> extends ReadableStateBase<K, V> {
+public final class OnDiskReadableState<K extends Comparable<K>, V>
+        extends ReadableKVStateBase<K, V> {
     /** The backing merkle data structure to use */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
-    /** The metadata for this state */
+
     private final StateMetadata<K, V> md;
 
     /**
      * Create a new instance
      *
-     * @param md The metadata
+     * @param md the state metadata
      * @param virtualMap the backing merkle structure to use
      */
     public OnDiskReadableState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
-        super(md.stateKey());
+        super(md.stateDefinition().stateKey());
+        this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
-        this.md = Objects.requireNonNull(md);
     }
 
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
+        final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.get(k);
         return v == null ? null : v.getValue();
     }

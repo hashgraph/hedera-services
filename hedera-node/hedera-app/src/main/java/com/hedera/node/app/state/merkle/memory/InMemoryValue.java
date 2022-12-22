@@ -16,7 +16,6 @@
 package com.hedera.node.app.state.merkle.memory;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -32,28 +31,20 @@ import java.io.IOException;
 import java.util.Objects;
 
 /** The value stored in a {@link MerkleMap} for in memory states */
-public final class InMemoryValue<K, V> extends PartialMerkleLeaf
+public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerkleLeaf
         implements MerkleNode, Keyed<InMemoryKey<K>>, SelfSerializable, MerkleLeaf {
 
     /** The key associated with this value. {@link MerkleMap} requires we do this. */
     private InMemoryKey<K> key;
+
+    private final StateMetadata<K, V> md;
     /** The actual value. For example, it could be an Account or SmartContract. */
     private V val;
-    /** The metadata */
-    @SuppressWarnings("FieldMayBeFinal")
-    private StateMetadata<K, V> md;
-
-    // Unfortunately, required by constructable registry
-    @SuppressWarnings("unused")
-    public InMemoryValue() {
-        // These are ALL BOGUS
-        this.md = null;
-    }
 
     /**
      * Used by the deserialization system only
      *
-     * @param md The state metadata
+     * <p>TODO Document
      */
     public InMemoryValue(@NonNull final StateMetadata<K, V> md) {
         this.md = Objects.requireNonNull(md);
@@ -62,7 +53,8 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     /**
      * Create a new instance with the given value.
      *
-     * @param md The state metadata
+     * <p>TODO Document
+     *
      * @param key The associated key.
      * @param value The value.
      */
@@ -89,7 +81,7 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "in-memory-value");
+        return md.inMemoryValueClassId();
     }
 
     /** {@inheritDoc} */
@@ -135,19 +127,23 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     @Override
     public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
-        final var k = md.keyParser().parse(new DataInputStream(serializableDataInputStream));
+        final var keySerdes = md.stateDefinition().keySerdes();
+        final var valueSerdes = md.stateDefinition().valueSerdes();
+        final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
         if (k == null) {
             throw new IllegalStateException("Deserialized a null key, which is not allowed!");
         }
         this.key = new InMemoryKey<>(k);
-        this.val = md.valueParser().parse(new DataInputStream(serializableDataInputStream));
+        this.val = valueSerdes.parse(new DataInputStream(serializableDataInputStream));
     }
 
     /** {@inheritDoc} */
     @Override
     public void serialize(SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
-        md.keyWriter().write(key.key(), serializableDataOutputStream);
-        md.valueWriter().write(val, serializableDataOutputStream);
+        final var keySerdes = md.stateDefinition().keySerdes();
+        final var valueSerdes = md.stateDefinition().valueSerdes();
+        keySerdes.write(key.key(), serializableDataOutputStream);
+        valueSerdes.write(val, serializableDataOutputStream);
     }
 }

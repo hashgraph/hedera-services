@@ -20,15 +20,15 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * Used to wrap a {@link ReadableState}, allowing to buffer reads into the {@link
- * WrappedReadableState}.
+ * Used to wrap a {@link ReadableKVState}, allowing to buffer reads into the {@link
+ * WrappedReadableKVState}.
  *
  * @param <K> The key of the state
  * @param <V> The value of the state
  */
-public class WrappedReadableState<K, V> extends ReadableStateBase<K, V> {
-    /** The {@link ReadableState} to delegate to for all read operations on cache miss */
-    private final ReadableState<K, V> delegate;
+public class WrappedReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+    /** The {@link ReadableKVState} to delegate to for all read operations on cache miss */
+    private final ReadableKVState<K, V> delegate;
 
     /**
      * Create a new instance that will treat the given {@code delegate} as the backend data source.
@@ -38,14 +38,14 @@ public class WrappedReadableState<K, V> extends ReadableStateBase<K, V> {
      *
      * @param delegate The delegate. Must not be null.
      */
-    public WrappedReadableState(@NonNull final ReadableState<K, V> delegate) {
+    public WrappedReadableKVState(@NonNull final ReadableKVState<K, V> delegate) {
         super(delegate.getStateKey());
         this.delegate = Objects.requireNonNull(delegate);
     }
 
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        return delegate.get(key).orElse(null);
+        return delegate.get(key);
     }
 
     @NonNull

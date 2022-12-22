@@ -16,7 +16,6 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
@@ -31,14 +30,11 @@ import java.util.Objects;
  * @param <V> The type of the value in the virtual map
  */
 public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
-    /** The metadata */
     private final StateMetadata<?, V> md;
 
     /**
      * Create a new instance. This is created at registration time, it doesn't need to serialize
      * anything to disk.
-     *
-     * @param md The metadata to use
      */
     public OnDiskValueSerializer(@NonNull final StateMetadata<?, V> md) {
         this.md = Objects.requireNonNull(md);
@@ -47,7 +43,7 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "on-disk-value");
+        return md.onDiskValueSerializerClassId();
     }
 
     /** {@inheritDoc} */
@@ -72,6 +68,6 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
     /** {@inheritDoc} */
     @Override
     public OnDiskValue<V> get() {
-        return new OnDiskValue<>(md.valueParser(), md.valueWriter());
+        return new OnDiskValue<>(md);
     }
 }

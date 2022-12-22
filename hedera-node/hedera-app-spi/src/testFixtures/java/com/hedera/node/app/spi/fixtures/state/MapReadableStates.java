@@ -15,32 +15,30 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @SuppressWarnings("rawtypes")
 public class MapReadableStates implements ReadableStates {
-    private final Map<String, ReadableState> states;
+    private final Map<String, ReadableKVState> states;
 
-    public MapReadableStates(ReadableState... states) {
+    public MapReadableStates(ReadableKVState... states) {
         this.states = new HashMap<>();
         for (final var state : states) {
             this.states.put(state.getStateKey(), state);
         }
     }
 
-    public MapReadableStates(@NonNull final Map<String, ReadableState> states) {
+    public MapReadableStates(@NonNull final Map<String, ReadableKVState> states) {
         this.states = states;
     }
 
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K, V> ReadableState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown state key " + stateKey);
@@ -52,6 +50,12 @@ public class MapReadableStates implements ReadableStates {
     @Override
     public boolean contains(@NonNull String stateKey) {
         return states.containsKey(stateKey);
+    }
+
+    @NonNull
+    @Override
+    public Set<String> stateKeys() {
+        return Collections.unmodifiableSet(states.keySet());
     }
 
     @Override

@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,9 +45,9 @@ import java.util.Optional;
  */
 public final class AccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
-    private final ReadableState<Long, MerkleAccount> accountState;
+    private final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableState<ByteString, Long> aliases;
+    private final ReadableKVState<String, Long> aliases;
 
     /**
      * Create a new {@link AccountStore} instance.
@@ -95,7 +95,7 @@ public final class AccountStore implements AccountKeyLookup {
         if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();
         }
-        return accountState.get(accountNum);
+        return Optional.of(accountState.get(accountNum));
     }
 
     /**
@@ -114,7 +114,9 @@ public final class AccountStore implements AccountKeyLookup {
                     return fromMirror(evmAddress);
                 }
             }
-            return aliases.get(alias).orElse(MISSING_NUM);
+
+            final var ret = aliases.get(alias.toStringUtf8());
+            return ret == null ? MISSING_NUM : ret;
         }
         return id.getAccountNum();
     }

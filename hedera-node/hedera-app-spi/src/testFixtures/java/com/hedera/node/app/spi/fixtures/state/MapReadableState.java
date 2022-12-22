@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.ReadableStateBase;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
-public class MapReadableState<K, V> extends ReadableStateBase<K, V> {
+public class MapReadableState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
     private final Map<K, V> backingStore;
 
     public MapReadableState(@NonNull final String stateKey) {
@@ -47,11 +47,12 @@ public class MapReadableState<K, V> extends ReadableStateBase<K, V> {
         return backingStore.keySet().iterator();
     }
 
-    public static <K, V> Builder<K, V> builder(@NonNull final String stateKey) {
+    public static <K extends Comparable<K>, V> Builder<K, V> builder(
+            @NonNull final String stateKey) {
         return new Builder<>(stateKey);
     }
 
-    public static final class Builder<K, V> {
+    public static final class Builder<K extends Comparable<K>, V> {
         private final Map<K, V> backingStore = new HashMap<>();
         private final String stateKey;
 

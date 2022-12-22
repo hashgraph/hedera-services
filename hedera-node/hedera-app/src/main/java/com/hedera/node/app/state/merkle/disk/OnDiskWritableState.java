@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
-import com.hedera.node.app.spi.state.WritableState;
-import com.hedera.node.app.spi.state.WritableStateBase;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,36 +24,37 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An implementation of {@link WritableState} backed by a {@link VirtualMap}, resulting in a state
+ * An implementation of {@link WritableKVState} backed by a {@link VirtualMap}, resulting in a state
  * that is stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskWritableState<K extends Comparable<K>, V> extends WritableStateBase<K, V> {
+public final class OnDiskWritableState<K extends Comparable<K>, V>
+        extends WritableKVStateBase<K, V> {
     /** The backing merkle data structure */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
-    /** The metadata for this store */
+
     private final StateMetadata<K, V> md;
 
     /**
      * Create a new instance
      *
-     * @param md The metadata to use
+     * @param md the state metadata
      * @param virtualMap the backing merkle data structure to use
      */
     public OnDiskWritableState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
-        super(md.stateKey());
+        super(md.stateDefinition().stateKey());
+        this.md = md;
         this.virtualMap = Objects.requireNonNull(virtualMap);
-        this.md = Objects.requireNonNull(md);
     }
 
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
+        final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.get(k);
         return v == null ? null : v.getValue();
     }
@@ -68,7 +69,7 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
     /** {@inheritDoc} */
     @Override
     protected V getForModifyFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
+        final var k = new OnDiskKey<>(md, key);
         final var v = virtualMap.getForModify(k);
         return v == null ? null : v.getValue();
     }
@@ -76,19 +77,19 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
     /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
-        final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
+        final var k = new OnDiskKey<>(md, key);
         final var existing = virtualMap.getForModify(k);
         if (existing != null) {
             existing.setValue(value);
         } else {
-            virtualMap.put(k, new OnDiskValue<>(value, md.valueParser(), md.valueWriter()));
+            virtualMap.put(k, new OnDiskValue<>(md, value));
         }
     }
 
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
+        final var k = new OnDiskKey<>(md, key);
         virtualMap.remove(k);
     }
 }

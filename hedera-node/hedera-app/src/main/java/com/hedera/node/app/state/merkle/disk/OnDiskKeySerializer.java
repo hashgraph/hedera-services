@@ -15,15 +15,17 @@
  */
 package com.hedera.node.app.state.merkle.disk;
 
+import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.hedera.node.app.state.merkle.StateUtils;
 import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
 import com.hedera.node.app.state.merkle.data.MeteredOutputStream;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.SelfSerializableSupplier;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataOutputStream;
@@ -31,12 +33,27 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+/**
+ * An implementation of {@link KeySerializer}, responsible for converting an {@link OnDiskKey} into
+ * bytes when hashing, and when saving to disk, and when converting from bytes back into an object.
+ * This class is <strong>NOT</strong> used by the state saving system, which relies on {@link
+ * OnDiskKey} being self serializable.
+ *
+ * <p>However, this class does, itself, need to be {@link SelfSerializable} because it is part of
+ * the structure of a {@link VirtualMap} and needs to be restored when loaded from saved-state.
+ *
+ * @param <K>
+ */
 public final class OnDiskKeySerializer<K extends Comparable<K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
+    private final long classId;
+    private final Serdes<K> serdes;
     private final StateMetadata<K, ?> md;
 
     public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
+        this.classId = md.onDiskKeySerializerClassId();
         this.md = Objects.requireNonNull(md);
+        this.serdes = md.stateDefinition().keySerdes();
     }
 
     @Override
@@ -68,8 +85,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public int getTypicalSerializedSize() {
-        // TODO This is made up, needs to be supplied via registration?
-        return 100;
+        return serdes.typicalSize();
     }
 
     @Override
@@ -79,9 +95,8 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
-        assert md.keyRuler() != null : "Cannot be null at this point in the code";
         try {
-            return md.keyRuler().measure(new ByteBufferDataInput(byteBuffer));
+            return serdes.measure(new ByteBufferDataInput(byteBuffer));
         } catch (IOException e) {
             // Maybe log here?
             return -1;
@@ -91,9 +106,9 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     @Override
     public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored)
             throws IOException {
-        final var k = md.keyParser().parse(new ByteBufferDataInput(byteBuffer));
+        final var k = serdes.parse(new ByteBufferDataInput(byteBuffer));
         Objects.requireNonNull(k);
-        return new OnDiskKey<>(k, md.keyParser(), md.keyWriter());
+        return new OnDiskKey<>(md, k);
     }
 
     @Override
@@ -102,7 +117,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
             throws IOException {
         final var metered = new MeteredOutputStream(out);
         final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
-        md.keyWriter().write(k, new DataOutputStream(metered));
+        serdes.write(k, new DataOutputStream(metered));
         return metered.getCountWritten();
     }
 
@@ -122,7 +137,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public long getClassId() {
-        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "on-disk-key");
+        return classId;
     }
 
     @Override
@@ -143,6 +158,6 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public OnDiskKey<K> get() {
-        return new OnDiskKey<>(md.keyParser(), md.keyWriter());
+        return new OnDiskKey<>(md);
     }
 }
