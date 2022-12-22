@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -23,8 +24,14 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -38,6 +45,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,12 +68,27 @@ public class FileCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    createWithMemoWorks(),
-                    createFailsWithMissingSigs(),
-                    createFailsWithPayerAccountNotFound(),
-                    createFailsWithExcessiveLifetime(),
-                });
+                createWithMemoWorks(),
+                createFailsWithMissingSigs(),
+                createFailsWithPayerAccountNotFound(),
+                createFailsWithExcessiveLifetime(),
+                exchangeRateControlAccountIsntCharged());
+    }
+
+    private HapiSpec exchangeRateControlAccountIsntCharged() {
+        return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
+                .given(
+                        cryptoTransfer(
+                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
+                        balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
+                        getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"))
+                .when(
+                        fileUpdate(EXCHANGE_RATES)
+                                .payingWith(EXCHANGE_RATE_CONTROL)
+                                .path(Path.of("./", "exchangeRates.bin").toString()))
+                .then(
+                        getAccountBalance(EXCHANGE_RATE_CONTROL)
+                                .hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
     private HapiSpec createFailsWithExcessiveLifetime() {

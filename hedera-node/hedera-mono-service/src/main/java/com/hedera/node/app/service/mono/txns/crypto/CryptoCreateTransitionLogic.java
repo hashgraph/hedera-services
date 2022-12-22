@@ -71,7 +71,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
-    static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
     private final UsageLimits usageLimits;

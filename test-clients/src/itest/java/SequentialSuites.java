@@ -18,7 +18,6 @@ import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
-import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
@@ -35,7 +34,6 @@ public class SequentialSuites {
                 new Supplier[] {
                     TargetNetworkPrep::new,
                     FeatureFlagSuite::new,
-                    AutoAccountUpdateSuite::new,
                     SpecialAccountsAreExempted::new,
                     CryptoUpdateSuite::new,
                     PrivilegedOpsSuite::new,

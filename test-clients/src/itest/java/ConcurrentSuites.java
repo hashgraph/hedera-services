@@ -68,6 +68,7 @@ import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileS
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
+import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -98,6 +99,7 @@ public class ConcurrentSuites {
         return (Supplier<HapiSuite>[])
                 new Supplier[] {
                     CryptoCreateSuite::new,
+                    AutoAccountUpdateSuite::new,
                     CryptoApproveAllowanceSuite::new,
                     TokenPauseSpecs::new,
                     FileAppendSuite::new,

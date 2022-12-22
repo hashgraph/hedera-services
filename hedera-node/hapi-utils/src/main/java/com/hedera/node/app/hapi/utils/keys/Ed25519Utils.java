@@ -16,6 +16,7 @@
 package com.hedera.node.app.hapi.utils.keys;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.security.*;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -51,7 +52,8 @@ public final class Ed25519Utils {
     }
 
     public static EdDSAPrivateKey readKeyFrom(final File pem, final String passphrase) {
-        try (final var in = new FileInputStream(pem)) {
+        final var relocatedPem = relocatedIfNotPresentInWorkingDir(pem);
+        try (final var in = new FileInputStream(relocatedPem)) {
             final var decryptProvider =
                     new JceOpenSSLPKCS8DecryptorProviderBuilder()
                             .setProvider(BC_PROVIDER)
@@ -65,6 +67,24 @@ public final class Ed25519Utils {
             }
         } catch (final IOException | OperatorCreationException | PKCSException e) {
             throw new IllegalArgumentException(e);
+        }
+    }
+
+    private static final String TEST_CLIENTS_PREFIX = "test-clients" + File.separator;
+    private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
+
+    public static Path relocatedIfNotPresentInWorkingDir(final Path p) {
+        return relocatedIfNotPresentInWorkingDir(p.toFile()).toPath();
+    }
+
+    public static File relocatedIfNotPresentInWorkingDir(final File f) {
+        if (!f.exists()) {
+            final var absPath = f.getAbsolutePath();
+            final var idx = absPath.indexOf(RESOURCE_PATH_SEGMENT);
+            final var testClientsPath = TEST_CLIENTS_PREFIX + absPath.substring(idx);
+            return new File(testClientsPath);
+        } else {
+            return f;
         }
     }
 

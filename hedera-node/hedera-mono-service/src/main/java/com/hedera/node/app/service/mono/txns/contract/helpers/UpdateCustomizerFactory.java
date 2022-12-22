@@ -18,12 +18,14 @@ package com.hedera.node.app.service.mono.txns.contract.helpers;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcAccountId;
+import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
@@ -100,6 +102,12 @@ public class UpdateCustomizerFactory {
             customizer.autoRenewAccount(fromGrpcAccountId(op.getAutoRenewAccountId()));
         }
         if (op.hasMaxAutomaticTokenAssociations()) {
+            if (op.getMaxAutomaticTokenAssociations().getValue()
+                    > MAX_CHARGEABLE_AUTO_ASSOCIATIONS) {
+                return Pair.of(
+                        Optional.empty(),
+                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
+            }
             customizer.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations().getValue());
         }
 

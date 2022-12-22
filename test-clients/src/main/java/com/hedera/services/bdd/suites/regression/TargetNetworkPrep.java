@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -76,7 +77,9 @@ public class TargetNetworkPrep extends HapiSuite {
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
         try {
             final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
-            final var stylized121 = Files.readString(Paths.get(defaultPermissionsLoc));
+            final var stylized121 =
+                    Files.readString(
+                            relocatedIfNotPresentInWorkingDir(Paths.get(defaultPermissionsLoc)));
             final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
 
             return defaultHapiSpec("EnsureDefaultSystemFiles")
