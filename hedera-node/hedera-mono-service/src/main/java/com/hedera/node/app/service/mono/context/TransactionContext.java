@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -161,6 +162,13 @@ public interface TransactionContext {
      * @param id the created account.
      */
     void setCreated(AccountID id);
+
+    /**
+     * Record the evm address of the account created by the current transaction.
+     *
+     * @param evmAddress the evm address of the created account.
+     */
+    void setEvmAddress(ByteString evmAddress);
 
     /**
      * Record that the current transaction targeted a smart contract.

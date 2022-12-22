@@ -278,9 +278,8 @@ public class InfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView,
-            final WorldLedgers ledgers) {
-        return new ViewExecutor(input, frame, encoder, gasCalculator, stateView, ledgers);
+            final StateView stateView) {
+        return new ViewExecutor(input, frame, encoder, gasCalculator, stateView);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
