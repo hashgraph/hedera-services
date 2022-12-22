@@ -143,7 +143,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         /** Utility method that migrates from version 9 to 10 */
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
-                    new MerkleHederaState(),
+                    new MerkleHederaState((tree, ver) -> {}, (e) -> {}, (round, dualState) -> {}),
                     new BasicSoftwareVersion(9),
                     new BasicSoftwareVersion(10));
         }
@@ -157,7 +157,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
         @BeforeEach
         void setUp() {
-            merkleTree = new MerkleHederaState();
+            merkleTree =
+                    new MerkleHederaState((tree, ver) -> {}, (e) -> {}, (round, dualState) -> {});
 
             // Let the first version[0] be null, and all others have a number
             versions = new SoftwareVersion[10];
@@ -407,8 +408,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
                         // Now check that the new states contains both states as well (since I am
                         // not adding any)
-                        assertThat(newStates.size()).isEqualTo(2);
-                        assertThat(newStates.contains(FRUIT_STATE_KEY)).isTrue();
+                        assertThat(newStates.size()).isEqualTo(1);
                         assertThat(newStates.contains(ANIMAL_STATE_KEY)).isTrue();
 
                         // Add in a new animal
@@ -416,10 +416,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                                 newStates.get(ANIMAL_STATE_KEY);
                         animals.put(C_KEY, CUTTLEFISH);
 
-                        // Modify the fruit, even though I'm going to remove it in a second
-                        final WritableKVState<String, String> fruit =
-                                newStates.get(FRUIT_STATE_KEY);
-                        fruit.put(B_KEY, BLUEBERRY);
+                        // The newStates should not see the fruit map
+                        assertThatThrownBy(() -> newStates.get(FRUIT_STATE_KEY))
+                                .isInstanceOf(IllegalArgumentException.class);
                     }
                 };
             }

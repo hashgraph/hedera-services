@@ -16,16 +16,13 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.FilteredReadableStates;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableState;
+import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -190,7 +187,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Create the writable states. We won't commit anything from these states
             // until we have completed migration.
-            final var newStates = hederaState.createWritableStates(serviceName);
+            final var writeableStates = hederaState.createWritableStates(serviceName);
+            final var statesToRemove = schema.statesToRemove();
+            final var remainingStates = new HashSet<>(writeableStates.stateKeys());
+            remainingStates.removeAll(statesToRemove);
+            final var newStates = new FilteredWritableStates(writeableStates, remainingStates);
 
             // Now we can migrate the schema and then commit all the changes
             schema.migrate(previousStates, newStates);
@@ -202,7 +203,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     ((WritableKVStateBase<?, ?>) newStates.get(stateKey)).commit());
 
             // And finally we can remove any states we need to remove
-            final var statesToRemove = schema.statesToRemove();
             statesToRemove.forEach(
                     stateKey -> hederaState.removeServiceState(serviceName, stateKey));
         }
@@ -311,7 +311,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      *
      * <p>The implementation will take the service name and the state key and compute a hash for it.
      * It will then convert the hash to a long, and use that as the class ID. It will then register
-     * an {@link InMemoryWritableState}'s value merkle type to be deserialized, answering with the
+     * an {@link InMemoryWritableKVState}'s value merkle type to be deserialized, answering with the
      * generated class ID.
      *
      * @param md The state metadata

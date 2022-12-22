@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +33,7 @@ import org.mockito.Mockito;
  * <p>In this test, we create a backing store with only {(A=APPLE),(B=BANANA)}. We then have a
  * series of tests that will replace the values for A, B, or remove them, or add new values.
  */
-class WritableStateBaseTest extends ReadableStateBaseTest {
+class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     protected WritableKVStateBase<String, String> state;
 
     @Override
@@ -56,7 +56,7 @@ class WritableStateBaseTest extends ReadableStateBaseTest {
 
     protected WritableKVStateBase<String, String> createFruitState(
             @NonNull final Map<String, String> map) {
-        this.state = Mockito.spy(new MapWritableState<>(FRUIT_STATE_KEY, map));
+        this.state = Mockito.spy(new MapWritableKVState<>(FRUIT_STATE_KEY, map));
         return state;
     }
 

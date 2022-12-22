@@ -18,10 +18,10 @@ package com.hedera.node.app.spi.state;
 import java.util.Map;
 
 /**
- * This test extends the {@link ReadableStateBaseTest}, getting all the test methods used there, but
- * this time executed on a {@link WrappedReadableKVState}.
+ * This test extends the {@link ReadableKVStateBaseTest}, getting all the test methods used there,
+ * but this time executed on a {@link WrappedReadableKVState}.
  */
-class WrappedReadableStateTest extends ReadableStateBaseTest {
+class WrappedReadableKVStateTest extends ReadableKVStateBaseTest {
     @Override
     protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
         final var delegate = super.createFruitState(backingMap);

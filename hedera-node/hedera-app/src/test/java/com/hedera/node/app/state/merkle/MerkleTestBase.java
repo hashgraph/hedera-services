@@ -43,8 +43,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -428,25 +426,12 @@ public class MerkleTestBase extends TestBase {
             this.onMigrate = onMigrate;
         }
 
-        @NonNull
-        @Override
-        @SuppressWarnings("rawtypes")
-        public Set<StateDefinition> statesToCreate() {
-            return Collections.emptySet();
-        }
-
         @Override
         public void migrate(
                 @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
             if (onMigrate != null) {
                 onMigrate.run();
             }
-        }
-
-        @NonNull
-        @Override
-        public Set<String> statesToRemove() {
-            return Collections.emptySet();
         }
     }
 }

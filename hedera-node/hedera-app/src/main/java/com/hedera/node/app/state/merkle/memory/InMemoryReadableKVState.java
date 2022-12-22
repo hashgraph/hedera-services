@@ -13,56 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.state.merkle.disk;
+package com.hedera.node.app.state.merkle.memory;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
-import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An implementation of {@link ReadableKVState} backed by a {@link VirtualMap}, resulting in a state
- * that is stored on disk.
+ * An implementation of {@link ReadableKVState} backed by a {@link MerkleMap}, resulting in a state
+ * that is stored in memory.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskReadableState<K extends Comparable<K>, V>
+public final class InMemoryReadableKVState<K extends Comparable<K>, V>
         extends ReadableKVStateBase<K, V> {
-    /** The backing merkle data structure to use */
-    private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
-
-    private final StateMetadata<K, V> md;
+    /** The underlying merkle tree data structure with the data */
+    private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
 
     /**
-     * Create a new instance
+     * Create a new instance.
      *
      * @param md the state metadata
-     * @param virtualMap the backing merkle structure to use
+     * @param merkleMap The backing merkle map
      */
-    public OnDiskReadableState(
+    public InMemoryReadableKVState(
             @NonNull final StateMetadata<K, V> md,
-            @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
+            @NonNull MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkleMap) {
         super(md.stateDefinition().stateKey());
-        this.md = md;
-        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.merkle = Objects.requireNonNull(merkleMap);
     }
 
-    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(md, key);
-        final var v = virtualMap.get(k);
-        return v == null ? null : v.getValue();
+        final var k = new InMemoryKey<>(key);
+        final var leaf = merkle.get(k);
+        return leaf == null ? null : leaf.getValue();
     }
 
-    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
-        throw new UnsupportedOperationException("You cannot iterate over a virtual map's keys!");
+        return merkle.keySet().stream().map(InMemoryKey::key).iterator();
     }
 }

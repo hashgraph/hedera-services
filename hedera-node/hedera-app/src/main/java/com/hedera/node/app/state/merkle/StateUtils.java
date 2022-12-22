@@ -75,24 +75,6 @@ public final class StateUtils {
     /**
      * Given the inputs, compute the corresponding class ID.
      *
-     * @param serviceName The service name
-     * @param stateKey The state key
-     * @param extra An extra string to bake into the class id
-     * @return the class id
-     */
-    public static long computeClassId(
-            @NonNull final String serviceName,
-            @NonNull final String stateKey,
-            @NonNull final String extra) {
-        // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
-        // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
-        // this formula, we will need to hardcode known classId that had been previously generated.
-        return hashString(serviceName + ":" + extra + ":" + stateKey);
-    }
-
-    /**
-     * Given the inputs, compute the corresponding class ID.
-     *
      * @param extra An extra string to bake into the class id
      * @return the class id
      */

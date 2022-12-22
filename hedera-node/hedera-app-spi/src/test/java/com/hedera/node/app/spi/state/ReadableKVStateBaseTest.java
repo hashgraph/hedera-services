@@ -16,8 +16,9 @@
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.spi.fixtures.state.MapReadableState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
  * tested in isolation of specific subclasses. Those that cannot be (such as {@link
  * ReadableKVStateBase#reset()}) will be covered by other tests in addition to this one.
  */
-class ReadableStateBaseTest extends StateTestBase {
+class ReadableKVStateBaseTest extends StateTestBase {
     private ReadableKVStateBase<String, String> state;
     protected Map<String, String> backingMap;
 
@@ -52,7 +53,7 @@ class ReadableStateBaseTest extends StateTestBase {
     }
 
     protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
-        return new MapReadableState<>(FRUIT_STATE_KEY, backingMap);
+        return new MapReadableKVState<>(FRUIT_STATE_KEY, backingMap);
     }
 
     /** Make sure the constructor is holding onto the state key properly */
@@ -75,6 +76,17 @@ class ReadableStateBaseTest extends StateTestBase {
         assertThat(state.readKeys()).isEmpty();
         assertThat(state.get(UNKNOWN_KEY)).isNull();
         assertThat(state.readKeys()).contains(UNKNOWN_KEY);
+    }
+
+    @Test
+    @DisplayName("The set of readKeys must be unmodifiable")
+    void testReadKeysIsUnmodifiable() {
+        state.get(A_KEY);
+        final var readKeys = state.readKeys();
+        assertThatThrownBy(() -> readKeys.add(B_KEY))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.remove(A_KEY))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     /**

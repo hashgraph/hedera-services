@@ -20,7 +20,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Callback interface for responding to a migration event on the {@link MerkleHederaState}. This
  * callback is implemented by the {@link com.hedera.node.app.Hedera} application to iterate over all
- * {@link MerkleStateRegistry} instances to kick off migration.
+ * {@link MerkleSchemaRegistry} instances to kick off migration.
  */
 public interface MerkleMigrationHandler {
     /**

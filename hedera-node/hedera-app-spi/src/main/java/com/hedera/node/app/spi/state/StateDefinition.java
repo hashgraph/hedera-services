@@ -24,7 +24,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param keySerdes The {@link Serdes} to use for parsing and writing keys in the registered state
  * @param valueSerdes The {@link Serdes} to use for parsing and writing values in the registered
  *     state
- * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This value CANNOT CHANGE from one schema version to another. If it is changed, you will need to do a long-form migration to a new state.
+ * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This value
+ *     CANNOT CHANGE from one schema version to another. If it is changed, you will need to do a
+ *     long-form migration to a new state.
  * @param onDisk Whether to store this state on disk
  * @param <K> The type of key
  * @param <V> The type of value

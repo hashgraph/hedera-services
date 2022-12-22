@@ -40,6 +40,8 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V>
      */
     private final Map<K, V> readCache = new HashMap<>();
 
+    private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
+
     /**
      * Create a new StateBase.
      *
@@ -77,7 +79,7 @@ public abstract class ReadableKVStateBase<K extends Comparable<K>, V>
      */
     @NonNull
     public final Set<K> readKeys() {
-        return readCache.keySet();
+        return unmodifiableReadKeys;
     }
 
     /** {@inheritDoc} */

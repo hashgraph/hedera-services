@@ -39,7 +39,11 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
         super(stateKey);
     }
 
-    /** Flushes all changes into the underlying data store. */
+    /**
+     * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
+     * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
+     * cast and commit unless you own the instance!
+     */
     public final void commit() {
         for (final var entry : modifications.entrySet()) {
             final var key = entry.getKey();

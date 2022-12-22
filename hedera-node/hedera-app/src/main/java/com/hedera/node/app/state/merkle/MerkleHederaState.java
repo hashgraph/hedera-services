@@ -17,10 +17,10 @@ package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.merkle.disk.OnDiskReadableState;
-import com.hedera.node.app.state.merkle.disk.OnDiskWritableState;
-import com.hedera.node.app.state.merkle.memory.InMemoryReadableState;
-import com.hedera.node.app.state.merkle.memory.InMemoryWritableState;
+import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
+import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
+import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
+import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -90,22 +90,13 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * <p>This reference is only on the first, original state. It is not moved or copied forward to
      * later working mutable states.
      */
-    private final MerkleMigrationHandler onMigrate;
+    private MerkleMigrationHandler onMigrate;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
      * instance. The key is the "service-name.state-key".
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
-
-    /**
-     * This constructor is only used by ConstructableRegistry during setup, it should never be used
-     * directly, and is not used during deserialization.
-     */
-    @SuppressWarnings("unused")
-    public MerkleHederaState() {
-        this.onMigrate = null;
-    }
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
@@ -158,6 +149,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         // **DO NOT** move over the onMigrate handler. We don't need it in subsequent
         // copies of the state
         this.onMigrate = null;
+        from.onMigrate = null;
     }
 
     @Override
@@ -189,99 +181,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return stateMetadata == null
                 ? EMPTY_WRITABLE_STATES
                 : new MerkleWritableStates(stateMetadata);
-    }
-
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md) {
-        throwIfImmutable();
-        Objects.requireNonNull(md);
-        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
-        stateMetadata.put(md.stateDefinition().stateKey(), md);
-    }
-
-    /**
-     * Puts the defined service state and its associated node into the merkle tree. The precondition
-     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied.
-     *
-     * @param md The metadata associated with the state
-     * @param node The node to add. Cannot be null.
-     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     *     it doesn't have a label, or if the label isn't right.
-     */
-    public <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
-
-        // Validate the inputs
-        throwIfImmutable();
-        Objects.requireNonNull(md);
-        Objects.requireNonNull(node);
-
-        String label;
-        if (node instanceof MerkleMap<?, ?> m) {
-            label = m.getLabel();
-        } else if (node instanceof VirtualMap<?, ?> v) {
-            label = v.getLabel();
-        } else {
-            throw new IllegalArgumentException("`node` must be a VirtualMap or MerkleMap");
-        }
-
-        final var def = md.stateDefinition();
-        if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
-            throw new IllegalArgumentException(
-                    "Mismatch: state definition claims on-disk, but "
-                            + "the merkle node is not a VirtualMap");
-        }
-
-        if (label == null) {
-            // It looks like both MerkleMap and VirtualMap do not allow for a null label.
-            // But I want to leave this check in here anyway, in case that is ever changed.
-            throw new IllegalArgumentException("A label must be specified on the node");
-        }
-
-        if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
-            throw new IllegalArgumentException(
-                    "A label must be computed based on the same "
-                            + "service name and state key in the metadata!");
-        }
-
-        // Put this metadata into the map
-        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
-        stateMetadata.put(def.stateKey(), md);
-
-        // Look for a node, and if we don't find it, then insert the one we were given
-        // If there is not a node there, then set it. I don't want to overwrite the existing node,
-        // because it may have been loaded from state on disk, and the node provided here in this
-        // call is always for genesis. So we may just ignore it.
-        if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
-            setChild(getNumberOfChildren(), node);
-        }
-    }
-
-    /**
-     * Removes the node and metadata from the state merkle tree.
-     *
-     * @param serviceName The service name. Cannot be null.
-     * @param stateKey The state key
-     */
-    public void removeServiceState(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
-
-        throwIfImmutable();
-        Objects.requireNonNull(serviceName);
-        Objects.requireNonNull(stateKey);
-
-        // Remove the metadata entry
-        final var stateMetadata = services.get(serviceName);
-        if (stateMetadata != null) {
-            stateMetadata.remove(stateKey);
-        }
-
-        // Remove the node
-        final var index = findNodeIndex(serviceName, stateKey);
-        if (index != -1) {
-            setChild(index, null);
-        }
     }
 
     /**
@@ -336,6 +235,98 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         // Always return this node, we never want to replace MerkleHederaState node in the tree
         return this;
+    }
+
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<K, V> md) {
+        throwIfImmutable();
+        Objects.requireNonNull(md);
+        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
+        stateMetadata.put(md.stateDefinition().stateKey(), md);
+    }
+
+    /**
+     * Puts the defined service state and its associated node into the merkle tree. The precondition
+     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
+     * MUST have a correct label applied.
+     *
+     * @param md The metadata associated with the state
+     * @param node The node to add. Cannot be null.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
+     *     it doesn't have a label, or if the label isn't right.
+     */
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<K, V> md, @NonNull final MerkleNode node) {
+
+        // Validate the inputs
+        throwIfImmutable();
+        Objects.requireNonNull(md);
+        Objects.requireNonNull(node);
+
+        String label;
+        if (node instanceof MerkleMap<?, ?> m) {
+            label = m.getLabel();
+        } else if (node instanceof VirtualMap<?, ?> v) {
+            label = v.getLabel();
+        } else {
+            throw new IllegalArgumentException("`node` must be a VirtualMap or MerkleMap");
+        }
+
+        final var def = md.stateDefinition();
+        if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
+            throw new IllegalArgumentException(
+                    "Mismatch: state definition claims on-disk, but "
+                            + "the merkle node is not a VirtualMap");
+        }
+
+        if (label == null) {
+            // It looks like both MerkleMap and VirtualMap do not allow for a null label.
+            // But I want to leave this check in here anyway, in case that is ever changed.
+            throw new IllegalArgumentException("A label must be specified on the node");
+        }
+
+        if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
+            throw new IllegalArgumentException(
+                    "A label must be computed based on the same "
+                            + "service name and state key in the metadata!");
+        }
+
+        // Put this metadata into the map
+        final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
+        stateMetadata.put(def.stateKey(), md);
+
+        // Look for a node, and if we don't find it, then insert the one we were given
+        // If there is not a node there, then set it. I don't want to overwrite the existing node,
+        // because it may have been loaded from state on disk, and the node provided here in this
+        // call is always for genesis. So we may just ignore it.
+        if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
+            setChild(getNumberOfChildren(), node);
+        }
+    }
+
+    /**
+     * Removes the node and metadata from the state merkle tree.
+     *
+     * @param serviceName The service name. Cannot be null.
+     * @param stateKey The state key
+     */
+    void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
+
+        throwIfImmutable();
+        Objects.requireNonNull(serviceName);
+        Objects.requireNonNull(stateKey);
+
+        // Remove the metadata entry
+        final var stateMetadata = services.get(serviceName);
+        if (stateMetadata != null) {
+            stateMetadata.remove(stateKey);
+        }
+
+        // Remove the node
+        final var index = findNodeIndex(serviceName, stateKey);
+        if (index != -1) {
+            setChild(index, null);
+        }
     }
 
     /**
@@ -414,11 +405,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
             final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                final var ret = new OnDiskReadableState<>(md, v);
+                final var ret = new OnDiskReadableKVState<>(md, v);
                 instances.put(stateKey, ret);
                 return ret;
             } else if (node instanceof MerkleMap m) {
-                final var ret = new InMemoryReadableState<>(md, m);
+                final var ret = new InMemoryReadableKVState<>(md, m);
                 instances.put(stateKey, ret);
                 return ret;
             } else {
@@ -475,11 +466,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
             final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                final var ret = new OnDiskWritableState<>(md, v);
+                final var ret = new OnDiskWritableKVState<>(md, v);
                 instances.put(stateKey, ret);
                 return ret;
             } else if (node instanceof MerkleMap m) {
-                final var ret = new InMemoryWritableState<>(md, m);
+                final var ret = new InMemoryWritableKVState<>(md, m);
                 instances.put(stateKey, ret);
                 return ret;
             } else {

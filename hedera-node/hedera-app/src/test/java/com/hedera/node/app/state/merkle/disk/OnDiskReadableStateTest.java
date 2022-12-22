@@ -53,7 +53,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         @DisplayName("You must specify the metadata")
         void nullStateKeyThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new OnDiskReadableState<>(null, virtualMap))
+            assertThatThrownBy(() -> new OnDiskReadableKVState<>(null, virtualMap))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -61,14 +61,14 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         @DisplayName("You must specify the virtual map")
         void nullVirtualMapThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new OnDiskReadableState<>(md, null))
+            assertThatThrownBy(() -> new OnDiskReadableKVState<>(md, null))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         @DisplayName("The stateKey matches that supplied")
         void stateKey() {
-            final var state = new OnDiskReadableState<>(md, virtualMap);
+            final var state = new OnDiskReadableKVState<>(md, virtualMap);
             assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
         }
     }
@@ -76,11 +76,11 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     @Nested
     @DisplayName("Query Tests")
     final class QueryTest {
-        private OnDiskReadableState<String, String> state;
+        private OnDiskReadableKVState<String, String> state;
 
         @BeforeEach
         void setUp() {
-            state = new OnDiskReadableState<>(md, virtualMap);
+            state = new OnDiskReadableKVState<>(md, virtualMap);
             add(virtualMap, md, A_KEY, APPLE);
             add(virtualMap, md, B_KEY, BANANA);
             add(virtualMap, md, C_KEY, CHERRY);

@@ -17,7 +17,7 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableState;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -25,15 +25,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
- * This test extends the {@link WritableStateBaseTest}, getting all the test methods used there, but
- * this time executed on a {@link WrappedWritableKVState}.
+ * This test extends the {@link WritableKVStateBaseTest}, getting all the test methods used there,
+ * but this time executed on a {@link WrappedWritableKVState}.
  */
-class WrappedWritableStateTest extends WritableStateBaseTest {
+class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
     private WritableKVStateBase<String, String> delegate;
 
     protected WritableKVStateBase<String, String> createFruitState(
             @NonNull final Map<String, String> map) {
-        this.delegate = new MapWritableState<>(FRUIT_STATE_KEY, map);
+        this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map);
         this.state = Mockito.spy(new WrappedWritableKVState<>(delegate));
         return this.state;
     }

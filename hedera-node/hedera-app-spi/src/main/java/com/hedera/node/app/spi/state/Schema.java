@@ -17,6 +17,7 @@ package com.hedera.node.app.spi.state;
 
 import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
@@ -64,7 +65,9 @@ public abstract class Schema implements Comparable<Schema> {
      */
     @NonNull
     @SuppressWarnings("rawtypes")
-    public abstract Set<StateDefinition> statesToCreate();
+    public Set<StateDefinition> statesToCreate() {
+        return Collections.emptySet();
+    }
 
     /**
      * Called after all new states have been created (as per {@link #statesToCreate()}), this method
@@ -75,8 +78,8 @@ public abstract class Schema implements Comparable<Schema> {
      * @param previousStates The {@link ReadableStates} of the previous {@link Schema} version
      * @param newStates {@link WritableStates} for this schema.
      */
-    public abstract void migrate(
-            @NonNull ReadableStates previousStates, @NonNull WritableStates newStates);
+    public void migrate(
+            @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {}
 
     /**
      * The {@link Set} of state keys of all states that should be removed <b>AFTER</b> {@link
@@ -85,7 +88,9 @@ public abstract class Schema implements Comparable<Schema> {
      * @return the set of states to remove
      */
     @NonNull
-    public abstract Set<String> statesToRemove();
+    public Set<String> statesToRemove() {
+        return Collections.emptySet();
+    }
 
     /** {@inheritDoc */
     @Override
@@ -93,6 +98,7 @@ public abstract class Schema implements Comparable<Schema> {
         return this.version.compareTo(o.version);
     }
 
+    /** {@inheritDoc */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -103,6 +109,7 @@ public abstract class Schema implements Comparable<Schema> {
         return version.compareTo(other.version) == 0;
     }
 
+    /** {@inheritDoc */
     @Override
     public int hashCode() {
         return Integer.hashCode(version);

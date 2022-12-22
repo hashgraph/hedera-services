@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.ReadableKVStateBase;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
@@ -23,15 +23,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
-public class MapReadableState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+public class MapWritableKVState<K extends Comparable<K>, V> extends WritableKVStateBase<K, V> {
     private final Map<K, V> backingStore;
 
-    public MapReadableState(@NonNull final String stateKey) {
-        super(stateKey);
-        this.backingStore = new HashMap<>();
-    }
-
-    public MapReadableState(@NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
+    public MapWritableKVState(
+            @NonNull final String stateKey, @NonNull final Map<K, V> backingStore) {
         super(stateKey);
         this.backingStore = Objects.requireNonNull(backingStore);
     }
@@ -45,6 +41,21 @@ public class MapReadableState<K extends Comparable<K>, V> extends ReadableKVStat
     @Override
     protected Iterator<K> iterateFromDataSource() {
         return backingStore.keySet().iterator();
+    }
+
+    @Override
+    protected V getForModifyFromDataSource(@NonNull K key) {
+        return backingStore.get(key);
+    }
+
+    @Override
+    protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
+        backingStore.put(key, value);
+    }
+
+    @Override
+    protected void removeFromDataSource(@NonNull K key) {
+        backingStore.remove(key);
     }
 
     public static <K extends Comparable<K>, V> Builder<K, V> builder(
@@ -65,8 +76,8 @@ public class MapReadableState<K extends Comparable<K>, V> extends ReadableKVStat
             return this;
         }
 
-        public MapReadableState<K, V> build() {
-            return new MapReadableState<>(stateKey, new HashMap<>(backingStore));
+        public MapWritableKVState<K, V> build() {
+            return new MapWritableKVState<>(stateKey, new HashMap<>(backingStore));
         }
     }
 }

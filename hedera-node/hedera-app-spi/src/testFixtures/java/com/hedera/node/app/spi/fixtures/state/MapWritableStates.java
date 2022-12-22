@@ -15,30 +15,30 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 
 @SuppressWarnings("rawtypes")
-public class MapReadableStates implements ReadableStates {
-    private final Map<String, ReadableKVState> states;
+public class MapWritableStates implements WritableStates {
+    private final Map<String, WritableKVState> states;
 
-    public MapReadableStates(ReadableKVState... states) {
+    public MapWritableStates(WritableKVState... states) {
         this.states = new HashMap<>();
         for (final var state : states) {
             this.states.put(state.getStateKey(), state);
         }
     }
 
-    public MapReadableStates(@NonNull final Map<String, ReadableKVState> states) {
+    public MapWritableStates(@NonNull final Map<String, WritableKVState> states) {
         this.states = states;
     }
 
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
-    public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown state key " + stateKey);
@@ -68,15 +68,15 @@ public class MapReadableStates implements ReadableStates {
     }
 
     public static final class Builder {
-        private final Map<String, MapReadableKVState> states = new HashMap<>();
+        private final Map<String, MapWritableKVState> states = new HashMap<>();
 
-        public Builder state(@NonNull final MapReadableKVState state) {
+        public Builder state(@NonNull final MapWritableKVState state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }
 
-        public MapReadableStates build() {
-            return new MapReadableStates(new HashMap<>(states));
+        public MapWritableStates build() {
+            return new MapWritableStates(new HashMap<>(states));
         }
     }
 }
