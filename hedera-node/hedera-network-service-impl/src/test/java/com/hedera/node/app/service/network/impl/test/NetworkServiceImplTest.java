@@ -22,20 +22,20 @@ import org.junit.jupiter.api.Test;
 
 class NetworkServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final NetworkService service = NetworkService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final NetworkService service = NetworkService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				NetworkServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type " + NetworkServiceImpl.class.getName());
-		Assertions.assertEquals(
-				NetworkService.class.getSimpleName(),
-				service.getServiceName(),
-				"Service must have a reasonable name");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                NetworkServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + NetworkServiceImpl.class.getName());
+        Assertions.assertEquals(
+                NetworkService.class.getSimpleName(),
+                service.getServiceName(),
+                "Service must have a reasonable name");
+    }
 }

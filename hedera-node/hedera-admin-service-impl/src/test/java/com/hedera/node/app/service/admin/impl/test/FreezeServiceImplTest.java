@@ -19,43 +19,40 @@ import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-
 class FreezeServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final FreezeService service = FreezeService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final FreezeService service = FreezeService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				FreezeServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type " + FreezeServiceImpl.class.getName());
-		Assertions.assertEquals(
-				FreezeService.class.getSimpleName(),
-				service.getServiceName(),
-				"Service must have a reasonable name");
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                FreezeServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + FreezeServiceImpl.class.getName());
+        Assertions.assertEquals(
+                FreezeService.class.getSimpleName(),
+                service.getServiceName(),
+                "Service must have a reasonable name");
+    }
 
-	@Test
-	void testServiceSpi() {
-		// given
-		final Set<Service> services = ServiceFactory.loadServices();
+    @Test
+    void testServiceSpi() {
+        // given
+        final Set<Service> services = ServiceFactory.loadServices();
 
-		// then
-		Assertions.assertNotNull(services, "We must always receive an instance");
-		Assertions.assertEquals(1, services.size(), "The module only provides 1 service");
-		Assertions.assertEquals(
-				FreezeServiceImpl.class,
-				services.iterator().next().getClass(),
-				"We must always receive an instance of type " + FreezeServiceImpl.class.getName());
-	}
-
-
+        // then
+        Assertions.assertNotNull(services, "We must always receive an instance");
+        Assertions.assertEquals(1, services.size(), "The module only provides 1 service");
+        Assertions.assertEquals(
+                FreezeServiceImpl.class,
+                services.iterator().next().getClass(),
+                "We must always receive an instance of type " + FreezeServiceImpl.class.getName());
+    }
 }

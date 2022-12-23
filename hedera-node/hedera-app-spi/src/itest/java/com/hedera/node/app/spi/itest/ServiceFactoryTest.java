@@ -1,23 +1,37 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.spi.itest;
-
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
-import org.junit.jupiter.api.Test;
-
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.ServiceFactory;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
 public class ServiceFactoryTest {
 
-	@Test
-	public void testZeroResults() {
-		//given
-		final Set<Service> services = ServiceFactory.loadServices();
+    @Test
+    public void testZeroResults() {
+        // given
+        final Set<Service> services = ServiceFactory.loadServices();
 
-		//then
-		assertNotNull(services, "Result must never be null");
-		assertEquals(0, services.size(), "No services must be found");
-	}
+        // then
+        assertNotNull(services, "Result must never be null");
+        assertEquals(0, services.size(), "No services must be found");
+    }
 }
