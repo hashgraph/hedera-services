@@ -40,7 +40,7 @@ public final class StateUtils {
             throw new IllegalArgumentException("The service name must have characters");
         }
 
-        return validateStateKey(serviceName); // same requires apply to both
+        return validateIdentifier(serviceName);
     }
 
     /**
@@ -57,6 +57,23 @@ public final class StateUtils {
             throw new IllegalArgumentException("The state key must have characters");
         }
 
+        return validateIdentifier(stateKey);
+    }
+
+    /**
+     * Verifies the identifier meets all the validation requirements.
+     *
+     * @param stateKey The identifier
+     * @return The identifier provided as the argument
+     * @throws NullPointerException if the identifier is null
+     * @throws IllegalArgumentException if any other validation criteria fails
+     */
+    @NonNull
+    public static String validateIdentifier(@NonNull final String stateKey) {
+        if (Objects.requireNonNull(stateKey).isEmpty()) {
+            throw new IllegalArgumentException("The identifier must have characters");
+        }
+
         for (int i = 0; i < stateKey.length(); i++) {
             final var c = stateKey.charAt(i);
             if (!isAsciiUnderscoreOrDash(c) && !isAsciiLetter(c) && !isAsciiNumber(c)) {
@@ -67,9 +84,16 @@ public final class StateUtils {
         return stateKey;
     }
 
+    /**
+     * Computes the label for a merkle node given the service name and state key
+     *
+     * @param serviceName The service name
+     * @param stateKey The state key
+     * @return The computed label
+     */
     public static String computeLabel(
             @NonNull final String serviceName, @NonNull final String stateKey) {
-        return serviceName + "." + stateKey;
+        return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
     }
 
     /**
@@ -80,23 +104,34 @@ public final class StateUtils {
      */
     public static long computeClassId(
             @NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
+        final var def = md.stateDefinition();
+        return computeClassId(
+                md.serviceName(),
+                def.stateKey(),
+                "" + md.schema().getVersion().getVersion(),
+                extra);
+    }
+
+    /**
+     * Given the inputs, compute the corresponding class ID.
+     *
+     * @param extra An extra string to bake into the class id
+     * @return the class id
+     */
+    public static long computeClassId(
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
+            @NonNull final String version,
+            @NonNull final String extra) {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        final var def = md.stateDefinition();
-        return hashString(
-                md.serviceName()
-                        + ":"
-                        + def.stateKey()
-                        + ":v"
-                        + md.schema().getVersion().getVersion()
-                        + ":"
-                        + extra);
+        return hashString(serviceName + ":" + stateKey + ":v" + version + ":" + extra);
     }
 
     // Will be moved to `NonCryptographicHashing` with
     // https://github.com/swirlds/swirlds-platform/issues/6421
-    private static long hashString(@NonNull final String s) {
+    static long hashString(@NonNull final String s) {
         // Normalize the string so things are deterministic (different JVMs might be using different
         // default internal representation for strings, and we need to normalize that)
         final var data = getNormalisedStringBytes(s);

@@ -46,16 +46,22 @@ public final class StateMetadata<K extends Comparable<K>, V> {
             @NonNull String serviceName,
             @NonNull Schema schema,
             @NonNull StateDefinition<K, V> stateDefinition) {
-        this.serviceName = serviceName;
+        this.serviceName = StateUtils.validateServiceName(serviceName);
         this.schema = schema;
         this.stateDefinition = stateDefinition;
 
-        this.onDiskKeyClassId = StateUtils.computeClassId(this, "OnDiskKey");
-        this.onDiskKeySerializerClassId = StateUtils.computeClassId(this, "OnDiskKeySerializer");
-        this.onDiskValueClassId = StateUtils.computeClassId(this, "OnDiskValue");
+        final var stateKey = stateDefinition.stateKey();
+        final var version = "" + schema.getVersion().getVersion();
+        this.onDiskKeyClassId =
+                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskKey");
+        this.onDiskKeySerializerClassId =
+                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskKeySerializer");
+        this.onDiskValueClassId =
+                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskValue");
         this.onDiskValueSerializerClassId =
-                StateUtils.computeClassId(this, "OnDiskValueSerializer");
-        this.inMemoryValueClassId = StateUtils.computeClassId(this, "InMemoryValue");
+                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskValueSerializer");
+        this.inMemoryValueClassId =
+                StateUtils.computeClassId(serviceName, stateKey, version, "InMemoryValue");
     }
 
     public String serviceName() {

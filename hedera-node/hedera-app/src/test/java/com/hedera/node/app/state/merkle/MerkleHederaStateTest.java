@@ -270,7 +270,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             // Put a bunch of stuff into the state
             final var map = new HashMap<String, MerkleNode>();
             for (int i = 0; i < 10; i++) {
-                final var serviceName = "Service " + i;
+                final var serviceName = "Service_" + i;
                 final var label = StateUtils.computeLabel(serviceName, FRUIT_STATE_KEY);
                 final var md =
                         new StateMetadata<>(

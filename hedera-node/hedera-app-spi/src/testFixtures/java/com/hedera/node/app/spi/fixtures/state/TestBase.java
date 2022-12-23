@@ -101,6 +101,7 @@ public class TestBase {
         WORDS = Collections.unmodifiableSet(words);
     }
 
+    private static final Random RAND = new Random(7729311);
     private final Random rand = new Random(9239992);
 
     public Random random() {
@@ -140,13 +141,13 @@ public class TestBase {
      * @return A random string created by the given alphabet and of the requested length.
      */
     @NonNull
-    public String randomString(@NonNull final String alphabet, final int length) {
+    public static String randomString(@NonNull final String alphabet, final int length) {
         assert !alphabet.isBlank();
         assert length >= 0;
 
         final var buf = new byte[length];
         for (int i = 0; i < length; i++) {
-            buf[i] = (byte) alphabet.charAt(rand.nextInt(alphabet.length()));
+            buf[i] = (byte) alphabet.charAt(RAND.nextInt(alphabet.length()));
         }
 
         return new String(buf);
