@@ -399,6 +399,7 @@ class HTSPrecompiledContractTest {
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.isInTransaction()).willReturn(false);
+        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
 
         final var viewExecutor =
                 new ViewExecutor(
@@ -407,9 +408,8 @@ class HTSPrecompiledContractTest {
                         encoder,
                         evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas,
-                        stateView,
-                        wrappedLedgers);
-        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any(), any()))
+                        stateView);
+        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
                 .willReturn(mockFeeObject);
@@ -1098,7 +1098,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1121,7 +1121,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1144,7 +1144,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1167,7 +1167,7 @@ class HTSPrecompiledContractTest {
                 .when(
                         () ->
                                 ERCTransferPrecompile.decodeERCTransferFrom(
-                                        any(), any(), anyBoolean(), any(), any(), any()))
+                                        any(), any(), anyBoolean(), any(), any(), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_FROM_NFT_WRAPPER);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

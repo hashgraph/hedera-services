@@ -37,6 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
@@ -76,15 +77,15 @@ public class ViewExecutor {
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator,
-            final StateView stateView,
-            final WorldLedgers ledgers) {
+            final StateView stateView) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
-        this.ledgers = ledgers;
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        this.ledgers = updater.trackingLedgers();
     }
 
     public Pair<Long, Bytes> computeCosted() {

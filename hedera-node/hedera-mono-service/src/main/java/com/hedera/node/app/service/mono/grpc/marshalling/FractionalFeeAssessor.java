@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ public class FractionalFeeAssessor {
             BalanceChange change,
             CustomFeeMeta feeMeta,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator) {
         if (change.isForNft()) {
             return INVALID_TOKEN_ID;
         }
@@ -62,7 +62,7 @@ public class FractionalFeeAssessor {
         final var creditsToReclaimFrom = changeManager.creditsInCurrentLevel(denom);
         /* These accounts receiving the reclaimed credits are the
         effective payers unless the net-of-transfers flag is set. */
-        final var effPayerAccountNums = effPayerAccountNumsOf(creditsToReclaimFrom);
+        final var effPayerAccountNums = effPayerAccountsOf(creditsToReclaimFrom);
         for (var fee : feeMeta.customFees()) {
             final var collector = fee.getFeeCollectorAsId();
             // If the collector 0.0.C for a fractional fee is trying to send X units to
@@ -109,9 +109,9 @@ public class FractionalFeeAssessor {
                 final var finalEffPayerNums =
                         (filteredCredits == creditsToReclaimFrom)
                                 ? effPayerAccountNums
-                                : effPayerAccountNumsOf(filteredCredits);
+                                : effPayerAccountsOf(filteredCredits);
                 final var assessed =
-                        new FcAssessedCustomFee(
+                        new AssessedCustomFeeWrapper(
                                 collector.asEntityId(),
                                 denom.asEntityId(),
                                 assessedAmount,
@@ -122,11 +122,16 @@ public class FractionalFeeAssessor {
         return OK;
     }
 
-    private long[] effPayerAccountNumsOf(List<BalanceChange> credits) {
+    private AccountID[] effPayerAccountsOf(List<BalanceChange> credits) {
         int n = credits.size();
-        final var nums = new long[n];
+        final var nums = new AccountID[n];
         for (int i = 0; i < n; i++) {
-            nums[i] = credits.get(i).getAccount().num();
+            final var change = credits.get(i);
+            if (change.hasAlias()) {
+                nums[i] = AccountID.newBuilder().setAlias(change.alias()).build();
+            } else {
+                nums[i] = change.getAccount().asGrpcAccount();
+            }
         }
         return nums;
     }

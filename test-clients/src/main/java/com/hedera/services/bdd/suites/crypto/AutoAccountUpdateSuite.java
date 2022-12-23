@@ -64,7 +64,6 @@ public class AutoAccountUpdateSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        // NOTE: accountCreatedAfterAliasAccountExpiresAndDelete cannot be run in CI
         return List.of(
                 updateKeyOnAutoCreatedAccount(),
                 accountCreatedAfterAliasAccountExpires(),

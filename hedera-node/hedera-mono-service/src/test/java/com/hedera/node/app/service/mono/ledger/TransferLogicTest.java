@@ -164,6 +164,10 @@ class TransferLogicTest {
         final var inappropriateTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(txnCtx.activePayer()).willReturn(payer);
+
+        accountsLedger.begin();
+        accountsLedger.create(payer);
 
         subject =
                 new TransferLogic(
@@ -493,7 +497,6 @@ class TransferLogicTest {
                         fungibleTokenID,
                         allowanceAA(owner, -50L),
                         payer);
-
         given(tokenStore.tryTokenChange(change)).willReturn(OK);
 
         accountsLedger.begin();

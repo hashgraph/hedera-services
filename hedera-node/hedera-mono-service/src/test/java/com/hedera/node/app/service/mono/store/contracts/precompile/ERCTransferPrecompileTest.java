@@ -69,7 +69,11 @@ class ERCTransferPrecompileTest {
     void decodeTransferInput() {
         final var decodedInput =
                 decodeERCTransfer(
-                        TRANSFER_INPUT, TOKEN_ID, AccountID.getDefaultInstance(), identity());
+                        TRANSFER_INPUT,
+                        TOKEN_ID,
+                        AccountID.getDefaultInstance(),
+                        identity(),
+                        k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers().get(0);
 
@@ -84,7 +88,13 @@ class ERCTransferPrecompileTest {
 
         assertThrows(
                 ArithmeticException.class,
-                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, TOKEN_ID, accId, aliasResolver));
+                () ->
+                        decodeERCTransfer(
+                                TRANSFER_LONG_OVERFLOWN,
+                                TOKEN_ID,
+                                accId,
+                                aliasResolver,
+                                k -> true));
     }
 
     @Test
@@ -98,7 +108,8 @@ class ERCTransferPrecompileTest {
                         true,
                         identity(),
                         ledgers,
-                        notOwner);
+                        notOwner,
+                        k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
@@ -119,7 +130,8 @@ class ERCTransferPrecompileTest {
                         true,
                         identity(),
                         ledgers,
-                        notOwner);
+                        notOwner,
+                        k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
@@ -136,7 +148,13 @@ class ERCTransferPrecompileTest {
 
         final var decodedInput =
                 decodeERCTransferFrom(
-                        TRANSFER_FROM_FUNGIBLE_INPUT, TOKEN_ID, true, identity(), ledgers, fromOp);
+                        TRANSFER_FROM_FUNGIBLE_INPUT,
+                        TOKEN_ID,
+                        true,
+                        identity(),
+                        ledgers,
+                        fromOp,
+                        k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
@@ -152,7 +170,13 @@ class ERCTransferPrecompileTest {
 
         final var decodedInput =
                 decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, true, identity(), ledgers, fromOp);
+                        HAPI_TRANSFER_FROM_FUNGIBLE_INPUT,
+                        null,
+                        true,
+                        identity(),
+                        ledgers,
+                        fromOp,
+                        k -> true);
         final var fungibleTransfer =
                 decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
@@ -174,7 +198,8 @@ class ERCTransferPrecompileTest {
                         false,
                         identity(),
                         ledgers,
-                        notOwner);
+                        notOwner,
+                        k -> true);
         final var nftTransfer =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0).asGrpc();
 
@@ -190,7 +215,13 @@ class ERCTransferPrecompileTest {
 
         final var decodedInput =
                 decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_NFT_INPUT, null, false, identity(), ledgers, notOwner);
+                        HAPI_TRANSFER_FROM_NFT_INPUT,
+                        null,
+                        false,
+                        identity(),
+                        ledgers,
+                        notOwner,
+                        k -> true);
         final var nftTransfer = decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
         assertEquals(IdUtils.asToken("0.0.1"), nftTransfer.getTokenType());
@@ -213,7 +244,8 @@ class ERCTransferPrecompileTest {
                         false,
                         identity(),
                         ledgers,
-                        callerId);
+                        callerId,
+                        k -> true);
         final var nftTransfer =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0).asGrpc();
 
@@ -230,7 +262,13 @@ class ERCTransferPrecompileTest {
 
         final var decodedInput =
                 decodeERCTransferFrom(
-                        HAPI_TRANSFER_FROM_NFT_INPUT, null, false, identity(), ledgers, owner);
+                        HAPI_TRANSFER_FROM_NFT_INPUT,
+                        null,
+                        false,
+                        identity(),
+                        ledgers,
+                        owner,
+                        k -> true);
         final var nftTransfer = decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
         assertEquals(IdUtils.asToken("0.0.1"), nftTransfer.getTokenType());
@@ -255,6 +293,7 @@ class ERCTransferPrecompileTest {
                                 true,
                                 aliasResolver,
                                 ledgers,
-                                fromOp));
+                                fromOp,
+                                k -> true));
     }
 }

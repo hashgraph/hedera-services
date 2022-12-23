@@ -55,6 +55,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenKeyWrapper;
@@ -107,6 +108,7 @@ class ViewExecutorTest {
     @Mock private WorldLedgers ledgers;
     @Mock private JKey key;
     @Mock private NetworkInfo networkInfo;
+    @Mock private HederaStackedWorldStateUpdater updater;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -531,6 +533,8 @@ class ViewExecutorTest {
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.trackingLedgers()).willReturn(ledgers);
         this.subject =
                 new ViewExecutor(
                         input,
@@ -538,8 +542,7 @@ class ViewExecutorTest {
                         encodingFacade,
                         evmEncodingFacade,
                         viewGasCalculator,
-                        stateView,
-                        ledgers);
+                        stateView);
         return input;
     }
 
@@ -551,6 +554,8 @@ class ViewExecutorTest {
                         tokenAddress,
                         Bytes.of(Integers.toBytes(serialNumber)));
         given(frame.getBlockValues()).willReturn(blockValues);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.trackingLedgers()).willReturn(ledgers);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
@@ -560,8 +565,7 @@ class ViewExecutorTest {
                         encodingFacade,
                         evmEncodingFacade,
                         viewGasCalculator,
-                        stateView,
-                        ledgers);
+                        stateView);
         return input;
     }
 
