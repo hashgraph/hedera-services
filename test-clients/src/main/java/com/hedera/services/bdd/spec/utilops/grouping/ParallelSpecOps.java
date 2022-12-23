@@ -28,20 +28,26 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 public class ParallelSpecOps extends UtilOp {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 
+    private boolean failOnErrors = false;
     private final HapiSpecOperation[] subs;
+    private final Map<String, Throwable> subErrors = new HashMap<>();
 
     public ParallelSpecOps(HapiSpecOperation... subs) {
         this.subs = subs;
     }
 
+    public ParallelSpecOps failOnErrors() {
+        failOnErrors = true;
+        return this;
+    }
+
     @Override
     protected boolean submitOp(HapiSpec spec) throws Throwable {
-        Map<String, Throwable> subErrors = new HashMap<>();
-
         CompletableFuture<Void> future =
                 CompletableFuture.allOf(
                         Stream.of(subs)
@@ -62,18 +68,29 @@ public class ParallelSpecOps extends UtilOp {
         future.join();
 
         if (subErrors.size() > 0) {
-            String errMessages =
-                    subErrors.entrySet().stream()
-                            .filter(e -> !(e.getValue() instanceof RegistryNotFound))
-                            .peek(e -> e.getValue().printStackTrace())
-                            .map(e -> e.getKey() + " :: " + e.getValue().getMessage())
-                            .collect(joining(", "));
-            if (errMessages.length() > 0) {
-                log.error("Problem(s) with sub-operation(s): {}", errMessages);
+            final var message = describeSubErrors();
+            if (message.length() > 0) {
+                log.error("Problem(s) with sub-operation(s): {}", message);
             }
         }
 
-        return false;
+        return failOnErrors;
+    }
+
+    @Override
+    @SuppressWarnings("java:S5960")
+    protected void assertExpectationsGiven(final HapiSpec spec) throws Throwable {
+        if (failOnErrors && subErrors.size() > 0) {
+            Assertions.fail(describeSubErrors());
+        }
+    }
+
+    private String describeSubErrors() {
+        return subErrors.entrySet().stream()
+                .filter(e -> !(e.getValue() instanceof RegistryNotFound))
+                .peek(e -> e.getValue().printStackTrace())
+                .map(e -> e.getKey() + " :: " + e.getValue().getMessage())
+                .collect(joining(", "));
     }
 
     @Override
