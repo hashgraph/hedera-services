@@ -136,7 +136,6 @@ class InfrastructureFactoryTest {
                 new InfrastructureFactory(
                         usageLimits,
                         ids,
-                        encoder,
                         evmEncoder,
                         validator,
                         recordsHistorian,

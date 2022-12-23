@@ -97,7 +97,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
-    private final EncodingFacade encoder;
     private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
@@ -122,7 +121,6 @@ public class InfrastructureFactory {
     public InfrastructureFactory(
             final UsageLimits usageLimits,
             final EntityIdSource ids,
-            final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
@@ -139,7 +137,6 @@ public class InfrastructureFactory {
             final StateView view,
             final EntityCreator entityCreator) {
         this.ids = ids;
-        this.encoder = encoder;
         this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
