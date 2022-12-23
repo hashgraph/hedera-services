@@ -536,12 +536,7 @@ class ViewExecutorTest {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.trackingLedgers()).willReturn(ledgers);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        stateView);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, stateView);
         return input;
     }
 
@@ -558,12 +553,7 @@ class ViewExecutorTest {
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        stateView);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, stateView);
         return input;
     }
 

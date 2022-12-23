@@ -124,7 +124,8 @@ public class StateView {
 
     private static final Logger log = LogManager.getLogger(StateView.class);
 
-    private static final String FAILURE_TOKEN_INFO = "Unexpected failure getting info for token {}!";
+    private static final String FAILURE_TOKEN_INFO =
+            "Unexpected failure getting info for token {}!";
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
     public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
@@ -200,10 +201,7 @@ public class StateView {
             }
             return Optional.of(token.asEvmTokenInfo(networkInfo.ledgerId()));
         } catch (Exception unexpected) {
-            log.warn(
-                FAILURE_TOKEN_INFO,
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -217,10 +215,7 @@ public class StateView {
             }
             return Optional.of(token.asTokenInfo(tokenId, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
-            log.warn(
-                FAILURE_TOKEN_INFO,
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -356,10 +351,7 @@ public class StateView {
             }
             return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
         } catch (Exception unexpected) {
-            log.warn(
-                FAILURE_TOKEN_INFO,
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
