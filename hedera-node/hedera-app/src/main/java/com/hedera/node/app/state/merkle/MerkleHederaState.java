@@ -48,6 +48,11 @@ import java.util.function.Consumer;
  * metadata for that state. Since both service names and state keys are restricted to characters
  * that do not include the period, we can use it to separate service name from state key. When we
  * need to find all states for a service, we can do so by iteration and string comparison.
+ *
+ * <p>NOTE: The implementation of this class must change before we can support state proofs properly.
+ * In particular, a wide n-ary number of children is less than ideal, since the hash of each child
+ * must be part of the state proof. It would be better to have a binary tree. We should consider
+ * nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState {
@@ -279,7 +284,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                             + "the merkle node is not a VirtualMap");
         }
 
-        if (label == null) {
+        if (label == null || label.isEmpty()) {
             // It looks like both MerkleMap and VirtualMap do not allow for a null label.
             // But I want to leave this check in here anyway, in case that is ever changed.
             throw new IllegalArgumentException("A label must be specified on the node");
