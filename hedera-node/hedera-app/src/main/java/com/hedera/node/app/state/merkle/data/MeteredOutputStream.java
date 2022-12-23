@@ -15,40 +15,46 @@
  */
 package com.hedera.node.app.state.merkle.data;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Objects;
 
+/** Simple {@link OutputStream} that wraps another and counts all bytes written. */
+/*@NotThreadSafe*/
 public final class MeteredOutputStream extends FilterOutputStream {
     private int countWritten = 0;
 
     /**
      * Creates an output stream filter built on top of the specified underlying output stream.
      *
-     * @param out the underlying output stream to be assigned to the field {@code this.out} for
-     *     later use, or {@code null} if this instance is to be created without an underlying
-     *     stream.
+     * @param out the underlying output stream to delegate writes to.
      */
-    public MeteredOutputStream(OutputStream out) {
-        super(out);
+    public MeteredOutputStream(@NonNull OutputStream out) {
+        super(Objects.requireNonNull(out));
     }
 
+    /** Gets the number of bytes written */
     public int getCountWritten() {
         return countWritten;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void write(int b) throws IOException {
         super.write(b);
         countWritten++;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void write(byte[] b) throws IOException {
         super.write(b);
         countWritten += b.length;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         super.write(b, off, len);

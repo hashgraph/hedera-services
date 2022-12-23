@@ -20,6 +20,12 @@ import java.io.DataOutput;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+/**
+ * An adapter class that adapts a {@link ByteBuffer} to be a {@link DataOutput}.
+ *
+ * <p>NOTE: This class is temporary. It will be removed when we move to the PBJ generated classes,
+ * since they have another DataOutput type class that we will use instead.
+ */
 public class ByteBufferDataOutput implements DataOutput {
     private final ByteBuffer buffer;
 

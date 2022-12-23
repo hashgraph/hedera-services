@@ -21,7 +21,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-/** */
+/**
+ * An adapter class that adapts a {@link ByteBuffer} to be a {@link DataInput}.
+ *
+ * <p>NOTE: This class is temporary. It will be removed when we move to the PBJ generated classes,
+ * since they have another DataInput type class that we will use instead.
+ */
 public class ByteBufferDataInput implements DataInput {
     private final ByteBuffer buffer;
 
