@@ -390,6 +390,7 @@ class HTSPrecompiledContractTest {
                         input,
                         messageFrame,
                         encoder,
+                        evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas,
                         stateView);
         given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))

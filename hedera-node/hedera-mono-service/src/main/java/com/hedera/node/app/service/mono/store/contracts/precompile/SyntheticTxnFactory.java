@@ -531,6 +531,15 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
+    public TransactionBody.Builder updateHollowAccount(final EntityNum accountNum, final Key key) {
+        final var grpcId = accountNum.toGrpcAccountId();
+        final var op =
+                CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(grpcId).setKey(key);
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
+                .setCryptoUpdateAccount(op);
+    }
+
     private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
         return CryptoCreateTransactionBody.newBuilder()
                 .setInitialBalance(balance)

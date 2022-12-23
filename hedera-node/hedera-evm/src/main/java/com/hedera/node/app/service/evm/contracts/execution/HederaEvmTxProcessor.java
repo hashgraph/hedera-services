@@ -155,7 +155,7 @@ public abstract class HederaEvmTxProcessor {
         tracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
-            String evmVersion = dynamicProperties.evmVersion();
+            final String evmVersion = dynamicProperties.evmVersion();
             messageCallProcessor = mcps.get(evmVersion).get();
             contractCreationProcessor = ccps.get(evmVersion).get();
         }
@@ -212,7 +212,7 @@ public abstract class HederaEvmTxProcessor {
         return gasUsedByTransaction;
     }
 
-    protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
+    protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
         return livePricesSource.currentGasPrice(
                 consensusTime,
                 isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());

@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -51,7 +49,8 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardScheduleService");
+                "We must always receive an instance of type "
+                        + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
     }
 }

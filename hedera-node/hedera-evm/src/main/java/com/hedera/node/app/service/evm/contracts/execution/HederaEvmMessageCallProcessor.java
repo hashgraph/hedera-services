@@ -66,6 +66,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
                     return;
+                } else if (updater.get(frame.getRecipientAddress()) == null) {
+                    executeLazyCreate(frame, operationTracer);
+                    if (frame.getState() == EXCEPTIONAL_HALT) {
+                        return;
+                    }
                 }
             }
 
@@ -97,5 +102,10 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         } else {
             frame.setState(EXCEPTIONAL_HALT);
         }
+    }
+
+    protected void executeLazyCreate(
+            final MessageFrame frame, final OperationTracer operationTracer) {
+        // no-op
     }
 }

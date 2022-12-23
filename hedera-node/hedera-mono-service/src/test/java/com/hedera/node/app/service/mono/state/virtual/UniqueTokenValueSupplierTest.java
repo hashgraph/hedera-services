@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -26,13 +26,13 @@ import org.junit.jupiter.api.Test;
 class UniqueTokenValueSupplierTest {
     @Test
     void tokenSupplier_whenCalledMultipleTimes_producesNewCopies() {
-        UniqueTokenValueSupplier supplier = new UniqueTokenValueSupplier();
-        UniqueTokenValue value1 = supplier.get();
-        UniqueTokenValue value2 = supplier.get();
+        final UniqueTokenValueSupplier supplier = new UniqueTokenValueSupplier();
+        final UniqueTokenValue value1 = supplier.get();
+        final UniqueTokenValue value2 = supplier.get();
 
         assertThat(value1).isNotNull();
         assertThat(value2).isNotNull();
-        assertThat(value1).isNotSameInstanceAs(value2);
+        assertThat(value1).isNotSameAs(value2);
     }
 
     // Test invariants. The below tests are designed to fail if one accidentally modifies specified
@@ -49,14 +49,14 @@ class UniqueTokenValueSupplierTest {
 
     @Test
     void noopFunctions_forTestCoverage() {
-        UniqueTokenValueSupplier supplier = new UniqueTokenValueSupplier();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SerializableDataOutputStream dataOutputStream =
+        final UniqueTokenValueSupplier supplier = new UniqueTokenValueSupplier();
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final SerializableDataOutputStream dataOutputStream =
                 new SerializableDataOutputStream(outputStream);
         supplier.serialize(dataOutputStream);
         assertThat(outputStream.toByteArray()).isEmpty();
 
-        SerializableDataInputStream dataInputStream =
+        final SerializableDataInputStream dataInputStream =
                 new SerializableDataInputStream(
                         new ByteArrayInputStream(outputStream.toByteArray()));
         supplier.deserialize(dataInputStream, 1);

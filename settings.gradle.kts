@@ -64,7 +64,7 @@ include(":hedera-node:hedera-util-service")
 include(":hedera-node:hedera-util-service-impl")
 include(":hedera-node:hapi-utils")
 include(":hedera-node:hapi-fees")
-include(":hedera-node:hapi")
+// include(":hedera-node:hapi")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
@@ -208,6 +208,7 @@ dependencyResolutionManagement {
             library("protobuf-java", "com.google.protobuf", "protobuf-java").versionRef("protobuf-java-version")
             library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
+            library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core").versionRef("swirlds-version")
             library("swirlds-fchashmap", "com.swirlds", "swirlds-fchashmap").versionRef("swirlds-version")
             library("swirlds-merkle", "com.swirlds", "swirlds-merkle").versionRef("swirlds-version")
@@ -237,7 +238,6 @@ dependencyResolutionManagement {
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
             version("classgraph-version", "4.8.65")
-            version("google-truth-version", "1.1.3")
             version("assertj-version", "3.23.1")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
@@ -258,7 +258,6 @@ dependencyResolutionManagement {
                 )
             )
 
-            library("google-truth", "com.google.truth", "truth").versionRef("google-truth-version")
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
             library(

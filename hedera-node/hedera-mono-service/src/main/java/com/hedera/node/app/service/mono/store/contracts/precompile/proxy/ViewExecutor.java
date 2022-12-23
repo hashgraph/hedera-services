@@ -32,6 +32,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -64,6 +65,7 @@ public class ViewExecutor {
     private final Bytes input;
     private final MessageFrame frame;
     private final EncodingFacade encoder;
+    private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
     private final StateView stateView;
     private final WorldLedgers ledgers;
@@ -72,11 +74,13 @@ public class ViewExecutor {
             final Bytes input,
             final MessageFrame frame,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator,
             final StateView stateView) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
@@ -153,7 +157,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isFrozen = ledgers.isFrozen(wrapper.account(), wrapper.token());
-                return encoder.encodeIsFrozen(isFrozen);
+                return evmEncoder.encodeIsFrozen(isFrozen);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
                 final var wrapper =
@@ -164,7 +168,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.token());
-                return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+                return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
                 final var wrapper = GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
@@ -174,7 +178,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.token());
-                return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+                return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
                 final var wrapper = IsKycPrecompile.decodeIsKyc(input, a -> a);
@@ -184,7 +188,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isKyc = ledgers.isKyc(wrapper.account(), wrapper.token());
-                return encoder.encodeIsKyc(isKyc);
+                return evmEncoder.encodeIsKyc(isKyc);
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
@@ -203,7 +207,7 @@ public class ViewExecutor {
 
                 final var isToken =
                         ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress((wrapper.token())));
-                return encoder.encodeIsToken(isToken);
+                return evmEncoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {
                 final var wrapper = GetTokenTypePrecompile.decodeGetTokenType(input);
@@ -213,7 +217,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var tokenType = ledgers.typeOf(wrapper.token());
-                return encoder.encodeGetTokenType(tokenType.ordinal());
+                return evmEncoder.encodeGetTokenType(tokenType.ordinal());
             }
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
