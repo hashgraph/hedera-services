@@ -36,8 +36,8 @@ of work needed to produce a "root hash" of all state in the tree (the tree cache
 so when a single leaf changes, we only have to compute the new hash of the leaf and the hash of each parent node in
 the tree to compute the new root hash). Performance can be improved by recomputing the root hash for multiple
 modifications: that is, re-hashing the tree after every modification is slower than re-hashing every N modifications,
-where N is a reasonably large value. We have found that when N is 10,000, it is faster-per-modification than when N is
-1.
+where N is a reasonably large value. We have found that when N is 10,000, it is faster-per-modification than when N
+is 1.
 
 We also need to periodically compare "root hashes" of the state with all nodes in the network, to make sure that
 all nodes have matching state. Divergent state is a **very bad thing**, because it could mean that in the database
