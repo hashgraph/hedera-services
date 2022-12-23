@@ -121,13 +121,7 @@ import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
 import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithAutoAccounts;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithInvalidAccounts;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
-import com.hedera.services.bdd.suites.perf.crypto.NWayDistNoHotspots;
-import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
+import com.hedera.services.bdd.suites.perf.crypto.*;
 import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest;
@@ -319,6 +313,9 @@ public class SuiteRunner {
                     put("ContractCallLoadTest", aof(ContractCallLoadTest::new));
                     put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
                     put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
+                    put(
+                            "CryptoTransferLoadTestWithStakedAccounts",
+                            aof(CryptoTransferLoadTestWithStakedAccounts::new));
                     put(
                             "CryptoTransferLoadTestWithAutoAccounts",
                             aof(CryptoTransferLoadTestWithAutoAccounts::new));

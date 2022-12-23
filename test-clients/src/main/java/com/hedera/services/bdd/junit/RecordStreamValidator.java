@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.consensus.impl;
+package com.hedera.services.bdd.junit;
 
-import com.hedera.node.app.service.consensus.ConsensusService;
+import java.util.List;
 
-/**
- * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardConsensusService implements ConsensusService {}
+public interface RecordStreamValidator {
+    void validate(List<RecordWithSidecars> records);
+}

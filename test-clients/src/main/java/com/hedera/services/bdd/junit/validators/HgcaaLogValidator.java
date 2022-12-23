@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.bdd.junit;
+package com.hedera.services.bdd.junit.validators;
 
 import java.io.IOException;
 import java.nio.file.Files;
