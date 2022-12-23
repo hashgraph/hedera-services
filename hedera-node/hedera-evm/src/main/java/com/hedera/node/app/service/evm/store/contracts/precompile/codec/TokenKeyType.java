@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile;
+package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-/** All key types used by {@link Precompile} implementations, in one place for easy review. */
+/** All key types used by Precompile implementations, in one place for easy review. */
 public enum TokenKeyType {
     ADMIN_KEY(1),
     KYC_KEY(2),

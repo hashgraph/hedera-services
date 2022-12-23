@@ -279,7 +279,7 @@ public class InfrastructureFactory {
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
             final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, gasCalculator, stateView);
+        return new ViewExecutor(input, frame, encoder, evmEncoder, gasCalculator, stateView);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
