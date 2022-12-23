@@ -62,7 +62,7 @@ public final class ServiceFactory {
     @NonNull
     public static Set<Service> loadServices() {
         return ServiceLoader.load(Service.class).stream()
-                .map(provider -> provider.get())
+                .map(ServiceLoader.Provider::get)
                 .collect(Collectors.toSet());
     }
 }
