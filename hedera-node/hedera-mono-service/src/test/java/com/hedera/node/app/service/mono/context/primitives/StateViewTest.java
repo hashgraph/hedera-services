@@ -60,9 +60,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
