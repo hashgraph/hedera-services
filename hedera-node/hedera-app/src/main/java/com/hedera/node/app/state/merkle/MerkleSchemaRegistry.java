@@ -83,9 +83,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         this.serviceName = StateUtils.validateStateKey(Objects.requireNonNull(serviceName));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @return
+     */
     @Override
-    public void register(@NonNull Schema schema) {
+    public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
 
@@ -97,6 +101,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             final var md = new StateMetadata(serviceName, schema, def);
                             registerWithSystem(md);
                         });
+
+        return this;
     }
 
     /**

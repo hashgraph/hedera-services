@@ -50,7 +50,7 @@ public interface ReadableKVState<K extends Comparable<K>, V> {
      * @param key The key. Cannot be null, otherwise an exception is thrown.
      * @return true if the key exists in the state.
      */
-    default boolean contains(@NonNull K key) {
+    default boolean contains(@NonNull final K key) {
         return get(key) != null;
     }
 
