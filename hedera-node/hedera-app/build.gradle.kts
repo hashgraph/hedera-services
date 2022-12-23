@@ -47,12 +47,22 @@ dependencies {
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
 
-    itestImplementation(libs.hapi)
-    itestImplementation(libs.bundles.helidon)
-    itestImplementation(libs.bundles.swirlds)
-    itestImplementation(testLibs.helidon.grpc.client)
+    //itestImplementation(libs.hapi)
+    //itestImplementation(libs.bundles.helidon)
+    //itestImplementation(libs.bundles.swirlds)
+    //itestImplementation(testLibs.helidon.grpc.client)
+
     itestImplementation(testLibs.bundles.mockito)
     itestCompileOnly(libs.spotbugs.annotations)
+
+    itestImplementation(project(":hedera-node:hedera-admin-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-consensus-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-file-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-network-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-schedule-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-token-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-util-service-impl"))
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.testing)
