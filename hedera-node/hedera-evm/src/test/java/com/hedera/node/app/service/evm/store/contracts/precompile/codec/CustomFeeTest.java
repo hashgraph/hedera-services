@@ -30,7 +30,6 @@ class CustomFeeTest {
         final var customfee = customFees();
         final var customfee2 = customFees();
 
-
         assertNotEquals(customFeesWithFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeeWithFractionalAndFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeesWithFixed(), customFeeWithFractional());
@@ -82,7 +81,7 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeeWithFractionalAndFixed() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
 
@@ -97,7 +96,7 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeeWithFractional() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
 
@@ -106,34 +105,35 @@ class CustomFeeTest {
 
         return List.of(customFee);
     }
+
     private List<CustomFee> customFeesWithFixed() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
         FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, payerAccount);
 
         CustomFee customFee1 =
-            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
-
 
         return List.of(customFee1);
     }
 
     private List<CustomFee> customFeesWithRoyaltyAndFixed() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                15,
-                100,
-                50,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
-                true,
-                payerAccount);
+                new RoyaltyFee(
+                        15,
+                        100,
+                        50,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                        true,
+                        payerAccount);
 
-        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, payerAccount);;
+        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, payerAccount);
+        ;
 
         CustomFee customFee5 = new CustomFee();
         customFee5.setRoyaltyFee(royaltyFee);
