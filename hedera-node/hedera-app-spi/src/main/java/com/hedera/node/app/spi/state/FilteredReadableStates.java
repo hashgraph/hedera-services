@@ -37,8 +37,7 @@ public class FilteredReadableStates implements ReadableStates {
      * @param delegate The instance to delegate to
      * @param stateKeys The set of keys in {@code delegate} to expose
      */
-    public FilteredReadableStates(
-            @NonNull final ReadableStates delegate, @NonNull final Set<String> stateKeys) {
+    public FilteredReadableStates(@NonNull final ReadableStates delegate, @NonNull final Set<String> stateKeys) {
         this.delegate = Objects.requireNonNull(delegate);
 
         // Only include those state keys that are actually in the underlying delegate

@@ -89,8 +89,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @Test
         @DisplayName("Iterate over keys in the virtual map is not allowed")
         void iterateThrows() {
-            assertThatThrownBy(() -> state.keys())
-                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> state.keys()).isInstanceOf(UnsupportedOperationException.class);
         }
     }
 

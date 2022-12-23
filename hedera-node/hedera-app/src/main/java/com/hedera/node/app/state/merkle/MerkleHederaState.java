@@ -54,8 +54,7 @@ import java.util.function.Consumer;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState2, HederaState {
+public class MerkleHederaState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState2, HederaState {
 
     /** Used when asked for a service's readable states that we don't have */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
@@ -172,9 +171,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @NonNull
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
         final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null
-                ? EMPTY_READABLE_STATES
-                : new MerkleReadableStates(stateMetadata);
+        return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
     }
 
     /** {@inheritDoc} */
@@ -183,9 +180,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public WritableStates createWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
         final var stateMetadata = services.get(serviceName);
-        return stateMetadata == null
-                ? EMPTY_WRITABLE_STATES
-                : new MerkleWritableStates(stateMetadata);
+        return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 
     /**
@@ -212,8 +207,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @inheritDoc
      */
     @Override
-    public void handleConsensusRound(
-            @NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
+    public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         if (onHandleConsensusRound != null) {
             onHandleConsensusRound.accept(round, swirldDualState);
         }
@@ -242,8 +236,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return this;
     }
 
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md) {
+    <K extends Comparable<K>, V> void putServiceStateIfAbsent(@NonNull final StateMetadata<K, V> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
@@ -280,8 +273,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         final var def = md.stateDefinition();
         if (def.onDisk() && !(node instanceof VirtualMap<?, ?>)) {
             throw new IllegalArgumentException(
-                    "Mismatch: state definition claims on-disk, but "
-                            + "the merkle node is not a VirtualMap");
+                    "Mismatch: state definition claims on-disk, but " + "the merkle node is not a VirtualMap");
         }
 
         if (label == null || label.isEmpty()) {
@@ -292,8 +284,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         if (!label.equals(StateUtils.computeLabel(md.serviceName(), def.stateKey()))) {
             throw new IllegalArgumentException(
-                    "A label must be computed based on the same "
-                            + "service name and state key in the metadata!");
+                    "A label must be computed based on the same " + "service name and state key in the metadata!");
         }
 
         // Put this metadata into the map
@@ -366,12 +357,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
         if (index == -1) {
             // This can only happen if there WAS a node here, and it was removed!
-            throw new IllegalStateException(
-                    "State '"
-                            + md.stateDefinition().stateKey()
-                            + "' for service '"
-                            + md.serviceName()
-                            + "' is missing from the merkle tree!");
+            throw new IllegalStateException("State '"
+                    + md.stateDefinition().stateKey()
+                    + "' for service '"
+                    + md.serviceName()
+                    + "' is missing from the merkle tree!");
         }
 
         return getChild(index);

@@ -60,16 +60,13 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
             final var buffer = BUFFER_THREAD_LOCAL.get();
             buffer.clear();
             int numBytesRead;
-            while ((numBytesRead =
-                            stream.read(buffer.array(), buffer.position(), buffer.remaining()))
-                    != -1) {
+            while ((numBytesRead = stream.read(buffer.array(), buffer.position(), buffer.remaining())) != -1) {
                 buffer.position(buffer.position() + numBytesRead);
                 if (buffer.remaining() == 0) {
                     // We sized the buffer to be 1 byte larger than the MAX_MESSAGE_SIZE.
                     // If we have filled the buffer, it means the message had too many bytes,
                     // and we will therefore reject it.
-                    throw new RuntimeException(
-                            "More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
+                    throw new RuntimeException("More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
                 }
             }
             buffer.flip(); // Prepare for reading

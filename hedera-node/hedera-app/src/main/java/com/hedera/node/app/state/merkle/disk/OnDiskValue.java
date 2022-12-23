@@ -91,8 +91,7 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         serdes.write(value, serializableDataOutputStream);
     }
 
@@ -105,8 +104,7 @@ public class OnDiskValue<V> implements VirtualValue {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(
-            @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
+    public void deserialize(@NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
             throws IOException {
         value = serdes.parse(new DataInputStream(serializableDataInputStream));
     }

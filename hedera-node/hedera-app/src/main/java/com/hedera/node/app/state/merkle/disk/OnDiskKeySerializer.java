@@ -104,16 +104,14 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored)
-            throws IOException {
+    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
         final var k = serdes.parse(new ByteBufferDataInput(byteBuffer));
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
 
     @Override
-    public int serialize(
-            @Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
+    public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
             throws IOException {
         final var metered = new MeteredOutputStream(out);
         final var k = Objects.requireNonNull(Objects.requireNonNull(key).getKey());
@@ -122,10 +120,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public boolean equals(
-            @NonNull final ByteBuffer byteBuffer,
-            final int ignored,
-            @Nullable final OnDiskKey<K> key)
+    public boolean equals(@NonNull final ByteBuffer byteBuffer, final int ignored, @Nullable final OnDiskKey<K> key)
             throws IOException {
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
@@ -151,8 +146,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored)
-            throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
         // This class has nothing to deserialize
     }
 

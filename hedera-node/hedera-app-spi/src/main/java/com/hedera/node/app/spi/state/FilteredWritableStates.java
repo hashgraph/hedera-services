@@ -37,8 +37,7 @@ public class FilteredWritableStates implements WritableStates {
      * @param delegate The instance to delegate to
      * @param stateKeys The set of keys in {@code delegate} to expose
      */
-    public FilteredWritableStates(
-            @NonNull final WritableStates delegate, @NonNull final Set<String> stateKeys) {
+    public FilteredWritableStates(@NonNull final WritableStates delegate, @NonNull final Set<String> stateKeys) {
         this.delegate = Objects.requireNonNull(delegate);
 
         // Only include those state keys that are actually in the underlying delegate

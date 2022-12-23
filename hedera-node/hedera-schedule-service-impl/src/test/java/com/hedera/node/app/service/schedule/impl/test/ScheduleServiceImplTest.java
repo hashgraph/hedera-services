@@ -31,10 +31,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    @Mock private ReadableStates states;
-    @Mock private HederaAccountNumbers numbers;
-    @Mock private HederaFileNumbers fileNumbers;
-    @Mock private AccountKeyLookup keyLookup;
+    @Mock
+    private ReadableStates states;
+
+    @Mock
+    private HederaAccountNumbers numbers;
+
+    @Mock
+    private HederaFileNumbers fileNumbers;
+
+    @Mock
+    private AccountKeyLookup keyLookup;
+
     public PreHandleContext preHandleCtx;
 
     @BeforeEach
@@ -49,8 +57,7 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type "
-                        + ScheduleServiceImpl.class.getName());
+                "We must always receive an instance of type " + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
     }
 }

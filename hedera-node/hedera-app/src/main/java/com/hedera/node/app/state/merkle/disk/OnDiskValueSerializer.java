@@ -60,8 +60,7 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored)
-            throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
         // This class has nothing to deserialize
     }
 

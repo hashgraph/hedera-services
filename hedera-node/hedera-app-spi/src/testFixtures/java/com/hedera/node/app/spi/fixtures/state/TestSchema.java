@@ -38,7 +38,11 @@ public class TestSchema extends Schema {
     }
 
     public TestSchema(int major, int minor, int patch) {
-        this(SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build());
+        this(SemanticVersion.newBuilder()
+                .setMajor(major)
+                .setMinor(minor)
+                .setPatch(patch)
+                .build());
     }
 
     public TestSchema(SemanticVersion version, Runnable onMigrate) {

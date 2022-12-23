@@ -54,11 +54,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class ReadableAccountStoreTest {
-    @Mock private ReadableKVState aliases;
-    @Mock private ReadableKVState accounts;
+    @Mock
+    private ReadableKVState aliases;
 
-    @Mock private MerkleAccount account;
-    @Mock private ReadableStates states;
+    @Mock
+    private ReadableKVState accounts;
+
+    @Mock
+    private MerkleAccount account;
+
+    @Mock
+    private ReadableStates states;
+
     private final Key payerKey = KeyUtils.A_COMPLEX_KEY;
     private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     private final AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
@@ -127,8 +134,7 @@ class ReadableAccountStoreTest {
     void getsMirrorAddress() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount =
-                asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
         given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
@@ -144,8 +150,7 @@ class ReadableAccountStoreTest {
     void failsIfMirrorAddressDoesntExist() {
         final var num = EntityNum.fromLong(payerNum);
         final Address mirrorAddress = num.toEvmAddress();
-        final var mirrorAccount =
-                asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
+        final var mirrorAccount = asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
         given(accounts.get(payerNum)).willReturn(null);
 
@@ -238,8 +243,7 @@ class ReadableAccountStoreTest {
         assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
 
         given(account.isReceiverSigRequired()).willReturn(true);
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
+        assertThrows(IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
     }
 
     @Test

@@ -39,7 +39,6 @@ public class TestUtils {
     }
 
     public static Metrics metrics() {
-        return new DefaultMetrics(
-                Executors.newSingleThreadScheduledExecutor(), new DefaultMetricsFactory());
+        return new DefaultMetrics(Executors.newSingleThreadScheduledExecutor(), new DefaultMetricsFactory());
     }
 }

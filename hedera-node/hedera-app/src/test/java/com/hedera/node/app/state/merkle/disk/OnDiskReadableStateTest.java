@@ -31,18 +31,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class OnDiskReadableStateTest extends MerkleTestBase {
-    @TempDir Path storageDir;
+    @TempDir
+    Path storageDir;
+
     private StateMetadata<String, String> md;
     private VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMap;
 
     @BeforeEach
     void setUp() {
-        md =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+        md = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
         virtualMap = createVirtualMap("TEST LABEL", storageDir, md);
     }
 
@@ -62,8 +62,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
         @DisplayName("You must specify the virtual map")
         void nullVirtualMapThrows() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new OnDiskReadableKVState<>(md, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new OnDiskReadableKVState<>(md, null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test

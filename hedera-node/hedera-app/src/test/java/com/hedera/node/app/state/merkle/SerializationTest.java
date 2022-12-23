@@ -44,18 +44,13 @@ class SerializationTest extends MerkleTestBase {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                final var fruitDef =
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
-                final var animalDef =
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
+                final var fruitDef = new StateDefinition<>(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
+                final var animalDef = new StateDefinition<>(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
                 return Set.of(fruitDef, animalDef);
             }
 
             @Override
-            public void migrate(
-                    @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+            public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
                 final WritableKVState<String, String> fruit = newStates.get(FRUIT_STATE_KEY);
                 fruit.put(A_KEY, APPLE);
                 fruit.put(B_KEY, BANANA);
@@ -101,12 +96,8 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
         // our
         // migration callback, etc. (normally done by the Hedera main method)
-        final Supplier<RuntimeConstructable> constructor =
-                () ->
-                        new MerkleHederaState(
-                                tree -> newRegistry.migrate(tree, v1, v1),
-                                event -> {},
-                                (round, dualState) -> {});
+        final Supplier<RuntimeConstructable> constructor = () ->
+                new MerkleHederaState(tree -> newRegistry.migrate(tree, v1, v1), event -> {}, (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
 

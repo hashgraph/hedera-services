@@ -59,9 +59,7 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
      * @param value The value.
      */
     public InMemoryValue(
-            @NonNull final StateMetadata<K, V> md,
-            @NonNull final InMemoryKey<K> key,
-            @NonNull final V value) {
+            @NonNull final StateMetadata<K, V> md, @NonNull final InMemoryKey<K> key, @NonNull final V value) {
         this(md);
         this.key = Objects.requireNonNull(key);
         this.val = Objects.requireNonNull(value);
@@ -125,8 +123,7 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored)
-            throws IOException {
+    public void deserialize(SerializableDataInputStream serializableDataInputStream, int ignored) throws IOException {
         final var keySerdes = md.stateDefinition().keySerdes();
         final var valueSerdes = md.stateDefinition().valueSerdes();
         final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
@@ -136,8 +133,7 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(SerializableDataOutputStream serializableDataOutputStream)
-            throws IOException {
+    public void serialize(SerializableDataOutputStream serializableDataOutputStream) throws IOException {
         final var keySerdes = md.stateDefinition().keySerdes();
         final var valueSerdes = md.stateDefinition().valueSerdes();
         keySerdes.write(key.key(), serializableDataOutputStream);

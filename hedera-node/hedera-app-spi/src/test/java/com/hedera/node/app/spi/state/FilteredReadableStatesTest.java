@@ -67,8 +67,7 @@ class FilteredReadableStatesTest {
         @Test
         @DisplayName("Throws IAE for any non-null key")
         void nonNullKey() {
-            assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -110,8 +109,7 @@ class FilteredReadableStatesTest {
         @Test
         @DisplayName("Throws IAE for any non-null key")
         void nonNullKey() {
-            assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -122,15 +120,13 @@ class FilteredReadableStatesTest {
 
         @BeforeEach
         void setUp() {
-            final var delegate =
-                    MapReadableStates.builder()
-                            .state(readableFruitState())
-                            .state(readableCountryState())
-                            .state(readableAnimalState())
-                            .state(readableSTEAMState())
-                            .build();
-            states =
-                    new FilteredReadableStates(delegate, Set.of(ANIMAL_STATE_KEY, STEAM_STATE_KEY));
+            final var delegate = MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableCountryState())
+                    .state(readableAnimalState())
+                    .state(readableSTEAMState())
+                    .build();
+            states = new FilteredReadableStates(delegate, Set.of(ANIMAL_STATE_KEY, STEAM_STATE_KEY));
         }
 
         @Test
@@ -164,10 +160,8 @@ class FilteredReadableStatesTest {
         @Test
         @DisplayName("Throws IAE for other than the two specified states")
         void filteredStates() {
-            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> states.get(COUNTRY_STATE_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(COUNTRY_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -178,14 +172,13 @@ class FilteredReadableStatesTest {
 
         @BeforeEach
         void setUp() {
-            final var delegate = MapReadableStates.builder().state(readableFruitState()).build();
+            final var delegate =
+                    MapReadableStates.builder().state(readableFruitState()).build();
             states = new FilteredReadableStates(delegate, Set.of(FRUIT_STATE_KEY, SPACE_STATE_KEY));
         }
 
         @Test
-        @DisplayName(
-                "Exactly 1 states was included because only one of two filtered states were in the"
-                        + " delegate")
+        @DisplayName("Exactly 1 states was included because only one of two filtered states were in the" + " delegate")
         void size() {
             assertThat(states.size()).isEqualTo(1);
         }
@@ -212,8 +205,7 @@ class FilteredReadableStatesTest {
         @Test
         @DisplayName("Cannot read STEM because it is not in the delegate")
         void missingState() {
-            assertThatThrownBy(() -> states.get(STEAM_STATE_KEY))
-                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.get(STEAM_STATE_KEY)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -224,18 +216,15 @@ class FilteredReadableStatesTest {
 
         @BeforeEach
         void setUp() {
-            delegate =
-                    MapReadableStates.builder()
-                            .state(readableFruitState())
-                            .state(readableAnimalState())
-                            .state(readableSpaceState())
-                            .build();
+            delegate = MapReadableStates.builder()
+                    .state(readableFruitState())
+                    .state(readableAnimalState())
+                    .state(readableSpaceState())
+                    .build();
         }
 
         @Test
-        @DisplayName(
-                "The filtered `stateKeys` contains all states that are in the filter and in the"
-                        + " delegate")
+        @DisplayName("The filtered `stateKeys` contains all states that are in the filter and in the" + " delegate")
         void filteredStateKeys() {
             // Given a delegate with multiple k/v states and a set of state keys that are
             // a subset of keys in the delegate AND contain some keys not in the delegate
@@ -251,9 +240,8 @@ class FilteredReadableStatesTest {
         }
 
         @Test
-        @DisplayName(
-                "A modifiable `stateKeys` set provided to a constructor can be changed without"
-                        + " impacting the FilteredReadableStates")
+        @DisplayName("A modifiable `stateKeys` set provided to a constructor can be changed without"
+                + " impacting the FilteredReadableStates")
         void modifiableStateKeys() {
             // Given a delegate with multiple k/v states and a modifiable set of state keys,
             final var modifiableStateKeys = new HashSet<String>();

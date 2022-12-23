@@ -25,8 +25,7 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class ReadableKVStateBase<K extends Comparable<K>, V>
-        implements ReadableKVState<K, V> {
+public abstract class ReadableKVStateBase<K extends Comparable<K>, V> implements ReadableKVState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 

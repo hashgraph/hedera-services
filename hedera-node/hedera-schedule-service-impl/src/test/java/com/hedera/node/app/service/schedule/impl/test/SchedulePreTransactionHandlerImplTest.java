@@ -53,13 +53,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SchedulePreTransactionHandlerImplTest {
-    @Mock private AccountKeyLookup keyLookup;
-    @Mock private HederaKey schedulerKey;
-    @Mock private JKey adminJKey;
-    @Mock private PreHandleDispatcher dispatcher;
-    @Mock private ReadableStates states;
-    @Mock private ScheduleVirtualValue schedule;
-    @Mock private ReadableKVState schedulesById;
+    @Mock
+    private AccountKeyLookup keyLookup;
+
+    @Mock
+    private HederaKey schedulerKey;
+
+    @Mock
+    private JKey adminJKey;
+
+    @Mock
+    private PreHandleDispatcher dispatcher;
+
+    @Mock
+    private ReadableStates states;
+
+    @Mock
+    private ScheduleVirtualValue schedule;
+
+    @Mock
+    private ReadableKVState schedulesById;
+
     private SchedulePreTransactionHandler subject;
     private SigTransactionMetadata scheduledMeta;
     private ReadableScheduleStore scheduleStore;
@@ -69,10 +83,9 @@ class SchedulePreTransactionHandlerImplTest {
     private TransactionBody txn;
     private TransactionBody scheduledTxn;
 
-    private Key key =
-            Key.newBuilder()
-                    .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-                    .build();
+    private Key key = Key.newBuilder()
+            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .build();
     private HederaKey adminKey = asHederaKey(key).get();
 
     @BeforeEach
@@ -86,21 +99,15 @@ class SchedulePreTransactionHandlerImplTest {
     void preHandleScheduleCreateVanilla() {
         final var txn = scheduleCreateTransaction(payer);
         final var scheduledTxn =
-                asOrdinary(
-                        txn.getScheduleCreate().getScheduledTransactionBody(),
-                        txn.getTransactionID());
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
 
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
@@ -116,28 +123,17 @@ class SchedulePreTransactionHandlerImplTest {
     @Test
     void preHandleScheduleCreateVanillaNoAdmin() {
         final var txn =
-                scheduleCreateTxnWith(
-                        null,
-                        "",
-                        payer,
-                        scheduler,
-                        MiscUtils.asTimestamp(Instant.ofEpochSecond(1L)));
+                scheduleCreateTxnWith(null, "", payer, scheduler, MiscUtils.asTimestamp(Instant.ofEpochSecond(1L)));
         final var scheduledTxn =
-                asOrdinary(
-                        txn.getScheduleCreate().getScheduledTransactionBody(),
-                        txn.getTransactionID());
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
 
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
@@ -155,15 +151,12 @@ class SchedulePreTransactionHandlerImplTest {
         givenSetupForScheduleCreate(payer);
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
@@ -177,18 +170,14 @@ class SchedulePreTransactionHandlerImplTest {
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() {
         givenSetupForScheduleCreate(null);
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
         given(dispatcher.dispatch(eq(scheduledTxn), any())).willReturn(scheduledMeta);
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
 
@@ -204,21 +193,15 @@ class SchedulePreTransactionHandlerImplTest {
     void failsWithScheduleTransactionsNotRecognized() {
         final var txn = scheduleTxnNotRecognized();
         final var scheduledTxn =
-                asOrdinary(
-                        txn.getScheduleCreate().getScheduledTransactionBody(),
-                        txn.getTransactionID());
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
 
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
 
@@ -235,15 +218,12 @@ class SchedulePreTransactionHandlerImplTest {
     @Test
     void innerTxnFailsSetsStatus() {
         givenSetupForScheduleCreate(payer);
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        payer,
-                        INVALID_ACCOUNT_ID,
-                        schedulerKey,
-                        List.of());
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                payer,
+                INVALID_ACCOUNT_ID,
+                schedulerKey,
+                List.of());
         given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
@@ -258,9 +238,7 @@ class SchedulePreTransactionHandlerImplTest {
         assertEquals(payer, meta.scheduledMeta().payer());
         assertEquals(List.of(), meta.scheduledMeta().requiredNonPayerKeys());
         assertEquals(
-                asOrdinary(
-                        txn.getScheduleCreate().getScheduledTransactionBody(),
-                        txn.getTransactionID()),
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
                 meta.scheduledMeta().txnBody());
     }
 
@@ -297,8 +275,7 @@ class SchedulePreTransactionHandlerImplTest {
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
         final var meta = subject.preHandleSignSchedule(txn, scheduler, dispatcher);
@@ -315,15 +292,13 @@ class SchedulePreTransactionHandlerImplTest {
     void scheduleSignForNotSchedulableFails() {
         final var txn = scheduleSignTransaction();
 
-        scheduledTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                        .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
-                        .build();
+        scheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
+                .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
+                .build();
 
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
         given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
@@ -334,7 +309,8 @@ class SchedulePreTransactionHandlerImplTest {
         assertEquals(List.of(), meta.requiredNonPayerKeys());
         assertTrue(meta.scheduledMeta() instanceof InvalidTransactionMetadata);
         assertTrue(meta.scheduledMeta().txnBody().hasScheduleCreate());
-        assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, meta.scheduledMeta().status());
+        assertEquals(
+                SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, meta.scheduledMeta().status());
         assertEquals(scheduler, meta.scheduledMeta().payer());
         assertEquals(OK, meta.status());
     }
@@ -352,20 +328,14 @@ class SchedulePreTransactionHandlerImplTest {
     @Test
     void notImplementedForOthers() {
         final var txn = scheduleCreateTransaction(scheduler);
-        assertThrows(
-                NotImplementedException.class,
-                () -> subject.preHandleDeleteSchedule(txn, scheduler, dispatcher));
+        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteSchedule(txn, scheduler, dispatcher));
     }
 
     private void givenSetupForScheduleCreate(final AccountID payer) {
         txn = scheduleCreateTransaction(payer);
-        scheduledTxn =
-                asOrdinary(
-                        txn.getScheduleCreate().getScheduledTransactionBody(),
-                        txn.getTransactionID());
+        scheduledTxn = asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID());
 
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         lenient().when(dispatcher.dispatch(scheduledTxn, payer)).thenReturn(scheduledMeta);
     }
 
@@ -380,24 +350,19 @@ class SchedulePreTransactionHandlerImplTest {
     }
 
     private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
-        scheduledTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(
-                                TransactionID.newBuilder().setAccountID(scheduler).build())
-                        .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
-                        .build();
-        scheduledMeta =
-                new SigTransactionMetadata(
-                        asOrdinary(
-                                txn.getScheduleCreate().getScheduledTransactionBody(),
-                                txn.getTransactionID()),
-                        scheduler,
-                        OK,
-                        schedulerKey,
-                        List.of());
+        scheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(scheduler).build())
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+                .build();
+        scheduledMeta = new SigTransactionMetadata(
+                asOrdinary(txn.getScheduleCreate().getScheduledTransactionBody(), txn.getTransactionID()),
+                scheduler,
+                OK,
+                schedulerKey,
+                List.of());
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
         given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         return scheduledTxn;
@@ -422,10 +387,9 @@ class SchedulePreTransactionHandlerImplTest {
     private TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
                 .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-                .setScheduleCreate(
-                        ScheduleCreateTransactionBody.newBuilder()
-                                .setScheduledTransactionBody(
-                                        SchedulableTransactionBody.newBuilder().build()))
+                .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
+                        .setScheduledTransactionBody(
+                                SchedulableTransactionBody.newBuilder().build()))
                 .build();
     }
 }

@@ -62,8 +62,7 @@ final class QueryMethod extends MethodBase {
         super(serviceName, methodName, metrics);
         this.workflow = Objects.requireNonNull(workflow);
 
-        this.queriesAnsweredCounter =
-                counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
+        this.queriesAnsweredCounter = counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
         this.queriesAnsweredSpeedometer =
                 speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
     }

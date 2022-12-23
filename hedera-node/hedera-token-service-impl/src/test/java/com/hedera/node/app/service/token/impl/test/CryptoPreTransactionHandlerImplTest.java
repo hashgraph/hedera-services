@@ -92,46 +92,68 @@ class CryptoPreTransactionHandlerImplTest {
     private final Long deleteAccountNum = deleteAccountId.getAccountNum();
     private final Long transferAccountNum = transferAccountId.getAccountNum();
 
-    private final CryptoAllowance cryptoAllowance =
-            CryptoAllowance.newBuilder().setSpender(spender).setOwner(owner).setAmount(10L).build();
-    private final TokenAllowance tokenAllowance =
-            TokenAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setAmount(10L)
-                    .setTokenId(token)
-                    .setOwner(owner)
-                    .build();
-    private final NftAllowance nftAllowance =
-            NftAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setOwner(owner)
-                    .setTokenId(nft)
-                    .setApprovedForAll(BoolValue.of(true))
-                    .addAllSerialNumbers(List.of(1L, 2L))
-                    .build();
-    private final NftAllowance nftAllowanceWithDelegatingSpender =
-            NftAllowance.newBuilder()
-                    .setSpender(spender)
-                    .setOwner(owner)
-                    .setTokenId(nft)
-                    .setApprovedForAll(BoolValue.of(false))
-                    .addAllSerialNumbers(List.of(1L, 2L))
-                    .setDelegatingSpender(delegatingSpender)
-                    .build();
+    private final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
+            .setSpender(spender)
+            .setOwner(owner)
+            .setAmount(10L)
+            .build();
+    private final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
+            .setSpender(spender)
+            .setAmount(10L)
+            .setTokenId(token)
+            .setOwner(owner)
+            .build();
+    private final NftAllowance nftAllowance = NftAllowance.newBuilder()
+            .setSpender(spender)
+            .setOwner(owner)
+            .setTokenId(nft)
+            .setApprovedForAll(BoolValue.of(true))
+            .addAllSerialNumbers(List.of(1L, 2L))
+            .build();
+    private final NftAllowance nftAllowanceWithDelegatingSpender = NftAllowance.newBuilder()
+            .setSpender(spender)
+            .setOwner(owner)
+            .setTokenId(nft)
+            .setApprovedForAll(BoolValue.of(false))
+            .addAllSerialNumbers(List.of(1L, 2L))
+            .setDelegatingSpender(delegatingSpender)
+            .build();
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private ReadableKVState<Long, MerkleAccount> aliases;
-    @Mock private ReadableKVState<Long, MerkleAccount> accounts;
-    @Mock private ReadableStates states;
-    @Mock private MerkleAccount payerAccount;
-    @Mock private MerkleAccount deleteAccount;
-    @Mock private MerkleAccount transferAccount;
-    @Mock private MerkleAccount updateAccount;
-    @Mock private MerkleAccount ownerAccount;
-    @Mock private HederaAccountNumbers accountNumbers;
-    @Mock private HederaFileNumbers fileNumbers;
-    @Mock private CryptoSignatureWaiversImpl waivers;
+    @Mock
+    private ReadableKVState<Long, MerkleAccount> aliases;
+
+    @Mock
+    private ReadableKVState<Long, MerkleAccount> accounts;
+
+    @Mock
+    private ReadableStates states;
+
+    @Mock
+    private MerkleAccount payerAccount;
+
+    @Mock
+    private MerkleAccount deleteAccount;
+
+    @Mock
+    private MerkleAccount transferAccount;
+
+    @Mock
+    private MerkleAccount updateAccount;
+
+    @Mock
+    private MerkleAccount ownerAccount;
+
+    @Mock
+    private HederaAccountNumbers accountNumbers;
+
+    @Mock
+    private HederaFileNumbers fileNumbers;
+
+    @Mock
+    private CryptoSignatureWaiversImpl waivers;
+
     private PreHandleContext context;
     private ReadableAccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
@@ -164,8 +186,10 @@ class CryptoPreTransactionHandlerImplTest {
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
-        final var expectedMeta =
-                new SigTransactionMetadataBuilder(store).payerKeyFor(payer).txnBody(txn).build();
+        final var expectedMeta = new SigTransactionMetadataBuilder(store)
+                .payerKeyFor(payer)
+                .txnBody(txn)
+                .build();
 
         final var meta = subject.preHandleCryptoCreate(txn, payer);
 
@@ -514,15 +538,12 @@ class CryptoPreTransactionHandlerImplTest {
         setUpPayer();
 
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(receiverSigReq)
-                        .setMemo("Create Account")
-                        .build();
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
+                .setKey(key)
+                .setReceiverSigRequired(receiverSigReq)
+                .setMemo("Create Account")
+                .build();
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
@@ -535,13 +556,10 @@ class CryptoPreTransactionHandlerImplTest {
         setUpPayer();
 
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var deleteTxBody =
-                CryptoDeleteTransactionBody.newBuilder()
-                        .setDeleteAccountID(deleteAccountId)
-                        .setTransferAccountID(transferAccountId);
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
+                .setDeleteAccountID(deleteAccountId)
+                .setTransferAccountID(transferAccountId);
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
@@ -556,38 +574,28 @@ class CryptoPreTransactionHandlerImplTest {
         }
 
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(id)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var allowanceTxnBody =
-                CryptoApproveAllowanceTransactionBody.newBuilder()
-                        .addCryptoAllowances(cryptoAllowance)
-                        .addTokenAllowances(tokenAllowance)
-                        .addNftAllowances(
-                                isWithDelegatingSpender
-                                        ? nftAllowanceWithDelegatingSpender
-                                        : nftAllowance)
-                        .build();
+                TransactionID.newBuilder().setAccountID(id).setTransactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody = CryptoApproveAllowanceTransactionBody.newBuilder()
+                .addCryptoAllowances(cryptoAllowance)
+                .addTokenAllowances(tokenAllowance)
+                .addNftAllowances(isWithDelegatingSpender ? nftAllowanceWithDelegatingSpender : nftAllowance)
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoApproveAllowance(allowanceTxnBody)
                 .build();
     }
 
-    private TransactionBody cryptoUpdateTransaction(
-            final AccountID payerId, final AccountID accountToUpdate) {
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
         if (payerId.equals(payer)) {
             setUpPayer();
         }
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payerId)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var updateTxnBody =
-                CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
-                        .setKey(key)
-                        .build();
+                TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody = CryptoUpdateTransactionBody.newBuilder()
+                .setAccountIDToUpdate(accountToUpdate)
+                .setKey(key)
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoUpdateAccount(updateTxnBody)
@@ -599,18 +607,14 @@ class CryptoPreTransactionHandlerImplTest {
             setUpPayer();
         }
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(id)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var allowanceTxnBody =
-                CryptoDeleteAllowanceTransactionBody.newBuilder()
-                        .addNftAllowances(
-                                NftRemoveAllowance.newBuilder()
-                                        .setOwner(owner)
-                                        .setTokenId(nft)
-                                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
-                                        .build())
-                        .build();
+                TransactionID.newBuilder().setAccountID(id).setTransactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody = CryptoDeleteAllowanceTransactionBody.newBuilder()
+                .addNftAllowances(NftRemoveAllowance.newBuilder()
+                        .setOwner(owner)
+                        .setTokenId(nft)
+                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                        .build())
+                .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoDeleteAllowance(allowanceTxnBody)

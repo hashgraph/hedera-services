@@ -83,10 +83,8 @@ class ReadableKVStateBaseTest extends StateTestBase {
     void testReadKeysIsUnmodifiable() {
         state.get(A_KEY);
         final var readKeys = state.readKeys();
-        assertThatThrownBy(() -> readKeys.add(B_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> readKeys.remove(A_KEY))
-                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.add(B_KEY)).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> readKeys.remove(A_KEY)).isInstanceOf(UnsupportedOperationException.class);
     }
 
     /**

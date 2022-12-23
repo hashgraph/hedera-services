@@ -128,12 +128,10 @@ public class MerkleTestBase extends TestBase {
     protected void setupFruitMerkleMap() {
         fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
-        fruitMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+        fruitMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
     /**
@@ -143,12 +141,10 @@ public class MerkleTestBase extends TestBase {
      */
     protected void setupFruitVirtualMap(Path storageDir) {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
-        fruitVirtualMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+        fruitVirtualMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, storageDir, fruitVirtualMetadata);
     }
 
@@ -156,48 +152,40 @@ public class MerkleTestBase extends TestBase {
     protected void setupAnimalMerkleMap() {
         animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
         animalMerkleMap = createMerkleMap(animalLabel);
-        animalMetadata =
-                new StateMetadata<>(
-                        FIRST_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+        animalMetadata = new StateMetadata<>(
+                FIRST_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
     protected void setupSpaceMerkleMap() {
         spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
-        spaceMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES, 100, false));
+        spaceMetadata = new StateMetadata<>(
+                SECOND_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES, 100, false));
     }
 
     /** Sets up the "Steam" merkle map, label, and metadata. */
     protected void setupSteamMerkleMap() {
         steamLabel = StateUtils.computeLabel(SECOND_SERVICE, STEAM_STATE_KEY);
         steamMerkleMap = createMerkleMap(steamLabel);
-        steamMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                STEAM_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+        steamMetadata = new StateMetadata<>(
+                SECOND_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(STEAM_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
     /** Sets up the "Country" merkle map, label, and metadata. */
     protected void setupCountryMerkleMap() {
         countryLabel = StateUtils.computeLabel(SECOND_SERVICE, COUNTRY_STATE_KEY);
         countryMerkleMap = createMerkleMap(countryLabel);
-        countryMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                COUNTRY_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+        countryMetadata = new StateMetadata<>(
+                SECOND_SERVICE,
+                new TestSchema(1),
+                new StateDefinition<>(COUNTRY_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
     /** Sets up the {@link #registry}, ready to be used for serialization tests */
@@ -223,8 +211,8 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** Creates a new arbitrary merkle map with the given label. */
-    protected <K extends Comparable<K>, V>
-            MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(String label) {
+    protected <K extends Comparable<K>, V> MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> createMerkleMap(
+            String label) {
         final var map = new MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>>();
         map.setLabel(label);
         return map;
@@ -235,26 +223,24 @@ public class MerkleTestBase extends TestBase {
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, Path storageDir, StateMetadata<String, String> md) {
         final var keySerializer = new OnDiskKeySerializer<>(md);
-        final var builder =
-                new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
-                        // Force all hashes to disk, to make sure we're going through all the
-                        // serialization paths we can
-                        .internalHashesRamToDiskThreshold(0)
-                        .storageDir(storageDir)
-                        .maxNumOfKeys(100)
-                        .preferDiskBasedIndexes(true)
-                        .keySerializer(keySerializer)
-                        .virtualLeafRecordSerializer(
-                                new VirtualLeafRecordSerializer<>(
-                                        (short) 1,
-                                        DigestType.SHA_384,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        keySerializer,
-                                        (short) 1,
-                                        DataFileCommon.VARIABLE_DATA_SIZE,
-                                        new OnDiskValueSerializer<>(md),
-                                        true));
+        final var builder = new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
+                // Force all hashes to disk, to make sure we're going through all the
+                // serialization paths we can
+                .internalHashesRamToDiskThreshold(0)
+                .storageDir(storageDir)
+                .maxNumOfKeys(100)
+                .preferDiskBasedIndexes(true)
+                .keySerializer(keySerializer)
+                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
+                        (short) 1,
+                        DigestType.SHA_384,
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        keySerializer,
+                        (short) 1,
+                        DataFileCommon.VARIABLE_DATA_SIZE,
+                        new OnDiskValueSerializer<>(md),
+                        true));
         return new VirtualMap<>(label, builder);
     }
 
@@ -280,7 +266,11 @@ public class MerkleTestBase extends TestBase {
 
     /** A convenience method for creating {@link SemanticVersion}. */
     protected SemanticVersion version(int major, int minor, int patch) {
-        return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build();
+        return SemanticVersion.newBuilder()
+                .setMajor(major)
+                .setMinor(minor)
+                .setPatch(patch)
+                .build();
     }
 
     /** A convenience method for adding a k/v pair to a merkle map */
@@ -305,8 +295,7 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** A convenience method used to serialize a merkle tree */
-    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
-            throws IOException {
+    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir) throws IOException {
         final var byteOutputStream = new ByteArrayOutputStream();
         try (final var out = new MerkleDataOutputStream(byteOutputStream)) {
             out.writeMerkleTree(tempDir, tree);
@@ -315,8 +304,8 @@ public class MerkleTestBase extends TestBase {
     }
 
     /** A convenience method used to deserialize a merkle tree */
-    protected <T extends MerkleNode> T parseTree(
-            @NonNull final byte[] state, @NonNull final Path tempDir) throws IOException {
+    protected <T extends MerkleNode> T parseTree(@NonNull final byte[] state, @NonNull final Path tempDir)
+            throws IOException {
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);

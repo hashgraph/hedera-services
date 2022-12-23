@@ -145,28 +145,27 @@ public class ReadableAccountStore implements AccountKeyLookup {
     }
 
     private Account mapAccount(final AccountID idOrAlias, final MerkleAccount account) {
-        final var builder =
-                new AccountBuilderImpl()
-                        .key(account.getAccountKey())
-                        .expiry(account.getExpiry())
-                        .balance(account.getBalance())
-                        .memo(account.getMemo())
-                        .deleted(account.isDeleted())
-                        .receiverSigRequired(account.isReceiverSigRequired())
-                        .numberOfOwnedNfts(account.getNftsOwned())
-                        .maxAutoAssociations(account.getMaxAutomaticAssociations())
-                        .usedAutoAssociations(account.getUsedAutoAssociations())
-                        .numAssociations(account.getNumAssociations())
-                        .numPositiveBalances(account.getNumPositiveBalances())
-                        .ethereumNonce(account.getEthereumNonce())
-                        .stakedToMe(account.getStakedToMe())
-                        .stakePeriodStart(account.getStakePeriodStart())
-                        .stakedNum(account.totalStake())
-                        .declineReward(account.isDeclinedReward())
-                        .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
-                        .autoRenewSecs(account.getAutoRenewSecs())
-                        .accountNumber(idOrAlias.getAccountNum())
-                        .isSmartContract(account.isSmartContract());
+        final var builder = new AccountBuilderImpl()
+                .key(account.getAccountKey())
+                .expiry(account.getExpiry())
+                .balance(account.getBalance())
+                .memo(account.getMemo())
+                .deleted(account.isDeleted())
+                .receiverSigRequired(account.isReceiverSigRequired())
+                .numberOfOwnedNfts(account.getNftsOwned())
+                .maxAutoAssociations(account.getMaxAutomaticAssociations())
+                .usedAutoAssociations(account.getUsedAutoAssociations())
+                .numAssociations(account.getNumAssociations())
+                .numPositiveBalances(account.getNumPositiveBalances())
+                .ethereumNonce(account.getEthereumNonce())
+                .stakedToMe(account.getStakedToMe())
+                .stakePeriodStart(account.getStakePeriodStart())
+                .stakedNum(account.totalStake())
+                .declineReward(account.isDeclinedReward())
+                .stakeAtStartOfLastRewardedPeriod(account.getStakePeriodStart())
+                .autoRenewSecs(account.getAutoRenewSecs())
+                .accountNumber(idOrAlias.getAccountNum())
+                .isSmartContract(account.isSmartContract());
         if (account.getAutoRenewAccount() != null) {
             builder.autoRenewAccountNumber(account.getAutoRenewAccount().num());
         }

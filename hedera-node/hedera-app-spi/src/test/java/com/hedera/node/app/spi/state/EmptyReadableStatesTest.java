@@ -52,7 +52,6 @@ class EmptyReadableStatesTest extends StateTestBase {
     @Test
     @DisplayName("Throws IAE for any non-null key")
     void nonNullKey() {
-        assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> states.get(UNKNOWN_KEY)).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -25,8 +25,8 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-public abstract class WritableKVStateBase<K extends Comparable<K>, V>
-        extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
+public abstract class WritableKVStateBase<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V>
+        implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new HashMap<>();
 
