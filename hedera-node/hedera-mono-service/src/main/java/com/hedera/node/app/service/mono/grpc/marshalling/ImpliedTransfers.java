@@ -129,7 +129,7 @@ public class ImpliedTransfers {
         return changes;
     }
 
-    public List<FcAssessedCustomFee> getAssessedCustomFees() {
+    public List<FcAssessedCustomFee> getUnaliasedAssessedCustomFees() {
         final Map<ByteString, AccountID> aliasToId = new HashMap<>();
         for (final var change : changes) {
             final var aliasToNewId = change.getAliasToNewId();
@@ -143,6 +143,16 @@ public class ImpliedTransfers {
             fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
         }
         return fcAssessedCustomFeeList;
+    }
+
+    public boolean hasAssessedCustomFees() {
+        return assessedCustomFeesWrapper != null && !assessedCustomFeesWrapper.isEmpty();
+    }
+
+    public List<AssessedCustomFeeWrapper> getAssessedCustomFeeWrappers() {
+        return assessedCustomFeesWrapper == null
+                ? Collections.emptyList()
+                : assessedCustomFeesWrapper;
     }
 
     @Override

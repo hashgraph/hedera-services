@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -40,6 +41,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -55,10 +57,22 @@ class ImpliedTransfersTest {
     @Mock private CustomFeeSchedules newCustomFeeSchedules;
 
     @Test
+    void detectsMissingCustomFees() {
+        final var twoChanges = List.of(tokenChange(new Id(1, 2, 3), asAccount("4.5.6"), 7));
+        final var noCustomFees = ImpliedTransfers.invalid(props, TOKEN_WAS_DELETED);
+        assertFalse(noCustomFees.hasAssessedCustomFees());
+        final var nullCustomFees =
+                ImpliedTransfers.valid(props, twoChanges, entityCustomFees, null);
+        assertFalse(nullCustomFees.hasAssessedCustomFees());
+        assertSame(Collections.emptyList(), nullCustomFees.getAssessedCustomFeeWrappers());
+    }
+
+    @Test
     void impliedXfersObjectContractSanityChecks() {
         // given:
         final var twoChanges = List.of(tokenChange(new Id(1, 2, 3), asAccount("4.5.6"), 7));
         final var oneImpliedXfers = ImpliedTransfers.invalid(props, TOKEN_WAS_DELETED);
+        assertFalse(oneImpliedXfers.hasAssessedCustomFees());
         final var twoImpliedXfers =
                 ImpliedTransfers.valid(props, twoChanges, entityCustomFees, assessedCustomFees);
         // and:
@@ -133,7 +147,10 @@ class ImpliedTransfersTest {
                         List.of(assessedCustomFeeWrapper));
 
         // when
-        final var customFees = impliedTransfers.getAssessedCustomFees();
+        assertTrue(impliedTransfers.hasAssessedCustomFees());
+        final var customFeeWrappers = impliedTransfers.getAssessedCustomFeeWrappers();
+        final var customFees = impliedTransfers.getUnaliasedAssessedCustomFees();
+        assertEquals(customFees.size(), customFeeWrappers.size());
 
         // then
         assertEquals(1, customFees.size());

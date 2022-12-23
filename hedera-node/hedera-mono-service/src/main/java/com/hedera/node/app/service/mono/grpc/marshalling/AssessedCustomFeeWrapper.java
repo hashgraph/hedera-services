@@ -62,6 +62,14 @@ public final class AssessedCustomFeeWrapper {
         this.effPayerAccounts = effPayerAccounts;
     }
 
+    public boolean isForHbar() {
+        return token == null;
+    }
+
+    public EntityId token() {
+        return token;
+    }
+
     public FcAssessedCustomFee toFcAssessedCustomFee(
             final Map<ByteString, AccountID> aliasesToNewIds) {
         final var nums = new long[effPayerAccounts.length];
