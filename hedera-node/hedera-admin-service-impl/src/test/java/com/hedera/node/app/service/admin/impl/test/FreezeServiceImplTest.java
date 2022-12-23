@@ -37,6 +37,10 @@ class FreezeServiceImplTest {
 				FreezeServiceImpl.class,
 				service.getClass(),
 				"We must always receive an instance of type " + FreezeServiceImpl.class.getName());
+		Assertions.assertEquals(
+				FreezeService.class.getSimpleName(),
+				service.getServiceName(),
+				"Service must have a reasonable name");
 	}
 
 	@Test

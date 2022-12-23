@@ -22,16 +22,20 @@ import org.junit.jupiter.api.Test;
 
 public class CryptoServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final CryptoService service = CryptoService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final CryptoService service = CryptoService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                CryptoServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + CryptoServiceImpl.class.getName());
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				CryptoServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type " + CryptoServiceImpl.class.getName());
+		Assertions.assertEquals(
+				CryptoService.class.getSimpleName(),
+				service.getServiceName(),
+				"Service must have a reasonable name");
+	}
 }

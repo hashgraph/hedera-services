@@ -47,10 +47,10 @@ dependencies {
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
 
-    //itestImplementation(libs.hapi)
-    //itestImplementation(libs.bundles.helidon)
-    //itestImplementation(libs.bundles.swirlds)
-    //itestImplementation(testLibs.helidon.grpc.client)
+    itestImplementation(libs.hapi)
+    itestImplementation(libs.bundles.helidon)
+    itestImplementation(libs.bundles.swirlds)
+    itestImplementation(testLibs.helidon.grpc.client)
 
     itestImplementation(testLibs.bundles.mockito)
     itestCompileOnly(libs.spotbugs.annotations)

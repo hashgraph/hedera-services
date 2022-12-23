@@ -22,16 +22,20 @@ import org.junit.jupiter.api.Test;
 
 class TokenServiceImplTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final TokenService service = TokenService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final TokenService service = TokenService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                TokenServiceImpl.class,
-                service.getClass(),
-                "We must always receive an instance of type " + TokenServiceImpl.class.getName());
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				TokenServiceImpl.class,
+				service.getClass(),
+				"We must always receive an instance of type " + TokenServiceImpl.class.getName());
+		Assertions.assertEquals(
+				TokenService.class.getSimpleName(),
+				service.getServiceName(),
+				"Service must have a reasonable name");
+	}
 }
