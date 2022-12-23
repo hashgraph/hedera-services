@@ -47,15 +47,27 @@ class CustomFeeTest {
                         payerAccount);
         FixedFee fixedFeeSameToken = new FixedFee(50, null, true, false, payerAccount);
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
-        RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 50, Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005cb")), true, payerAccount);
+        RoyaltyFee royaltyFee =
+                new RoyaltyFee(
+                        15,
+                        100,
+                        50,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                        true,
+                        payerAccount);
 
-        CustomFee customFee1 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
-        CustomFee customFee2 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        CustomFee customFee2 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee2.setFixedFee(fixedFeeInHts);
-        CustomFee customFee3 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        CustomFee customFee3 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee3.setFixedFee(fixedFeeSameToken);
-        CustomFee customFee4 = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        CustomFee customFee4 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee4.setFractionalFee(fractionalFee);
         CustomFee customFee5 = new CustomFee();
         customFee5.setRoyaltyFee(royaltyFee);
