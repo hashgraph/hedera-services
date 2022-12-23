@@ -16,10 +16,10 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 /**
  * Encapsulates <strong>Ser</strong>ialization and <strong>Des</strong>erialization.
@@ -29,6 +29,7 @@ import java.io.IOException;
  *
  * @param <T> The type of object to serialize and deserialize
  */
+@SuppressWarnings("SpellCheckingInspection")
 public interface Serdes<T> {
     /**
      * Parses an object from the {@link DataInput} and returns it.
@@ -36,8 +37,10 @@ public interface Serdes<T> {
      * @param input The {@link DataInput} from which to read the data to construct an object
      * @return The parsed object. It must not return null.
      * @throws IOException If it is impossible to read from the {@link DataInput}
+     * @throws NoSuchElementException If there is no element of type T that can be parsed from this
+     *     input
      */
-    @Nullable
+    @NonNull
     T parse(@NonNull DataInput input) throws IOException;
 
     /**
@@ -47,7 +50,7 @@ public interface Serdes<T> {
      * @param output The {@link DataOutput} to write to.
      * @throws IOException If the {@link DataOutput} cannot be written to.
      */
-    void write(@Nullable T item, @NonNull DataOutput output) throws IOException;
+    void write(@NonNull T item, @NonNull DataOutput output) throws IOException;
 
     /**
      * Reads from this data input the length of the data within the input. The implementation may

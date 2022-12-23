@@ -39,7 +39,6 @@ import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -326,24 +325,20 @@ public class MerkleTestBase extends TestBase {
 
     /** An implementation of {@link Serdes} for String types */
     private static final class StringSerdes implements Serdes<String> {
-        @Nullable
+        @NonNull
         @Override
         public String parse(@NonNull DataInput input) throws IOException {
             final var len = input.readInt();
             final var bytes = new byte[len];
             input.readFully(bytes);
-            return len == 0 ? null : new String(bytes, StandardCharsets.UTF_8);
+            return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
         }
 
         @Override
-        public void write(@Nullable String value, @NonNull DataOutput output) throws IOException {
-            if (value == null) {
-                output.writeInt(0);
-            } else {
-                final var bytes = value.getBytes(StandardCharsets.UTF_8);
-                output.writeInt(bytes.length);
-                output.write(bytes);
-            }
+        public void write(@NonNull String value, @NonNull DataOutput output) throws IOException {
+            final var bytes = value.getBytes(StandardCharsets.UTF_8);
+            output.writeInt(bytes.length);
+            output.write(bytes);
         }
 
         @Override
@@ -357,7 +352,7 @@ public class MerkleTestBase extends TestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull String value, DataInput input) {
+        public boolean fastEquals(@NonNull String value, @NonNull DataInput input) {
             try {
                 return value.equals(parse(input));
             } catch (IOException e) {
@@ -369,13 +364,14 @@ public class MerkleTestBase extends TestBase {
 
     /** An implementation of {@link Serdes} for Long types */
     private static final class LongSerdes implements Serdes<Long> {
+        @NonNull
         @Override
         public Long parse(@NonNull DataInput input) throws IOException {
             return input.readLong();
         }
 
         @Override
-        public void write(@Nullable Long value, @NonNull DataOutput output) throws IOException {
+        public void write(@NonNull Long value, @NonNull DataOutput output) throws IOException {
             output.writeLong(value);
         }
 
@@ -390,7 +386,7 @@ public class MerkleTestBase extends TestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull Long value, DataInput input) {
+        public boolean fastEquals(@NonNull Long value, @NonNull DataInput input) {
             try {
                 return value.equals(parse(input));
             } catch (IOException e) {

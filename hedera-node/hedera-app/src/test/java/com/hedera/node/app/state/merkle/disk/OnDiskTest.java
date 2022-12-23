@@ -31,7 +31,6 @@ import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -224,13 +223,10 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public void write(@Nullable AccountID value, @NonNull DataOutput output)
-                throws IOException {
-            if (value != null) {
-                output.writeLong(value.shard);
-                output.writeLong(value.realm);
-                output.writeLong(value.num);
-            }
+        public void write(@NonNull AccountID value, @NonNull DataOutput output) throws IOException {
+            output.writeLong(value.shard);
+            output.writeLong(value.realm);
+            output.writeLong(value.num);
         }
 
         @Override
@@ -245,7 +241,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull AccountID item, DataInput input) {
+        public boolean fastEquals(@NonNull AccountID item, @NonNull DataInput input) {
             try {
                 return item.equals(parse(input));
             } catch (Exception e) {
@@ -271,17 +267,15 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public void write(@Nullable Account acct, @NonNull DataOutput output) throws IOException {
-            if (acct != null) {
-                // id
-                accountIDSerdes.write(acct.accountID(), output);
-                // memo
-                final var bb = StandardCharsets.UTF_8.encode(acct.memo());
-                output.writeInt(bb.limit());
-                output.write(bb.array(), 0, bb.limit());
-                // balance
-                output.writeLong(acct.balance);
-            }
+        public void write(@NonNull Account acct, @NonNull DataOutput output) throws IOException {
+            // id
+            accountIDSerdes.write(acct.accountID(), output);
+            // memo
+            final var bb = StandardCharsets.UTF_8.encode(acct.memo());
+            output.writeInt(bb.limit());
+            output.write(bb.array(), 0, bb.limit());
+            // balance
+            output.writeLong(acct.balance);
         }
 
         @Override
@@ -295,7 +289,7 @@ class OnDiskTest extends MerkleTestBase {
         }
 
         @Override
-        public boolean fastEquals(@NonNull Account item, DataInput input) {
+        public boolean fastEquals(@NonNull Account item, @NonNull DataInput input) {
             throw new UnsupportedOperationException("Not used");
         }
     }

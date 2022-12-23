@@ -28,7 +28,7 @@ import java.util.*;
 public abstract class WritableKVStateBase<K extends Comparable<K>, V>
         extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
-    private final Map<K, Modification<V>> modifications = new HashMap<>();
+    private final Map<K, V> modifications = new HashMap<>();
 
     /**
      * Create a new StateBase.
@@ -47,11 +47,11 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
     public final void commit() {
         for (final var entry : modifications.entrySet()) {
             final var key = entry.getKey();
-            final var mod = entry.getValue();
-            if (mod.removed) {
+            final var value = entry.getValue();
+            if (value == null) {
                 removeFromDataSource(key);
-            } else if (mod.value != null) {
-                putIntoDataSource(key, mod.value);
+            } else {
+                putIntoDataSource(key, value);
             }
         }
     }
@@ -74,9 +74,8 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
     public final V get(@NonNull K key) {
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        final var mod = modifications.get(key);
-        if (mod != null) {
-            final var value = mod.removed ? null : mod.value;
+        if (modifications.containsKey(key)) {
+            final var value = modifications.get(key);
             super.markRead(key, value);
             return value;
         } else {
@@ -88,11 +87,11 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
     @Override
     @Nullable
     public final V getForModify(@NonNull final K key) {
+        Objects.requireNonNull(key);
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        final var mod = modifications.get(key);
-        if (mod != null) {
-            return mod.removed ? null : mod.value;
+        if (modifications.containsKey(key)) {
+            return modifications.get(key);
         }
 
         // If the modifications map does not contain an answer, but the read cache of the
@@ -112,13 +111,16 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
     /** {@inheritDoc} */
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
-        modifications.put(key, new Modification<>(false, value));
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(value);
+        modifications.put(key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public final void remove(@NonNull final K key) {
-        modifications.put(key, new Modification<>(true, null));
+        Objects.requireNonNull(key);
+        modifications.put(key, null);
     }
 
     /**
@@ -139,7 +141,7 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
         for (final var mod : modifications.entrySet()) {
             final var key = mod.getKey();
             final var val = mod.getValue();
-            if (val.removed) {
+            if (val == null) {
                 removedKeys.add(key);
             } else {
                 maybeAddedKeys.add(key);
@@ -185,19 +187,6 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
      * @param key key to remove from the underlying data source
      */
     protected abstract void removeFromDataSource(@NonNull K key);
-
-    /**
-     * The record of a modification that was made OR ATTEMPTED TO BE MADE by this {@link
-     * WritableKVStateBase}. If a key is put, removed, or "getForModify", then a record of that work
-     * will be made in the {@link WritableKVStateBase#modifications} map. Even if a "getForModify"
-     * is made on a key that doesn't exist in the backing storage, we will create a {@link
-     * Modification} and store it, so we don't go looking up that value again later.
-     *
-     * @param removed Whether this modification represents a removal operation
-     * @param value The value, which may be null
-     * @param <V> The type of value
-     */
-    private record Modification<V>(boolean removed, @Nullable V value) {}
 
     /**
      * A special iterator which includes all keys in the backend iterator, and all keys that have
