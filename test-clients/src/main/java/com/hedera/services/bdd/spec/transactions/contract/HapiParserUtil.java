@@ -17,6 +17,8 @@ package com.hedera.services.bdd.spec.transactions.contract;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import org.apache.tuweni.bytes.Bytes;
 
 public class HapiParserUtil {
@@ -62,6 +64,15 @@ public class HapiParserUtil {
             headlongAddresses[i] = asHeadlongAddress(addresses[i]);
         }
         return headlongAddresses;
+    }
+
+    public static Address evmAddressFromSecp256k1Key(final Key key) {
+        if (key.hasECDSASecp256K1()) {
+            return asHeadlongAddress(
+                    EthSigsUtils.recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()));
+        } else {
+            throw new IllegalStateException("Cannot observe address for non-ECDSA key!");
+        }
     }
 
     public static byte[] stripSelector(final byte[] bytesToExpand) {

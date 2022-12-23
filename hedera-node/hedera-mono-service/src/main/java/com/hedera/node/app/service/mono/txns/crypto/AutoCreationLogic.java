@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
@@ -93,10 +92,15 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     public boolean reclaimPendingAliases() {
         if (!pendingCreations.isEmpty()) {
             for (final var pendingCreation : pendingCreations) {
-                final var alias = pendingCreation.recordBuilder().getAlias();
-                aliasManager.unlink(alias);
-                if (alias.size() != EVM_ADDRESS_SIZE) {
-                    aliasManager.forgetEvmAddress(alias);
+                final var syntheticTxnBody =
+                        pendingCreation.syntheticBody().getCryptoCreateAccount();
+                final var alias = syntheticTxnBody.getAlias();
+                if (!alias.isEmpty()) {
+                    aliasManager.unlink(alias);
+                }
+                final var evmAddress = syntheticTxnBody.getEvmAddress();
+                if (!evmAddress.isEmpty()) {
+                    aliasManager.unlink(evmAddress);
                 }
             }
             return true;

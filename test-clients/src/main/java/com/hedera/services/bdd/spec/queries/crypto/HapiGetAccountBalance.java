@@ -323,7 +323,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             AccountID id;
             if (referenceType == ReferenceType.REGISTRY_NAME) {
                 id = TxnUtils.asId(account, spec);
-            } else if (referenceType == ReferenceType.RAW_ALIAS) {
+            } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
                 id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
                 id = spec.registry().aliasIdFor(aliasKeySource);

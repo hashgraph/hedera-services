@@ -102,11 +102,13 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         super.executeHederaPrecompile(contract, frame, operationTracer);
     }
 
-    // can be reached only with EVM_VERSION >= 0.32;
+    // can be reached only for a top level call with EVM_VERSION >= 0.32;
     // a top-level call to a non-existing recipient would have been rejected
-    // immediately in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
-    // EVM_VERSION < 0.32. a nested call to a non-existing recipient would have
-    // been rejected in {@code HederaCallOperation} if EVM_VERSION < 0.32
+    // immediately
+    // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
+    // EVM_VERSION < 0.32
+    // and nested calls to non-existing recipients are currently rejected in all
+    // versions (see {@code HederaOperationUtil})
     @Override
     protected void executeLazyCreate(
             final MessageFrame frame, final OperationTracer operationTracer) {
