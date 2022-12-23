@@ -58,7 +58,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final boolean isKyc = ledgers.isKyc(accountId, tokenId);
-        return encoder.encodeIsKyc(isKyc);
+        return evmEncoder.encodeIsKyc(isKyc);
     }
 
     public static GrantRevokeKycWrapper<TokenID, AccountID> decodeIsKyc(

@@ -193,18 +193,7 @@ class RationalizedSigMetaTest {
     void shouldNotReplacePayerHollowKeyWhenPayerKeyNotHollow() {
         subject = RationalizedSigMeta.forPayerOnly(payerKey, rationalizedSigs, accessor);
 
-        subject.replacePayerHollowKeyIfNeeded(SignatureMap.getDefaultInstance());
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyWhenRationalizedSigsAreNull() {
-        var bytes = new byte[20];
-        var hollowKey = new JHollowKey(bytes);
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, null, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded(SignatureMap.getDefaultInstance());
+        subject.replacePayerHollowKeyIfNeeded();
 
         assertFalse(subject.hasReplacedHollowKey());
     }
@@ -215,42 +204,7 @@ class RationalizedSigMetaTest {
         var hollowKey = new JHollowKey(bytes);
         subject = RationalizedSigMeta.forPayerOnly(hollowKey, rationalizedSigs, accessor);
 
-        subject.replacePayerHollowKeyIfNeeded(SignatureMap.getDefaultInstance());
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyWhenSignatureMapIsEmpty() {
-        var hollowKey = new JHollowKey(expectedEVMAddressBytes);
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, rationalizedSigs, accessor);
-
-        subject.replacePayerHollowKeyIfNeeded(SignatureMap.getDefaultInstance());
-
-        assertFalse(subject.hasReplacedHollowKey());
-    }
-
-    @Test
-    void shouldNotReplacePayerHollowKeyWhenRationalizedSigNotMatchingSigInSignatureMap() {
-        var hollowKey = new JHollowKey(expectedEVMAddressBytes);
-        subject = RationalizedSigMeta.forPayerOnly(hollowKey, rationalizedSigs, accessor);
-        final var ecdsaCompressedBytes =
-                ((ECPublicKeyParameters) KeyFactory.ecdsaKpGenerator.generateKeyPair().getPublic())
-                        .getQ()
-                        .getEncoded(true);
-        var sigMap =
-                SignatureMap.newBuilder()
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(
-                                                ByteString.copyFromUtf8(
-                                                        "0123456789012345678901234567890123456789012345678901234567890123")))
-                        .addSigPair(
-                                SignaturePair.newBuilder()
-                                        .setPubKeyPrefix(ByteString.copyFrom(ecdsaCompressedBytes)))
-                        .build();
-
-        subject.replacePayerHollowKeyIfNeeded(sigMap);
+        subject.replacePayerHollowKeyIfNeeded();
 
         assertFalse(subject.hasReplacedHollowKey());
     }
@@ -285,7 +239,7 @@ class RationalizedSigMetaTest {
                                         .setPubKeyPrefix(ByteString.copyFrom(ecdsaCompressedBytes)))
                         .build();
 
-        subject.replacePayerHollowKeyIfNeeded(sigMap);
+        subject.replacePayerHollowKeyIfNeeded();
 
         assertTrue(subject.hasReplacedHollowKey());
         assertTrue(subject.payerKey().hasECDSAsecp256k1Key());

@@ -21,10 +21,14 @@ description = "Default Hedera Util Service Implementation"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
     api(project(":hedera-node:hedera-util-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
-    compileOnly(libs.spotbugs.annotations)
 }

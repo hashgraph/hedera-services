@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -41,19 +42,25 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -78,6 +85,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.THIRD_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.TOKEN_WITH_CUSTOM_FEE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
@@ -88,7 +96,12 @@ import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -101,14 +114,18 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Arrays;
@@ -116,6 +133,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -126,6 +144,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
+    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -141,9 +160,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 createAnAccountWithEVMAddressAliasAndECKey(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
                 getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                hollowAccountCompletionWithEthereumTransaction());
+                hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
+                hollowAccountCompletionWithEthereumTransaction(),
+                hollowAccountCreationChargesExpectedFees(),
+                lazyCreateViaEthereumCryptoTransfer());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -323,12 +344,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-                                FALSE_VALUE),
+                                LAZY_CREATION_ENABLED, FALSE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
@@ -558,11 +577,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
                                 FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
@@ -577,8 +596,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .alias(evmAddressBytes)
-                                                    .balance(100 * ONE_HBAR);
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .via("createTxn");
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -590,9 +610,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op5 =
                                             cryptoCreate(ACCOUNT)
@@ -600,19 +619,39 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .alias(ByteString.copyFromUtf8("Invalid alias"))
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
-                                    allRunFor(spec, op, op2, op3, op4, op5);
+                                    allRunFor(spec, op, op2, op3, op4, op5, op6);
                                     var hapiGetAccountInfo =
-                                            getAccountInfo(ACCOUNT)
+                                            getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    final var getTxnRecord =
+                                            getTxnRecord("createTxn")
+                                                    .hasPriority(recordWith().hasNoAlias());
+                                    allRunFor(
+                                            spec,
+                                            hapiGetAccountInfo,
+                                            hapiGetAnotherAccountInfo,
+                                            getTxnRecord);
                                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
     }
@@ -704,7 +743,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
     private HapiSpec hollowAccountCompletionNotAcceptedWhenFlagIsDisabled() {
         final Map<String, String> startingProps = new HashMap<>();
-        return defaultHapiSpec("HollowAccountCompletionWithCryptoTransfer")
+        return defaultHapiSpec("HollowAccountCompletionNotAcceptedWhenFlagIsDisabled")
                 .given(
                         remembering(startingProps, LAZY_CREATION_ENABLED),
                         overriding(LAZY_CREATION_ENABLED, TRUE),
@@ -730,11 +769,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN);
                                     final var op2 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(evmAddress)
+                                                                    .noAlias()
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
@@ -774,6 +813,132 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
                                     allRunFor(spec, op3);
                                 }));
+    }
+
+    private HapiSpec hollowAccountCreationChargesExpectedFees() {
+        final long REDUCED_NODE_FEE = 2L;
+        final long REDUCED_NETWORK_FEE = 3L;
+        final long REDUCED_SERVICE_FEE = 3L;
+        final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
+        final var payer = "payer";
+        final var secondKey = "secondKey";
+        return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
+                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
+                .given(
+                        overridingTwo(
+                                LAZY_CREATION_ENABLED,
+                                "true",
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
+                                "true"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS + REDUCED_TOTAL_FEE),
+                        reduceFeeFor(
+                                List.of(CryptoTransfer, CryptoUpdate, CryptoCreate),
+                                REDUCED_NODE_FEE,
+                                REDUCED_NETWORK_FEE,
+                                REDUCED_SERVICE_FEE))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    // crypto create fees check
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                                                    .balance(ONE_HUNDRED_HBARS);
+                                    final var op2 =
+                                            cryptoTransfer(
+                                                    tinyBarsFromTo(
+                                                            GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
+                                    final var op3 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .balance(ONE_HUNDRED_HBARS);
+                                    final var op4 =
+                                            getAccountBalance(payer).hasTinyBars(0).logged();
+                                    allRunFor(spec, op, op2, op3, op4);
+
+                                    // crypto transfer fees check
+                                    final HapiCryptoTransfer transferToPayerAgain =
+                                            cryptoTransfer(
+                                                    tinyBarsFromTo(
+                                                            GENESIS,
+                                                            payer,
+                                                            ONE_HUNDRED_HBARS
+                                                                    + 2 * REDUCED_TOTAL_FEE));
+                                    final var secondEvmAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(
+                                                            spec.registry()
+                                                                    .getKey(secondKey)
+                                                                    .getECDSASecp256K1()
+                                                                    .toByteArray()));
+                                    // try to create the hollow account without having enough
+                                    // balance to pay for the finalization (CryptoUpdate) fee
+                                    final var op5 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    payer,
+                                                                    secondEvmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                                                    .via(TRANSFER_TXN);
+                                    final var notExistingAccountInfo =
+                                            getAliasedAccountInfo(secondKey)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
+                                    // transfer the needed balance for the finalization fee to the
+                                    // sponsor; we need + 2 * TOTAL_FEE, not 1, since we paid for
+                                    // the
+                                    // failed crypto transfer
+                                    final var op6 =
+                                            cryptoTransfer(
+                                                    tinyBarsFromTo(
+                                                            GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
+                                    // now the sponsor can successfully create the hollow account
+                                    final var op7 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    payer,
+                                                                    secondEvmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+                                    final var op8 =
+                                            getAliasedAccountInfo(secondKey)
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            ONE_HUNDRED_HBARS, 0, 0)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO));
+                                    final var op9 =
+                                            getAccountBalance(payer).hasTinyBars(0).logged();
+                                    allRunFor(
+                                            spec,
+                                            transferToPayerAgain,
+                                            op5,
+                                            notExistingAccountInfo,
+                                            op6,
+                                            op7,
+                                            op8,
+                                            op9,
+                                            uploadDefaultFeeSchedules(GENESIS));
+                                }))
+                .then(uploadDefaultFeeSchedules(GENESIS));
     }
 
     private HapiSpec hollowAccountCompletionWithEthereumTransaction() {
@@ -833,11 +998,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN_2);
 
                                     final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                            getAliasedAccountInfo(evmAddress)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
+                                                                    .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
                                             getTxnRecord(TRANSFER_TXN_2)
@@ -845,6 +1010,132 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                                }));
+    }
+
+    private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
+        final var RECIPIENT_KEY = "lazyAccountRecipient";
+        final var lazyCreateTxn = "payTxn";
+        final var failedLazyCreateTxn = "failedLazyCreateTxn";
+        return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROP,
+                                "298",
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "true",
+                                "contracts.evm.version",
+                                "v0.32"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords())
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(0)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(200_000L)
+                                                        .via(failedLazyCreateTxn)
+                                                        .hasKnownStatus(INSUFFICIENT_GAS),
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(1)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(2_000_000L)
+                                                        .via(lazyCreateTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var failedLazyTxnRecord =
+                                            getTxnRecord(failedLazyCreateTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .targetedContractId(
+                                                                            ContractID.newBuilder()
+                                                                                    .getDefaultInstanceForType()))
+                                                    .logged();
+                                    final var failedLazyTxnChildRecordsCheck =
+                                            emptyChildRecordsCheck(
+                                                    failedLazyCreateTxn, INSUFFICIENT_GAS);
+                                    allRunFor(
+                                            spec,
+                                            failedLazyTxnRecord,
+                                            failedLazyTxnChildRecordsCheck);
+
+                                    final var ecdsaSecp256K1 =
+                                            spec.registry()
+                                                    .getKey(RECIPIENT_KEY)
+                                                    .getECDSASecp256K1();
+                                    final var aliasAsByteString =
+                                            ByteStringUtils.wrapUnsafely(
+                                                    recoverAddressFromPubKey(
+                                                            ecdsaSecp256K1.toByteArray()));
+                                    AtomicReference<AccountID> lazyAccountIdReference =
+                                            new AtomicReference<>();
+                                    final var lazyAccountInfoCheck =
+                                            getAliasedAccountInfo(aliasAsByteString)
+                                                    .logged()
+                                                    .has(
+                                                            accountWith()
+                                                                    .balance(FIVE_HBARS)
+                                                                    .key(EMPTY_KEY))
+                                                    .exposingIdTo(lazyAccountIdReference::set);
+                                    allRunFor(spec, lazyAccountInfoCheck);
+                                    final var payTxn =
+                                            getTxnRecord(lazyCreateTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .targetedContractId(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getAccountNum())
+                                                                                    .setShardNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getShardNum())
+                                                                                    .setRealmNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getRealmNum())
+                                                                                    .build()))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    final var childRecordsCheck =
+                                            childRecordsCheck(
+                                                    lazyCreateTxn,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .memo(LAZY_MEMO)
+                                                            .alias(ByteString.EMPTY));
+                                    allRunFor(spec, payTxn, childRecordsCheck);
                                 }));
     }
 

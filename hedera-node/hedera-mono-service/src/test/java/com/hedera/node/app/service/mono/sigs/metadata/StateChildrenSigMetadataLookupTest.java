@@ -262,59 +262,6 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithUnexpectedNullKey() {
-        given(stateChildren.accounts()).willReturn(accounts);
-        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
-
-        final var linkedRefs = new LinkedRefs();
-        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
-
-        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
-        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
-    }
-
-    @Test
-    void recognizesImmutableAccountWithUnexpectedNullKeyAndNullAliasWhenLazyCreationEnabled() {
-        given(stateChildren.accounts()).willReturn(accounts);
-        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-
-        final var linkedRefs = new LinkedRefs();
-        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
-
-        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
-        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
-    }
-
-    @Test
-    void recognizesImmutableAccountWithUnexpectedNullKeyAndEmptyAliasWhenLazyCreationEnabled() {
-        given(stateChildren.accounts()).willReturn(accounts);
-        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
-        given(account.getAlias()).willReturn(ByteString.EMPTY);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-
-        final var linkedRefs = new LinkedRefs();
-        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
-
-        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
-        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
-    }
-
-    @Test
-    void recognizesImmutableAccountWithEmptyKeyAndNullAliasWhenLazyCreationEnabled() {
-        given(stateChildren.accounts()).willReturn(accounts);
-        given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
-        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-
-        final var linkedRefs = new LinkedRefs();
-        final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
-
-        assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
-        assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
-    }
-
-    @Test
     void recognizesImmutableAccountWithEmptyKeyAndEmptyAliasWhenLazyCreationEnabled() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);

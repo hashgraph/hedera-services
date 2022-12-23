@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -164,7 +163,7 @@ public class ImpliedTransfersMarshal {
 
         /* And for each "assessable change" that can be charged a custom fee, delegate to our
         fee assessor to update the balance changes with the custom fee. */
-        final List<FcAssessedCustomFee> fees = new ArrayList<>();
+        final List<AssessedCustomFeeWrapper> fees = new ArrayList<>();
         var change = changeManager.nextAssessableChange();
         while (change != null) {
             final var status =

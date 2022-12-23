@@ -107,14 +107,12 @@ public class SigsAndPayerKeyScreen {
         }
 
         final var sigMeta = accessor.getSigMeta();
-        if (sigMeta != null) {
-            sigMeta.replacePayerHollowKeyIfNeeded(accessor.getSigMap());
-        }
+        sigMeta.replacePayerHollowKeyIfNeeded();
 
         if (hasActivePayerSig(accessor)) {
             txnCtx.payerSigIsKnownActive();
 
-            if (sigMeta != null && sigMeta.hasReplacedHollowKey()) {
+            if (sigMeta.hasReplacedHollowKey()) {
                 accounts.get()
                         .getForModify(EntityNum.fromAccountId(txnCtx.activePayer()))
                         .setAccountKey(sigMeta.payerKey());
@@ -129,10 +127,11 @@ public class SigsAndPayerKeyScreen {
             final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
             final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
             if (callerNum != EntityNum.MISSING_NUM) {
-                var account = accounts.get().getForModify(callerNum);
-                if (account.getAccountKey() == EMPTY_KEY) {
+                final var account = accounts.get().get(callerNum);
+                if (EMPTY_KEY.equals(account.getAccountKey())) {
                     var key = new JECDSASecp256k1Key(ethTxSigs.publicKey());
-                    account.setAccountKey(key);
+                    var accountToModify = accounts.get().getForModify(callerNum);
+                    accountToModify.setAccountKey(key);
                     trackHollowAccountCompletion(callerNum.toGrpcAccountId(), key);
                 }
             }

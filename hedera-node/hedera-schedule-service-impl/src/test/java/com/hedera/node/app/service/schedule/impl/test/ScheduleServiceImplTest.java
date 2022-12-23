@@ -15,10 +15,7 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -52,28 +49,8 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardScheduleService");
+                "We must always receive an instance of type "
+                        + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
-    }
-
-    @Test
-    void createsNewInstance() {
-        final ScheduleServiceImpl service = new ScheduleServiceImpl();
-        final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx);
-        final var serviceImpl1 = service.createPreTransactionHandler(states, preHandleCtx);
-        assertNotEquals(serviceImpl1, serviceImpl);
-        assertTrue(serviceImpl1 instanceof SchedulePreTransactionHandlerImpl);
-    }
-
-    @Test
-    void throwsNPEIfArgsAreNull() {
-        final ScheduleServiceImpl service = new ScheduleServiceImpl();
-        assertThrows(
-                NullPointerException.class,
-                () -> service.createPreTransactionHandler(null, preHandleCtx));
-        assertThrows(
-                NullPointerException.class,
-                () -> service.createPreTransactionHandler(states, null));
-        assertDoesNotThrow(() -> service.createPreTransactionHandler(states, preHandleCtx));
     }
 }

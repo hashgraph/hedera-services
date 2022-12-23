@@ -56,7 +56,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -115,6 +114,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void propagatesRationalizedStatus() {
         given(rationalization.finalStatus()).willReturn(INVALID_ACCOUNT_ID);
+        given(accessor.getSigMeta()).willReturn(sigMeta);
 
         // when:
         final var result = subject.applyTo(accessor);
@@ -129,6 +129,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void marksPayerSigActiveAndPreparesWhenVerified() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
 
         // when:
@@ -144,7 +145,6 @@ class SigsAndPayerKeyScreenTest {
     void hollowAccountCompletionSucceeds() {
         givenOkRationalization();
         given(accessor.getSigMeta()).willReturn(sigMeta);
-        given(accessor.getSigMap()).willReturn(SignatureMap.getDefaultInstance());
         given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
         given(sigMeta.hasReplacedHollowKey()).willReturn(true);
         given(accounts.get()).willReturn(accountStorage);
@@ -168,23 +168,9 @@ class SigsAndPayerKeyScreenTest {
     }
 
     @Test
-    void skipsHollowAccountCompletionWithNoSigMeta() {
-        givenOkRationalization();
-        given(payerSigValidity.test(accessor, validityTest)).willReturn(true);
-        given(properties.isLazyCreationEnabled()).willReturn(true);
-
-        // when:
-        final var result = subject.applyTo(accessor);
-
-        // then:
-        verify(account, never()).setAccountKey(any());
-        // and:
-        Assertions.assertEquals(OK, result);
-    }
-
-    @Test
     void skipsHollowAccountCompletionForInvalidEthereumTxn() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(spanMapAccessor.getEthTxExpansion(accessor))
                 .willReturn(new EthTxExpansion(null, INVALID_TRANSACTION));
@@ -201,6 +187,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void skipsHollowAccountCompletionForEthereumTxnAliasNotFound() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
         var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
@@ -220,6 +207,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void skipsHollowAccountCompletionForEthereumTxnAccountKeyNotEmpty() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
         var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
@@ -227,7 +215,7 @@ class SigsAndPayerKeyScreenTest {
                 .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
         given(accounts.get()).willReturn(accountStorage);
-        given(accountStorage.getForModify(any())).willReturn(account);
+        given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey())
                 .willReturn(new JEd25519Key(ByteString.copyFromUtf8("accountKey").toByteArray()));
 
@@ -243,6 +231,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void hollowAccountCompletionForEthereumTxnSucceeds() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(properties.isLazyCreationEnabled()).willReturn(true);
         given(spanMapAccessor.getEthTxExpansion(accessor)).willReturn(new EthTxExpansion(null, OK));
         var key = new JECDSASecp256k1Key(ByteString.copyFromUtf8("publicKey").toByteArray());
@@ -250,8 +239,9 @@ class SigsAndPayerKeyScreenTest {
                 .willReturn(new EthTxSigs(key.getECDSASecp256k1Key(), new byte[0]));
         given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromInt(1));
         given(accounts.get()).willReturn(accountStorage);
-        given(accountStorage.getForModify(any())).willReturn(account);
+        given(accountStorage.get(any())).willReturn(account);
         given(account.getAccountKey()).willReturn(EMPTY_KEY);
+        given(accountStorage.getForModify(any())).willReturn(account);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any()))
                 .willReturn(childRecordBuilder);
         given(childRecordBuilder.getReceiptBuilder()).willReturn(txnReceiptBuilder);
@@ -269,6 +259,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void warnsWhenPayerSigActivationThrows() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
         given(payerSigValidity.test(accessor, validityTest))
                 .willThrow(IllegalArgumentException.class);
 
@@ -286,6 +277,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void cyclesSyncWhenUsed() {
         givenOkRationalization(true);
+        given(accessor.getSigMeta()).willReturn(sigMeta);
 
         // when:
         subject.applyTo(accessor);
@@ -297,6 +289,7 @@ class SigsAndPayerKeyScreenTest {
     @Test
     void doesntCyclesAsyncAnymore() {
         givenOkRationalization();
+        given(accessor.getSigMeta()).willReturn(sigMeta);
 
         subject.applyTo(accessor);
 

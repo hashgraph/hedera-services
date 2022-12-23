@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.COMPRESSED_SECP256K1_PUBLIC_KEY_LEN;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
@@ -28,7 +27,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -145,8 +143,8 @@ public class RationalizedSigMeta {
                                 : wrappedFn.apply(publicKey);
     }
 
-    public void replacePayerHollowKeyIfNeeded(SignatureMap signatureMap) {
-        if (!payerReqSig.hasHollowKey() || rationalizedSigs == null) return;
+    public void replacePayerHollowKeyIfNeeded() {
+        if (!payerReqSig.hasHollowKey()) return;
 
         final var targetEvmAddress = payerReqSig.getHollowKey().getEvmAddress();
         for (final var sig : rationalizedSigs) {
@@ -161,20 +159,10 @@ public class RationalizedSigMeta {
                     publicKeyHashed.length - 20,
                     publicKeyHashed.length)) {
 
-                // use compressed public key
-                for (final var sigPair : signatureMap.getSigPairList()) {
-                    final var keyBytes = sigPair.getPubKeyPrefix().toByteArray();
-                    if (keyBytes.length != COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
-                        continue;
-                    }
-
-                    if (Arrays.equals(
-                            sig.getExpandedPublicKey(),
-                            MiscCryptoUtils.decompressSecp256k1(keyBytes))) {
-                        payerReqSig = new JECDSASecp256k1Key(keyBytes);
-                        replacedHollowKey = true;
-                    }
-                }
+                payerReqSig =
+                        new JECDSASecp256k1Key(
+                                MiscCryptoUtils.compressSecp256k1(sig.getExpandedPublicKey()));
+                replacedHollowKey = true;
             }
         }
     }
