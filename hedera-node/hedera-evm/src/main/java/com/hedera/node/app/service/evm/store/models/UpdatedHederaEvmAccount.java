@@ -128,7 +128,6 @@ public class UpdatedHederaEvmAccount implements MutableAccount, EvmAccount {
         } else if (hederaEvmEntityAccess != null) {
             value = UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
         }
-        // Temporary with future PR we could read the whole mirror-node db ContractState table
         if (value != null) {
             setStorageValue(key, value);
             return value;
