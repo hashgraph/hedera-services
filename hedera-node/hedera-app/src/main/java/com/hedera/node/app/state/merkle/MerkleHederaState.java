@@ -49,10 +49,10 @@ import java.util.function.Consumer;
  * that do not include the period, we can use it to separate service name from state key. When we
  * need to find all states for a service, we can do so by iteration and string comparison.
  *
- * <p>NOTE: The implementation of this class must change before we can support state proofs properly.
- * In particular, a wide n-ary number of children is less than ideal, since the hash of each child
- * must be part of the state proof. It would be better to have a binary tree. We should consider
- * nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
+ * <p>NOTE: The implementation of this class must change before we can support state proofs
+ * properly. In particular, a wide n-ary number of children is less than ideal, since the hash of
+ * each child must be part of the state proof. It would be better to have a binary tree. We should
+ * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleHederaState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState {

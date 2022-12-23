@@ -20,16 +20,15 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 
+/**
+ * An implementation of {@link ReadableStates} that is useful for testing purposes and creates
+ * {@link Map}-based states such as {@link MapReadableKVState}.
+ *
+ * <p>A convenient {@link Builder} is provided to define the set of states available.
+ */
 @SuppressWarnings("rawtypes")
 public class MapReadableStates implements ReadableStates {
     private final Map<String, ReadableKVState> states;
-
-    public MapReadableStates(ReadableKVState... states) {
-        this.states = new HashMap<>();
-        for (final var state : states) {
-            this.states.put(state.getStateKey(), state);
-        }
-    }
 
     public MapReadableStates(@NonNull final Map<String, ReadableKVState> states) {
         this.states = states;
@@ -63,18 +62,42 @@ public class MapReadableStates implements ReadableStates {
         return states.size();
     }
 
+    /**
+     * Creates a new {@link Builder}.
+     *
+     * @return Gets a new {@link Builder} to use for creating a {@link MapReadableStates} instance.
+     */
+    @NonNull
     public static Builder builder() {
         return new Builder();
     }
 
+    /** A convenience builder */
     public static final class Builder {
         private final Map<String, MapReadableKVState> states = new HashMap<>();
 
+        Builder() {}
+
+        /**
+         * Defines a new {@link MapReadableKVState} that should be available in the {@link
+         * MapReadableStates} instance created by this builder.
+         *
+         * @param state The state to include
+         * @return a reference to this builder
+         */
+        @NonNull
         public Builder state(@NonNull final MapReadableKVState state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }
 
+        /**
+         * Creates and returns a new {@link MapReadableStates} instance based on the states defined
+         * in this builder.
+         *
+         * @return The instance
+         */
+        @NonNull
         public MapReadableStates build() {
             return new MapReadableStates(new HashMap<>(states));
         }

@@ -20,16 +20,15 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 
+/**
+ * An implementation of {@link WritableStates} that is useful for testing purposes and creates
+ * {@link Map}-based states such as {@link MapWritableKVState}.
+ *
+ * <p>A convenient {@link Builder} is provided to define the set of states available.
+ */
 @SuppressWarnings("rawtypes")
 public class MapWritableStates implements WritableStates {
     private final Map<String, WritableKVState> states;
-
-    public MapWritableStates(WritableKVState... states) {
-        this.states = new HashMap<>();
-        for (final var state : states) {
-            this.states.put(state.getStateKey(), state);
-        }
-    }
 
     public MapWritableStates(@NonNull final Map<String, WritableKVState> states) {
         this.states = states;
@@ -63,18 +62,40 @@ public class MapWritableStates implements WritableStates {
         return states.size();
     }
 
+    /**
+     * Creates a new {@link Builder}.
+     *
+     * @return Gets a new {@link Builder} to use for creating a {@link MapWritableStates} instance.
+     */
+    @NonNull
     public static Builder builder() {
         return new Builder();
     }
 
+    /** A convenience builder */
     public static final class Builder {
         private final Map<String, MapWritableKVState> states = new HashMap<>();
 
+        /**
+         * Defines a new {@link MapWritableKVState} that should be available in the {@link
+         * MapWritableStates} instance created by this builder.
+         *
+         * @param state The state to include
+         * @return a reference to this builder
+         */
+        @NonNull
         public Builder state(@NonNull final MapWritableKVState state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }
 
+        /**
+         * Creates and returns a new {@link MapWritableStates} instance based on the states defined
+         * in this builder.
+         *
+         * @return The instance
+         */
+        @NonNull
         public MapWritableStates build() {
             return new MapWritableStates(new HashMap<>(states));
         }
