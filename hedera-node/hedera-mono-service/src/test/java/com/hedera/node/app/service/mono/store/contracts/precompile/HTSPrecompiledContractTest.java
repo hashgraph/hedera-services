@@ -405,7 +405,6 @@ class HTSPrecompiledContractTest {
                 new ViewExecutor(
                         input,
                         messageFrame,
-                        encoder,
                         evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas,
                         stateView);

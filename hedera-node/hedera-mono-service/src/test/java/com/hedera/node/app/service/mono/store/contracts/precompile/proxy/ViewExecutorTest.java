@@ -539,7 +539,6 @@ class ViewExecutorTest {
                 new ViewExecutor(
                         input,
                         frame,
-                        encodingFacade,
                         evmEncodingFacade,
                         viewGasCalculator,
                         stateView);
@@ -562,7 +561,6 @@ class ViewExecutorTest {
                 new ViewExecutor(
                         input,
                         frame,
-                        encodingFacade,
                         evmEncodingFacade,
                         viewGasCalculator,
                         stateView);

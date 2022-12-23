@@ -65,7 +65,6 @@ public class ViewExecutor {
 
     private final Bytes input;
     private final MessageFrame frame;
-    private final EncodingFacade encoder;
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
     private final StateView stateView;
@@ -74,13 +73,11 @@ public class ViewExecutor {
     public ViewExecutor(
             final Bytes input,
             final MessageFrame frame,
-            final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator,
             final StateView stateView) {
         this.input = input;
         this.frame = frame;
-        this.encoder = encoder;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
