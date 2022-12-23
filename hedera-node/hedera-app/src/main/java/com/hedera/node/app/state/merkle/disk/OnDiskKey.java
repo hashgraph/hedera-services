@@ -17,6 +17,8 @@ package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.data.ByteBufferDataInput;
+import com.hedera.node.app.state.merkle.data.ByteBufferDataOutput;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -84,14 +86,12 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
-        throw new UnsupportedOperationException(
-                "Serialization is handled by the OnDiskKeySerializer");
+        serdes.write(key, new ByteBufferDataOutput(byteBuffer));
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
-        throw new UnsupportedOperationException(
-                "Deserialization is handled by the OnDiskKeySerializer");
+        key = serdes.parse(new ByteBufferDataInput(byteBuffer));
     }
 
     @Override

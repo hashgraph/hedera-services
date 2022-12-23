@@ -150,7 +150,7 @@ public class MerkleTestBase extends TestBase {
                         new TestSchema(1),
                         new StateDefinition<>(
                                 FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
-        fruitVirtualMap = createVirtualMap(fruitLabel, storageDir, fruitVirtualMetadata);
+        fruitVirtualMap = createVirtualMap(fruitVirtualLabel, storageDir, fruitVirtualMetadata);
     }
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
@@ -235,7 +235,6 @@ public class MerkleTestBase extends TestBase {
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, Path storageDir, StateMetadata<String, String> md) {
-        final var def = md.stateDefinition();
         final var keySerializer = new OnDiskKeySerializer<>(md);
         final var builder =
                 new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
