@@ -31,6 +31,4 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-admin-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(libs.hapi)
-    compileOnly(libs.spotbugs.annotations)
 }

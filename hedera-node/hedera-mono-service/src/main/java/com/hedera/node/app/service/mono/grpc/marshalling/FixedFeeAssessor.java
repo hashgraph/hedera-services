@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,7 +46,7 @@ public class FixedFeeAssessor {
             CustomFeeMeta feeMeta,
             FcCustomFee fee,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator) {
         if (customFeePayerExemptions.isPayerExempt(feeMeta, fee, payer)) {
             return OK;
         }

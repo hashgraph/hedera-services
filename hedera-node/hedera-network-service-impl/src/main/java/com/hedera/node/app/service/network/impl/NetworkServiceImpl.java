@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.util.impl;
+package com.hedera.node.app.service.network.impl;
 
-import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.service.network.NetworkService;
 
-/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardUtilService implements UtilService {}
+/**
+ * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
+ */
+public final class NetworkServiceImpl implements NetworkService {}

@@ -141,11 +141,11 @@ class GetTokenDefaultFreezeStatusTest {
         getTokenDefaultFreezeStatus
                 .when(() -> decodeTokenDefaultFreezeStatus(any()))
                 .thenReturn(HTSTestsUtil.defaultFreezeStatusWrapper);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(HTSTestsUtil.successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultFreezeStatus((any()))).willReturn(Boolean.TRUE);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 

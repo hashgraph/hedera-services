@@ -349,12 +349,12 @@ public class SpanMapManager {
         var customFeeTokenTransfers = 0;
         var customFeeHbarTransfers = 0;
         final Set<EntityId> involvedTokens = new HashSet<>();
-        for (final var assessedFee : impliedTransfers.getAssessedCustomFees()) {
-            if (assessedFee.isForHbar()) {
+        for (final var assessedFeeWrapper : impliedTransfers.getAssessedCustomFeeWrappers()) {
+            if (assessedFeeWrapper.isForHbar()) {
                 customFeeHbarTransfers++;
             } else {
                 customFeeTokenTransfers++;
-                involvedTokens.add(assessedFee.token());
+                involvedTokens.add(assessedFeeWrapper.token());
             }
         }
         xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);
