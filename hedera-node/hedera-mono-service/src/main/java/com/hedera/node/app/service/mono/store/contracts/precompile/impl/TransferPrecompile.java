@@ -326,7 +326,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public List<FcAssessedCustomFee> getCustomFees() {
-        return impliedTransfers.getAssessedCustomFees();
+        return impliedTransfers.getUnaliasedAssessedCustomFees();
     }
 
     protected void extrapolateDetailsFromSyntheticTxn() {
@@ -361,7 +361,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 transferOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         long accumulatedCost = 0;
         final boolean customFees =
-                impliedTransfers != null && !impliedTransfers.getAssessedCustomFees().isEmpty();
+                impliedTransfers != null && impliedTransfers.hasAssessedCustomFees();
         // For fungible there are always at least two operations, so only charge half for each
         // operation
         final long ftTxCost =
