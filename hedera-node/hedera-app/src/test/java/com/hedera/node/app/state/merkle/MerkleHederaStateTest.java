@@ -51,7 +51,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         setupFruitMerkleMap();
         hederaMerkle =
                 new MerkleHederaState(
-                        (tree, ver) -> onMigrateCalled.set(true),
+                        tree -> onMigrateCalled.set(true),
                         evt -> onPreHandleCalled.set(true),
                         (round, dual) -> onHandleCalled.set(true));
     }
@@ -634,7 +634,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var dualState = Mockito.mock(SwirldDualState.class);
             final var state =
                     new MerkleHederaState(
-                            (tree, ver) -> onMigrateCalled.set(true),
+                            tree -> onMigrateCalled.set(true),
                             evt -> onPreHandleCalled.set(true),
                             (r, d) -> {
                                 assertThat(round).isSameAs(r);

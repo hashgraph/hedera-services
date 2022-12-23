@@ -90,7 +90,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * <p>This reference is only on the first, original state. It is not moved or copied forward to
      * later working mutable states.
      */
-    private MerkleMigrationHandler onMigrate;
+    private Consumer<MerkleHederaState> onMigrate;
 
     /**
      * Maintains information about each service, and each state of each service, known by this
@@ -106,7 +106,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @param onHandleConsensusRound The callback invoked when the platform has
      */
     public MerkleHederaState(
-            @NonNull final MerkleMigrationHandler onMigrate,
+            @NonNull final Consumer<MerkleHederaState> onMigrate,
             @NonNull final Consumer<Event> onPreHandle,
             @NonNull final BiConsumer<Round, SwirldDualState> onHandleConsensusRound) {
         this.onMigrate = Objects.requireNonNull(onMigrate);
@@ -228,9 +228,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @inheritDoc
      */
     @Override
-    public MerkleNode migrate(int version) {
+    public MerkleNode migrate(int ignored) {
         if (onMigrate != null) {
-            onMigrate.accept(this, version);
+            onMigrate.accept(this);
         }
 
         // Always return this node, we never want to replace MerkleHederaState node in the tree

@@ -85,8 +85,7 @@ class SerializationTest extends MerkleTestBase {
     void simpleReadAndWrite(@TempDir Path path) throws IOException, ConstructableRegistryException {
         // Given a merkle tree with some fruit and animals
         final var v1 = version(1, 0, 0);
-        final var originalTree =
-                new MerkleHederaState((tree, ver) -> {}, evt -> {}, (round, dual) -> {});
+        final var originalTree = new MerkleHederaState(tree -> {}, evt -> {}, (round, dual) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
@@ -105,7 +104,7 @@ class SerializationTest extends MerkleTestBase {
         final Supplier<RuntimeConstructable> constructor =
                 () ->
                         new MerkleHederaState(
-                                (tree, ver) -> newRegistry.migrate(tree, v1, v1),
+                                tree -> newRegistry.migrate(tree, v1, v1),
                                 event -> {},
                                 (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
