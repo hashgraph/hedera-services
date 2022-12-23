@@ -142,9 +142,9 @@ token service.
 ### States used during Pre-Handle
 
 Before a transaction comes to consensus, the platform gives the application an opportunity to do some pre-work in
-the background. This pre-transaction work is always done using **the latest immutable state**. Doing pre-work is
-perilous, because if care is not taken, it can lead to an ISS! Since this possibility motivates some additional
-complexity in the design, it is worth a brief discussion on how an ISS here can happen.
+the background. This pre-transaction work is always done using **the latest immutable state** at the time the pre-work
+began. Doing pre-work is perilous, because if care is not taken, it can lead to an ISS! Since this possibility motivates
+some additional complexity in the design, it is worth a brief discussion on how an ISS here can happen.
 
 Suppose I have two nodes in the network, Carol and Bob. Each is receiving a steady stream of transactions and gossiping
 between themselves and all other nodes in the network. At some point, a `Round` of transactions comes to consensus and
