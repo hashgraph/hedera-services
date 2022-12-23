@@ -105,6 +105,6 @@ public abstract class Schema implements Comparable<Schema> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(version);
+        return Integer.hashCode(version);
     }
 }
