@@ -181,9 +181,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 resourceLimitExceededRevertsAllRecords(),
                 autoCreationFailsWithMirrorAddress(),
                 revertedAutoCreationRollsBackEvenIfTopLevelSucceeds(),
-                canCreateMultipleHollows()
-                // canCreateViaFungibleWithFractionalFee()  // FIXED BY ANOTHER PR
-                );
+                canCreateMultipleHollows(),
+                canCreateViaFungibleWithFractionalFee());
     }
 
     HapiSpec hollowAccountSigningReqsStillEnforced() {

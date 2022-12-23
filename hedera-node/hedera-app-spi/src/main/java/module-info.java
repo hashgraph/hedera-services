@@ -1,6 +1,6 @@
 module com.hedera.node.app.spi {
-    requires com.hedera.hashgraph.protobuf.java.api;
-    requires static com.github.spotbugs.annotations;
+    requires transitive com.hedera.hashgraph.protobuf.java.api;
+    requires static transitive com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.state;

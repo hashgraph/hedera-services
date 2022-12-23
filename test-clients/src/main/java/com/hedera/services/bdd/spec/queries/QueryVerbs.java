@@ -164,6 +164,11 @@ public class QueryVerbs {
         return new HapiGetAccountBalance(account);
     }
 
+    public static HapiGetAccountBalance getAccountBalance(
+            final String account, final boolean isContract) {
+        return new HapiGetAccountBalance(account, isContract);
+    }
+
     public static HapiGetAccountBalance getAutoCreatedAccountBalance(final String sourceKey) {
         return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }

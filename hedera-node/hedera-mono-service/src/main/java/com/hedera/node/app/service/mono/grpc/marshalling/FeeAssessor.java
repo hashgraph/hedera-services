@@ -26,7 +26,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
@@ -53,7 +52,7 @@ public class FeeAssessor {
             BalanceChange change,
             CustomSchedulesManager customSchedulesManager,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator,
+            List<AssessedCustomFeeWrapper> accumulator,
             ImpliedTransfersMeta.ValidationProps props) {
         if (changeManager.getLevelNo() > props.maxNestedCustomFees()) {
             return CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
@@ -103,7 +102,7 @@ public class FeeAssessor {
             CustomFeeMeta feeMeta,
             Id payer,
             BalanceChangeManager balanceChangeManager,
-            List<FcAssessedCustomFee> accumulator,
+            List<AssessedCustomFeeWrapper> accumulator,
             int maxBalanceChanges) {
         var result = ASSESSMENT_FINISHED;
         for (var fee : feeMeta.customFees()) {

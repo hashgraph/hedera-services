@@ -49,6 +49,7 @@ public class PerfTestLoadSettings {
     public static final int DEFAULT_TEST_TOPIC_ID = 30_000;
     public static final int DEFAULT_BALANCES_EXPORT_PERIOD_SECS = 60;
     public static final boolean DEFAULT_EXPORT_BALANCES_ON_CLIENT_SIDE = false;
+    private static final int DEFAULT_NODE_TO_STAKE = 0;
 
     private int tps = DEFAULT_TPS;
     private int tolerancePercentage = DEFAULT_TOLERANCE_PERCENTAGE;
@@ -129,6 +130,8 @@ public class PerfTestLoadSettings {
     private String upgradeFilePath = DEFAULT_UPGRADE_FILE_PATH;
     private String upgradeFileId = DEFAULT_UPGRADE_FILE_ID;
     private int upgradeFileAppendsPerBurst = DEFAULT_APPENDS_PER_BURST;
+
+    private int nodeToStake = DEFAULT_NODE_TO_STAKE;
     private HapiPropertySource ciProps = null;
 
     public PerfTestLoadSettings() {}
@@ -185,6 +188,10 @@ public class PerfTestLoadSettings {
 
     public int getTotalAccounts() {
         return totalTestAccounts;
+    }
+
+    public int getNodeToStake() {
+        return nodeToStake;
     }
 
     public int getTotalTopics() {
@@ -335,6 +342,9 @@ public class PerfTestLoadSettings {
         if (ciProps.has("upgradeFileAppendsPerBurst")) {
             upgradeFileAppendsPerBurst = ciProps.getInteger("upgradeFileAppendsPerBurst");
         }
+        if (ciProps.has("nodeToStake")) {
+            nodeToStake = ciProps.getInteger("nodeToStake");
+        }
     }
 
     @Override
@@ -367,6 +377,7 @@ public class PerfTestLoadSettings {
                 .add("upgradeFilePath", upgradeFilePath)
                 .add("upgradeFileId", upgradeFileId)
                 .add("upgradeFileAppendsPerBurst", upgradeFileAppendsPerBurst)
+                .add("nodeToStake", nodeToStake)
                 .toString();
     }
 }

@@ -173,10 +173,10 @@ class IsKycPrecompileTest {
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         isKycPrecompile.when(() -> decodeIsKyc(any(), any())).thenReturn(grantRevokeKycWrapper);
-        given(encoder.encodeIsKyc(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsKyc(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
-        given(encoder.encodeIsKyc(true)).willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeIsKyc(true)).willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when

@@ -23,10 +23,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 
@@ -48,7 +48,7 @@ public class RoyaltyFeeAssessor {
             final BalanceChange change,
             final CustomFeeMeta customFeeMeta,
             final BalanceChangeManager changeManager,
-            final List<FcAssessedCustomFee> accumulator) {
+            final List<AssessedCustomFeeWrapper> accumulator) {
         if (!change.isForNft()) {
             /* This change was denominated in a non-fungible token type---but appeared
              * in the fungible transfer list. Fail now with the appropriate status. */
@@ -117,7 +117,7 @@ public class RoyaltyFeeAssessor {
             final List<BalanceChange> exchangedValue,
             final FungibleAdjuster fungibleAdjuster,
             final BalanceChangeManager changeManager,
-            final List<FcAssessedCustomFee> accumulator) {
+            final List<AssessedCustomFeeWrapper> accumulator) {
         for (var exchange : exchangedValue) {
             long value = exchange.originalUnits();
             long royaltyFee =
@@ -133,12 +133,13 @@ public class RoyaltyFeeAssessor {
             hence the id is irrelevant and we can use MISSING_ID. */
             fungibleAdjuster.adjustedChange(
                     collector, MISSING_ID, denom, royaltyFee, changeManager);
-            final var effPayerAccountNum = new long[] {exchange.getAccount().num()};
+            final var effPayerAccountNum = new AccountID[] {exchange.getAccount().asGrpcAccount()};
             final var collectorId = collector.asEntityId();
             final var assessed =
                     exchange.isForHbar()
-                            ? new FcAssessedCustomFee(collectorId, royaltyFee, effPayerAccountNum)
-                            : new FcAssessedCustomFee(
+                            ? new AssessedCustomFeeWrapper(
+                                    collectorId, royaltyFee, effPayerAccountNum)
+                            : new AssessedCustomFeeWrapper(
                                     collectorId,
                                     denom.asEntityId(),
                                     royaltyFee,
