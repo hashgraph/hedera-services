@@ -383,16 +383,17 @@ class HTSPrecompiledContractTest {
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.isInTransaction()).willReturn(false);
+        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
 
         final var viewExecutor =
                 new ViewExecutor(
                         input,
                         messageFrame,
                         encoder,
+                        evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas,
-                        stateView,
-                        wrappedLedgers);
-        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any(), any()))
+                        stateView);
+        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
                 .willReturn(viewExecutor);
         given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
                 .willReturn(mockFeeObject);

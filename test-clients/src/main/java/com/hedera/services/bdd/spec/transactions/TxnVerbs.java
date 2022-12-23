@@ -15,10 +15,16 @@
  */
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
@@ -77,6 +83,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
@@ -84,9 +91,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class TxnVerbs {
     /* CRYPTO */
@@ -199,6 +208,56 @@ public class TxnVerbs {
 
     public static HapiTokenCreate tokenCreate(String token) {
         return new HapiTokenCreate(token).name(token);
+    }
+
+    public static HapiSpecOperation wellKnownTokenEntities() {
+        return blockingOrder(newKeyNamed(WELL_KNOWN_NFT_SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY));
+    }
+
+    public static HapiSpecOperation createWellKnownNonFungibleToken(
+            final String token,
+            final int initialMint,
+            final Consumer<HapiTokenCreate> tokenCustomizer) {
+        if (initialMint > 10) {
+            throw new IllegalArgumentException("Cannot mint more than 10 NFTs at a time");
+        }
+        return blockingOrder(
+                sourcing(
+                        () -> {
+                            final var creation =
+                                    new HapiTokenCreate(token)
+                                            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                            .initialSupply(0L)
+                                            .treasury(TOKEN_TREASURY)
+                                            .supplyKey(WELL_KNOWN_NFT_SUPPLY_KEY)
+                                            .name(token);
+                            tokenCustomizer.accept(creation);
+                            return creation;
+                        }),
+                mintToken(
+                        token,
+                        IntStream.range(0, initialMint)
+                                .mapToObj(
+                                        i ->
+                                                ByteString.copyFromUtf8(
+                                                        TxnUtils.randomUppercase(i + 1)))
+                                .toList()));
+    }
+
+    public static HapiSpecOperation createWellKnownFungibleToken(
+            final String token, final Consumer<HapiTokenCreate> tokenCustomizer) {
+        return blockingOrder(
+                sourcing(
+                        () -> {
+                            final var creation =
+                                    new HapiTokenCreate(token)
+                                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                                            .initialSupply(WELL_KNOWN_INITIAL_SUPPLY)
+                                            .treasury(TOKEN_TREASURY)
+                                            .name(token);
+                            tokenCustomizer.accept(creation);
+                            return creation;
+                        }));
     }
 
     public static HapiTokenUpdate tokenUpdate(String token) {
@@ -370,6 +429,10 @@ public class TxnVerbs {
      */
     public static HapiEthereumCall ethereumCryptoTransfer(String account, long amount) {
         return new HapiEthereumCall(account, amount);
+    }
+
+    public static HapiEthereumCall ethereumCryptoTransferToAlias(ByteString alias, long amount) {
+        return new HapiEthereumCall(alias, amount);
     }
 
     /**

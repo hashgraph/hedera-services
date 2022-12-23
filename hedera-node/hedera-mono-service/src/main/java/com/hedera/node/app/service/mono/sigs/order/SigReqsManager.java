@@ -157,7 +157,9 @@ public class SigReqsManager {
 
     private void ensureWorkingStateSigReqsIsConstructed() {
         if (workingSigReqs == null) {
-            final var lookup = lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM);
+            final var lookup =
+                    lookupsFactory.from(
+                            fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties);
             workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
@@ -165,7 +167,11 @@ public class SigReqsManager {
     private void ensureImmutableStateSigReqsIsConstructed() {
         if (immutableSigReqs == null) {
             final var lookup =
-                    lookupsFactory.from(fileNumbers, immutableChildren, TOKEN_META_TRANSFORM);
+                    lookupsFactory.from(
+                            fileNumbers,
+                            immutableChildren,
+                            TOKEN_META_TRANSFORM,
+                            dynamicProperties);
             immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
@@ -180,7 +186,8 @@ public class SigReqsManager {
         SigMetadataLookup from(
                 FileNumbers fileNumbers,
                 StateChildren stateChildren,
-                Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform);
+                Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform,
+                GlobalDynamicProperties properties);
     }
 
     /* --- Only used by unit tests --- */

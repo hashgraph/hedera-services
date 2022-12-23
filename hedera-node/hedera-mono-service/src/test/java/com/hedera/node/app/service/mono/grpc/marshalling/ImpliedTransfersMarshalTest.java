@@ -260,7 +260,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -285,7 +285,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -316,7 +316,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -359,7 +359,7 @@ class ImpliedTransfersMarshalTest {
         assertEquals(aliasA.toByteString(), result.getAllBalanceChanges().get(0).alias());
         assertEquals(aliasB.toByteString(), result.getAllBalanceChanges().get(1).alias());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test

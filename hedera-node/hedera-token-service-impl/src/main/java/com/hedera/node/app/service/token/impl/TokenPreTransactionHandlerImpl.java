@@ -27,6 +27,7 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -191,7 +192,17 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandlePauseToken(
             @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
-        throw new NotImplementedException();
+        final var op = txn.getTokenPause();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        if (op.hasToken()) {
+            addPauseKey(op.getToken(), meta);
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+
+        return meta.build();
     }
 
     @Override
@@ -199,7 +210,38 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandleUnpauseToken(
             @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
-        throw new NotImplementedException();
+        final var op = txn.getTokenUnpause();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        if (op.hasToken()) {
+            addPauseKey(op.getToken(), meta);
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+
+        return meta.build();
+    }
+
+    /**
+     * Gets the token meta for a given {@link TokenID} and attempts to add a pause key to the list
+     * of required keys for a given pause or unpause transaction. Upon failure the status of the
+     * {@link SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
+     *
+     * @param tokenId given token id
+     * @param meta given transaction metadata builder
+     */
+    private void addPauseKey(TokenID tokenId, SigTransactionMetadataBuilder meta) {
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (!tokenMeta.failed()) {
+            if (tokenMeta.metadata().pauseKey().isPresent()) {
+                meta.addToReqNonPayerKeys(tokenMeta.metadata().pauseKey().get());
+            } else {
+                meta.status(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY);
+            }
+        } else {
+            meta.status(tokenMeta.failureReason());
+        }
     }
 
     private void addCustomFeeKey(

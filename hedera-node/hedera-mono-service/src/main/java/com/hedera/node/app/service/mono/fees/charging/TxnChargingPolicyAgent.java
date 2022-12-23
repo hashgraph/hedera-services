@@ -72,8 +72,7 @@ public class TxnChargingPolicyAgent {
      */
     public boolean applyPolicyFor(SwirldsTxnAccessor accessor) {
         final var now = txnCtx.consensusTime();
-        final var fees =
-                feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
+        var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
         final var recentHistory = txnHistories.get(accessor.getTxnId());
         var duplicity =
                 (recentHistory == null)
