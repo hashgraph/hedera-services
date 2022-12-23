@@ -577,6 +577,45 @@ class StateViewTest {
     }
 
     @Test
+    void getsEvmTokenInfo() {
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+        given(tokens.get(tokenNum)).willReturn(token);
+        final var miscKey = MISC_ACCOUNT_KT.asKey();
+
+        final var info = subject.evmInfoForToken(tokenId).get();
+
+        assertTrue(info.isDeleted());
+        assertEquals(Paused.getNumber() == 1, info.isPaused());
+        assertEquals(token.memo(), info.getMemo());
+        assertEquals(token.symbol(), info.getSymbol());
+        assertEquals(token.name(), info.getName());
+        assertEquals(token.treasury().toGrpcAccountId(), EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
+        assertEquals(token.totalSupply(), info.getTotalSupply());
+        assertEquals(token.decimals(), info.getDecimals());
+        assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
+        assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
+        assertEquals(expiry, info.getExpiry());
+        assertEquals(TokenFreezeStatus.Frozen.getNumber() == 1, info.getDefaultFreezeStatus());
+        assertEquals(TokenKycStatus.Granted.getNumber() == 1, info.getDefaultKycStatus());
+    }
+
+    @Test
+    void recognizesMissingTokenEvm() {
+        final var info = subject.evmInfoForToken(missingTokenId);
+
+        assertTrue(info.isEmpty());
+    }
+
+    @Test
+    void evmInfoForTokenFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+
+        final var info = subject.evmInfoForToken(tokenId);
+
+        assertTrue(info.isEmpty());
+    }
+
+    @Test
     void getsContractInfo() throws Exception {
         final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
