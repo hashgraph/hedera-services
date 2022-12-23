@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
@@ -23,12 +24,12 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -46,10 +47,10 @@ import java.util.function.Supplier;
  * <p>When the Hedera application starts, it creates an instance of {@link MerkleSchemaRegistry} for
  * each {@link Service}, and passes it to the service as part of construction. The {@link Service}
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
- * a {@link SoftwareVersion}.
+ * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SoftwareVersion,
- * SoftwareVersion)} on each {@link MerkleSchemaRegistry} instance, supplying it the application
+ * <p>The Hedera application then calls {@link #migrate(MerkleHederaState, SemanticVersion,
+ * SemanticVersion)} on each {@link MerkleSchemaRegistry} instance, supplying it the application
  * version number and the newly created (or deserialized) but not yet hashed copy of the {@link
  * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking
  * multiple migration steps, to transition the merkle tree from its current version to the final
@@ -111,8 +112,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void migrate(
             @NonNull final MerkleHederaState hederaState,
-            @Nullable final SoftwareVersion previousVersion,
-            @NonNull final SoftwareVersion currentVersion) {
+            @Nullable final SemanticVersion previousVersion,
+            @NonNull final SemanticVersion currentVersion) {
         Objects.requireNonNull(hederaState);
         Objects.requireNonNull(currentVersion);
 
@@ -224,8 +225,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     @NonNull
     private List<Schema> computeApplicableSchemas(
-            @Nullable final SoftwareVersion previousVersion,
-            @NonNull final SoftwareVersion currentVersion) {
+            @Nullable final SemanticVersion previousVersion,
+            @NonNull final SemanticVersion currentVersion) {
 
         // If the previous and current versions are the same, then we have no need to migrate
         // to achieve the correct merkle tree version.
@@ -263,14 +264,17 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @return true if both are null, or if both have the same version number
      */
     private boolean isSameVersion(
-            @Nullable final SoftwareVersion a, @Nullable final SoftwareVersion b) {
-        return a == null && b == null || a != null && a.compareTo(b) == 0;
+            @Nullable final SemanticVersion a, @Nullable final SemanticVersion b) {
+        return (a == null && b == null)
+                || (a != null
+                        && b != null
+                        && SemanticVersionComparator.INSTANCE.compare(a, b) == 0);
     }
 
     private boolean isBetween(
-            @Nullable final SoftwareVersion maybeFirst,
-            @NonNull final SoftwareVersion maybeSecond,
-            @NonNull final SoftwareVersion maybeThird) {
+            @Nullable final SemanticVersion maybeFirst,
+            @NonNull final SemanticVersion maybeSecond,
+            @NonNull final SemanticVersion maybeThird) {
         return isSoOrdered(maybeFirst, maybeSecond) && isSoOrdered(maybeSecond, maybeThird);
     }
 
@@ -284,8 +288,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      *     maybeAfter}.
      */
     private boolean isSoOrdered(
-            @Nullable final SoftwareVersion maybeBefore,
-            @NonNull final SoftwareVersion maybeAfter) {
+            @Nullable final SemanticVersion maybeBefore,
+            @NonNull final SemanticVersion maybeAfter) {
 
         // If they are the same version, then we must fail.
         if (isSameVersion(maybeBefore, maybeAfter)) {
@@ -302,7 +306,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // If the comparison yields the first argument as being before
         // or matching the second argument, then we return true because
         // the condition we're testing for holds.
-        return maybeBefore.compareTo(maybeAfter) <= 0;
+        return SemanticVersionComparator.INSTANCE.compare(maybeBefore, maybeAfter) <= 0;
     }
 
     /**

@@ -17,37 +17,35 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.common.system.BasicSoftwareVersion;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Set;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class SchemaTest {
+class SchemaTest extends StateTestBase {
     @Test
     @DisplayName("Schemas are sorted based on version number")
     void sorting() {
+        // Given a list of schemas in ascending order
         final var schemaList = new ArrayList<Schema>();
-        for (int i = 1; i < 10; i++) {
-            final var schema = new TestSchema(i);
-            schemaList.add(schema);
+        for (int maj = 0; maj < 3; maj++) {
+            for (int min = 0; min < 3; min++) {
+                for (int patch = 0; patch < 3; patch++) {
+                    final var schema = new TestSchema(maj, min, patch);
+                    schemaList.add(schema);
+                }
+            }
         }
 
-        // First shuffle to put them in some random order, then sort them back again
+        // When that list is shuffled and then sorted
+        final var sortedList = new ArrayList<>(schemaList);
         Collections.shuffle(schemaList);
         Collections.sort(schemaList);
 
-        final var itr = schemaList.iterator();
-        Schema prev = itr.next();
-        while (itr.hasNext()) {
-            final var schema = itr.next();
-            assertThat(schema).isGreaterThan(prev);
-            assertThat(schema.getVersion()).isGreaterThan(prev.getVersion());
-            prev = schema;
-        }
+        // Then the elements are restored to ascending order
+        assertThat(schemaList).containsExactlyElementsOf(sortedList);
     }
 
     @Test
@@ -95,33 +93,5 @@ class SchemaTest {
         final var schema1 = new TestSchema(1);
         final var schema2 = new TestSchema(2);
         assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
-    }
-
-    private static final class TestSchema extends Schema {
-        public TestSchema(int version) {
-            super(new BasicSoftwareVersion(version));
-        }
-
-        @NonNull
-        @Override
-        @SuppressWarnings("rawtypes")
-        public Set<StateDefinition> statesToCreate() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public void migrate(
-                @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {}
-
-        @NonNull
-        @Override
-        public Set<String> statesToRemove() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public String toString() {
-            return "TestSchema{ " + super.getVersion() + "} ";
-        }
     }
 }

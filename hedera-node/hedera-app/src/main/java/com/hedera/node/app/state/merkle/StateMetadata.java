@@ -51,7 +51,7 @@ public final class StateMetadata<K extends Comparable<K>, V> {
         this.stateDefinition = stateDefinition;
 
         final var stateKey = stateDefinition.stateKey();
-        final var version = "" + schema.getVersion().getVersion();
+        final var version = schema.getVersion();
         this.onDiskKeyClassId =
                 StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskKey");
         this.onDiskKeySerializerClassId =

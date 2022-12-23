@@ -38,7 +38,6 @@ dependencies {
     implementation(libs.helidon.io.grpc)
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
-    implementation(libs.swirlds.common)
 
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)

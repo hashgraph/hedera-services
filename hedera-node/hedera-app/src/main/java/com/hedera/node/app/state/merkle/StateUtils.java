@@ -17,6 +17,7 @@ package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -105,11 +106,7 @@ public final class StateUtils {
     public static long computeClassId(
             @NonNull final StateMetadata<?, ?> md, @NonNull final String extra) {
         final var def = md.stateDefinition();
-        return computeClassId(
-                md.serviceName(),
-                def.stateKey(),
-                "" + md.schema().getVersion().getVersion(),
-                extra);
+        return computeClassId(md.serviceName(), def.stateKey(), md.schema().getVersion(), extra);
     }
 
     /**
@@ -121,12 +118,14 @@ public final class StateUtils {
     public static long computeClassId(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
-            @NonNull final String version,
+            @NonNull final SemanticVersion version,
             @NonNull final String extra) {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        return hashString(serviceName + ":" + stateKey + ":v" + version + ":" + extra);
+        final var ver =
+                "v" + version.getMajor() + "." + version.getMinor() + "." + version.getPatch();
+        return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
     }
 
     // Will be moved to `NonCryptographicHashing` with

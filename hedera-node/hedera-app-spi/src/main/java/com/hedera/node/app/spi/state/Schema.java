@@ -15,14 +15,15 @@
  */
 package com.hedera.node.app.spi.state;
 
-import com.swirlds.common.system.SoftwareVersion;
+import com.hedera.node.app.spi.SemanticVersionComparator;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Defines the schema of all states for a specific {@link SoftwareVersion} of a specific {@link
+ * Defines the schema of all states for a specific {@link SemanticVersion} of a specific {@link
  * com.hedera.node.app.spi.Service} instance. It is necessary to create a new {@link Schema}
  * whenever a new {@link ReadableKVState} is to be created, or an existing one removed, or a
  * migration has to happen. If your service makes use of a forwards and backwards compatible
@@ -31,14 +32,14 @@ import java.util.Set;
  */
 public abstract class Schema implements Comparable<Schema> {
     /** The version of this schema */
-    private final SoftwareVersion version;
+    private final SemanticVersion version;
 
     /**
      * Create a new instance
      *
      * @param version The version of this schema
      */
-    protected Schema(@NonNull SoftwareVersion version) {
+    protected Schema(@NonNull SemanticVersion version) {
         this.version = Objects.requireNonNull(version);
     }
 
@@ -48,7 +49,7 @@ public abstract class Schema implements Comparable<Schema> {
      * @return The version
      */
     @NonNull
-    public SoftwareVersion getVersion() {
+    public SemanticVersion getVersion() {
         return version;
     }
 
@@ -95,23 +96,26 @@ public abstract class Schema implements Comparable<Schema> {
     /** {@inheritDoc */
     @Override
     public int compareTo(Schema o) {
-        return this.version.compareTo(o.version);
+        return SemanticVersionComparator.INSTANCE.compare(this.version, o.version);
     }
 
     /** {@inheritDoc */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Schema other)) return false;
+        if (this == o) {
+            return true;
+        }
 
-        // BasicSoftwareVersion does not implement equals, so we will do a comparison to see if
-        // they are equivalent
-        return version.compareTo(other.version) == 0;
+        if (!(o instanceof Schema other)) {
+            return false;
+        }
+
+        return version.equals(other.version);
     }
 
     /** {@inheritDoc */
     @Override
     public int hashCode() {
-        return Objects.hashCode(version);
+        return version.hashCode();
     }
 }

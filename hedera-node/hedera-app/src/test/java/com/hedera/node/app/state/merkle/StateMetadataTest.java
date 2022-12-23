@@ -18,9 +18,9 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.swirlds.common.system.BasicSoftwareVersion;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,7 +45,7 @@ class StateMetadataTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupSpaceMerkleMap();
-        schema = new TestSchema(new BasicSoftwareVersion(1));
+        schema = new TestSchema(1);
         def = spaceMetadata.stateDefinition();
     }
 

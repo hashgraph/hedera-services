@@ -16,6 +16,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.hedera.node.app.spi.fixtures.state.TestBase;
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
@@ -23,6 +24,7 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -31,8 +33,6 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -260,15 +260,6 @@ public class MerkleTestBase extends TestBase {
     }
 
     /**
-     * Looks within the merkle tree for a node that matches the computed label for this service name
-     * and key
-     */
-    protected MerkleNode getNodeForLabel(
-            MerkleHederaState hederaMerkle, String serviceName, String stateKey) {
-        return getNodeForLabel(hederaMerkle, StateUtils.computeLabel(serviceName, stateKey));
-    }
-
-    /**
      * Looks within the merkle tree for a node with the given label. This is useful for tests that
      * need to verify some change actually happened in the merkle tree.
      */
@@ -286,6 +277,11 @@ public class MerkleTestBase extends TestBase {
         }
 
         return null;
+    }
+
+    /** A convenience method for creating {@link SemanticVersion}. */
+    protected SemanticVersion version(int major, int minor, int patch) {
+        return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build();
     }
 
     /** A convenience method for adding a k/v pair to a merkle map */
@@ -400,36 +396,6 @@ public class MerkleTestBase extends TestBase {
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
-            }
-        }
-    }
-
-    /**
-     * An implementation of {@link Schema} that takes an integer as the version and has no
-     * implementation for the various methods. Test code can subclass this to add the behavior
-     * they'd like to test with.
-     */
-    public static class TestSchema extends Schema {
-        private Runnable onMigrate;
-
-        public TestSchema(SoftwareVersion version) {
-            super(version);
-        }
-
-        public TestSchema(int version) {
-            this(new BasicSoftwareVersion(version));
-        }
-
-        public TestSchema(SoftwareVersion version, Runnable onMigrate) {
-            this(version);
-            this.onMigrate = onMigrate;
-        }
-
-        @Override
-        public void migrate(
-                @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
-            if (onMigrate != null) {
-                onMigrate.run();
             }
         }
     }

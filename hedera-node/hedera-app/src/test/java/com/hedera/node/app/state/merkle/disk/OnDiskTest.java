@@ -25,7 +25,6 @@ import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -69,7 +68,7 @@ class OnDiskTest extends MerkleTestBase {
 
         //noinspection rawtypes
         schema =
-                new Schema(new BasicSoftwareVersion(1)) {
+                new Schema(version(1, 0, 0)) {
                     @NonNull
                     @Override
                     public Set<StateDefinition> statesToCreate() {

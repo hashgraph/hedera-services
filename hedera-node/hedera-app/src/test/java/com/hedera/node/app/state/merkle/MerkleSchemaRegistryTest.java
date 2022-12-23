@@ -18,11 +18,12 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.node.app.spi.SemanticVersionComparator;
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -144,8 +145,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void migrateFromV9ToV10() {
             schemaRegistry.migrate(
                     new MerkleHederaState((tree, ver) -> {}, (e) -> {}, (round, dualState) -> {}),
-                    new BasicSoftwareVersion(9),
-                    new BasicSoftwareVersion(10));
+                    version(9, 0, 0),
+                    version(10, 0, 0));
         }
     }
 
@@ -153,7 +154,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
     @DisplayName("Migration Tests")
     class MigrationTest {
         private MerkleHederaState merkleTree;
-        private SoftwareVersion[] versions;
+        private SemanticVersion[] versions;
 
         @BeforeEach
         void setUp() {
@@ -161,9 +162,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     new MerkleHederaState((tree, ver) -> {}, (e) -> {}, (round, dualState) -> {});
 
             // Let the first version[0] be null, and all others have a number
-            versions = new SoftwareVersion[10];
+            versions = new SemanticVersion[10];
             for (int i = 1; i < versions.length; i++) {
-                versions[i] = new BasicSoftwareVersion(i);
+                versions[i] = version(0, i, 0);
             }
         }
 
@@ -224,7 +225,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Migration applies to all versions up to and including the currentVersion")
         void migrate(int firstVersion, int lastVersion) {
             // We will place into this list each schema as it is called
-            final var called = new LinkedList<SoftwareVersion>();
+            final var called = new LinkedList<SemanticVersion>();
 
             // Given a schema for each version
             // versions = [null, 1, 2, 3, 4, ... ]
@@ -258,10 +259,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
             // And each called schema was called in order
             final var itr = called.iterator();
-            SoftwareVersion prev = itr.next();
+            var prev = itr.next();
             while (itr.hasNext()) {
                 final var ver = itr.next();
-                assertThat(ver).isGreaterThan(prev);
+                assertThat(SemanticVersionComparator.INSTANCE.compare(ver, prev)).isPositive();
                 prev = ver;
             }
         }
@@ -270,7 +271,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("Migration captures all appropriate schemas even when they skip versions")
         void migrateWhenSchemasSkipVersions() {
             // We will place into this list each schema as it is called
-            final var called = new LinkedList<SoftwareVersion>();
+            final var called = new LinkedList<SemanticVersion>();
 
             // Given a schema for v1, v4, v6
             final var schemaV1 = new TestSchema(versions[1], () -> called.add(versions[1]));

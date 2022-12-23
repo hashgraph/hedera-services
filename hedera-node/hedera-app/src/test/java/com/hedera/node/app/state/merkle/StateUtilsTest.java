@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import java.util.*;
 import java.util.stream.Stream;
@@ -159,8 +160,8 @@ class StateUtilsTest extends MerkleTestBase {
     @Test
     @DisplayName("`computeClassId` is always {serviceName}:{stateKey}:v{version}:{extra}")
     void computeClassId() {
-        final var classId = StateUtils.hashString("A:B:v1:C");
-        assertThat(StateUtils.computeClassId("A", "B", "1", "C")).isEqualTo(classId);
+        final var classId = StateUtils.hashString("A:B:v1.0.0:C");
+        assertThat(StateUtils.computeClassId("A", "B", version(1, 0, 0), "C")).isEqualTo(classId);
     }
 
     /**
@@ -174,13 +175,18 @@ class StateUtilsTest extends MerkleTestBase {
             "`computeClassId` with metadata is always {serviceName}:{stateKey}:v{version}:{extra}")
     void computeClassId_withMetadata() {
         setupFruitMerkleMap();
+        final var ver = fruitMetadata.schema().getVersion();
         final var classId =
                 StateUtils.hashString(
                         fruitMetadata.serviceName()
                                 + ":"
                                 + fruitMetadata.stateDefinition().stateKey()
                                 + ":v"
-                                + fruitMetadata.schema().getVersion().getVersion()
+                                + ver.getMajor()
+                                + "."
+                                + ver.getMinor()
+                                + "."
+                                + ver.getPatch()
                                 + ":C");
         assertThat(StateUtils.computeClassId(fruitMetadata, "C")).isEqualTo(classId);
     }

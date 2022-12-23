@@ -17,11 +17,11 @@ package com.hedera.node.app.state.merkle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
-import com.swirlds.common.system.BasicSoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -84,7 +84,7 @@ class SerializationTest extends MerkleTestBase {
     @Test
     void simpleReadAndWrite(@TempDir Path path) throws IOException, ConstructableRegistryException {
         // Given a merkle tree with some fruit and animals
-        final var v1 = new BasicSoftwareVersion(1);
+        final var v1 = version(1, 0, 0);
         final var originalTree =
                 new MerkleHederaState((tree, ver) -> {}, evt -> {}, (round, dual) -> {});
         final var originalRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
@@ -105,9 +105,7 @@ class SerializationTest extends MerkleTestBase {
         final Supplier<RuntimeConstructable> constructor =
                 () ->
                         new MerkleHederaState(
-                                (tree, ver) ->
-                                        newRegistry.migrate(
-                                                tree, new BasicSoftwareVersion(ver), v1),
+                                (tree, ver) -> newRegistry.migrate(tree, v1, v1),
                                 event -> {},
                                 (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
@@ -136,11 +134,4 @@ class SerializationTest extends MerkleTestBase {
         assertThat(animalState.get(F_KEY)).isEqualTo(FOX);
         assertThat(animalState.get(G_KEY)).isEqualTo(GOOSE);
     }
-
-    /**
-     * In this test scenario, we will have a saved state with all types of FRUIT and ANIMALS saved
-     * to the state. Then, we will use the {@link MerkleStateRegistry} to convert FRUIT to STEAM,
-     * use FRUIT and ANIMALS to create SCIENCE, and create a fully populated COUNTRY, and to delete
-     * FRUIT.
-     */
 }
