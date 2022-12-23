@@ -51,7 +51,10 @@ public class ClosingTime extends HapiSuite {
                                 "fees.fixedOffer", "100000000"))
                 .given()
                 .when()
-                .then(sleepFor(2500), cryptoTransfer((spec, b) -> {}).payingWith(GENESIS));
+                .then(
+                        sleepFor(2500),
+                        cryptoTransfer((spec, b) -> {}).payingWith(GENESIS),
+                        sleepFor(500));
     }
 
     @Override
