@@ -63,6 +63,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -112,6 +113,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -138,6 +140,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1410,6 +1413,7 @@ class StateViewTest {
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
         assertEquals(customFees(), subject.infoForTokenCustomFees(tokenId));
+        System.out.println();
     }
 
     @Test
@@ -1457,17 +1461,23 @@ class StateViewTest {
     private final CustomFee customFractionalFee =
             builder.withFractionalFee(
                     fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
+    private final CustomFee customRoyaltyFee =
+        builder.withRoyaltyFee(
+            com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(
+                    Fraction.newBuilder()
+                        .setNumerator(15)
+                        .setDenominator(100)));
     private final List<CustomFee> grpcCustomFees =
             List.of(
                     customFixedFeeInHbar,
                     customFixedFeeInHts,
                     customFixedFeeSameToken,
-                    customFractionalFee);
+                    customFractionalFee,
+                customRoyaltyFee);
 
     private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
             customFees() {
-        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-                customFees = new ArrayList<>();
         FixedFee fixedFeeInHbar =
                 new FixedFee(
                         100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
@@ -1485,6 +1495,16 @@ class StateViewTest {
                 new FractionalFee(
                         15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
+        RoyaltyFee royaltyFee =
+            new RoyaltyFee(
+                15,
+                100,
+                0,
+                Address.ZERO,
+                true,
+                Address.ZERO);
+
+
         com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
                 new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
@@ -1497,7 +1517,10 @@ class StateViewTest {
         com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 =
                 new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee4.setFractionalFee(fractionalFee);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee5 =
+            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee5.setRoyaltyFee(royaltyFee);
 
-        return List.of(customFee1, customFee2, customFee3, customFee4);
+        return List.of(customFee1, customFee2, customFee3, customFee4, customFee5);
     }
 }
