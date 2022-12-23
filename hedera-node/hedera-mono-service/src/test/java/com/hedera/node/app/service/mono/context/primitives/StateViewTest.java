@@ -589,7 +589,9 @@ class StateViewTest {
         assertEquals(token.memo(), info.getMemo());
         assertEquals(token.symbol(), info.getSymbol());
         assertEquals(token.name(), info.getName());
-        assertEquals(token.treasury().toGrpcAccountId(), EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
+        assertEquals(
+                token.treasury().toGrpcAccountId(),
+                EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
         assertEquals(token.totalSupply(), info.getTotalSupply());
         assertEquals(token.decimals(), info.getDecimals());
         assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
