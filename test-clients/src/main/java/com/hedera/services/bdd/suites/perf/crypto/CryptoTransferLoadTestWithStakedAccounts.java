@@ -20,37 +20,34 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferLoadTest extends LoadTest {
-    private static final Logger log = LogManager.getLogger(CryptoTransferLoadTest.class);
-    private Random r = new Random();
+public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
+    private static final Logger log =
+            LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
+    private Random RANDOM = new Random();
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
+    private static final int STAKED_CREATIONS = 50;
 
     public static void main(String... args) {
         parseArgs(args);
 
-        CryptoTransferLoadTest suite = new CryptoTransferLoadTest();
+        CryptoTransferLoadTestWithStakedAccounts suite =
+                new CryptoTransferLoadTestWithStakedAccounts();
         suite.runSuiteSync();
     }
 
@@ -67,10 +64,10 @@ public class CryptoTransferLoadTest extends LoadTest {
                     String sender = "sender";
                     String receiver = "receiver";
                     if (settings.getTotalAccounts() > 2) {
-                        int s = r.nextInt(settings.getTotalAccounts());
+                        int s = RANDOM.nextInt(settings.getTotalAccounts());
                         int re = 0;
                         do {
-                            re = r.nextInt(settings.getTotalAccounts());
+                            re = RANDOM.nextInt(settings.getTotalAccounts());
                         } while (re == s);
                         sender = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + s);
                         receiver = String.format("0.0.%d", TEST_ACCOUNT_STARTS_FROM + re);
@@ -121,7 +118,21 @@ public class CryptoTransferLoadTest extends LoadTest {
                                         DUPLICATE_TRANSACTION,
                                         PLATFORM_TRANSACTION_NOT_CREATED)
                                 .key(GENESIS)
-                                .logging())
+                                .logging(),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    List<HapiSpecOperation> ops = new ArrayList<>();
+                                    for (int i = 0; i < STAKED_CREATIONS; i++) {
+                                        var stakedAccount = "stakedAccount" + i;
+                                        ops.add(
+                                                cryptoCreate(stakedAccount)
+                                                        .payingWith("sender")
+                                                        .stakedNodeId(settings.getNodeToStake())
+                                                        .fee(ONE_HBAR)
+                                                        .signedBy("sender", DEFAULT_PAYER));
+                                    }
+                                    allRunFor(spec, ops);
+                                }))
                 .then(
                         defaultLoadTest(transferBurst, settings),
                         getAccountBalance("sender").logged());

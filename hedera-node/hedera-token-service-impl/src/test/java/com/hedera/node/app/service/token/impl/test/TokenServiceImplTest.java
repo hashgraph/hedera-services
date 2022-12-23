@@ -13,9 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl;
+package com.hedera.node.app.service.token.impl.test;
 
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/** Standard implementation of the {@link TokenService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardTokenService implements TokenService {}
+class TokenServiceImplTest {
+
+    @Test
+    void testSpi() {
+        // when
+        final TokenService service = TokenService.getInstance();
+
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                TokenServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + TokenServiceImpl.class.getName());
+    }
+}

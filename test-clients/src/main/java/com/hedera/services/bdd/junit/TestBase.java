@@ -22,10 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+import com.hedera.services.bdd.junit.validators.HgcaaLogValidator;
+import com.hedera.services.bdd.junit.validators.QueryLogValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.records.ClosingTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -48,7 +52,7 @@ public abstract class TestBase {
     @SafeVarargs
     protected final DynamicTest concurrentSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
         return internalSpecsFrom(
-                "", Arrays.asList(suiteSuppliers), this::contextualizedSpecsFromConcurrent);
+                "", Arrays.asList(suiteSuppliers), TestBase::contextualizedSpecsFromConcurrent);
     }
 
     @SafeVarargs
@@ -67,17 +71,33 @@ public abstract class TestBase {
             final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor) {
         final var commaSeparatedSuites = new StringBuilder();
         final var contextualizedSpecs =
-                suiteSuppliers.stream()
-                        .map(Supplier::get)
-                        .peek(
-                                suite ->
-                                        commaSeparatedSuites
-                                                .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
-                                                .append(suite.name() + suffix))
-                        .flatMap(internalSpecsExtractor)
-                        .toList();
+                extractContextualizedSpecsFrom(
+                        suiteSuppliers,
+                        internalSpecsExtractor,
+                        suiteName ->
+                                commaSeparatedSuites
+                                        .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
+                                        .append(suiteName)
+                                        .append(suffix));
         return dynamicTest(
                 commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
+    }
+
+    public static List<HapiSpec> extractContextualizedSpecsFrom(
+            final List<Supplier<HapiSuite>> suiteSuppliers,
+            final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor) {
+        return extractContextualizedSpecsFrom(suiteSuppliers, internalSpecsExtractor, s -> {});
+    }
+
+    public static List<HapiSpec> extractContextualizedSpecsFrom(
+            final List<Supplier<HapiSuite>> suiteSuppliers,
+            final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor,
+            final Consumer<String> nameConsumer) {
+        return suiteSuppliers.stream()
+                .map(Supplier::get)
+                .peek(suite -> nameConsumer.accept(suite.name()))
+                .flatMap(internalSpecsExtractor)
+                .toList();
     }
 
     protected final DynamicTest hgcaaLogValidation(final String loc) {
@@ -88,15 +108,52 @@ public abstract class TestBase {
         return dynamicTest("queriesLogValidation", () -> new QueryLogValidator(loc).validate());
     }
 
-    private void concurrentExecutionOf(final List<HapiSpec> specs) {
+    @SuppressWarnings("java:S1181")
+    protected final DynamicTest recordStreamValidation(
+            final String loc, final RecordStreamValidator... validators) {
+        return dynamicTest(
+                "recordStreamValidation",
+                () -> {
+                    final var closingTimeSpecs =
+                            TestBase.extractContextualizedSpecsFrom(
+                                    List.of(ClosingTime::new),
+                                    TestBase::contextualizedSpecsFromConcurrent);
+                    concurrentExecutionOf(closingTimeSpecs);
+
+                    final var access = new RecordStreamAccess();
+                    final var streamFiles = access.readStreamFilesFrom(loc, "sidecar");
+                    final var errorsIfAny =
+                            Stream.of(validators)
+                                    .flatMap(
+                                            v -> {
+                                                try {
+                                                    // The validator will complete silently if no
+                                                    // errors are found
+                                                    v.validate(streamFiles);
+                                                    return Stream.empty();
+                                                } catch (final Throwable t) {
+                                                    return Stream.of(t);
+                                                }
+                                            })
+                                    .map(Throwable::getMessage)
+                                    .toList();
+                    if (!errorsIfAny.isEmpty()) {
+                        Assertions.fail(
+                                "Record stream validation failed with the following errors:\n  - "
+                                        + String.join("\n  - ", errorsIfAny));
+                    }
+                });
+    }
+
+    public static void concurrentExecutionOf(final List<HapiSpec> specs) {
         HapiSuite.runConcurrentSpecs(specs);
         final var failures = specs.stream().filter(HapiSpec::notOk).toList();
         if (!failures.isEmpty()) {
             final var failureReport =
                     """
-                    %d specs FAILED. By suite,
-                    %s
-                    """;
+                            %d specs FAILED. By suite,
+                            %s
+                            """;
             final var details = new StringBuilder();
             // The stream below is a bit tricky. It is grouping the specs by suite name, and then
             // for each suite, it is collecting the specs that failed, and then for each failed
@@ -125,7 +182,7 @@ public abstract class TestBase {
         }
     }
 
-    private Stream<HapiSpec> contextualizedSpecsFromConcurrent(final HapiSuite suite) {
+    public static Stream<HapiSpec> contextualizedSpecsFromConcurrent(final HapiSuite suite) {
         return suffixContextualizedSpecsFromConcurrent(suite, "");
     }
 
@@ -133,7 +190,7 @@ public abstract class TestBase {
         return suffixContextualizedSpecsFromConcurrent(suite, ETH_SUFFIX);
     }
 
-    private Stream<HapiSpec> suffixContextualizedSpecsFromConcurrent(
+    private static Stream<HapiSpec> suffixContextualizedSpecsFromConcurrent(
             final HapiSuite suite, final String suffix) {
         if (!suite.canRunConcurrent()) {
             throw new IllegalArgumentException(suite.name() + " specs cannot run concurrently");

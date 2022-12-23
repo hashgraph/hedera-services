@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.contract.impl;
+package com.hedera.node.app.service.util.impl;
 
-import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.util.UtilService;
 
-/**
- * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardContractService implements ContractService {}
+/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
+public final class UtilServiceImpl implements UtilService {}

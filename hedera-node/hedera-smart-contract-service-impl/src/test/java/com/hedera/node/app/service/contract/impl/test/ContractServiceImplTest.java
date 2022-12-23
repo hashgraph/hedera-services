@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.file.impl.test;
+package com.hedera.node.app.service.contract.impl.test;
 
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.StandardFileService;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardFileServiceTest {
+class ContractServiceImplTest {
 
     @Test
     void testSpi() {
         // when
-        final FileService service = FileService.getInstance();
+        final ContractService service = ContractService.getInstance();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardFileService.class,
+                ContractServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardFileService");
+                "We must always receive an instance of type "
+                        + ContractServiceImpl.class.getName());
     }
 }
