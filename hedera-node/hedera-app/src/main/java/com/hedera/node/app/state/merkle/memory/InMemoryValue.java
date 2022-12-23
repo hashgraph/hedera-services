@@ -42,9 +42,10 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     private V val;
 
     /**
-     * Used by the deserialization system only
+     * Used by the deserialization system to create an {@link InMemoryValue} that does not yet have
+     * a value. Normally this should not be used.
      *
-     * <p>TODO Document
+     * @param md The state metadata
      */
     public InMemoryValue(@NonNull final StateMetadata<K, V> md) {
         this.md = Objects.requireNonNull(md);
@@ -53,8 +54,7 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /**
      * Create a new instance with the given value.
      *
-     * <p>TODO Document
-     *
+     * @param md The state metadata
      * @param key The associated key.
      * @param value The value.
      */
@@ -130,9 +130,6 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
         final var keySerdes = md.stateDefinition().keySerdes();
         final var valueSerdes = md.stateDefinition().valueSerdes();
         final var k = keySerdes.parse(new DataInputStream(serializableDataInputStream));
-        if (k == null) {
-            throw new IllegalStateException("Deserialized a null key, which is not allowed!");
-        }
         this.key = new InMemoryKey<>(k);
         this.val = valueSerdes.parse(new DataInputStream(serializableDataInputStream));
     }
