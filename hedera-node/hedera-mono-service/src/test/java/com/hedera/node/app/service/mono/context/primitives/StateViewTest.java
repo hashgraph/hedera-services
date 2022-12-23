@@ -131,7 +131,6 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1462,19 +1461,17 @@ class StateViewTest {
             builder.withFractionalFee(
                     fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
     private final CustomFee customRoyaltyFee =
-        builder.withRoyaltyFee(
-            com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
-                .setExchangeValueFraction(
-                    Fraction.newBuilder()
-                        .setNumerator(15)
-                        .setDenominator(100)));
+            builder.withRoyaltyFee(
+                    com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+                            .setExchangeValueFraction(
+                                    Fraction.newBuilder().setNumerator(15).setDenominator(100)));
     private final List<CustomFee> grpcCustomFees =
             List.of(
                     customFixedFeeInHbar,
                     customFixedFeeInHts,
                     customFixedFeeSameToken,
                     customFractionalFee,
-                customRoyaltyFee);
+                    customRoyaltyFee);
 
     private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
             customFees() {
@@ -1495,15 +1492,7 @@ class StateViewTest {
                 new FractionalFee(
                         15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
-        RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                15,
-                100,
-                0,
-                Address.ZERO,
-                true,
-                Address.ZERO);
-
+        RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 0, Address.ZERO, true, Address.ZERO);
 
         com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
                 new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
@@ -1518,7 +1507,7 @@ class StateViewTest {
                 new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee4.setFractionalFee(fractionalFee);
         com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee5 =
-            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee5.setRoyaltyFee(royaltyFee);
 
         return List.of(customFee1, customFee2, customFee3, customFee4, customFee5);
