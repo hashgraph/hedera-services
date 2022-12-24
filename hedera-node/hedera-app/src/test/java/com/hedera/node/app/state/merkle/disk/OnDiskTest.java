@@ -24,8 +24,9 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.StateUtils;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
@@ -76,7 +77,7 @@ class OnDiskTest extends MerkleTestBase {
 
         md = new StateMetadata<>(SERVICE_NAME, schema, def);
 
-        final var builder = new JasperDbBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
+        final var builder = new OnDiskDataSourceBuilder<AccountID, Account>()
                 // Force all hashes to disk, to make sure we're going through all the
                 // serialization paths we can
                 .internalHashesRamToDiskThreshold(0)
@@ -122,7 +123,7 @@ class OnDiskTest extends MerkleTestBase {
     }
 
     @Test
-    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir) throws IOException {
+    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir) throws IOException, ConstructableRegistryException {
         // Populate the data set and flush it all to disk
         final var ws = new OnDiskWritableKVState<>(md, virtualMap);
         for (int i = 0; i < 10; i++) {
@@ -144,6 +145,10 @@ class OnDiskTest extends MerkleTestBase {
         // I plan to deserialize.
         final var r = new MerkleSchemaRegistry(registry, storageDir, SERVICE_NAME);
         r.register(schema);
+
+        // We have to manually register this
+        registry.registerConstructable(
+                new ClassConstructorPair(OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, dir);

@@ -18,10 +18,7 @@ package com.hedera.node.app.state.merkle;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
-import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
-import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
+import com.hedera.node.app.state.merkle.disk.*;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -30,7 +27,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
@@ -166,7 +162,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     hederaState.putServiceStateIfAbsent(md, map);
                 } else {
                     final var ks = new OnDiskKeySerializer(md);
-                    final var ds = new JasperDbBuilder()
+                    final var ds = new OnDiskDataSourceBuilder()
                             .maxNumOfKeys(def.maxKeysHint())
                             .storageDir(storageDir)
                             .keySerializer(ks)
