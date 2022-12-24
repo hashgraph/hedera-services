@@ -188,9 +188,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 : new MerkleWritableStates(stateMetadata);
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public MerkleHederaState copy() {
         throwIfImmutable();
@@ -199,18 +197,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return new MerkleHederaState(this);
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public AddressBook getAddressBookCopy() {
         // To be implemented by Issue #4200
         throw new RuntimeException("Not yet implemented");
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public void handleConsensusRound(
             @NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
@@ -219,9 +213,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         }
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public void preHandle(Event event) {
         if (onPreHandle != null) {
@@ -229,9 +221,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         }
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public MerkleNode migrate(int ignored) {
         if (onMigrate != null) {

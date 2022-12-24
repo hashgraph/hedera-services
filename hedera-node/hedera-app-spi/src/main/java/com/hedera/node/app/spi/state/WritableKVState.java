@@ -55,8 +55,8 @@ public interface WritableKVState<K extends Comparable<K>, V> extends ReadableKVS
 
     /**
      * Removes the given key and its associated value from the map. Subsequent calls to {@link
-     * #contains(K)} with the given key will return false, and subsequent calls to {@link #get(K)}
-     * and {@link #getForModify(K)} will return empty optionals.
+     * #contains(Comparable)} with the given key will return false, and subsequent calls to
+     * {@link #get(Comparable)} and {@link #getForModify(Comparable)} will return empty optionals.
      *
      * @param key The key representing the key/value to remove. Cannot be null.
      * @throws NullPointerException if the key or value is null.

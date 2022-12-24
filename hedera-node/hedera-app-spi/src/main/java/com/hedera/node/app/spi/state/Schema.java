@@ -93,13 +93,13 @@ public abstract class Schema implements Comparable<Schema> {
         return Collections.emptySet();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public int compareTo(Schema o) {
         return SemanticVersionComparator.INSTANCE.compare(this.version, o.version);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -113,7 +113,7 @@ public abstract class Schema implements Comparable<Schema> {
         return version.equals(other.version);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return version.hashCode();
