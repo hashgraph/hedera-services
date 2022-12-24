@@ -127,7 +127,8 @@ class OnDiskTest extends MerkleTestBase {
     }
 
     @Test
-    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir) throws IOException, ConstructableRegistryException {
+    void populateTheMapAndFlushToDiskAndReadBack(@TempDir Path dir)
+            throws IOException, ConstructableRegistryException {
         // Populate the data set and flush it all to disk
         final var ws = new OnDiskWritableKVState<>(md, virtualMap);
         for (int i = 0; i < 10; i++) {
@@ -152,7 +153,8 @@ class OnDiskTest extends MerkleTestBase {
 
         // We have to manually register this
         registry.registerConstructable(
-                new ClassConstructorPair(OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
+                new ClassConstructorPair(
+                        OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
 
         // read it back now as our map and validate the data come back fine
         virtualMap = parseTree(serializedBytes, dir);

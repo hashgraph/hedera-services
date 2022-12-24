@@ -110,7 +110,8 @@ class SerializationTest extends MerkleTestBase {
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
         registry.registerConstructable(
-                new ClassConstructorPair(OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
+                new ClassConstructorPair(
+                        OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, path);
         loadedTree.migrate(1);

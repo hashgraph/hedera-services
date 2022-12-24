@@ -23,7 +23,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /** This class is a workaround for Swirlds issue #6476 */
-public class OnDiskDataSourceBuilder<K extends Comparable<K>, V> extends JasperDbBuilder<OnDiskKey<K>, OnDiskValue<V>> {
+public class OnDiskDataSourceBuilder<K extends Comparable<K>, V>
+        extends JasperDbBuilder<OnDiskKey<K>, OnDiskValue<V>> {
     private static final long CLASS_ID = -2020188928382075700L;
 
     @Override
@@ -40,7 +41,8 @@ public class OnDiskDataSourceBuilder<K extends Comparable<K>, V> extends JasperD
             final var asString = storageDir.toFile().getAbsolutePath();
             out.writeNormalisedString(asString);
         } catch (Exception e) {
-            throw new RuntimeException("FATAL: Unable to write Virtual DataSource Builder to disk", e);
+            throw new RuntimeException(
+                    "FATAL: Unable to write Virtual DataSource Builder to disk", e);
         }
     }
 
@@ -50,14 +52,16 @@ public class OnDiskDataSourceBuilder<K extends Comparable<K>, V> extends JasperD
 
         try {
             // This is a workaround for Swirlds issue #6476. The storageDir is not being serialized.
-            // And there is no setter for storageDir and the field is private. So time for some reflection.
+            // And there is no setter for storageDir and the field is private. So time for some
+            // reflection.
             final var asString = in.readNormalisedString(1024);
             final var clazz = JasperDbBuilder.class;
             final var storageDirField = clazz.getDeclaredField("storageDir");
             storageDirField.setAccessible(true);
             storageDirField.set(this, new File(asString).toPath());
         } catch (Exception e) {
-            throw new RuntimeException("FATAL: Unable to read Virtual DataSource Builder from disk", e);
+            throw new RuntimeException(
+                    "FATAL: Unable to read Virtual DataSource Builder from disk", e);
         }
     }
 
