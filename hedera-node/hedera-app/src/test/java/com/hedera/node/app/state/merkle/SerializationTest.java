@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.state.merkle.disk.OnDiskDataSourceBuilder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -99,8 +100,7 @@ class SerializationTest extends MerkleTestBase {
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
-        // our
-        // migration callback, etc. (normally done by the Hedera main method)
+        // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor =
                 () ->
                         new MerkleHederaState(
@@ -109,6 +109,8 @@ class SerializationTest extends MerkleTestBase {
                                 (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
+        registry.registerConstructable(
+                new ClassConstructorPair(OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
 
         final MerkleHederaState loadedTree = parseTree(serializedBytes, path);
         loadedTree.migrate(1);
