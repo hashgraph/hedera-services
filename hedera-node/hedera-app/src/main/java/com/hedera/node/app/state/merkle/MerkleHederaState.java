@@ -183,9 +183,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return stateMetadata == null ? EMPTY_WRITABLE_STATES : new MerkleWritableStates(stateMetadata);
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public MerkleHederaState copy() {
         throwIfImmutable();
@@ -194,18 +192,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         return new MerkleHederaState(this);
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public AddressBook getAddressBookCopy() {
         // To be implemented by Issue #4200
         throw new RuntimeException("Not yet implemented");
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public void handleConsensusRound(@NonNull final Round round, @NonNull final SwirldDualState swirldDualState) {
         if (onHandleConsensusRound != null) {
@@ -213,9 +207,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         }
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public void preHandle(Event event) {
         if (onPreHandle != null) {
@@ -223,9 +215,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
         }
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** {@inheritDoc} */
     @Override
     public MerkleNode migrate(int ignored) {
         if (onMigrate != null) {
