@@ -79,7 +79,7 @@ class OnDiskTest extends MerkleTestBase {
         md = new StateMetadata<>(SERVICE_NAME, schema, def);
 
         final var builder =
-                new OnDiskDataSourceBuilder<OnDiskKey<AccountID>, OnDiskValue<Account>>()
+                new OnDiskDataSourceBuilder<AccountID, Account>()
                         // Force all hashes to disk, to make sure we're going through all the
                         // serialization paths we can
                         .internalHashesRamToDiskThreshold(0)
