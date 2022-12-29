@@ -84,14 +84,16 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(accountAccessor);
+        return new Updater(accountAccessor, hederaEvmEntityAccess);
     }
 
     public static class Updater extends HederaEvmStackedWorldStateUpdater
             implements HederaEvmWorldUpdater {
 
-        protected Updater(AccountAccessor accountAccessor) {
-            super(accountAccessor);
+        protected Updater(
+                final AccountAccessor accountAccessor,
+                final HederaEvmEntityAccess hederaEvmEntityAccess) {
+            super(accountAccessor, hederaEvmEntityAccess);
         }
 
         @Override
@@ -101,7 +103,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
         @Override
         public WorldUpdater updater() {
-            return new HederaEvmStackedWorldStateUpdater(accountAccessor);
+            return new HederaEvmStackedWorldStateUpdater(accountAccessor, hederaEvmEntityAccess);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -28,41 +30,53 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
- * Hedera adapted version of the {@link CallOperation}.
+ * Hedera adapted version of the {@link CallOperation} for version EVM v0.32
  *
- * <p>Performs an existence check on the {@link Address} to be called Halts the execution of the EVM
- * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
- * not exist or it is deleted.
+ * <p>Performs an existence check on the {@link Address} to be called. If the account does not exist
+ * or is deleted and value is being transferred, execution is allowed to attempt a lazy create.
+ * However, if account does not exist and value is not being transferred, halts the execution of the
+ * EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS}.
  *
- * <p>If the target {@link Address} has {@link MerkleAccount#isReceiverSigRequired()} set to true,
- * verification of the provided signature is performed. If the signature is not active, the
+ * <p>If the target {@link Address} exists and has {@link MerkleAccount#isReceiverSigRequired()} set
+ * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperation extends CallOperation {
+public class HederaCallOperationV032 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
+    private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaCallOperation(
+    public HederaCallOperationV032(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final GlobalDynamicProperties globalDynamicProperties) {
         super(gasCalculator);
         this.sigsVerifier = sigsVerifier;
         this.addressValidator = addressValidator;
         this.precompiledContractMap = precompiledContractMap;
+        this.globalDynamicProperties = globalDynamicProperties;
     }
 
     @Override
     public OperationResult execute(final MessageFrame frame, final EVM evm) {
-        return HederaOperationUtil.addressSignatureCheckExecution(
-                sigsVerifier,
-                frame,
-                to(frame),
-                () -> cost(frame),
-                () -> super.execute(frame, evm),
-                addressValidator,
-                precompiledContractMap);
+        if (globalDynamicProperties.isImplicitCreationEnabled() && isLazyCreateAttempt(frame)) {
+            return super.execute(frame, evm);
+        } else {
+            return HederaOperationUtil.addressSignatureCheckExecution(
+                    sigsVerifier,
+                    frame,
+                    to(frame),
+                    () -> cost(frame),
+                    () -> super.execute(frame, evm),
+                    addressValidator,
+                    precompiledContractMap);
+        }
+    }
+
+    private boolean isLazyCreateAttempt(final MessageFrame frame) {
+        return !addressValidator.test(to(frame), frame) && value(frame).greaterThan(Wei.ZERO);
     }
 }

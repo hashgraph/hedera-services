@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
@@ -39,12 +40,15 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaCallOperationTest {
+class HederaCallOperationV032Test {
+
     @Mock private GasCalculator calc;
     @Mock private MessageFrame evmMsgFrame;
     @Mock private EVM evm;
@@ -53,15 +57,20 @@ class HederaCallOperationTest {
     @Mock private EvmSigsVerifier sigsVerifier;
     @Mock private BiPredicate<Address, MessageFrame> addressValidator;
     @Mock private Map<String, PrecompiledContract> precompiledContractMap;
+    @Mock private GlobalDynamicProperties globalDynamicProperties;
 
     private final long cost = 100L;
-    private HederaCallOperation subject;
+    private HederaCallOperationV032 subject;
 
     @BeforeEach
     void setup() {
         subject =
-                new HederaCallOperation(
-                        sigsVerifier, calc, addressValidator, precompiledContractMap);
+                new HederaCallOperationV032(
+                        sigsVerifier,
+                        calc,
+                        addressValidator,
+                        precompiledContractMap,
+                        globalDynamicProperties);
     }
 
     @Test
@@ -84,12 +93,13 @@ class HederaCallOperationTest {
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
-        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
-        assertEquals(cost, opRes.getGasCost());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
     }
 
-    @Test
-    void executesAsExpected() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void executesAsExpected(boolean isFlagEnabled) {
         commonSetup(evmMsgFrame, worldUpdater, acc);
         given(
                         calc.callOperationGasCost(
@@ -121,9 +131,10 @@ class HederaCallOperationTest {
                                 Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
         given(addressValidator.test(any(), any())).willReturn(true);
+        given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(isFlagEnabled);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertNull(opRes.getHaltReason());
+        assertEquals(null, opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
 
         given(
@@ -134,5 +145,65 @@ class HederaCallOperationTest {
         assertEquals(
                 HederaExceptionalHaltReason.INVALID_SIGNATURE,
                 invalidSignaturesRes.getHaltReason());
+    }
+
+    @Test
+    void executesAsExpectedToNonExistingWhenLazyCreateEnabledButNoValueIsTransferred() {
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(
+                        calc.callOperationGasCost(
+                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
+                                any(), any()))
+                .willReturn(cost);
+        // and:
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+        // and:
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(addressValidator.test(any(), any())).willReturn(false);
+        given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
+    }
+
+    @Test
+    void executesLazyCreateAsExpected() {
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(
+                        calc.callOperationGasCost(
+                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
+                                any(), any()))
+                .willReturn(cost);
+        // and:
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.of(2)); // frame value
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+        // and:
+        given(evmMsgFrame.stackSize()).willReturn(20);
+        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
+        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
+
+        given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
+
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(acc.getBalance()).willReturn(Wei.of(100));
+        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
+        given(addressValidator.test(any(), any())).willReturn(false);
+        given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertEquals(null, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
     }
 }
