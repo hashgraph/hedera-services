@@ -239,13 +239,13 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                         updater.idOfLastNewAddress(), childFrame.getContractAddress());
             }
 
-            var childRecord =
+            final var childRecord =
                     creator.createSuccessfulSyntheticRecord(
                             NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
             childRecord.onlyExternalizeIfSuccessful();
 
             final var opCustomizer = updater.customizerForPendingCreation();
-            var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+            final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
 
             if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
                 final var contractBytecodeSidecar =
