@@ -243,7 +243,6 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                 var childRecord =
                         creator.createSuccessfulSyntheticRecord(
                                 NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
-                childRecord.onlyExternalizeIfSuccessful();
 
                 final var accountKey =
                         Key.newBuilder()
