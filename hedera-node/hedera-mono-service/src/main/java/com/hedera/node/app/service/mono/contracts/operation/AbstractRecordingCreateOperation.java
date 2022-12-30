@@ -218,7 +218,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                         updater.aliases().resolveForEvm(childFrame.getContractAddress());
                 hollowAccountID = accountIdFromEvmAddress(hollowAccountAddress);
                 hollowAccountExists =
-                        updater.trackingAccounts().get(hollowAccountID, KEY).equals(EMPTY_KEY);
+                        EMPTY_KEY.equals(updater.trackingAccounts().get(hollowAccountID, KEY));
             }
 
             if (hollowAccountExists) {
