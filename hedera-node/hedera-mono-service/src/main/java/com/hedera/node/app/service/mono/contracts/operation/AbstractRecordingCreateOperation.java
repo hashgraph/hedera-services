@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil.hollowAccountExistsAtSpecificAddress;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -207,20 +206,13 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             final var sideEffects = new SideEffectsTracker();
 
-            Address hollowAccountAddress = null;
-            AccountID hollowAccountID = null;
-            boolean hollowAccountExists = false;
-            if (updater.aliases() != null) {
-                hollowAccountAddress =
-                        updater.aliases().resolveForEvm(childFrame.getContractAddress());
-                hollowAccountID = accountIdFromEvmAddress(hollowAccountAddress);
-                hollowAccountExists =
-                        EMPTY_KEY.equals(updater.trackingAccounts().get(hollowAccountID, KEY));
-            }
-
-            if (hollowAccountExists) {
+            if (hollowAccountExistsAtSpecificAddress(updater, childFrame.getContractAddress())) {
                 // reclaim the id for the contract
                 updater.reclaimLatestContractId();
+
+                final var hollowAccountAddress =
+                        updater.aliases().resolveForEvm(childFrame.getContractAddress());
+                final var hollowAccountID = accountIdFromEvmAddress(hollowAccountAddress);
 
                 // update the hollow account to be a contract
                 updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
@@ -243,10 +235,8 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                     creator.createSuccessfulSyntheticRecord(
                             NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
             childRecord.onlyExternalizeIfSuccessful();
-
             final var opCustomizer = updater.customizerForPendingCreation();
             final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
-
             if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
                 final var contractBytecodeSidecar =
                         SidecarUtils.createContractBytecodeSidecarFrom(

@@ -37,6 +37,10 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
+
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -147,5 +151,18 @@ public final class HederaOperationUtil {
                             .computeIfAbsent(address, addr -> new TreeMap<>());
             addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
         }
+    }
+
+    public static boolean hollowAccountExistsAtSpecificAddress(
+            HederaStackedWorldStateUpdater updater, Address target) {
+        if (updater.aliases() == null) {
+            return false;
+        }
+
+        return EMPTY_KEY.equals(
+                updater.trackingAccounts()
+                        .get(
+                                accountIdFromEvmAddress(updater.aliases().resolveForEvm(target)),
+                                KEY));
     }
 }
