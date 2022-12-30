@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil.hollowAccountExistsAtSpecificAddress;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -33,8 +32,10 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -206,26 +207,18 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             final var sideEffects = new SideEffectsTracker();
 
-            if (hollowAccountExistsAtSpecificAddress(updater, childFrame.getContractAddress())) {
+            final var accountID =
+                    accountIdFromEvmAddress(
+                            updater.aliases().resolveForEvm(childFrame.getContractAddress()));
+            final var accountKey = updater.trackingAccounts().get(accountID, KEY);
+
+            if (EMPTY_KEY.equals(accountKey)) {
                 // reclaim the id for the contract
                 updater.reclaimLatestContractId();
-
-                final var hollowAccountAddress =
-                        updater.aliases().resolveForEvm(childFrame.getContractAddress());
-                final var hollowAccountID = accountIdFromEvmAddress(hollowAccountAddress);
-
-                // update the hollow account to be a contract
-                updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
-
-                // update the hollow account key to be the default contract key
-                updater.trackingAccounts().set(hollowAccountID, KEY, STANDIN_CONTRACT_ID_KEY);
-
-                // set initial contract nonce to 1
-                updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
+                finalizeHollowAccountIntoContract(accountID, updater);
 
                 sideEffects.trackNewContract(
-                        contractIdFromEvmAddress(hollowAccountAddress),
-                        childFrame.getContractAddress());
+                        EntityIdUtils.asContract(accountID), childFrame.getContractAddress());
             } else {
                 sideEffects.trackNewContract(
                         updater.idOfLastNewAddress(), childFrame.getContractAddress());
@@ -261,5 +254,18 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
         final int currentPC = frame.getPC();
         frame.setPC(currentPC + 1);
+    }
+
+    private void finalizeHollowAccountIntoContract(
+            AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
+
+        // update the hollow account to be a contract
+        updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
+
+        // update the hollow account key to be the default contract key
+        updater.trackingAccounts().set(hollowAccountID, KEY, STANDIN_CONTRACT_ID_KEY);
+
+        // set initial contract nonce to 1
+        updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
     }
 }
