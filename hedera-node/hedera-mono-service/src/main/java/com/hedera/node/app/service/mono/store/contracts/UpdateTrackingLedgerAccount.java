@@ -26,9 +26,7 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,20 +36,14 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount
-        implements MutableAccount, EvmAccount {
-    private final Hash addressHash;
+public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount {
     private final AccountID accountId;
-    private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
     @Nullable private final A account;
-    @Nullable private Bytes updatedCode;
-    @Nullable private Hash updatedCodeHash;
     private boolean storageWasCleared = false;
 
     public UpdateTrackingLedgerAccount(
@@ -59,13 +51,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
-        super(address, 0L, Wei.ZERO);
+        super(address);
         Preconditions.checkNotNull(address);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
         this.addressHash = Hash.hash(super.getAddress());
         this.account = null;
-        this.updatedCode = Bytes.EMPTY;
-        this.updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
     }
 
@@ -83,7 +73,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
                         ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
                         : Hash.hash(account.getAddress());
         this.account = account;
-        this.updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
     }
 
@@ -104,22 +93,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
      */
     public boolean codeWasUpdated() {
         return updatedCode != null;
-    }
-
-    /**
-     * A map of the storage entries that were modified.
-     *
-     * @return a map containing all entries that have been modified. This <b>may</b> contain entries
-     *     with a value of 0 to signify deletion.
-     */
-    @Override
-    public Map<UInt256, UInt256> getUpdatedStorage() {
-        return updatedStorage;
-    }
-
-    @Override
-    public Hash getAddressHash() {
-        return addressHash;
     }
 
     public boolean wrappedAccountIsTokenProxy() {
@@ -150,12 +123,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
             /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
             return account.getCodeHash();
         } else {
-            /* This optimization is actually important to avoid DOS attacks that would otherwise force
-             * frequent re-hashing of the updated code. */
-            if (updatedCodeHash == null) {
-                updatedCodeHash = Hash.hash(updatedCode);
-            }
-            return updatedCodeHash;
+            return super.getCodeHash();
         }
     }
 
@@ -163,12 +131,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     public boolean hasCode() {
         /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
         return updatedCode == null ? account.hasCode() : !updatedCode.isEmpty();
-    }
-
-    @Override
-    public void setCode(final Bytes code) {
-        this.updatedCode = code;
-        this.updatedCodeHash = null;
     }
 
     @Override
@@ -196,11 +158,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
             final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStorageValue(final UInt256 key, final UInt256 value) {
-        updatedStorage.put(key, value);
     }
 
     @Override
