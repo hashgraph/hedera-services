@@ -212,11 +212,9 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                             updater.aliases().resolveForEvm(childFrame.getContractAddress()));
             final var accountKey = updater.trackingAccounts().get(accountID, KEY);
 
+            // if a hollow account exists at the alias address, finalize it to a contract
             if (EMPTY_KEY.equals(accountKey)) {
-                // reclaim the id for the contract
-                updater.reclaimLatestContractId();
                 finalizeHollowAccountIntoContract(accountID, updater);
-
                 sideEffects.trackNewContract(
                         EntityIdUtils.asContract(accountID), childFrame.getContractAddress());
             } else {
@@ -258,6 +256,8 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
     private void finalizeHollowAccountIntoContract(
             AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
+        // reclaim the id for the contract
+        updater.reclaimLatestContractId();
 
         // update the hollow account to be a contract
         updater.trackingAccounts().set(hollowAccountID, IS_SMART_CONTRACT, true);
