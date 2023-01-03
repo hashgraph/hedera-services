@@ -28,17 +28,17 @@ class CustomFeeTest {
     @Test
     void testFees() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                15,
-                100,
-                50,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
-                true,
-                payerAccount);
+                new RoyaltyFee(
+                        15,
+                        100,
+                        50,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                        true,
+                        payerAccount);
 
         FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, payerAccount);
 
@@ -47,7 +47,6 @@ class CustomFeeTest {
         assertNotEquals(royaltyFee, fixedFeeInHbar);
         assertNotEquals(fixedFeeInHbar, royaltyFee);
         assertNotEquals(fractionalFee, royaltyFee);
-
     }
 
     @Test
