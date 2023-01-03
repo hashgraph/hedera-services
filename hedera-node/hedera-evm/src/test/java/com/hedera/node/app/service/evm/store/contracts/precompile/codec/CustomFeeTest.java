@@ -169,13 +169,16 @@ class CustomFeeTest {
         return List.of(customFee1);
     }
 
-    private List<CustomFee> customFeesWithFixedDiff(long amount, boolean useHbarsForPayment, boolean useCurrentTokenForPayment) {
+    private List<CustomFee> customFeesWithFixedDiff(
+            long amount, boolean useHbarsForPayment, boolean useCurrentTokenForPayment) {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
-        FixedFee fixedFeeInHbar = new FixedFee(amount, null, useHbarsForPayment, useCurrentTokenForPayment, payerAccount);
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+        FixedFee fixedFeeInHbar =
+                new FixedFee(
+                        amount, null, useHbarsForPayment, useCurrentTokenForPayment, payerAccount);
 
         CustomFee customFee1 =
-            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
 
         return List.of(customFee1);
