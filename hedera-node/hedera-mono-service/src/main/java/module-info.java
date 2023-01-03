@@ -118,4 +118,5 @@ module com.hedera.node.app.service.mono {
     requires org.apache.commons.io;
     requires io.grpc;
     requires grpc.stub;
+    requires org.slf4j;
 }
