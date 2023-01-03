@@ -34,10 +34,10 @@ configurations.all {
 dependencies {
     implementation(libs.grpc.stub)
     api(libs.hapi)
-    implementation(libs.helidon.io.grpc)
-    implementation(libs.jsr305.annotation)
-    compileOnly(libs.spotbugs.annotations)
+    api(libs.helidon.io.grpc)
+    api(libs.jsr305.annotation)
+    compileOnlyApi(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
 }

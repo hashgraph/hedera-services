@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -39,9 +39,9 @@ import org.apache.logging.log4j.Logger;
 public class PerpetualTransfers extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PerpetualTransfers.class);
 
-    private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
-    private AtomicReference<TimeUnit> unit = new AtomicReference<>(MINUTES);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(5);
+    private AtomicLong duration = new AtomicLong(15);
+    private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
+    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     public static void main(String... args) {
         new PerpetualTransfers().runSuiteSync();

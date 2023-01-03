@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -207,8 +208,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     input,
                                     frame,
                                     precompilePricingUtils::computeViewFunctionGas,
-                                    currentView,
-                                    ledgers);
+                                    currentView);
                     return executor.computeCosted();
                 }
             }
@@ -277,7 +277,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            senderAddress);
+                            senderAddress,
+                            dynamicProperties.isImplicitCreationEnabled());
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                             dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
@@ -290,7 +291,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            senderAddress));
+                                            senderAddress,
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     case AbiConstants.ABI_ID_MINT_TOKEN,
                             AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                             ledgers,
@@ -628,7 +630,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId));
+                                                    functionId,
+                                                    dynamicProperties.isImplicitCreationEnabled()));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -645,7 +648,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId));
+                                                    functionId,
+                                                    dynamicProperties.isImplicitCreationEnabled()));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->
@@ -819,7 +823,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId));
+                                            functionId,
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -834,7 +839,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId));
+                                            functionId,
+                                            dynamicProperties.isImplicitCreationEnabled()));
                     default -> null;
                 };
         if (precompile != null) {
@@ -901,6 +907,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
             result = precompile.getSuccessResultFor(childRecord);
             addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
+        } catch (final ResourceLimitException e) {
+            // we want to propagate ResourceLimitException, so it is handled
+            // in {@code EvmTxProcessor.execute()} as expected
+            throw e;
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             childRecord = creator.createUnsuccessfulSyntheticRecord(status);

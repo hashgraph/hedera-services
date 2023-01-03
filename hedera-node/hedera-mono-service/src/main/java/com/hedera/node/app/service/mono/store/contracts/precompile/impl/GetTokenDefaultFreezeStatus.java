@@ -60,7 +60,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
 
         final var defaultFreezeStatus =
                 ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
-        return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+        return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(

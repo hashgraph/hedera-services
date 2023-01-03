@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLoca
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -73,6 +74,10 @@ public class QueryVerbs {
 
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+    }
+
+    public static HapiGetAccountInfo getAliasedAccountInfo(final ByteString evmAlias) {
+        return new HapiGetAccountInfo(evmAlias, ReferenceType.LITERAL_ACCOUNT_ALIAS);
     }
 
     public static HapiGetAccountInfo getLiteralAliasAccountInfo(final String alias) {
@@ -159,12 +164,21 @@ public class QueryVerbs {
         return new HapiGetAccountBalance(account);
     }
 
+    public static HapiGetAccountBalance getAccountBalance(
+            final String account, final boolean isContract) {
+        return new HapiGetAccountBalance(account, isContract);
+    }
+
     public static HapiGetAccountBalance getAutoCreatedAccountBalance(final String sourceKey) {
         return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }
 
     public static HapiGetAccountBalance getAliasedContractBalance(final String hexedAlias) {
         return new HapiGetAccountBalance(hexedAlias, ReferenceType.HEXED_CONTRACT_ALIAS);
+    }
+
+    public static HapiGetAccountBalance getAliasedAccountBalance(final ByteString alias) {
+        return new HapiGetAccountBalance(alias, ReferenceType.LITERAL_ACCOUNT_ALIAS);
     }
 
     public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

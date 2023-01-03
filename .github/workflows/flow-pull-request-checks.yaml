@@ -44,7 +44,7 @@ jobs:
 
   unit-label-check:
     name: "Label Check [CI:UnitTests]"
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
     steps:
       - name: Check Labels
