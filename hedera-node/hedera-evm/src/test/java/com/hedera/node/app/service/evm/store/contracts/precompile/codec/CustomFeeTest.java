@@ -33,8 +33,9 @@ class CustomFeeTest {
         assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(11, 100, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
         assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 90, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
         assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 50, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 45, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 45, true, "0x00000000000000000000000000000000000005cd"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 45, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 50, true, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 50, true, "0x00000000000000000000000000000000000005cd"));
         assertNotEquals(customFeesWithFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeeWithFractionalAndFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeesWithFixed(), customFeeWithFractional());
