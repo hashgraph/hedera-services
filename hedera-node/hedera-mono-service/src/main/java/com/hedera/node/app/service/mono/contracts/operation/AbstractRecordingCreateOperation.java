@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
@@ -211,17 +212,17 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                     accountIdFromEvmAddress(
                             updater.aliases().resolveForEvm(childFrame.getContractAddress()));
             final var accountKey = updater.trackingAccounts().get(accountID, KEY);
+            ContractID createdContractId;
 
             // if a hollow account exists at the alias address, finalize it to a contract
             if (EMPTY_KEY.equals(accountKey)) {
                 finalizeHollowAccountIntoContract(accountID, updater);
-                sideEffects.trackNewContract(
-                        EntityIdUtils.asContract(accountID), childFrame.getContractAddress());
+                createdContractId = EntityIdUtils.asContract(accountID);
             } else {
-                sideEffects.trackNewContract(
-                        updater.idOfLastNewAddress(), childFrame.getContractAddress());
+                createdContractId = updater.idOfLastNewAddress();
             }
 
+            sideEffects.trackNewContract(createdContractId, childFrame.getContractAddress());
             final var childRecord =
                     creator.createSuccessfulSyntheticRecord(
                             NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
@@ -231,7 +232,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
                 final var contractBytecodeSidecar =
                         SidecarUtils.createContractBytecodeSidecarFrom(
-                                updater.idOfLastNewAddress(),
+                                createdContractId,
                                 childFrame.getCode().getContainerBytes().toArrayUnsafe(),
                                 updater.get(childFrame.getContractAddress())
                                         .getCode()
