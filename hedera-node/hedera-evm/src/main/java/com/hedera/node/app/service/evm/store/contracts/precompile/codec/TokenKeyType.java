@@ -13,9 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.file.impl;
+package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hedera.node.app.service.file.FileService;
+/** All key types used by Precompile implementations, in one place for easy review. */
+public enum TokenKeyType {
+    ADMIN_KEY(1),
+    KYC_KEY(2),
+    FREEZE_KEY(4),
+    WIPE_KEY(8),
+    SUPPLY_KEY(16),
+    FEE_SCHEDULE_KEY(32),
+    PAUSE_KEY(64);
 
-/** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardFileService implements FileService {}
+    private final int value;
+
+    TokenKeyType(final int value) {
+        this.value = value;
+    }
+
+    public int value() {
+        return value;
+    }
+}

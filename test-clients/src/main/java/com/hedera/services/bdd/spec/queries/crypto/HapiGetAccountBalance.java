@@ -75,6 +75,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private String aliasKeySource = null;
     private String literalHexedAlias = null;
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+    private boolean isContract = false;
     private boolean assertAccountIDIsNotAlias = false;
     private ByteString rawAlias;
 
@@ -82,6 +83,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
     public HapiGetAccountBalance(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
+    }
+
+    public HapiGetAccountBalance(String account, boolean isContract) {
+        this(account, ReferenceType.REGISTRY_NAME);
+        this.isContract = isContract;
     }
 
     public HapiGetAccountBalance(String reference, ReferenceType type) {
@@ -310,8 +316,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         }
 
         Consumer<CryptoGetAccountBalanceQuery.Builder> config;
-        if (spec.registry().hasContractId(account)) {
-            config = b -> b.setContractID(spec.registry().getContractId(account));
+        if (isContract || spec.registry().hasContractId(account)) {
+            config = b -> b.setContractID(TxnUtils.asContractId(account, spec));
         } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
             final var cid =
                     ContractID.newBuilder()
@@ -323,7 +329,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             AccountID id;
             if (referenceType == ReferenceType.REGISTRY_NAME) {
                 id = TxnUtils.asId(account, spec);
-            } else if (referenceType == ReferenceType.RAW_ALIAS) {
+            } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
                 id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
                 id = spec.registry().aliasIdFor(aliasKeySource);

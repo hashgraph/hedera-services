@@ -71,6 +71,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
@@ -197,9 +198,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 resourceLimitExceededRevertsAllRecords(),
                 autoCreationFailsWithMirrorAddress(),
                 revertedAutoCreationRollsBackEvenIfTopLevelSucceeds(),
-                canCreateMultipleHollows()
-                // canCreateViaFungibleWithFractionalFee()  // FIXED BY ANOTHER PR
-                );
+                canCreateMultipleHollows(),
+                canCreateViaFungibleWithFractionalFee());
     }
 
     private HapiSpec
@@ -1464,7 +1464,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                         .withStatus(SUCCESS)))));
     }
 
-    HapiSpec canCreateViaFungibleWithFractionalFee() {
+    @SuppressWarnings("java:S5960")
+    private HapiSpec canCreateViaFungibleWithFractionalFee() {
         final var ft = "ft";
         final var ftKey = NFT_KEY;
         final var creationAttempt = CREATION_ATTEMPT;
@@ -1507,10 +1508,25 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                         nonMirrorAddrWith(civilianId.get() + 1),
                                                         supply)
                                                 .via(creationAttempt)
-                                                .gas(GAS_TO_OFFER)
+                                                .gas(10_000_000)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
                                                 .hasKnownStatus(SUCCESS)))
-                .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var txnRecord =
+                                            getTxnRecord(creationAttempt).andAllChildRecords();
+                                    allRunFor(spec, txnRecord);
+                                    final var newAccountID =
+                                            txnRecord.getChildRecord(0).getReceipt().getAccountID();
+                                    final var effPayerInFee =
+                                            txnRecord
+                                                    .getChildRecord(1)
+                                                    .getAssessedCustomFeesList()
+                                                    .get(0)
+                                                    .getEffectivePayerAccountId(0);
+                                    assertEquals(newAccountID, effPayerInFee);
+                                }));
     }
 
     HapiSpec canCreateMultipleHollows() {
