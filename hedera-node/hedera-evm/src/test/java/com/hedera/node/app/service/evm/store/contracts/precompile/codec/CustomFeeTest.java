@@ -30,6 +30,10 @@ class CustomFeeTest {
         final var customfee = customFees();
         final var customfee2 = customFees();
 
+        assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(14, 100, 50, true));
+        assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(15, 90, 50, true));
+        assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(15, 100, 45, true));
+        assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(15, 100, 50, false));
         assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(90, true, false));
         assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(100, false, false));
         assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(100, true, true));
@@ -182,6 +186,48 @@ class CustomFeeTest {
         customFee1.setFixedFee(fixedFeeInHbar);
 
         return List.of(customFee1);
+    }
+
+    private List<CustomFee> customFeeWithRoyalty() {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+
+        RoyaltyFee royaltyFee =
+            new RoyaltyFee(
+                15,
+                100,
+                50,
+                Address.wrap(
+                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                true,
+                payerAccount);
+
+        CustomFee customFee = new CustomFee();
+
+        customFee.setRoyaltyFee(royaltyFee);
+
+        return List.of(customFee);
+    }
+    private List<CustomFee> customFeeWithRoyaltyDiff(long numerator,
+        long denominator, long amount, boolean useHbarsForPayment) {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+
+        RoyaltyFee royaltyFee =
+            new RoyaltyFee(
+                numerator,
+                denominator,
+                amount,
+                Address.wrap(
+                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                useHbarsForPayment,
+                payerAccount);
+
+        CustomFee customFee = new CustomFee();
+
+        customFee.setRoyaltyFee(royaltyFee);
+
+        return List.of(customFee);
     }
 
     private List<CustomFee> customFeesWithRoyaltyAndFixed() {
