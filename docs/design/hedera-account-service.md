@@ -60,5 +60,5 @@ will be checked.
 * Verify ``` isVirtualAddress``` correctly returns false when a given evmAddress is not a virtual address.
 * Verify ``` isAuthorized``` correctly returns false when the signatureBlob does not validate to have been signed by the keys of a given address. Also validate multikey/nested scenarios.
 * Verify ``` isAuthorizedRaw``` correctly returns false when the signatureBlob does not validate to have been signed by the evm keys of a given address.
-* 
+
 
