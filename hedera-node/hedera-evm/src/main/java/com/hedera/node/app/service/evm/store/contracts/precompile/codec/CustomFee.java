@@ -66,9 +66,6 @@ public class CustomFee {
 
     @Override
     public boolean equals(final Object o) {
-        if (o == this) {
-            return true;
-        }
         if (o == null || CustomFee.class != o.getClass()) {
             return false;
         }
