@@ -30,6 +30,11 @@ class CustomFeeTest {
         final var customfee = customFees();
         final var customfee2 = customFees();
 
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(11, 100, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 90, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 45, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 45, true, "0x00000000000000000000000000000000000005cd"));
         assertNotEquals(customFeesWithFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeeWithFractionalAndFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeesWithFixed(), customFeeWithFractional());
@@ -99,6 +104,18 @@ class CustomFeeTest {
                 Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
+
+        CustomFee customFee = new CustomFee();
+        customFee.setFractionalFee(fractionalFee);
+
+        return List.of(customFee);
+    }
+
+    private List<CustomFee> customFeeWithFractionalDiff(long numerator, long denominator, long getMinimumAmount, long getMaximumAmount, boolean netOfTransfers, String payer) {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString(payer));
+
+        FractionalFee fractionalFee = new FractionalFee(numerator, denominator, getMinimumAmount, getMaximumAmount, netOfTransfers, payerAccount);
 
         CustomFee customFee = new CustomFee();
         customFee.setFractionalFee(fractionalFee);
