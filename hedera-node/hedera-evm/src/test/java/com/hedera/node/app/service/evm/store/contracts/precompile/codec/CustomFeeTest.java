@@ -30,6 +30,9 @@ class CustomFeeTest {
         final var customfee = customFees();
         final var customfee2 = customFees();
 
+        assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(90, true, false));
+        assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(100, false, false));
+        assertNotEquals(customFeesWithFixed(), customFeesWithFixedDiff(100, true, true));
         assertNotEquals(
                 customFeeWithFractional(),
                 customFeeWithFractionalDiff(
@@ -161,6 +164,18 @@ class CustomFeeTest {
 
         CustomFee customFee1 =
                 new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+
+        return List.of(customFee1);
+    }
+
+    private List<CustomFee> customFeesWithFixedDiff(long amount, boolean useHbarsForPayment, boolean useCurrentTokenForPayment) {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+        FixedFee fixedFeeInHbar = new FixedFee(amount, null, useHbarsForPayment, useCurrentTokenForPayment, payerAccount);
+
+        CustomFee customFee1 =
+            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
 
         return List.of(customFee1);
