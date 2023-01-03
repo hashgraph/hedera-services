@@ -87,9 +87,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         }
     }
 
-    public HapiGetAccountInfo(final ByteString literalAlias) {
-        this.referenceType = ReferenceType.LITERAL_ACCOUNT_ALIAS;
-        this.literalAlias = literalAlias;
+    public HapiGetAccountInfo(ByteString evmAlias, ReferenceType evmAddress) {
+        this.referenceType = evmAddress;
+        this.literalAlias = evmAlias;
     }
 
     @Override

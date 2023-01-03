@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.admin.impl.test;
+package com.hedera.node.app.service.token.impl.test;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.StandardFreezeService;
+import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.impl.CryptoServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardFreezeServiceTest {
+public class CryptoServiceImplTest {
 
     @Test
     void testSpi() {
         // when
-        final FreezeService service = FreezeService.getInstance();
+        final CryptoService service = CryptoService.getInstance();
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardFreezeService.class,
+                CryptoServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardFreezeService");
+                "We must always receive an instance of type " + CryptoServiceImpl.class.getName());
     }
 }

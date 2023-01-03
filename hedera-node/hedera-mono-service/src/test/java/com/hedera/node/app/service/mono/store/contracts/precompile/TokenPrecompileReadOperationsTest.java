@@ -167,7 +167,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(TokenInfoWrapper.forToken(fungible));
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -197,7 +197,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -233,7 +233,7 @@ class TokenPrecompileReadOperationsTest {
         getTokenTypePrecompile
                 .when(() -> GetTokenTypePrecompile.decodeGetTokenType(pretendArguments))
                 .thenReturn(wrapper);
-        given(encoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
+        given(evmEncoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
         // when

@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -36,11 +35,6 @@ public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        return null;
-    }
-
-    @Override
-    public EvmAccount getAccount(Address address) {
         return null;
     }
 
@@ -77,11 +71,6 @@ public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
     @Override
     public WorldUpdater updater() {
         return this;
-    }
-
-    @Override
-    public Account get(Address address) {
-        return new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
     }
 
     public boolean isTokenAddress(Address address) {

@@ -59,7 +59,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
                 "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());
-        return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+        return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
     public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(
