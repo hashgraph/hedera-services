@@ -26,6 +26,31 @@ import org.junit.jupiter.api.Test;
 class CustomFeeTest {
 
     @Test
+    void testFees() {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+
+        RoyaltyFee royaltyFee =
+            new RoyaltyFee(
+                15,
+                100,
+                50,
+                Address.wrap(
+                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                true,
+                payerAccount);
+
+        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, payerAccount);
+
+        FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
+
+        assertNotEquals(royaltyFee, fixedFeeInHbar);
+        assertNotEquals(fixedFeeInHbar, royaltyFee);
+        assertNotEquals(fractionalFee, royaltyFee);
+
+    }
+
+    @Test
     void testCustomFee() {
         final var customfee = customFees();
         final var customfee2 = customFees();
