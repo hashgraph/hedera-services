@@ -122,7 +122,7 @@ public class SolvencyPrecheck {
             final var estimatedFees =
                     feeCalculator.estimateFee(
                             accessor,
-                            payerKey != null ? payerKey : new JECDSASecp256k1Key(null),
+                            payerKey,
                             stateView.get(),
                             now);
             final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
