@@ -46,8 +46,6 @@ public class StoreCache {
      */
     @NonNull
     public ReadableScheduleStore getScheduleStore(@NonNull final HederaState state) {
-        requireNonNull(state);
-
         throw new UnsupportedOperationException("not implemented");
     }
 }

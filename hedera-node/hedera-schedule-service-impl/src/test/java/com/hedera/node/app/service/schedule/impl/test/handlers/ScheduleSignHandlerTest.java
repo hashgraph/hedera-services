@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -33,6 +34,7 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.state.State;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -45,11 +47,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
+class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     private ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
     @Mock protected JKey adminJKey;
     @Mock protected ScheduleVirtualValue schedule;
 
+    @Mock protected State schedulesById;
     protected ReadableScheduleStore scheduleStore;
 
     @BeforeEach
@@ -144,6 +147,11 @@ public class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         assertEquals(txn, result.txnBody());
         assertEquals(payer, result.payer());
         assertEquals(INVALID_SCHEDULE_ID, result.status());
+    }
+
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {

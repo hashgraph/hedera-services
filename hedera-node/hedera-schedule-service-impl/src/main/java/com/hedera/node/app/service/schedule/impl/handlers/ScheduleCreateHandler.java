@@ -17,7 +17,6 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlerUtils.preHandleScheduledTxn;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
@@ -33,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate}.
  */
-public class ScheduleCreateHandler implements TransactionHandler {
+public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
 
     /**
      * This method is called during the pre-handle workflow.

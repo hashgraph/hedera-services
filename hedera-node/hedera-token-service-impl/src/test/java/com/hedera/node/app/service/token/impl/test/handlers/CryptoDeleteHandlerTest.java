@@ -190,6 +190,13 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
+    @Test
+    void handleNotImplemented() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(metaToHandle));
+    }
+
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
         final var transactionID =

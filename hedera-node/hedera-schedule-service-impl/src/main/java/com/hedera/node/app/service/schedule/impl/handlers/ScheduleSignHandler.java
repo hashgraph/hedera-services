@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlerUtils.preHandleScheduledTxn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
@@ -34,8 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}.
  */
-public class ScheduleSignHandler implements TransactionHandler {
-
+public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     /**
      * This method is called during the pre-handle workflow.
      *

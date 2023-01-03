@@ -28,12 +28,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-public class ScheduleHandlerUtils {
-    private ScheduleHandlerUtils() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
-
-    static TransactionMetadata preHandleScheduledTxn(
+/**
+ * Provides some implementation support needed for both the {@link ScheduleCreateHandler} and {@link
+ * ScheduleSignHandler}.
+ */
+abstract class AbstractScheduleHandler {
+    protected TransactionMetadata preHandleScheduledTxn(
             final TransactionBody scheduledTxn,
             final AccountID payerForNested,
             final PreHandleDispatcher dispatcher) {

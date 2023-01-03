@@ -123,6 +123,13 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(payerKey, meta.payerKey());
     }
 
+    @Test
+    void handleNotImplemented() {
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(metaToHandle));
+    }
+
     private TransactionBody cryptoUpdateTransaction(
             final AccountID payerId, final AccountID accountToUpdate) {
         if (payerId.equals(payer)) {

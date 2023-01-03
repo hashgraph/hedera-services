@@ -43,6 +43,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
+    private TransactionBody txn;
     private ScheduleCreateHandler subject = new ScheduleCreateHandler();
 
     @Test
@@ -225,6 +226,11 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         txn.getScheduleCreate().getScheduledTransactionBody(),
                         txn.getTransactionID()),
                 meta.scheduledMeta().txnBody());
+    }
+
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {

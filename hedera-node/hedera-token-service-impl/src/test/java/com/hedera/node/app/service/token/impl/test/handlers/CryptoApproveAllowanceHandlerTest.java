@@ -145,6 +145,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(ownerKey, ownerKey), meta.requiredNonPayerKeys());
     }
 
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+    }
+
     private TransactionBody cryptoApproveAllowanceTransaction(
             final AccountID id, final boolean isWithDelegatingSpender) {
         final var transactionID =

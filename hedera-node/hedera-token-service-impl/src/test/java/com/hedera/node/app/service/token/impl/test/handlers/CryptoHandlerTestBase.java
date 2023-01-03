@@ -63,6 +63,7 @@ public class CryptoHandlerTestBase {
     @Mock protected HederaAccountNumbers accountNumbers;
     @Mock protected HederaFileNumbers fileNumbers;
     @Mock protected CryptoSignatureWaiversImpl waivers;
+    @Mock protected TransactionMetadata metaToHandle;
     protected ReadableAccountStore store;
     protected PreHandleContext context;
 

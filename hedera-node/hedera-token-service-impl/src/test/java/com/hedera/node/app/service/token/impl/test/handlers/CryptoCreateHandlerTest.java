@@ -55,6 +55,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(payerKey, meta.payerKey());
     }
 
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+    }
+
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
         final var transactionID =
                 TransactionID.newBuilder()

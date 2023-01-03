@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -89,6 +90,11 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
         assertEquals(payerKey, meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+    }
+
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {
