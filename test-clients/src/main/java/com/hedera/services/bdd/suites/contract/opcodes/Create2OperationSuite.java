@@ -137,7 +137,12 @@ public class Create2OperationSuite extends HapiSuite {
             "Returner reported {} when called with mirror address";
     private static final String CONTRACT_REPORTED_LOG_MESSAGE =
             "Contract reported TestContract initcode is {} bytes";
-    public static final String ADMIN_KEY = "adminKey";
+    private static final String CONTRACT_REPORTED_ADDRESS_MESSAGE =
+            "Contract reported address results {}";
+    private static final String EXPECTED_CREATE2_ADDRESS_MESSAGE =
+            "  --> Expected CREATE2 address is {}";
+    private static final String ADMIN_KEY = "adminKey";
+    public static final String GET_ADDRESS = "getAddress";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -465,14 +470,13 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getAddress",
+                                                        GET_ADDRESS,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
                                                             LOG.info(
-                                                                    "Contract reported address"
-                                                                            + " results {}",
+                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
                                                                     results);
                                                             final var expectedAddrBytes =
                                                                     (Address) results[0];
@@ -483,8 +487,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                                     .toString())
                                                                                     .toArray());
                                                             LOG.info(
-                                                                    "  --> Expected CREATE2 address"
-                                                                            + " is {}",
+                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
                                                                     hexedAddress);
                                                             expectedCreate2Address.set(
                                                                     hexedAddress);
@@ -739,14 +742,13 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getAddress",
+                                                        GET_ADDRESS,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
                                                             LOG.info(
-                                                                    "Contract reported address"
-                                                                            + " results {}",
+                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
                                                                     results);
                                                             final var expectedAddrBytes =
                                                                     (Address) results[0];
@@ -757,8 +759,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                                     .toString())
                                                                                     .toArray());
                                                             LOG.info(
-                                                                    "  --> Expected CREATE2 address"
-                                                                            + " is {}",
+                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
                                                                     hexedAddress);
                                                             expectedCreate2Address.set(
                                                                     hexedAddress);
@@ -903,14 +904,13 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractCallLocal(
                                                         contract,
-                                                        "getAddress",
+                                                        GET_ADDRESS,
                                                         testContractInitcode.get(),
                                                         salt)
                                                 .exposingTypedResultsTo(
                                                         results -> {
                                                             LOG.info(
-                                                                    "Contract reported address"
-                                                                            + " results {}",
+                                                                    CONTRACT_REPORTED_ADDRESS_MESSAGE,
                                                                     results);
                                                             final var addrBytes =
                                                                     (Address) results[0];
@@ -921,8 +921,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                                     .toString())
                                                                                     .toArray());
                                                             LOG.info(
-                                                                    "  --> Expected CREATE2 address"
-                                                                            + " is {}",
+                                                                    EXPECTED_CREATE2_ADDRESS_MESSAGE,
                                                                     hexedAddress);
 
                                                             assertEquals(
