@@ -48,9 +48,9 @@ class CustomFeeTest {
         assertNotEquals(royaltyFee, fixedFeeInHbar);
         assertNotEquals(fixedFeeInHbar, royaltyFee);
         assertNotEquals(fractionalFee, royaltyFee);
-        assertNotEquals(null, royaltyFee);
-        assertNotEquals(null, fixedFeeInHbar);
-        assertNotEquals(null, fractionalFee);
+        assertNotEquals(royaltyFee, null);
+        assertNotEquals(fixedFeeInHbar, null);
+        assertNotEquals(fractionalFee, null);
     }
 
     @Test
