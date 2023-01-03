@@ -64,6 +64,7 @@ public class CustomFee {
         return Objects.hash(fixedFee, fractionalFee, royaltyFee);
     }
 
+    @SuppressWarnings("java:S1126")
     @Override
     public boolean equals(final Object o) {
         if (o == null || CustomFee.class != o.getClass()) {
