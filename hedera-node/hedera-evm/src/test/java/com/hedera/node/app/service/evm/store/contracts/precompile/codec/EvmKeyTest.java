@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-public class EvmKeyTest {
+class EvmKeyTest {
 
     @Test
     void test() {

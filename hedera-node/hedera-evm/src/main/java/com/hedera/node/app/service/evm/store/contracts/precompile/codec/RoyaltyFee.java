@@ -79,9 +79,6 @@ public class RoyaltyFee {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || RoyaltyFee.class != o.getClass()) {
-            return false;
-        }
         RoyaltyFee other = (RoyaltyFee) o;
 
         return this.numerator == other.numerator

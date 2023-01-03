@@ -71,9 +71,6 @@ public class FixedFee {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || FixedFee.class != o.getClass()) {
-            return false;
-        }
         FixedFee other = (FixedFee) o;
 
         return this.amount == other.amount

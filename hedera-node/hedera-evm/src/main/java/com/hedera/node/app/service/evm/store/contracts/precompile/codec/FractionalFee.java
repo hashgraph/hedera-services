@@ -79,9 +79,6 @@ public class FractionalFee {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || FractionalFee.class != o.getClass()) {
-            return false;
-        }
         FractionalFee other = (FractionalFee) o;
 
         return this.numerator == other.numerator
