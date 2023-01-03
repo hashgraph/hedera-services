@@ -1340,11 +1340,11 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "15 7 * * *"
+          cron: "30 18 * * *"
           filters:
             branches:
               only:
-                - develop
+                - 3013-D-fix-tests
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1546,7 +1546,7 @@ jobs:
             ./gradlew assemble --scan
             
             # Build JRS
-            cd /swirlds-platform/regression
+            cd /swirlds-platform/regression; git checkout 3013-test-failures;
             ./gradlew assemble --scan --parallel
 
       - run:
@@ -1624,10 +1624,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
