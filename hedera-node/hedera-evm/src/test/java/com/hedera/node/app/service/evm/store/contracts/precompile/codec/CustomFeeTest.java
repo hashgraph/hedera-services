@@ -29,7 +29,14 @@ class CustomFeeTest {
     void testCustomFee() {
         final var customfee = customFees();
         final var customfee2 = customFees();
+        final var royaltyFeeNullValues = customFeeWithRoyaltyNullValues().get(0).getRoyaltyFee();
+        final var fixedFeeNullValues = customFeesWithFixedNullValues().get(0).getFixedFee();
+        final var fractionalFeeNullValues = customFeeWithFractionalNullValues().get(0).getFractionalFee();
 
+        assertEquals(Address.ZERO, royaltyFeeNullValues.getFeeCollector());
+        assertEquals(Address.ZERO, royaltyFeeNullValues.getDenominatingTokenId());
+        assertEquals(Address.ZERO, fixedFeeNullValues.getFeeCollector());
+        assertEquals(Address.ZERO, fractionalFeeNullValues.getFeeCollector());
         assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(14, 100, 50, true));
         assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(15, 90, 50, true));
         assertNotEquals(customFeeWithRoyalty(), customFeeWithRoyaltyDiff(15, 100, 45, true));
@@ -137,6 +144,18 @@ class CustomFeeTest {
         return List.of(customFee);
     }
 
+    private List<CustomFee> customFeeWithFractionalNullValues() {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+
+        FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, null);
+
+        CustomFee customFee = new CustomFee();
+        customFee.setFractionalFee(fractionalFee);
+
+        return List.of(customFee);
+    }
+
     private List<CustomFee> customFeeWithFractionalDiff(
             long numerator,
             long denominator,
@@ -173,6 +192,18 @@ class CustomFeeTest {
         return List.of(customFee1);
     }
 
+    private List<CustomFee> customFeesWithFixedNullValues() {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+        FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, null);
+
+        CustomFee customFee1 =
+            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+
+        return List.of(customFee1);
+    }
+
     private List<CustomFee> customFeesWithFixedDiff(
             long amount, boolean useHbarsForPayment, boolean useCurrentTokenForPayment) {
         final var payerAccount =
@@ -201,6 +232,26 @@ class CustomFeeTest {
                                 Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
                         true,
                         payerAccount);
+
+        CustomFee customFee = new CustomFee();
+
+        customFee.setRoyaltyFee(royaltyFee);
+
+        return List.of(customFee);
+    }
+
+    private List<CustomFee> customFeeWithRoyaltyNullValues() {
+        final var payerAccount =
+            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+
+        RoyaltyFee royaltyFee =
+            new RoyaltyFee(
+                15,
+                100,
+                50,
+                 null,
+                true,
+                null);
 
         CustomFee customFee = new CustomFee();
 
