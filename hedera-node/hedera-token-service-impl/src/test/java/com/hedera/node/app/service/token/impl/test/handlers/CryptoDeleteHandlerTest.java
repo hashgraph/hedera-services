@@ -192,9 +192,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void handleNotImplemented() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.handle(metaToHandle));
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private TransactionBody deleteAccountTransaction(
