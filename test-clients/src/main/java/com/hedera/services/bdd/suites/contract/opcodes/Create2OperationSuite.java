@@ -845,6 +845,17 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractCall(
                                                         contract,
+                                                        "wronglyDeployTwice",
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
                                                         DEPLOY,
                                                         testContractInitcode.get(),
                                                         salt)
@@ -857,6 +868,19 @@ public class Create2OperationSuite extends HapiSuite {
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
                                 mergedAliasAddr),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        DEPLOY,
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                /* Cannot repeat CREATE2
+                                                with same args without destroying the existing contract */
+
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
                                         getContractInfo(mergedAliasAddr.get())
@@ -873,7 +897,39 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .hasToken(
                                                         relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
                                                                 .balance(1))
-                                                .logged()));
+                                                .logged()),
+                        sourcing(() -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
+                        sourcing(
+                                () ->
+                                        contractCallLocal(
+                                                        contract,
+                                                        "getAddress",
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .exposingTypedResultsTo(
+                                                        results -> {
+                                                            LOG.info(
+                                                                    "Contract reported address"
+                                                                            + " results {}",
+                                                                    results);
+                                                            final var addrBytes =
+                                                                    (Address) results[0];
+                                                            final var hexedAddress =
+                                                                    hex(
+                                                                            Bytes.fromHexString(
+                                                                                            addrBytes
+                                                                                                    .toString())
+                                                                                    .toArray());
+                                                            LOG.info(
+                                                                    "  --> Expected CREATE2 address"
+                                                                            + " is {}",
+                                                                    hexedAddress);
+
+                                                            assertEquals(
+                                                                    expectedCreate2Address.get(),
+                                                                    hexedAddress);
+                                                        })
+                                                .payingWith(GENESIS)));
     }
 
     @SuppressWarnings("java:S5669")
