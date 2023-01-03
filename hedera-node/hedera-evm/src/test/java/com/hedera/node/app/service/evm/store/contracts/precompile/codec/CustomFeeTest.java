@@ -31,7 +31,8 @@ class CustomFeeTest {
         final var customfee2 = customFees();
         final var royaltyFeeNullValues = customFeeWithRoyaltyNullValues().get(0).getRoyaltyFee();
         final var fixedFeeNullValues = customFeesWithFixedNullValues().get(0).getFixedFee();
-        final var fractionalFeeNullValues = customFeeWithFractionalNullValues().get(0).getFractionalFee();
+        final var fractionalFeeNullValues =
+                customFeeWithFractionalNullValues().get(0).getFractionalFee();
 
         assertEquals(Address.ZERO, royaltyFeeNullValues.getFeeCollector());
         assertEquals(Address.ZERO, royaltyFeeNullValues.getDenominatingTokenId());
@@ -146,7 +147,7 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeeWithFractionalNullValues() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, null);
 
@@ -194,11 +195,11 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeesWithFixedNullValues() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
         FixedFee fixedFeeInHbar = new FixedFee(100, null, true, false, null);
 
         CustomFee customFee1 =
-            new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
         customFee1.setFixedFee(fixedFeeInHbar);
 
         return List.of(customFee1);
@@ -242,16 +243,9 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeeWithRoyaltyNullValues() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
-        RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                15,
-                100,
-                50,
-                 null,
-                true,
-                null);
+        RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 50, null, true, null);
 
         CustomFee customFee = new CustomFee();
 
