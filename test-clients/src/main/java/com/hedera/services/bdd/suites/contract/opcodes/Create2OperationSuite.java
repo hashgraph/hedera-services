@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -658,7 +658,6 @@ public class Create2OperationSuite extends HapiSuite {
         final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
         final var adminKey = ADMIN_KEY;
-        final var replAdminKey = "replAdminKey";
         final var entityMemo = "JUST DO IT";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
         final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
@@ -673,10 +672,10 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
+        return defaultHapiSpec("CanMergeCreate2ChildWithHollowAccount")
                 .given(
                         newKeyNamed(adminKey),
-                        newKeyNamed(replAdminKey),
+                        newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -687,7 +686,6 @@ public class Create2OperationSuite extends HapiSuite {
                                         num ->
                                                 factoryEvmAddress.set(
                                                         asHexedSolidityAddress(0, 0, num))),
-                        newKeyNamed(MULTI_KEY),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(A_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)

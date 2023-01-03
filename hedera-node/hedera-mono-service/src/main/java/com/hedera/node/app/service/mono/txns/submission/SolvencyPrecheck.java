@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFee
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.FeeExemptions;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
@@ -120,11 +119,7 @@ public class SolvencyPrecheck {
             final var now = accessor.getTxnId().getTransactionValidStart();
             final var payerKey = payerAccount.getAccountKey();
             final var estimatedFees =
-                    feeCalculator.estimateFee(
-                            accessor,
-                            payerKey,
-                            stateView.get(),
-                            now);
+                    feeCalculator.estimateFee(accessor, payerKey, stateView.get(), now);
             final var estimatedReqFee = totalOf(estimatedFees, includeSvcFee);
 
             if (accessor.getTxn().getTransactionFee() < estimatedReqFee) {
