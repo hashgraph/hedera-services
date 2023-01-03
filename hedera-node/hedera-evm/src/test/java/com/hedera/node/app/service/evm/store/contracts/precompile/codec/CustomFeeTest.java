@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,30 @@ class CustomFeeTest {
         final var customfee = customFees();
         final var customfee2 = customFees();
 
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(11, 100, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 90, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 9, 50, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 45, false, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 50, true, "0x00000000000000000000000000000000000005ce"));
-        assertNotEquals(customFeeWithFractional(), customFeeWithFractionalDiff(15, 100, 10, 50, true, "0x00000000000000000000000000000000000005cd"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        11, 100, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        15, 90, 10, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        15, 100, 9, 50, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        15, 100, 10, 45, false, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        15, 100, 10, 50, true, "0x00000000000000000000000000000000000005ce"));
+        assertNotEquals(
+                customFeeWithFractional(),
+                customFeeWithFractionalDiff(
+                        15, 100, 10, 50, true, "0x00000000000000000000000000000000000005cd"));
         assertNotEquals(customFeesWithFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeeWithFractionalAndFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeesWithFixed(), customFeeWithFractional());
@@ -112,11 +130,23 @@ class CustomFeeTest {
         return List.of(customFee);
     }
 
-    private List<CustomFee> customFeeWithFractionalDiff(long numerator, long denominator, long getMinimumAmount, long getMaximumAmount, boolean netOfTransfers, String payer) {
-        final var payerAccount =
-            Address.wrap(Bytes.fromHexString(payer));
+    private List<CustomFee> customFeeWithFractionalDiff(
+            long numerator,
+            long denominator,
+            long getMinimumAmount,
+            long getMaximumAmount,
+            boolean netOfTransfers,
+            String payer) {
+        final var payerAccount = Address.wrap(Bytes.fromHexString(payer));
 
-        FractionalFee fractionalFee = new FractionalFee(numerator, denominator, getMinimumAmount, getMaximumAmount, netOfTransfers, payerAccount);
+        FractionalFee fractionalFee =
+                new FractionalFee(
+                        numerator,
+                        denominator,
+                        getMinimumAmount,
+                        getMaximumAmount,
+                        netOfTransfers,
+                        payerAccount);
 
         CustomFee customFee = new CustomFee();
         customFee.setFractionalFee(fractionalFee);
