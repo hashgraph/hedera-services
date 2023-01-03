@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class CustomFeeTest {
 
+    @SuppressWarnings("java:S5845")
     @Test
     void testFees() {
         final var payerAccount =
