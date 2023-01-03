@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.workflows;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,6 +33,19 @@ public class StoreCache {
      */
     @NonNull
     public ReadableAccountStore getAccountStore(@NonNull final HederaState state) {
+        requireNonNull(state);
+
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /**
+     * Returns the {@link ReadableScheduleStore} for the provided {@link HederaState}.
+     *
+     * @param state the {@code HederaState} that is the base for the {@code ScheduleStore}
+     * @return the {@code ScheduleStore} for the provided state, either new or cached
+     */
+    @NonNull
+    public ReadableScheduleStore getScheduleStore(@NonNull final HederaState state) {
         requireNonNull(state);
 
         throw new UnsupportedOperationException("not implemented");

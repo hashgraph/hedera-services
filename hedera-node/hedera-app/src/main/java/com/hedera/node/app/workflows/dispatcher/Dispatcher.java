@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
@@ -33,6 +34,7 @@ public class Dispatcher {
     private final Handlers handlers;
 
     private final StoreCache storeCache;
+    private final CryptoSignatureWaivers cryptoSignatureWaivers;
 
     /**
      * Constructor of {@code Dispatcher}
@@ -40,11 +42,16 @@ public class Dispatcher {
      * @param handlers a {@link Handlers} record with all available handlers
      * @param storeCache a {@link StoreCache} that maintains stores for all active {@link
      *     HederaState}s
+     * @param cryptoSignatureWaivers the {@link CryptoSignatureWaivers} to use in pre-handle
      * @throws NullPointerException if one of the parameters is {@code null}
      */
-    public Dispatcher(@NonNull final Handlers handlers, @NonNull final StoreCache storeCache) {
+    public Dispatcher(
+            @NonNull final Handlers handlers,
+            @NonNull final StoreCache storeCache,
+            @NonNull final CryptoSignatureWaivers cryptoSignatureWaivers) {
         this.handlers = requireNonNull(handlers);
         this.storeCache = requireNonNull(storeCache);
+        this.cryptoSignatureWaivers = cryptoSignatureWaivers;
     }
 
     /**
@@ -86,9 +93,13 @@ public class Dispatcher {
                     .preHandle(transactionBody, payer);
 
             case CRYPTOCREATEACCOUNT -> handlers.cryptoCreateHandler()
-                    .preHandle(transactionBody, payer);
-            case CRYPTOUPDATEACCOUNT -> handlers.cryptoUpdateHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case CRYPTOUPDATEACCOUNT -> handlers.cryptoUpdateHandler()
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            cryptoSignatureWaivers);
             case CRYPTOTRANSFER -> handlers.cryptoTransferHandler()
                     .preHandle(transactionBody, payer);
             case CRYPTODELETE -> handlers.cryptoDeleteHandler()
@@ -113,8 +124,20 @@ public class Dispatcher {
                     .preHandle(transactionBody, payer);
 
             case SCHEDULECREATE -> handlers.scheduleCreateHandler()
-                    .preHandle(transactionBody, payer);
-            case SCHEDULESIGN -> handlers.scheduleSignHandler().preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            (innerTxn, innerPayer) ->
+                                    dispatchPreHandle(state, innerTxn, innerPayer));
+            case SCHEDULESIGN -> handlers.scheduleSignHandler()
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getScheduleStore(state),
+                            (innerTxn, innerPayer) ->
+                                    dispatchPreHandle(state, innerTxn, innerPayer));
             case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
                     .preHandle(transactionBody, payer);
 
