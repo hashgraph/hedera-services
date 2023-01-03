@@ -190,17 +190,17 @@ class CustomFeeTest {
 
     private List<CustomFee> customFeeWithRoyalty() {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                15,
-                100,
-                50,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
-                true,
-                payerAccount);
+                new RoyaltyFee(
+                        15,
+                        100,
+                        50,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                        true,
+                        payerAccount);
 
         CustomFee customFee = new CustomFee();
 
@@ -208,20 +208,21 @@ class CustomFeeTest {
 
         return List.of(customFee);
     }
-    private List<CustomFee> customFeeWithRoyaltyDiff(long numerator,
-        long denominator, long amount, boolean useHbarsForPayment) {
+
+    private List<CustomFee> customFeeWithRoyaltyDiff(
+            long numerator, long denominator, long amount, boolean useHbarsForPayment) {
         final var payerAccount =
-            Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
+                Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000005ce"));
 
         RoyaltyFee royaltyFee =
-            new RoyaltyFee(
-                numerator,
-                denominator,
-                amount,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
-                useHbarsForPayment,
-                payerAccount);
+                new RoyaltyFee(
+                        numerator,
+                        denominator,
+                        amount,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cb")),
+                        useHbarsForPayment,
+                        payerAccount);
 
         CustomFee customFee = new CustomFee();
 
