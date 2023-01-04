@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;

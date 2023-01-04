@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context;
 
-import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;

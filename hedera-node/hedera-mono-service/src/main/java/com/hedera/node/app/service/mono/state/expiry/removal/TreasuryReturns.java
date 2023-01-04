@@ -32,7 +32,7 @@ import static com.hedera.node.app.service.mono.throttling.MapAccessType.TOKEN_AS
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;

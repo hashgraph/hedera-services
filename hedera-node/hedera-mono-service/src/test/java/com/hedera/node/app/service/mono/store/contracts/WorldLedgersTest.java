@@ -27,7 +27,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.T
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;

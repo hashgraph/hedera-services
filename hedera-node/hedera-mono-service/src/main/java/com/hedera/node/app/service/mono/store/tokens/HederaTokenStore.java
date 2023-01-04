@@ -26,7 +26,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.OWN
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
@@ -72,7 +72,7 @@ import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;

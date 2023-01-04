@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.state.enums;
+package com.hedera.node.app.service.evm.store.tokens;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 
 /**
- * Token Types of {@link MerkleToken} Apart from fungible and non-fungible, Tokens can have either a
+ * Token Types of MerkleToken Apart from fungible and non-fungible, Tokens can have either a
  * common or unique representation. This distinction might seem subtle, but it is important when
  * considering how tokens can be traced and if they can have isolated and unique properties.
  */

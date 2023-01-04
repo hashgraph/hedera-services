@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.utils;
 
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 
 /**
  * A helper class which maps model enums {@link TokenType} and {@link TokenSupplyType} to {@link
