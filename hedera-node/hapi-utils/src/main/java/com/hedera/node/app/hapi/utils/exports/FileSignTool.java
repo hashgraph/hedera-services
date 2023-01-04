@@ -76,7 +76,8 @@ import org.apache.logging.log4j.core.LoggerContext;
  * <p>It can also be used to sign any single files with any extension. For files except .evts and
  * .rcd, the Hash in the signature file is a SHA384 hash of all bytes in the file to be signed.
  *
- * <p>For .evts and .rcd files, it generates version 5 signature files.
+ * <p>For .evts files, it generates version 5 signature files.
+ * <p>For .rcd files, it generates version 6 signature files.
  *
  * <p>Please see README.md for format details
  */
@@ -103,7 +104,6 @@ public class FileSignTool {
     /** default log4j2 file name */
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
     /** supported stream version file */
-    private static final int VERSION_5 = 5;
     /** type of the keyStore */
     private static final String KEYSTORE_TYPE = "pkcs12";
     /** name of RecordStreamType */
@@ -200,18 +200,6 @@ public class FileSignTool {
     public static String buildDestSigFilePath(final File destDir, final File streamFile) {
         final String sigFileName = streamFile.getName() + SIG_FILE_NAME_END;
         return new File(destDir, sigFileName).getPath();
-    }
-
-    /**
-     * convert an int to a byte array
-     *
-     * @param number an int number
-     * @return a byte array
-     */
-    public static byte[] integerToBytes(final int number) {
-        final ByteBuffer b = ByteBuffer.allocate(BYTES_COUNT_IN_INT);
-        b.putInt(number);
-        return b.array();
     }
 
     /**
