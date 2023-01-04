@@ -65,7 +65,7 @@ public class SidecarWatcher {
                                 retryCount++;
                                 try {
                                     final var sidecarFile =
-                                            RecordStreamingUtils.readSidecarFile(newFilePath);
+                                            RecordStreamingUtils.readMaybeCompressedSidecarFile(newFilePath);
                                     onNewSidecarFile(sidecarFile);
                                     return;
                                 } catch (IOException e) {
