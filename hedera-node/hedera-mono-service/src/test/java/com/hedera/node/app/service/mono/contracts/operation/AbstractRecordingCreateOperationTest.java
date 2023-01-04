@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,22 +24,31 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
@@ -82,6 +91,8 @@ class AbstractRecordingCreateOperationTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ContractCustomizer contractCustomizer;
     @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private ContractAliases aliases;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     private static final long childStipend = 1_000_000L;
     private static final Wei gasPrice = Wei.of(1000L);
@@ -185,7 +196,7 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
-        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        givenUpdaterWithAliases();
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
         given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
@@ -251,10 +262,9 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
-        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        givenUpdaterWithAliases();
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
@@ -321,6 +331,23 @@ class AbstractRecordingCreateOperationTest {
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.of(value));
         given(frame.getMessageStackDepth()).willReturn(1023);
+    }
+
+    private void givenUpdaterWithAliases() {
+        final var expectedAccountId = EntityIdUtils.parseAccount("0.0.1234");
+        given(updater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
+        given(updater.trackingAccounts()).willReturn(accounts);
+        final var nonEmptyKey =
+                Key.newBuilder()
+                        .setEd25519(
+                                ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+                        .build();
+        given(accounts.get(eq(expectedAccountId), eq(AccountProperty.KEY)))
+                .willReturn(MiscUtils.asFcKeyUnchecked(nonEmptyKey));
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
     }
 
     private void assertSameResult(
