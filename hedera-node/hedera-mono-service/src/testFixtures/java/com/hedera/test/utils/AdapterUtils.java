@@ -43,6 +43,7 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -63,7 +64,7 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts and aliases that exist
+     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that exist
      * in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit
      * tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require
      * an {@link ReadableAccountStore}.
@@ -71,7 +72,7 @@ public class AdapterUtils {
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known account store
      */
-    public static ReadableAccountStore wellKnownAccountStoreAt(final Instant mockLastModified) {
+    public static AccountKeyLookup wellKnownAccountStoreAt(final Instant mockLastModified) {
         return new ReadableAccountStore(
                 mockStates(
                         Map.of(
