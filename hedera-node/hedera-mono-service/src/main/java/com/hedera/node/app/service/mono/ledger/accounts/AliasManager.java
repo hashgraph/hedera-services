@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -121,7 +122,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             final EntityNum num,
             final UnaryOperator<byte[]> addressRecovery) {
         final var evmAddress = tryAddressRecovery(key, addressRecovery);
-        if (evmAddress != null) {
+        if (isRecoveredEvmAddress(evmAddress)) {
             link(ByteStringUtils.wrapUnsafely(evmAddress), num);
             return true;
         } else {
@@ -137,7 +138,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             final var keyBytes = key.getECDSASecp256k1Key();
             if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 final var evmAddress = addressRecovery.apply(keyBytes);
-                if (evmAddress != null) {
+                if (isRecoveredEvmAddress(evmAddress)) {
                     return evmAddress;
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the

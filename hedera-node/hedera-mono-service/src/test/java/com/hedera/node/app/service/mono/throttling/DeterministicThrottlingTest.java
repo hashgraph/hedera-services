@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransaction;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -1072,6 +1073,76 @@ class DeterministicThrottlingTest {
     }
 
     @Test
+    void ethereumTransactionWithNoAutoAccountCreationsAreThrottledAsExpected() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        givenFunction(EthereumTransaction);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        assertFalse(ans);
+    }
+
+    @Test
+    void ethereumTransactionWithAutoAccountCreationsButNoLazyCreationsAreThrottledAsExpected()
+            throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        givenFunction(EthereumTransaction);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        assertFalse(ans);
+    }
+
+    @Test
+    void managerAllowsEthereumTransactionWithAutoAccountCreationsAsExpected() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        givenFunction(EthereumTransaction);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        assertFalse(ans);
+    }
+
+    @Test
+    void managerRejectsEthereumTransactionWithAutoAccountCreationsAsExpected() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+        givenFunction(EthereumTransaction);
+        given(accessor.getNumImplicitCreations()).willReturn(10);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        assertTrue(ans);
+    }
+
+    @Test
+    void managerRejectsEthereumTransactionWithMissingCryptoCreateThrottle() throws IOException {
+        var defs = SerdeUtils.pojoDefs("bootstrap/throttles-sans-creation.json");
+
+        givenFunction(EthereumTransaction);
+        given(accessor.getNumImplicitCreations()).willReturn(1);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        subject.rebuildFor(defs);
+
+        var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        assertTrue(ans);
+    }
+
+    @Test
     void logsErrorOnBadBucketButDoesntFail() throws IOException {
         final var ridiculousSplitFactor = 1_000_000;
         subject =
@@ -1214,6 +1285,7 @@ class DeterministicThrottlingTest {
                         + "  CryptoCreate: min{5000.00 tps (A), 1.00 tps (C)}\n"
                         + "  CryptoGetAccountBalance: min{5.00 tps (D)}\n"
                         + "  CryptoTransfer: min{5000.00 tps (A)}\n"
+                        + "  EthereumTransaction: min{6.00 tps (A)}\n"
                         + "  GetVersionInfo: min{0.50 tps (D)}\n"
                         + "  TokenAssociateToAccount: min{50.00 tps (C)}\n"
                         + "  TokenCreate: min{50.00 tps (C)}\n"

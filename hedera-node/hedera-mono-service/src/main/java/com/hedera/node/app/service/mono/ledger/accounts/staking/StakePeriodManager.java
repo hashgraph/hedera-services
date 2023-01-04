@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,16 @@ public class StakePeriodManager {
 
     public boolean isRewardable(final long stakePeriodStart) {
         return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod();
+    }
+
+    public long estimatedFirstNonRewardableStakePeriod() {
+        return networkCtx.get().areRewardsActivated()
+                ? estimatedCurrentStakePeriod() - 1
+                : Long.MIN_VALUE;
+    }
+
+    public boolean isEstimatedRewardable(final long stakePeriodStart) {
+        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod();
     }
 
     public long effectivePeriod(final long stakePeriodStart) {

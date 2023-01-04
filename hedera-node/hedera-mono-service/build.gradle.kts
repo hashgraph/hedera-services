@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ dependencies {
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
-    implementation(libs.hapi)
     implementation(libs.helidon.io.grpc)
     implementation(libs.headlong)
     implementation(
@@ -72,12 +71,12 @@ dependencies {
     implementation(libs.commons.io)
     implementation(libs.commons.collections4)
     implementation(libs.eclipse.collections)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
     testCompileOnly(libs.spotbugs.annotations)
 
+    testFixturesApi(project(":hedera-node:hedera-app-spi"))
     testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,16 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.ONLY_IF_
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.isActive;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
+import static com.hedera.node.app.service.mono.sigs.sourcing.KeyType.ECDSA_SECP256K1;
 
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -63,6 +67,23 @@ public class PrecheckVerifier {
     public boolean hasNecessarySignatures(final SignedTxnAccessor accessor) throws Exception {
         try {
             final var reqKeys = precheckKeyReqs.getRequiredKeys(accessor.getTxn());
+            // first key in reqKeys is always the payer key
+            final var payerKey = reqKeys.get(0);
+            if (payerKey.hasHollowKey()) {
+                // can change this algorithm to use the accessor.getSigMap()
+                // and return immediately when we find the first match
+                accessor.getPkToSigsFn()
+                        .forEachUnusedSigWithFullPrefix(
+                                (type, pubKey, sig) -> {
+                                    if (type.equals(ECDSA_SECP256K1)
+                                            && Arrays.equals(
+                                                    payerKey.getHollowKey().getEvmAddress(),
+                                                    EthSigsUtils.recoverAddressFromPubKey(
+                                                            pubKey))) {
+                                        reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
+                                    }
+                                });
+            }
             final var availSigs = getAvailSigs(reqKeys, accessor);
             syncVerifier.verifySync(availSigs);
             final var sigsFn = pkToSigMapFrom(availSigs);

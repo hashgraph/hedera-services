@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
-import static com.hedera.node.app.service.mono.utils.subjects.UniqueTokenValueSubject.assertThat;
+import static com.hedera.node.app.service.mono.utils.subjects.UniqueTokenValueSubject.assertThatTokenValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
@@ -64,21 +64,21 @@ class UniqueTokenValueTest {
     }
 
     private void assertSameAsExample1(final UniqueTokenValue actual) {
-        assertThat(actual).hasOwner(1234L);
-        assertThat(actual).hasSpender(5678L);
-        assertThat(actual).hasCreationTime(Instant.ofEpochMilli(1_000_000L));
-        assertThat(actual).hasMetadata("hello world".getBytes());
-        assertThat(actual).hasPrev(111L, 333L);
-        assertThat(actual).hasNext(222L, 444L);
+        assertThatTokenValue(actual).hasOwner(1234L);
+        assertThatTokenValue(actual).hasSpender(5678L);
+        assertThatTokenValue(actual).hasCreationTime(Instant.ofEpochMilli(1_000_000L));
+        assertThatTokenValue(actual).hasMetadata("hello world".getBytes());
+        assertThatTokenValue(actual).hasPrev(111L, 333L);
+        assertThatTokenValue(actual).hasNext(222L, 444L);
     }
 
     private void assertSameAsExample2(final UniqueTokenValue actual) {
-        assertThat(actual).hasOwner(1234L);
-        assertThat(actual).hasSpender(5678L);
-        assertThat(actual).hasCreationTime(Instant.ofEpochMilli(1_000_000L));
-        assertThat(actual).metadata().isEmpty();
-        assertThat(actual).hasPrev(NftNumPair.MISSING_NFT_NUM_PAIR);
-        assertThat(actual).hasNext(NftNumPair.MISSING_NFT_NUM_PAIR);
+        assertThatTokenValue(actual).hasOwner(1234L);
+        assertThatTokenValue(actual).hasSpender(5678L);
+        assertThatTokenValue(actual).hasCreationTime(Instant.ofEpochMilli(1_000_000L));
+        assertThat(actual.getMetadata()).isEmpty();
+        assertThatTokenValue(actual).hasPrev(NftNumPair.MISSING_NFT_NUM_PAIR);
+        assertThatTokenValue(actual).hasNext(NftNumPair.MISSING_NFT_NUM_PAIR);
     }
 
     @Test
@@ -222,7 +222,6 @@ class UniqueTokenValueTest {
         value2.deserialize(new SerializableDataInputStream(stream), 1);
 
         assertThat(value1.getMetadata()).isEqualTo(value2.getMetadata());
-        assertThat(value1.getMetadata()).hasLength(100);
         assertThat(value1.getMetadata())
                 .isEqualTo(
                         "1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000"
@@ -475,7 +474,7 @@ class UniqueTokenValueTest {
         assertThat(value.getVersion()).isEqualTo(1);
 
         // Make sure current version is above the minimum supported version.
-        assertThat(value.getVersion()).isAtLeast(value.getMinimumSupportedVersion());
+        assertThat(value.getVersion()).isGreaterThanOrEqualTo(value.getMinimumSupportedVersion());
     }
 
     @Test
@@ -495,18 +494,18 @@ class UniqueTokenValueTest {
         legacyToken.setSpender(EntityId.fromNum(7L));
         legacyToken.setMetadata(new byte[] {8, 9, 10});
         final UniqueTokenValue token = UniqueTokenValue.from(legacyToken);
-        assertThat(token).hasNext(1, 2);
-        assertThat(token).hasPrev(3, 4);
-        assertThat(token).hasOwner(5);
-        assertThat(token).hasPackedCreationTime(6);
-        assertThat(token).hasSpender(7);
-        assertThat(token).hasMetadata(new byte[] {8, 9, 10});
+        assertThatTokenValue(token).hasNext(1, 2);
+        assertThatTokenValue(token).hasPrev(3, 4);
+        assertThatTokenValue(token).hasOwner(5);
+        assertThatTokenValue(token).hasPackedCreationTime(6);
+        assertThatTokenValue(token).hasSpender(7);
+        assertThatTokenValue(token).hasMetadata(new byte[] {8, 9, 10});
     }
 
     @Test
     void setGetOwner_whenMutable_worksAsExpected() {
         final UniqueTokenValue value = new UniqueTokenValue();
-        assertThat(value).hasOwner(EntityId.MISSING_ENTITY_ID);
+        assertThatTokenValue(value).hasOwner(EntityId.MISSING_ENTITY_ID);
         value.setOwner(EntityId.fromNum(4));
         assertThat(value.getOwner()).isEqualTo(EntityId.fromNum(4));
         value.setOwner(EntityId.fromNum(5));
@@ -516,7 +515,7 @@ class UniqueTokenValueTest {
     @Test
     void setGetSpender_whenMutable_worksAsExpected() {
         final UniqueTokenValue value = new UniqueTokenValue();
-        assertThat(value).hasSpender(EntityId.MISSING_ENTITY_ID);
+        assertThatTokenValue(value).hasSpender(EntityId.MISSING_ENTITY_ID);
         value.setSpender(EntityId.fromNum(4));
         assertThat(value.getSpender()).isEqualTo(EntityId.fromNum(4));
         value.setSpender(EntityId.fromNum(5));

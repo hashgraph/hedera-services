@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
                     return;
+                } else if (updater.get(frame.getRecipientAddress()) == null) {
+                    executeLazyCreate(frame, operationTracer);
+                    if (frame.getState() == EXCEPTIONAL_HALT) {
+                        return;
+                    }
                 }
             }
 
@@ -97,5 +102,10 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         } else {
             frame.setState(EXCEPTIONAL_HALT);
         }
+    }
+
+    protected void executeLazyCreate(
+            final MessageFrame frame, final OperationTracer operationTracer) {
+        // no-op
     }
 }

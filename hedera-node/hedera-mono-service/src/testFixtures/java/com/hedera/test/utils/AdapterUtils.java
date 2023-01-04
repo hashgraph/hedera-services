@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,7 @@ import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
-import com.hedera.node.app.service.mono.token.impl.TokenStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.spi.state.State;
@@ -64,16 +63,16 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountStore} containing the "well-known" accounts and aliases that exist
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts and aliases that exist
      * in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit
      * tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require
-     * an {@link AccountStore}.
+     * an {@link ReadableAccountStore}.
      *
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known account store
      */
-    public static AccountStore wellKnownAccountStoreAt(final Instant mockLastModified) {
-        return new AccountStore(
+    public static ReadableAccountStore wellKnownAccountStoreAt(final Instant mockLastModified) {
+        return new ReadableAccountStore(
                 mockStates(
                         Map.of(
                                 ALIASES_KEY, wellKnownAliasState(mockLastModified),
@@ -81,7 +80,7 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link TokenStore} containing the "well-known" tokens that exist in a {@code
+     * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a {@code
      * SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests of
      * {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a {@link
      * TokenStore}.
@@ -89,7 +88,7 @@ public class AdapterUtils {
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known token store
      */
-    public static TokenStore wellKnownTokenStoreAt(final Instant mockLastModified) {
+    public static ReadableTokenStore wellKnownTokenStoreAt(final Instant mockLastModified) {
         final var source = sigReqsMockTokenStore();
         final MerkleMap<EntityNum, MerkleToken> destination = new MerkleMap<>();
         List.of(
@@ -105,7 +104,7 @@ public class AdapterUtils {
                 .forEach(id -> destination.put(EntityNum.fromTokenId(id), source.get(id)));
         final var wrappedState = new InMemoryStateImpl<>(TOKENS_KEY, destination, mockLastModified);
         final var state = new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
-        return new TokenStore(mockStates(Map.of(TOKENS_KEY, state)));
+        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
     }
 
     private static States mockStates(final Map<String, State> keysToMock) {

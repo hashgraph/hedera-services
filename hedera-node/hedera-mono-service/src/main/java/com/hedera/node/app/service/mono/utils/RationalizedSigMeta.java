@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimp
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -31,6 +33,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Hash;
 
 /**
  * A simple wrapper around the three outputs of the {@code Rationalization#execute()} process.
@@ -60,18 +64,18 @@ public class RationalizedSigMeta {
     private static final RationalizedSigMeta NONE_AVAIL = new RationalizedSigMeta();
     private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR =
             new ExpandHandleSpanMapAccessor();
-
-    private final JKey payerReqSig;
     private final List<JKey> othersReqSigs;
     private final List<TransactionSignature> rationalizedSigs;
-
+    private JKey payerReqSig;
     private Function<byte[], TransactionSignature> pkToVerifiedSigFn;
+    private boolean replacedHollowKey;
 
     private RationalizedSigMeta() {
         payerReqSig = null;
         othersReqSigs = null;
         rationalizedSigs = null;
         pkToVerifiedSigFn = null;
+        replacedHollowKey = false;
     }
 
     private RationalizedSigMeta(
@@ -83,6 +87,7 @@ public class RationalizedSigMeta {
         this.othersReqSigs = othersReqSigs;
         this.rationalizedSigs = rationalizedSigs;
         this.pkToVerifiedSigFn = pkToVerifiedSigFn;
+        this.replacedHollowKey = false;
     }
 
     public static RationalizedSigMeta noneAvailable() {
@@ -138,6 +143,30 @@ public class RationalizedSigMeta {
                                 : wrappedFn.apply(publicKey);
     }
 
+    public void replacePayerHollowKeyIfNeeded() {
+        if (!payerReqSig.hasHollowKey()) return;
+
+        final var targetEvmAddress = payerReqSig.getHollowKey().getEvmAddress();
+        for (final var sig : rationalizedSigs) {
+            // maybe do the hashing of the public key a better way... not coupling to Besu classes?
+            final var publicKeyHashed =
+                    Hash.hash(Bytes.of(sig.getExpandedPublicKey())).toArrayUnsafe();
+            if (Arrays.equals(
+                    targetEvmAddress,
+                    0,
+                    targetEvmAddress.length,
+                    publicKeyHashed,
+                    publicKeyHashed.length - 20,
+                    publicKeyHashed.length)) {
+
+                payerReqSig =
+                        new JECDSASecp256k1Key(
+                                MiscCryptoUtils.compressSecp256k1(sig.getExpandedPublicKey()));
+                replacedHollowKey = true;
+            }
+        }
+    }
+
     public boolean couldRationalizePayer() {
         return payerReqSig != null;
     }
@@ -174,5 +203,9 @@ public class RationalizedSigMeta {
             throw new IllegalStateException("Verified signatures could not be rationalized");
         }
         return pkToVerifiedSigFn;
+    }
+
+    public boolean hasReplacedHollowKey() {
+        return replacedHollowKey;
     }
 }

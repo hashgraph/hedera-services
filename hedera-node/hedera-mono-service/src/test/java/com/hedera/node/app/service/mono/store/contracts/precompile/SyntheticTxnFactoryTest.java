@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
@@ -85,6 +86,8 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
+import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -515,6 +518,26 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+    }
+
+    @Test
+    void createsExpectedHollowAccountUpdate() {
+        final var edcsaSecp256K1Bytes =
+                ByteString.copyFrom(new byte[] {0x02})
+                        .concat(
+                                TxnUtils.randomUtf8ByteString(
+                                        JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
+                                                - 1));
+        final var aKey = Key.newBuilder().setECDSASecp256K1(edcsaSecp256K1Bytes).build();
+
+        final var result = subject.updateHollowAccount(accountNum, aKey);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoUpdateAccount());
+        assertEquals(aKey, txnBody.getCryptoUpdateAccount().getKey());
+        assertEquals(
+                accountNum.toGrpcAccountId(),
+                txnBody.getCryptoUpdateAccount().getAccountIDToUpdate());
     }
 
     @Test

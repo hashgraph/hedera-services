@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -100,6 +101,16 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                                 HapiPropertySource.asAccount(idLiteral),
                                 ((AccountInfo) o).getStakingInfo().getStakedAccountId(),
                                 "Bad stakedAccountId id!"));
+        return this;
+    }
+
+    public AccountInfoAsserts hasDefaultKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                ((AccountInfo) o).getKey(),
+                                com.hederahashgraph.api.proto.java.Key.getDefaultInstance(),
+                                "Has non-default key!"));
         return this;
     }
 
@@ -277,6 +288,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts alias(ByteString alias) {
+        registerProvider((spec, o) -> assertEquals(alias, ((AccountInfo) o).getAlias(), BAD_ALIAS));
+        return this;
+    }
+
     public AccountInfoAsserts alias(String alias) {
         registerProvider(
                 (spec, o) ->
@@ -287,9 +303,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
-    public AccountInfoAsserts evmAddressAlias(ByteString evmAddress) {
+    public AccountInfoAsserts evmAddress(ByteString evmAddress) {
         registerProvider(
-                (spec, o) -> assertEquals(evmAddress, ((AccountInfo) o).getAlias(), BAD_ALIAS));
+                (spec, o) ->
+                        assertEquals(
+                                CommonUtils.hex(evmAddress.toByteArray()),
+                                ((AccountInfo) o).getContractAccountID(),
+                                BAD_ALIAS));
         return this;
     }
 

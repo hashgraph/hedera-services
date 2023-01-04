@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,14 +42,14 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()
@@ -67,14 +67,14 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()
@@ -92,14 +92,14 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 
         @Override
         public byte[] extantSchedulingBodyBytes() throws Throwable {
-            var accessor =
+            final var accessor =
                     SignedTxnAccessor.from(
                             newSignedCryptoTransfer()
                                     .sansTxnId()
                                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
                                     .get()
                                     .toByteArray());
-            var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
+            final var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
             return TransactionBody.newBuilder()
                     .setScheduleCreate(
                             ScheduleCreateTransactionBody.newBuilder()

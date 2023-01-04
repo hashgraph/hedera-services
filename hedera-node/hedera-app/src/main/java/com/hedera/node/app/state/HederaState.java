@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,6 @@ import com.hedera.node.app.spi.state.States;
 
 // Placeholder until the state-implementation is added
 public interface HederaState {
-
-    String CONSENSUS_SERVICE = "ConsensusService";
-    String CONTRACT_SERVICE = "ContractService";
-    String CRYPTO_SERVICE = "CryptoService";
-    String FILE_SERVICE = "FileService";
-    String FREEZE_SERVICE = "FreezeService";
-    String NETWORK_SERVICE = "NetworkService";
-    String SCHEDULE_SERVICE = "ScheduleService";
-    String TOKEN_SERVICE = "TokenService";
-    String UTIL_SERVICE = "UtilService";
 
     States createReadableStates(String serviceName);
 }

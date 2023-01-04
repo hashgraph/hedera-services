@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,12 @@ public class ConfigManager {
         }
         specConfig.put("default.node", defaultNodeAccount);
         return specConfig;
+    }
+
+    public boolean isAllowListEmptyOrContainsAccount(long account) {
+        return targetNet.getAllowedReceiverAccountIds() == null
+                || targetNet.getAllowedReceiverAccountIds().isEmpty()
+                || targetNet.getAllowedReceiverAccountIds().contains(account);
     }
 
     private void addPayerConfig(Map<String, String> specConfig, String payerId) {

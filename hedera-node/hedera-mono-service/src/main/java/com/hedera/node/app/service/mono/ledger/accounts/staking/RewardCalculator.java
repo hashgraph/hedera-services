@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,17 @@ public class RewardCalculator {
     }
 
     public long computePendingReward(final HederaAccount account) {
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+        if (!stakePeriodManager.isRewardable(effectiveStart)) {
+            return 0;
+        }
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
                         stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
                         stakePeriodManager.currentStakePeriod(),
-                        stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+                        effectiveStart);
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
@@ -82,12 +87,17 @@ public class RewardCalculator {
 
     public long estimatePendingRewards(
             final HederaAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
+        final var effectiveStart =
+                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
+        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart)) {
+            return 0;
+        }
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
                         nodeStakingInfo,
                         stakePeriodManager.estimatedCurrentStakePeriod(),
-                        stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
+                        effectiveStart);
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
@@ -101,7 +111,7 @@ public class RewardCalculator {
             @Nullable final MerkleStakingInfo nodeStakingInfo,
             final long currentStakePeriod,
             final long effectiveStart) {
-        if (nodeStakingInfo == null || !stakePeriodManager.isRewardable(effectiveStart)) {
+        if (nodeStakingInfo == null) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();

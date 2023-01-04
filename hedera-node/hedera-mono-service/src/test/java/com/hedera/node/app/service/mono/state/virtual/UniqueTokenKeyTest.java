@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -101,7 +101,9 @@ class UniqueTokenKeyTest {
         }
 
         // Also confirm that the hash codes are mostly unique.
-        assertThat(new HashSet<>(hashCodes).size()).isAtLeast((int) (0.7 * hashCodes.size()));
+
+        assertThat(new HashSet<>(hashCodes).size())
+                .isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
     }
 
     private static SerializableDataInputStream serializeToStream(final long num, final long serial)
@@ -149,7 +151,8 @@ class UniqueTokenKeyTest {
         }
 
         // Also confirm that the hash codes are mostly unique.
-        assertThat(new HashSet<>(hashCodes).size()).isAtLeast((int) (0.7 * hashCodes.size()));
+        assertThat(new HashSet<>(hashCodes).size())
+                .isGreaterThanOrEqualTo((int) (0.7 * hashCodes.size()));
     }
 
     @Test
@@ -218,7 +221,7 @@ class UniqueTokenKeyTest {
         assertThat(key1.getVersion()).isEqualTo(1);
 
         // Make sure current version is above the minimum supported version.
-        assertThat(key1.getVersion()).isAtLeast(key1.getMinimumSupportedVersion());
+        assertThat(key1.getVersion()).isGreaterThanOrEqualTo(key1.getMinimumSupportedVersion());
     }
 
     @Test

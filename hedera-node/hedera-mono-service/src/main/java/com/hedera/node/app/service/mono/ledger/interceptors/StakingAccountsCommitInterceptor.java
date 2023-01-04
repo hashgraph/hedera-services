@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUt
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalIsDeletedGiven;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.hasStakeMetaChanges;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
@@ -238,7 +239,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                             -curStakedId - 1, effStakeRewardStart);
                 }
             }
-            if (scenario.awardsToNode()) {
+            if (scenario.awardsToNode() && !finalIsDeletedGiven(account, changes)) {
                 final var stakeToAward =
                         finalBalanceGiven(account, changes)
                                 + finalStakedToMeGiven(i, account, stakedToMeUpdates);

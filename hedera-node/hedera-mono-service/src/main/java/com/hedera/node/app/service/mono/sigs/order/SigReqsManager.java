@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,7 +157,9 @@ public class SigReqsManager {
 
     private void ensureWorkingStateSigReqsIsConstructed() {
         if (workingSigReqs == null) {
-            final var lookup = lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM);
+            final var lookup =
+                    lookupsFactory.from(
+                            fileNumbers, workingState, TOKEN_META_TRANSFORM, dynamicProperties);
             workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
@@ -165,7 +167,11 @@ public class SigReqsManager {
     private void ensureImmutableStateSigReqsIsConstructed() {
         if (immutableSigReqs == null) {
             final var lookup =
-                    lookupsFactory.from(fileNumbers, immutableChildren, TOKEN_META_TRANSFORM);
+                    lookupsFactory.from(
+                            fileNumbers,
+                            immutableChildren,
+                            TOKEN_META_TRANSFORM,
+                            dynamicProperties);
             immutableSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
         }
     }
@@ -180,7 +186,8 @@ public class SigReqsManager {
         SigMetadataLookup from(
                 FileNumbers fileNumbers,
                 StateChildren stateChildren,
-                Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform);
+                Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform,
+                GlobalDynamicProperties properties);
     }
 
     /* --- Only used by unit tests --- */

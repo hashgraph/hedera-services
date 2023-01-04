@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -275,6 +275,17 @@ class MiscUtilsTest {
                         "ACCOUNTS_GET,ACCOUNTS_GET,ACCOUNTS_GET,STORAGE_REMOVE",
                         MapAccessType::valueOf);
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void distinguishesRecoveredEvmAddressses() {
+        assertFalse(MiscUtils.isRecoveredEvmAddress(null));
+        assertFalse(MiscUtils.isRecoveredEvmAddress(new byte[0]));
+        assertFalse(MiscUtils.isRecoveredEvmAddress(new byte[] {(byte) 0xab}));
+        assertTrue(
+                MiscUtils.isRecoveredEvmAddress(
+                        org.hyperledger.besu.datatypes.Address.BLAKE2B_F_COMPRESSION
+                                .toArrayUnsafe()));
     }
 
     @Test

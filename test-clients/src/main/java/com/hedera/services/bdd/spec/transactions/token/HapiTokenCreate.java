@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,9 @@ import org.apache.logging.log4j.Logger;
 
 public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     static final Logger log = LogManager.getLogger(HapiTokenCreate.class);
+
+    public static final long WELL_KNOWN_INITIAL_SUPPLY = 123L * Integer.MAX_VALUE;
+    public static final String WELL_KNOWN_NFT_SUPPLY_KEY = "wellKnownNftSupplyKey";
 
     private String token;
 

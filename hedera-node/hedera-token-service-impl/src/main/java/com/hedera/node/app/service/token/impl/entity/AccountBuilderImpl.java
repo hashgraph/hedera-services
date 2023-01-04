@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
         Objects.requireNonNull(copyOf);
-        this.key = copyOf.getKey().isEmpty() ? null : copyOf.getKey().get();
+        this.key = copyOf.getKey().orElse(null);
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
         this.memo = copyOf.memo();

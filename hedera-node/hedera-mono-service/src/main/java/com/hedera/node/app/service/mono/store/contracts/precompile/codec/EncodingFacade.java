@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.node.app.service.mono.store.contracts.precompile.TokenKeyType;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -82,14 +82,6 @@ public class EncodingFacade {
                 .forFunction(FunctionType.HAPI_GET_APPROVED)
                 .withStatus(status)
                 .withApproved(approved)
-                .build();
-    }
-
-    public Bytes encodeIsFrozen(final boolean isFrozen) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_IS_FROZEN)
-                .withStatus(SUCCESS.getNumber())
-                .withIsFrozen(isFrozen)
                 .build();
     }
 
@@ -188,30 +180,6 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-                .withStatus(SUCCESS.getNumber())
-                .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
-                .build();
-    }
-
-    public Bytes encodeGetTokenDefaultKycStatus(final boolean defaultKycStatus) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
-                .withStatus(SUCCESS.getNumber())
-                .withGetTokenDefaultKycStatus(defaultKycStatus)
-                .build();
-    }
-
-    public Bytes encodeIsKyc(final boolean isKyc) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_IS_KYC)
-                .withStatus(SUCCESS.getNumber())
-                .withIsKyc(isKyc)
-                .build();
-    }
-
     public Bytes encodeGetTokenInfo(final com.hederahashgraph.api.proto.java.TokenInfo tokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
@@ -254,22 +222,6 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeIsToken(final boolean isToken) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_IS_TOKEN)
-                .withStatus(SUCCESS.getNumber())
-                .withIsToken(isToken)
-                .build();
-    }
-
-    public Bytes encodeGetTokenType(final int tokenType) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
-                .withStatus(SUCCESS.getNumber())
-                .withGetTokenType(tokenType)
-                .build();
-    }
-
     public Bytes encodeGetTokenExpiryInfo(final TokenExpiryWrapper tokenExpiryWrapper) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
@@ -289,9 +241,6 @@ public class EncodingFacade {
         private Address newTokenAddress;
         private boolean ercFungibleTransferStatus;
         private boolean isApprovedForAllStatus;
-        private boolean tokenDefaultFreezeStatus;
-        private boolean tokenDefaultKycStatus;
-        private boolean isKyc;
         private long totalSupply;
         private long allowance;
         private boolean approve;
@@ -299,10 +248,7 @@ public class EncodingFacade {
         private Address approved;
         private TokenInfo tokenInfo;
         private TokenNftInfo nonFungibleTokenInfo;
-        private boolean isFrozen;
         private List<CustomFee> customFees;
-        private boolean isToken;
-        private int tokenType;
         private Tuple tokenExpiryInfo;
         private Tuple keyValue;
 
@@ -360,11 +306,6 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withIsFrozen(final boolean isFrozen) {
-            this.isFrozen = isFrozen;
-            return this;
-        }
-
         private FunctionResultBuilder withAllowance(final long allowance) {
             this.allowance = allowance;
             return this;
@@ -402,35 +343,8 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withIsKyc(final boolean isKyc) {
-            this.isKyc = isKyc;
-            return this;
-        }
-
-        private FunctionResultBuilder withGetTokenDefaultFreezeStatus(
-                final boolean tokenDefaultFreezeStatus) {
-            this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
-            return this;
-        }
-
-        private FunctionResultBuilder withGetTokenDefaultKycStatus(
-                final boolean tokenDefaultKycStatus) {
-            this.tokenDefaultKycStatus = tokenDefaultKycStatus;
-            return this;
-        }
-
         private FunctionResultBuilder withCustomFees(final List<CustomFee> customFees) {
             this.customFees = customFees;
-            return this;
-        }
-
-        private FunctionResultBuilder withIsToken(final boolean isToken) {
-            this.isToken = isToken;
-            return this;
-        }
-
-        private FunctionResultBuilder withGetTokenType(final int tokenType) {
-            this.tokenType = tokenType;
             return this;
         }
 
@@ -483,15 +397,7 @@ public class EncodingFacade {
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
                         case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
                         case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
-                        case HAPI_IS_KYC -> Tuple.of(status, isKyc);
-                        case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
-                                status, tokenDefaultFreezeStatus);
-                        case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
-                                status, tokenDefaultKycStatus);
-                        case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
-                        case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
-                        case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
                         case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
                         case HAPI_GET_TOKEN_KEY -> Tuple.of(status, keyValue);
                         default -> Tuple.of(status);

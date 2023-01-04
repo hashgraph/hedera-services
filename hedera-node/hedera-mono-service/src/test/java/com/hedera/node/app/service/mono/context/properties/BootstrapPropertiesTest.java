@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,7 +189,7 @@ class BootstrapPropertiesTest {
                     entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
                     entry(AUTO_CREATION_ENABLED, true),
                     entry(LAZY_CREATION_ENABLED, true),
-                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, true),
                     entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),

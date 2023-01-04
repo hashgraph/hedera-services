@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,6 +164,10 @@ class TransferLogicTest {
         final var inappropriateTrigger =
                 BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         given(aliasManager.lookupIdBy(firstAlias)).willReturn(EntityNum.MISSING_NUM);
+        given(txnCtx.activePayer()).willReturn(payer);
+
+        accountsLedger.begin();
+        accountsLedger.create(payer);
 
         subject =
                 new TransferLogic(
@@ -493,7 +497,6 @@ class TransferLogicTest {
                         fungibleTokenID,
                         allowanceAA(owner, -50L),
                         payer);
-
         given(tokenStore.tryTokenChange(change)).willReturn(OK);
 
         accountsLedger.begin();

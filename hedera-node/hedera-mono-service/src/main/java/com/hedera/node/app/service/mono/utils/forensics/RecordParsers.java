@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,21 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
-import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readSidecarFile;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
-import static java.util.Comparator.comparing;
 
+import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
 /**
  * Provides a helper to parse the <i>.rcd.gz</i> files in a directory into a list of {@link
@@ -43,12 +39,6 @@ import java.util.function.Predicate;
  * runtime.
  */
 public class RecordParsers {
-    // A token that we can use to distinguish sidecar files with names like,
-    //   2022-12-05T14_23_46.192841556Z_01.rcd.gz
-    // from record stream files whose names do *not* include a _XX index
-    // like _01, _02, etc.
-    private static final String SIDECAR_ONLY_TOKEN = "Z_";
-    private static final String V6_FILE_EXT = ".rcd.gz";
 
     private RecordParsers() {
         throw new UnsupportedOperationException("Utility Class");
@@ -66,10 +56,10 @@ public class RecordParsers {
     @SuppressWarnings("java:S3655")
     public static List<RecordStreamEntry> parseV6RecordStreamEntriesIn(final String streamDir)
             throws IOException {
-        final var recordFiles = orderedRecordFilesFrom(streamDir);
+        final var recordFiles = RecordStreamingUtils.orderedRecordFilesFrom(streamDir);
         final List<RecordStreamEntry> entries = new ArrayList<>();
         for (final var recordFile : recordFiles) {
-            final var readResult = readRecordStreamFile(recordFile);
+            final var readResult = readMaybeCompressedRecordStreamFile(recordFile);
             assert readResult.getRight().isPresent();
             final var records = readResult.getRight().get();
             records.getRecordStreamItemsList()
@@ -101,7 +91,7 @@ public class RecordParsers {
     @SuppressWarnings("java:S3655")
     public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(
             final String streamDir) throws IOException {
-        final var sidecarFiles = orderedSidecarFilesFrom(streamDir);
+        final var sidecarFiles = RecordStreamingUtils.orderedSidecarFilesFrom(streamDir);
         final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords = new HashMap<>();
         for (final var sidecarFile : sidecarFiles) {
             final var data = readSidecarFile(sidecarFile);
@@ -128,40 +118,5 @@ public class RecordParsers {
                                 entry,
                                 sidecarRecords.getOrDefault(
                                         entry.consensusTime(), Collections.emptyList())));
-    }
-
-    private static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
-        return filteredFilesFrom(
-                streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && !s.contains(SIDECAR_ONLY_TOKEN),
-                comparing(RecordParsers::parseRecordFileConsensusTime));
-    }
-
-    private static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
-        return filteredFilesFrom(
-                streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && s.contains(SIDECAR_ONLY_TOKEN),
-                // We index sidecars by consensus time anyways, any sort order is fine
-                Comparator.naturalOrder());
-    }
-
-    @SuppressWarnings("java:S2095")
-    private static List<String> filteredFilesFrom(
-            final String streamDir,
-            final Predicate<String> criteria,
-            final Comparator<String> order)
-            throws IOException {
-        return Files.walk(Path.of(streamDir))
-                .map(Path::toString)
-                .filter(criteria)
-                .sorted(order)
-                .toList();
-    }
-
-    private static Instant parseRecordFileConsensusTime(final String recordFile) {
-        final var s = recordFile.lastIndexOf("/");
-        final var n = recordFile.length();
-        return Instant.parse(
-                recordFile.substring(s + 1, n - V6_FILE_EXT.length()).replace("_", ":"));
     }
 }

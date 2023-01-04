@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class CryptoCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
 
     public static final String ACCOUNT = "account";
+    public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
 
@@ -84,7 +85,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 usdFeeAsExpected(),
                 createAnAccountWithStakingFields(),
                 createAnAccountWithECDSAAlias(),
-                createAnAccountWithEVMAddressAlias(),
+                createAnAccountWithEVMAddress(),
                 createAnAccountWithED25519Alias(),
                 createAnAccountWithECKeyAndNoAlias(),
                 createAnAccountWithEDKeyAndNoAlias(),
@@ -470,8 +471,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec createAnAccountWithEVMAddressAlias() {
-        return defaultHapiSpec("CreateAnAccountWithEVMAddressAlias")
+    private HapiSpec createAnAccountWithEVMAddress() {
+        return defaultHapiSpec("CreateAnAccountWithEVMAddress")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(
@@ -484,7 +485,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
@@ -496,14 +497,19 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(evmAddressBytes)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
 
-                                    allRunFor(spec, op, op2, op3);
+                                    allRunFor(spec, op, op2, op3, op4);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
+                                                    .logged()
                                                     .has(
                                                             accountWith()
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
+                                                                    .evmAddress(evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
@@ -567,9 +573,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op4 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
 
                                     allRunFor(spec, op, op2, op3, op4);
@@ -578,9 +583,17 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                                                    .evmAddress(evmAddressBytes));
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
                                 }))
                 .then();
     }
@@ -643,9 +656,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
-                                            cryptoCreate(ACCOUNT)
+                                            cryptoCreate(ANOTHER_ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
@@ -668,7 +680,16 @@ public class CryptoCreateSuite extends HapiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    var hapiGetAnotherAccountInfo =
+                                            getAccountInfo(ANOTHER_ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias()
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
                                 }))
                 .then();
     }

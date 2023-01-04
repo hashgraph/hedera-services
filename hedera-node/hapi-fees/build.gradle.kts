@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,12 @@ configurations.all {
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
-    implementation(libs.bundles.di)
-    implementation(libs.helidon.io.grpc)
-    implementation(project(":hedera-node:hapi-utils"))
-    implementation(libs.bundles.logging)
-    implementation(libs.commons.lang3)
-    implementation(libs.hapi)
+    api(project(":hedera-node:hapi-utils"))
+
+    implementation(libs.javax.inject)
+    implementation(libs.dagger.api)
+    implementation(libs.log4j.api)
     implementation(libs.jackson)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.charging.NarratedCharging;
@@ -409,6 +410,21 @@ class BasicTransactionContextTest {
         record = subject.recordSoFar().build();
 
         assertSame(result, record.getContractCreateResult());
+    }
+
+    @Test
+    void configuresEvmAddress() {
+        given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+        given(accessor.getTxnId()).willReturn(txnId);
+        given(accessor.getTxn()).willReturn(txn);
+
+        // when:
+        setUpBuildingExpirableTxnRecord();
+        final var evmAddress = ByteStringUtils.wrapUnsafely("evmAddress".getBytes());
+        subject.setEvmAddress(evmAddress);
+        record = subject.recordSoFar().build();
+
+        assertArrayEquals(evmAddress.toByteArray(), record.getEvmAddress());
     }
 
     @Test

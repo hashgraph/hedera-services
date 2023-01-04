@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import com.hedera.node.app.service.mono.store.contracts.MutableEntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -188,8 +189,10 @@ public interface ContractsModule {
     static MessageCallProcessor provideV_0_32MessageCallProcessor(
             final @V_0_32 EVM evm,
             final @V_0_32 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final InfrastructureFactory infrastructureFactory) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory);
     }
 
     @Provides

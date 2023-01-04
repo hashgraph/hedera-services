@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MIS
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -34,6 +35,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
@@ -96,6 +98,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
+    @Mock private GlobalDynamicProperties properties;
 
     private StateChildrenSigMetadataLookup subject;
 
@@ -103,7 +106,7 @@ class StateChildrenSigMetadataLookupTest {
     void setUp() {
         subject =
                 new StateChildrenSigMetadataLookup(
-                        new MockFileNumbers(), stateChildren, tokenMetaTransform);
+                        new MockFileNumbers(), stateChildren, tokenMetaTransform, properties);
     }
 
     @Test
@@ -259,15 +262,40 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     @Test
-    void recognizesImmutableAccountWithUnexpectedNullKey() {
+    void recognizesImmutableAccountWithEmptyKeyAndEmptyAliasWhenLazyCreationEnabled() {
         given(stateChildren.accounts()).willReturn(accounts);
         given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(ByteString.EMPTY);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
 
         final var linkedRefs = new LinkedRefs();
         final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
 
         assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
         assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+    }
+
+    @Test
+    void recognizesHollowAccountWhenLazyCreationEnabled() {
+        var evmAddressBytes = ByteString.copyFromUtf8("evmAddress");
+
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(evmAddressBytes);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.accountSigningMetaFor(knownAccount, linkedRefs);
+
+        assertTrue(result.succeeded());
+        assertTrue(linkedRefs.linkedAliases().isEmpty());
+        assertFalse(result.metadata().receiverSigRequired());
+        assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertArrayEquals(
+                evmAddressBytes.toByteArray(),
+                result.metadata().key().getHollowKey().getEvmAddress());
     }
 
     @Test

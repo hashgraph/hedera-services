@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -259,6 +259,19 @@ class ExpiringCreationsTest {
                         .build();
 
         assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
+    }
+
+    @Test
+    void includesHollowAccountUpdate() {
+        given(sideEffectsTracker.hasTrackedHollowAccountUpdate()).willReturn(true);
+        given(sideEffectsTracker.getTrackedHollowAccountId()).willReturn(effPayer);
+
+        final var record =
+                subject.createSuccessfulSyntheticRecord(
+                        customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
+
+        assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+        assertEquals(effPayer, record.getReceiptBuilder().getAccountId().toGrpcAccountId());
     }
 
     @Test

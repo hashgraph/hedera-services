@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ description = "Hedera EVM - API"
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
     exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+    exclude("com.google.errorprone", "error_prone_annotations")
+    exclude("com.google.j2objc", "j2objc-annotations")
 
     exclude("io.grpc", "grpc-core")
     exclude("io.grpc", "grpc-context")
@@ -33,24 +37,25 @@ configurations.all {
 }
 
 dependencies {
-
     annotationProcessor(libs.dagger.compiler)
 
-    api(libs.dagger.compiler)
+    compileOnlyApi(libs.spotbugs.annotations)
+    api(libs.slf4j.api)
     api(libs.besu.evm)
-    api(libs.besu.datatypes)
-    api(libs.swirlds.common)
-    implementation(libs.helidon.io.grpc)
     api(libs.besu.secp256k1)
+    api(libs.swirlds.common)
+    api(libs.besu.datatypes)
+    api(libs.hapi) {
+        // this is an android version, not a jre version
+        exclude("com.google.guava", "guava")
+    }
+    api(libs.guava) // TODO: we should remove the internal usage of guava
+
     implementation(libs.jna)
     implementation(libs.caffeine)
-    implementation(libs.guava)
-    implementation(libs.hapi) {
-        exclude("com.google.guava", "guava") // this is an android version, not a jre version
-    }
-    implementation(libs.javax.inject)
     implementation(libs.headlong)
-    compileOnly(libs.spotbugs.annotations)
+    implementation(libs.dagger.compiler)
+    implementation(libs.javax.inject)
 
     testImplementation(testLibs.mockito.jupiter)
 }

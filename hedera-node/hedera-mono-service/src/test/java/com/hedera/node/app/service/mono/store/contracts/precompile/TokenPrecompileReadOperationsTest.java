@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,7 +167,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(TokenInfoWrapper.forToken(fungible));
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -197,7 +197,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -233,7 +233,7 @@ class TokenPrecompileReadOperationsTest {
         getTokenTypePrecompile
                 .when(() -> GetTokenTypePrecompile.decodeGetTokenType(pretendArguments))
                 .thenReturn(wrapper);
-        given(encoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
+        given(evmEncoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
         // when

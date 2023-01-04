@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFrom
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -171,6 +173,25 @@ public class DecodingFacade {
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
     }
 
+    /**
+     * Existence-aware conversion of Solidity address to AccountID, where if the address converted
+     * into `shard.real.num` format of an AccountID does not exist in the current ledgers, we return
+     * an AccountID with alias == non-existing address, in order to support lazy creations, *NOTE*
+     * that evm addresses that map to an existing AccountID in the `shard.realm.format` *will not*
+     * trigger a lazy creation; Existing addresses are converted in the usual to `shard.real.num`
+     * AccountID format
+     */
+    public static AccountID convertLeftPaddedAddressToAccountId(
+            final byte[] leftPaddedAddress,
+            @NonNull final UnaryOperator<byte[]> aliasResolver,
+            @NonNull final Predicate<AccountID> exists) {
+        var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
+        if (!exists.test(accountID)) {
+            accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
+        }
+        return accountID;
+    }
+
     public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
         final var address =
                 Address.wrap(
@@ -182,12 +203,13 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
             final TokenID tokenType,
             @NonNull final Tuple[] abiExchanges,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
             final var receiver =
-                    convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
+                    convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver, exists);
             final var serialNo = (long) exchange.get(2);
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
@@ -203,12 +225,15 @@ public class DecodingFacade {
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
             @NonNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
-            final AccountID accountID =
-                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
+            if (amount > 0 && !exists.test(accountID)) {
+                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
+            }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
             // otherwise default to false in order to preserve the existing behaviour.
             // The isApproval parameter only exists in the new form of cryptoTransfer
@@ -218,13 +243,25 @@ public class DecodingFacade {
         return fungibleTransfers;
     }
 
+    @NonNull
+    public static AccountID generateAccountIDWithAliasCalculatedFrom(final AccountID accountID) {
+        return AccountID.newBuilder()
+                .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
+                .build();
+    }
+
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
-            @NonNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple[] abiTransfers,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
-            final AccountID accountID =
-                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
+            final AccountID accountID =
+                    amount > 0
+                            ? convertLeftPaddedAddressToAccountId(
+                                    transfer.get(0), aliasResolver, exists)
+                            : convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final boolean isApproval = transfer.get(2);
             addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
         }

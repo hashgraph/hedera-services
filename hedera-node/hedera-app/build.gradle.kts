@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-node:hedera-app-spi"))
     implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
@@ -42,10 +42,8 @@ dependencies {
     implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
-
+    implementation(project(":hedera-node:hedera-evm"))
     implementation(libs.bundles.swirlds)
-    compileOnly(libs.spotbugs.annotations)
-    implementation(libs.hapi)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
 
@@ -58,5 +56,4 @@ dependencies {
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.testing)
-    testCompileOnly(libs.spotbugs.annotations)
 }

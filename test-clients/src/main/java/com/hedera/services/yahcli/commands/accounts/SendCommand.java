@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,9 +73,17 @@ public class SendCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         var config = configFrom(accountsCommand.getYahcli());
 
+        if (!config.isAllowListEmptyOrContainsAccount(Long.parseLong(beneficiary))) {
+            throw new CommandLine.ParameterException(
+                    accountsCommand.getYahcli().getSpec().commandLine(),
+                    "Beneficiary " + beneficiary + " supposed to be in allow list");
+        }
+
         long amount;
+        String originalDenomination = denomination;
         if (isHbarDenomination(denomination)) {
             amount = validatedTinybars(accountsCommand.getYahcli(), amountRepr, denomination);
+            denomination = null;
         } else {
             denomination = Utils.extractAccount(denomination);
             amount = validatedUnits(amountRepr, decimals);
@@ -92,7 +100,7 @@ public class SendCommand implements Callable<Integer> {
                             + "sent "
                             + amountRepr
                             + " "
-                            + denomination
+                            + originalDenomination
                             + " to account "
                             + beneficiary
                             + " with memo: '"
@@ -104,7 +112,7 @@ public class SendCommand implements Callable<Integer> {
                             + "could not send "
                             + amountRepr
                             + " "
-                            + denomination
+                            + originalDenomination
                             + " to account "
                             + beneficiary
                             + " with memo: '"

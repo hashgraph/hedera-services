@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ permissions:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -113,9 +113,6 @@ jobs:
         if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() }}
         run: |
           git fetch --unshallow --no-recurse-submodules
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -237,7 +234,7 @@ jobs:
             SONAR_OPTS=""
           fi
 
-          echo "::set-output name=options::${SONAR_OPTS}"
+          echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
       - name: SonarCloud Scan
         uses: gradle/gradle-build-action@v2

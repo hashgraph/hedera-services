@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import me.champeau.gradle.igp.gitRepositories
+
+// Add local maven build directory to plugin repos
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        }
+    }
+}
+
 plugins {
-    id("com.gradle.enterprise").version("3.10.3")
+    id("com.gradle.enterprise").version("3.11.4")
+    // Use GIT plugin to clone HAPI protobuf files
+    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
+    id("me.champeau.includegit").version("0.1.5")
+}
+
+gitRepositories {
+    checkoutsDirectory.set(file(rootProject.projectDir.getAbsolutePath() + "/hedera-node/hapi/"))
+    include("hedera-protobufs") {
+        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+        // choose tag or branch of HAPI you would like to test with
+        tag.set("main")
+        // do not load project from repo
+        autoInclude.set(false)
+    }
 }
 
 include(":hedera-node")
@@ -36,6 +64,7 @@ include(":hedera-node:hedera-util-service")
 include(":hedera-node:hedera-util-service-impl")
 include(":hedera-node:hapi-utils")
 include(":hedera-node:hapi-fees")
+// include(":hedera-node:hapi")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
@@ -72,7 +101,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.0-grpc-1.45.1-SNAPSHOT")
+            version("hapi-version", "0.33.1-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
@@ -122,11 +151,27 @@ dependencyResolutionManagement {
             library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
             library("besu-datatypes", "org.hyperledger.besu", "besu-datatypes").versionRef("besu-version")
-            library("bouncycastle-bcprov-jdk15on", "org.bouncycastle", "bcprov-jdk15on").versionRef("bouncycastle-version")
-            library("bouncycastle-bcpkix-jdk15on", "org.bouncycastle", "bcpkix-jdk15on").versionRef("bouncycastle-version")
+            library(
+                "bouncycastle-bcprov-jdk15on",
+                "org.bouncycastle",
+                "bcprov-jdk15on"
+            ).versionRef("bouncycastle-version")
+            library(
+                "bouncycastle-bcpkix-jdk15on",
+                "org.bouncycastle",
+                "bcpkix-jdk15on"
+            ).versionRef("bouncycastle-version")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine-version")
-            library("eclipse-collections", "org.eclipse.collections", "eclipse-collections").versionRef("eclipse-collections-version")
-            library("commons-collections4", "org.apache.commons", "commons-collections4").versionRef("commons-collections4-version")
+            library(
+                "eclipse-collections",
+                "org.eclipse.collections",
+                "eclipse-collections"
+            ).versionRef("eclipse-collections-version")
+            library(
+                "commons-collections4",
+                "org.apache.commons",
+                "commons-collections4"
+            ).versionRef("commons-collections4-version")
             library("commons-codec", "commons-codec", "commons-codec").versionRef("commons-codec-version")
             library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
             library("commons-lang3", "org.apache.commons", "commons-lang3").versionRef("commons-lang3-version")
@@ -143,18 +188,27 @@ dependencyResolutionManagement {
             library("helidon-grpc-server", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
             library("helidon-io-grpc", "io.helidon.grpc", "io.grpc").versionRef("helidon-version")
             library("jackson", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson-version")
-            library("javax-annotation", "javax.annotation", "javax.annotation-api").versionRef("javax-annotation-version")
+            library(
+                "javax-annotation",
+                "javax.annotation",
+                "javax.annotation-api"
+            ).versionRef("javax-annotation-version")
             library("javax-inject", "javax.inject", "javax.inject").versionRef("javax-inject-version")
             library("jetbrains-annotation", "org.jetbrains", "annotations").versionRef("jetbrains-annotation-version")
             library("jsr305-annotation", "com.google.code.findbugs", "jsr305").versionRef("jsr305-version")
             library("log4j-api", "org.apache.logging.log4j", "log4j-api").versionRef("log4j-version")
             library("log4j-core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j-version")
             library("log4j-slf4j", "org.apache.logging.log4j", "log4j-slf4j-impl").versionRef("log4j-version")
-            library("netty-transport-native-epoll", "io.netty", "netty-transport-native-epoll").versionRef("netty-version")
+            library(
+                "netty-transport-native-epoll",
+                "io.netty",
+                "netty-transport-native-epoll"
+            ).versionRef("netty-version")
             library("netty-handler", "io.netty", "netty-handler").versionRef("netty-version")
             library("protobuf-java", "com.google.protobuf", "protobuf-java").versionRef("protobuf-java-version")
             library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
+            library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core").versionRef("swirlds-version")
             library("swirlds-fchashmap", "com.swirlds", "swirlds-fchashmap").versionRef("swirlds-version")
             library("swirlds-merkle", "com.swirlds", "swirlds-merkle").versionRef("swirlds-version")
@@ -163,7 +217,11 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
-            library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations").versionRef("spotbugs-version")
+            library(
+                "spotbugs-annotations",
+                "com.github.spotbugs",
+                "spotbugs-annotations"
+            ).versionRef("spotbugs-version")
         }
 
         // The libs of this catalog can be used for test or build uses.
@@ -180,19 +238,33 @@ dependencyResolutionManagement {
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
             version("classgraph-version", "4.8.65")
-            version("google-truth-version", "1.1.3")
             version("assertj-version", "3.23.1")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
 
-            bundle("testing", listOf("junit-jupiter", "junit-jupiter-api", "junit-jupiter-params", "mockito-core", "mockito-jupiter", "hamcrest", "awaitility", "google-truth", "assertj-core"))
+            bundle(
+                "testing",
+                listOf(
+                    "junit-jupiter",
+                    "junit-jupiter-api",
+                    "junit-jupiter-params",
+                    "mockito-core",
+                    "mockito-jupiter",
+                    "hamcrest",
+                    "awaitility",
+                    "assertj-core"
+                )
+            )
 
-            library("google-truth", "com.google.truth", "truth").versionRef("google-truth-version")
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
-            library("commons-collections4", "org.apache.commons", "commons-collections4").versionRef("commons-collections4-version")
+            library(
+                "commons-collections4",
+                "org.apache.commons",
+                "commons-collections4"
+            ).versionRef("commons-collections4-version")
             library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
             library("helidon-grpc-client", "io.helidon.grpc", "helidon-grpc-client").versionRef("helidon-version")
             library("json", "org.json", "json").versionRef("json-version")
@@ -201,6 +273,7 @@ dependencyResolutionManagement {
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")

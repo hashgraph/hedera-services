@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.submerkle;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0340_VERSION;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
@@ -60,6 +61,9 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
         }
         if (version < RELEASE_0280_VERSION) {
             seeded.clearPrngData();
+        }
+        if (version < RELEASE_0340_VERSION) {
+            seeded.clearEvmAddress();
         }
         return seeded;
     }

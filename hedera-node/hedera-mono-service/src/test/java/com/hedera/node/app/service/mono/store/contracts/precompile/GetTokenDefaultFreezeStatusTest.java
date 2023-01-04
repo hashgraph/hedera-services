@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,11 +141,11 @@ class GetTokenDefaultFreezeStatusTest {
         getTokenDefaultFreezeStatus
                 .when(() -> decodeTokenDefaultFreezeStatus(any()))
                 .thenReturn(HTSTestsUtil.defaultFreezeStatusWrapper);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(HTSTestsUtil.successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultFreezeStatus((any()))).willReturn(Boolean.TRUE);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 

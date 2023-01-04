@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
@@ -91,6 +92,7 @@ class ContractsModuleTest {
     @Mock AliasManager aliasManager;
     @Mock MessageCallProcessor messageCallProcessor;
     @Mock ContractCreationProcessor contractCreationProcessor;
+    @Mock AutoCreationLogic autoCreationLogic;
 
     ContractsTestComponent subject;
 
@@ -114,6 +116,7 @@ class ContractsModuleTest {
                         .livePricesSource(livePricesSource)
                         .transactionContext(transactionContext)
                         .entityCreator(entityCreator)
+                        .autoCreationLogic(autoCreationLogic)
                         .build();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.google.common.truth.Truth.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -61,12 +61,12 @@ class UniqueTokenMapAdapterTest {
     @Test
     void testVirtualMapGetter() {
         assertThat(merkleMapAdapter.virtualMap()).isNull();
-        assertThat(virtualMapAdapter.virtualMap()).isSameInstanceAs(virtualMap);
+        assertThat(virtualMapAdapter.virtualMap()).isSameAs(virtualMap);
     }
 
     @Test
     void testMerkleMapGetter() {
-        assertThat(merkleMapAdapter.merkleMap()).isSameInstanceAs(merkleMap);
+        assertThat(merkleMapAdapter.merkleMap()).isSameAs(merkleMap);
         assertThat(virtualMapAdapter.merkleMap()).isNull();
     }
 
@@ -136,13 +136,11 @@ class UniqueTokenMapAdapterTest {
                 .thenReturn(virtualValue.uniqueTokenValue());
         final var merkleResult = merkleMapAdapter.get(merkleKey);
         assertThat(merkleResult).isEqualTo(merkleValue);
-        assertThat(merkleResult.merkleUniqueToken())
-                .isSameInstanceAs(merkleValue.merkleUniqueToken());
+        assertThat(merkleResult.merkleUniqueToken()).isSameAs(merkleValue.merkleUniqueToken());
 
         final var virtualResult = virtualMapAdapter.get(virtualKey);
         assertThat(virtualResult).isEqualTo(virtualValue);
-        assertThat(virtualResult.uniqueTokenValue())
-                .isSameInstanceAs(virtualValue.uniqueTokenValue());
+        assertThat(virtualResult.uniqueTokenValue()).isSameAs(virtualValue.uniqueTokenValue());
     }
 
     @Test
@@ -158,13 +156,11 @@ class UniqueTokenMapAdapterTest {
                 .thenReturn(virtualValue.uniqueTokenValue());
         final var merkleResult = merkleMapAdapter.getForModify(merkleKey);
         assertThat(merkleResult).isEqualTo(merkleValue);
-        assertThat(merkleResult.merkleUniqueToken())
-                .isSameInstanceAs(merkleValue.merkleUniqueToken());
+        assertThat(merkleResult.merkleUniqueToken()).isSameAs(merkleValue.merkleUniqueToken());
 
         final var virtualResult = virtualMapAdapter.getForModify(virtualKey);
         assertThat(virtualResult).isEqualTo(virtualValue);
-        assertThat(virtualResult.uniqueTokenValue())
-                .isSameInstanceAs(virtualValue.uniqueTokenValue());
+        assertThat(virtualResult.uniqueTokenValue()).isSameAs(virtualValue.uniqueTokenValue());
     }
 
     @Test
@@ -195,7 +191,7 @@ class UniqueTokenMapAdapterTest {
         when(merkleMap.getHash()).thenReturn(merkleHash);
         when(virtualMap.getHash()).thenReturn(virtualHash);
 
-        assertThat(merkleMapAdapter.getHash()).isSameInstanceAs(merkleHash);
-        assertThat(virtualMapAdapter.getHash()).isSameInstanceAs(virtualHash);
+        assertThat(merkleMapAdapter.getHash()).isSameAs(merkleHash);
+        assertThat(virtualMapAdapter.getHash()).isSameAs(virtualHash);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.mono.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.node.app.service.mono.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.node.app.service.mono.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -1025,6 +1026,10 @@ public final class MiscUtils {
         } catch (final InvalidProtocolBufferException internal) {
             throw new IllegalStateException(internal);
         }
+    }
+
+    public static boolean isRecoveredEvmAddress(final byte[] address) {
+        return address != null && address.length == EVM_ADDRESS_LEN;
     }
 
     public static boolean hasUnknownFields(final GeneratedMessageV3 msg) {

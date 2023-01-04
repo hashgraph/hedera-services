@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,11 @@ import java.util.function.Function;
 public final class HederaKeyActivation {
     private static final int ED25519_PUBLIC_KEY_LEN = 32;
     private static final int SECP256K1_COORDINATE_LEN = 32;
-    private static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
     private static final int UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 64;
 
     private static final byte PARITY_MASK = (byte) 0x01;
 
+    public static final int COMPRESSED_SECP256K1_PUBLIC_KEY_LEN = 33;
     public static final TransactionSignature VALID_IMPLICIT_SIG = new ValidSignature();
     public static final TransactionSignature INVALID_MISSING_SIG = new InvalidSignature();
 
@@ -145,7 +145,7 @@ public final class HederaKeyActivation {
         };
     }
 
-    public static boolean keysMatch(final byte[] sourceKey, final byte[] sigKey) {
+    public static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
         if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
             return Arrays.equals(sourceKey, sigKey);
         } else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.validation.domain;
 
+import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
 import java.util.List;
 
 public class Network {
@@ -25,6 +26,8 @@ public class Network {
 
     long bootstrap;
     long defaultNode = DEFAULT_NODE;
+    long defaultFeeInHbars = ValidationScenarios.FEE_TO_OFFER;
+    long defaultNodePaymentInTinybars = 100;
     long ensureScenarioPayerHbars = DEFAULT_INITIAL_HBARS;
 
     Long scenarioPayer;
@@ -78,5 +81,21 @@ public class Network {
 
     public void setEnsureScenarioPayerHbars(long ensureScenarioPayerHbars) {
         this.ensureScenarioPayerHbars = ensureScenarioPayerHbars;
+    }
+
+    public long getDefaultFeeInHbars() {
+        return defaultFeeInHbars;
+    }
+
+    public void setDefaultFeeInHbars(long defaultFeeInHbars) {
+        this.defaultFeeInHbars = defaultFeeInHbars;
+    }
+
+    public long getDefaultNodePaymentInTinybars() {
+        return defaultNodePaymentInTinybars;
+    }
+
+    public void setDefaultNodePaymentInTinybars(long defaultNodePaymentInTinybars) {
+        this.defaultNodePaymentInTinybars = defaultNodePaymentInTinybars;
     }
 }

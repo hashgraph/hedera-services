@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,6 +158,12 @@ public class StakingUtilsTest {
         assertEquals(100L, finalBalanceGiven(counterparty, changes));
         assertEquals(true, finalDeclineRewardGiven(counterparty, changes));
         assertEquals(2000L, finalStakedToMeGiven(0, counterparty, stakedToMeUpdates));
+    }
+
+    @Test
+    void getsIsDeletedCorrectlyFromPendingChanges() {
+        final var changes = Map.<AccountProperty, Object>of(AccountProperty.IS_DELETED, true);
+        assertTrue(StakingUtils.finalIsDeletedGiven(counterparty, changes));
     }
 
     @Test

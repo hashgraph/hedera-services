@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -358,8 +358,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                     if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                         networkCtx().markMigrationRecordsNotYetStreamed();
                     }
-                    app.stakeStartupHelper()
-                            .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -369,6 +367,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             logStateChildrenSizes();
             // This updates the working state accessor with our children
             app.initializationFlow().runWith(this, bootstrapProps);
+            if (trigger == RESTART && isUpgrade) {
+                app.stakeStartupHelper()
+                        .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+            }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place

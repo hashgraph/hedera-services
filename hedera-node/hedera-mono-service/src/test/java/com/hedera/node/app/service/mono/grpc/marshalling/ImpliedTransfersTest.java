@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +19,29 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -51,10 +57,22 @@ class ImpliedTransfersTest {
     @Mock private CustomFeeSchedules newCustomFeeSchedules;
 
     @Test
+    void detectsMissingCustomFees() {
+        final var twoChanges = List.of(tokenChange(new Id(1, 2, 3), asAccount("4.5.6"), 7));
+        final var noCustomFees = ImpliedTransfers.invalid(props, TOKEN_WAS_DELETED);
+        assertFalse(noCustomFees.hasAssessedCustomFees());
+        final var nullCustomFees =
+                ImpliedTransfers.valid(props, twoChanges, entityCustomFees, null);
+        assertFalse(nullCustomFees.hasAssessedCustomFees());
+        assertSame(Collections.emptyList(), nullCustomFees.getAssessedCustomFeeWrappers());
+    }
+
+    @Test
     void impliedXfersObjectContractSanityChecks() {
         // given:
         final var twoChanges = List.of(tokenChange(new Id(1, 2, 3), asAccount("4.5.6"), 7));
         final var oneImpliedXfers = ImpliedTransfers.invalid(props, TOKEN_WAS_DELETED);
+        assertFalse(oneImpliedXfers.hasAssessedCustomFees());
         final var twoImpliedXfers =
                 ImpliedTransfers.valid(props, twoChanges, entityCustomFees, assessedCustomFees);
         // and:
@@ -77,10 +95,12 @@ class ImpliedTransfersTest {
                     + " changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7,"
                     + " expectedDecimals=-1}], tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123,"
                     + " treasuryId=2.3.4, customFees=[]]],"
-                    + " assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0,"
-                    + " num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective"
-                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0,"
-                    + " numLazyCreations=0}";
+                    + " assessedCustomFees=[AssessedCustomFeeWrapper{token=EntityId{shard=0,"
+                    + " realm=0, num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123,"
+                    + " effective payer accounts=["
+                        + effPayerNum
+                        + "]}],"
+                        + " resolvedAliases={}, numAutoCreations=0, numLazyCreations=0}";
 
         // expect:
         assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -88,6 +108,56 @@ class ImpliedTransfersTest {
         // and:
         assertEquals(oneRepr, oneImpliedXfers.toString());
         assertEquals(twoRepr, twoImpliedXfers.toString());
+    }
+
+    @Test
+    void assessedCustomFeesAreCorrect() {
+        // given
+        final var tokenId = new Id(0, 0, 2024);
+        final var tokenID = IdUtils.asToken("0.0.2024");
+        final var payerNum = 502;
+        final var payerID = AccountID.newBuilder().setAccountNum(payerNum).build();
+        // a balance change to an alias
+        final var aliasAccountId =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom("alias".getBytes())).build();
+        final var aa =
+                AccountAmount.newBuilder().setAccountID(aliasAccountId).setAmount(20).build();
+        final var balanceChange = BalanceChange.changingFtUnits(tokenId, tokenID, aa, payerID);
+        // the balance change triggered an auto-creation and the alias was replaced with the new ID
+        final long newAccountNum = 12345L;
+        final var newAccountID = AccountID.newBuilder().setAccountNum(newAccountNum).build();
+        balanceChange.replaceNonEmptyAliasWith(EntityNum.fromAccountId(newAccountID));
+        // and another balance change to a shard.real.num accountID
+        final long secondAccountNum = 1L;
+        final var numAccountId = AccountID.newBuilder().setAccountNum(secondAccountNum).build();
+        final var aa2 =
+                AccountAmount.newBuilder().setAccountID(numAccountId).setAmount(-20).build();
+        final var balanceChange2 = BalanceChange.changingFtUnits(tokenId, tokenID, aa2, payerID);
+
+        final var assessedCustomFeeWrapper =
+                new AssessedCustomFeeWrapper(
+                        EntityId.fromNum(payerNum),
+                        40,
+                        new AccountID[] {aliasAccountId, numAccountId});
+        final var impliedTransfers =
+                ImpliedTransfers.valid(
+                        props,
+                        List.of(balanceChange, balanceChange2),
+                        null,
+                        List.of(assessedCustomFeeWrapper));
+
+        // when
+        assertTrue(impliedTransfers.hasAssessedCustomFees());
+        final var customFeeWrappers = impliedTransfers.getAssessedCustomFeeWrappers();
+        final var customFees = impliedTransfers.getUnaliasedAssessedCustomFees();
+        assertEquals(customFees.size(), customFeeWrappers.size());
+
+        // then
+        assertEquals(1, customFees.size());
+        final var fcAssessedCustomFee = customFees.get(0);
+        assertArrayEquals(
+                new long[] {newAccountNum, secondAccountNum},
+                fcAssessedCustomFee.effPayerAccountNums());
     }
 
     @Test
@@ -199,8 +269,12 @@ class ImpliedTransfersTest {
                     someId,
                     someTreasuryId,
                     List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector, false)));
-    private final List<FcAssessedCustomFee> assessedCustomFees =
+    final AccountID effPayerNum = AccountID.newBuilder().setAccountNum(123L).build();
+    private final List<AssessedCustomFeeWrapper> assessedCustomFees =
             List.of(
-                    new FcAssessedCustomFee(
-                            customFeeCollector, customFeeToken, 123L, new long[] {123L}));
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector,
+                            customFeeToken,
+                            123L,
+                            new AccountID[] {effPayerNum}));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,8 +72,7 @@ public class TxnChargingPolicyAgent {
      */
     public boolean applyPolicyFor(SwirldsTxnAccessor accessor) {
         final var now = txnCtx.consensusTime();
-        final var fees =
-                feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
+        var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
         final var recentHistory = txnHistories.get(accessor.getTxnId());
         var duplicity =
                 (recentHistory == null)

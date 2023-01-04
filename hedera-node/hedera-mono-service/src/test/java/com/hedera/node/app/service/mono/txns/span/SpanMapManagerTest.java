@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.grpc.marshalling.AssessedCustomFeeWrapper;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -128,25 +128,42 @@ class SpanMapManagerTest {
                                             customFeeToken.asEntityId(),
                                             customFeeCollector.asEntityId(),
                                             false))));
-    private final long[] effPayerNum = new long[] {123L};
-    private final List<FcAssessedCustomFee> assessedCustomFees =
+    private final AccountID[] effPayerAccountIds =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
+    private final List<AssessedCustomFeeWrapper> assessedCustomFees =
             List.of(
-                    new FcAssessedCustomFee(
+                    new AssessedCustomFeeWrapper(
                             customFeeCollector.asEntityId(),
                             customFeeToken.asEntityId(),
                             123L,
-                            effPayerNum),
-                    new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L, effPayerNum));
+                            effPayerAccountIds),
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector.asEntityId(), 123L, effPayerAccountIds));
+
+    private final AccountID[] effPayerNumWrapped =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
+    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrappers =
+            List.of(
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector.asEntityId(),
+                            customFeeToken.asEntityId(),
+                            123L,
+                            effPayerNumWrapped),
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
 
     private final ImpliedTransfers validImpliedTransfers =
             ImpliedTransfers.valid(
-                    validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFees);
+                    validationProps,
+                    new ArrayList<>(),
+                    entityCustomFees,
+                    assessedCustomFeesWrappers);
     private final ImpliedTransfers feeChangedImpliedTransfers =
             ImpliedTransfers.valid(
                     otherValidationProps,
                     new ArrayList<>(),
                     newCustomFeeChanges,
-                    assessedCustomFees);
+                    assessedCustomFeesWrappers);
 
     private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
@@ -227,7 +244,7 @@ class SpanMapManagerTest {
         given(accessor.availXferUsageMeta()).willReturn(xferMeta);
         given(impliedTransfersMarshal.unmarshalFromGrpc(pretendXferTxn.getCryptoTransfer(), payer))
                 .willReturn(mockImpliedTransfers);
-        given(mockImpliedTransfers.getAssessedCustomFees()).willReturn(assessedCustomFees);
+        given(mockImpliedTransfers.getAssessedCustomFeeWrappers()).willReturn(assessedCustomFees);
         final var mockMeta = mock(ImpliedTransfersMeta.class);
         given(mockImpliedTransfers.getMeta()).willReturn(mockMeta);
 

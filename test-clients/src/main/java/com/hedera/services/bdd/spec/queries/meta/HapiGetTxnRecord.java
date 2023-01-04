@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.ABIJSON;
@@ -132,6 +133,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
     @Nullable private Consumer<List<String>> createdIdsObserver = null;
     @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
+    private boolean assertEffectivePayersAreKnown = false;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -198,6 +200,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         this.eventName = eventName;
         this.eventDataObserver = dataObserver;
 
+        return this;
+    }
+
+    public HapiGetTxnRecord assertingKnownEffectivePayers() {
+        this.assertEffectivePayersAreKnown = true;
         return this;
     }
 
@@ -549,6 +556,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
         final var childRecords = txRecord.getChildTransactionRecordsList();
         assertChildRecords(spec, childRecords);
+
+        if (assertEffectivePayersAreKnown) {
+            actualRecord
+                    .getAssessedCustomFeesList()
+                    .forEach(
+                            acf ->
+                                    acf.getEffectivePayerAccountIdList()
+                                            .forEach(
+                                                    effPayer ->
+                                                            assertNotEquals(
+                                                                    0L,
+                                                                    effPayer.getAccountNum(),
+                                                                    "Assessed fee "
+                                                                            + acf
+                                                                            + " has unknown"
+                                                                            + " effective payer")));
+        }
     }
 
     private void assertCorrectRecord(final HapiSpec spec, final TransactionRecord actualRecord)

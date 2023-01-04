@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,6 +130,14 @@ class StakePeriodManagerTest {
         givenDevManager();
         final var approx = Instant.now().getEpochSecond() / 60;
         assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
+
+        assertEquals(Long.MIN_VALUE, subject.estimatedFirstNonRewardableStakePeriod());
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        assertEquals(approx - 1, subject.estimatedFirstNonRewardableStakePeriod());
+
+        assertFalse(subject.isEstimatedRewardable(-1));
+        assertFalse(subject.isEstimatedRewardable(approx - 1));
+        assertTrue(subject.isEstimatedRewardable(approx - 2));
     }
 
     @Test

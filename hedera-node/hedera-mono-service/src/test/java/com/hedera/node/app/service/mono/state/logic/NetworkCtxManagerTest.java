@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
@@ -354,6 +356,25 @@ class NetworkCtxManagerTest {
         // then:
         verify(networkCtx).setConsensusTimeOfLastHandledTxn(sometimeNextDay);
         assertEquals(oldMidnightRates, curRates);
+    }
+
+    @Test
+    void updateNodesFailureIsNotPropagated() {
+        // setup:
+        var oldMidnightRates = new ExchangeRates(1, 12, 1_234_567L, 1, 15, 2_345_678L);
+        var curRates = new ExchangeRates(1, 120, 1_234_567L, 1, 150, 2_345_678L);
+        // and:
+        subject.setIsNextDay(shouldUpdateMidnightRates);
+
+        given(shouldUpdateMidnightRates.test(sometime, sometimeNextDay)).willReturn(true);
+        given(exchange.activeRates()).willReturn(curRates.toGrpc());
+        given(networkCtx.midnightRates()).willReturn(oldMidnightRates);
+        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
+        willThrow(IllegalStateException.class)
+                .given(endOfStakingPeriodCalculator)
+                .updateNodes(any());
+
+        assertDoesNotThrow(() -> subject.advanceConsensusClockTo(sometimeNextDay));
     }
 
     @Test

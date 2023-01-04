@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.ledger.accounts.staking;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.DECLINE_REWARD;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
@@ -29,8 +30,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public class StakingUtils {
+    private static final Predicate<HederaAccount> HAS_BEEN_DELETED = HederaAccount::isDeleted;
+    private static final Predicate<HederaAccount> IS_DECLINING_REWARD =
+            HederaAccount::isDeclinedReward;
+
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
     // A non-sentinel negative value to indicate an account has not been rewarded since its last
@@ -66,10 +72,24 @@ public class StakingUtils {
     public static boolean finalDeclineRewardGiven(
             @Nullable final HederaAccount account,
             @NonNull final Map<AccountProperty, Object> changes) {
-        if (changes.containsKey(DECLINE_REWARD)) {
-            return (Boolean) changes.get(DECLINE_REWARD);
+        return internalFinalBooleanGiven(account, changes, DECLINE_REWARD, IS_DECLINING_REWARD);
+    }
+
+    public static boolean finalIsDeletedGiven(
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes) {
+        return internalFinalBooleanGiven(account, changes, IS_DELETED, HAS_BEEN_DELETED);
+    }
+
+    private static boolean internalFinalBooleanGiven(
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes,
+            @NonNull final AccountProperty property,
+            @NonNull final Predicate<HederaAccount> predicate) {
+        if (changes.containsKey(property)) {
+            return (Boolean) changes.get(property);
         } else {
-            return account != null && account.isDeclinedReward();
+            return account != null && predicate.test(account);
         }
     }
 

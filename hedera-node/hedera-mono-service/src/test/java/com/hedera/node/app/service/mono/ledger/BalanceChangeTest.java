@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 class BalanceChangeTest {
@@ -208,6 +209,25 @@ class BalanceChangeTest {
         assertFalse(subject.hasAlias());
         assertEquals(created, subject.accountId());
         assertFalse(subject.hasNonEmptyCounterPartyAlias());
+        assertEquals(Pair.of(anAlias, created), subject.getAliasToNewId());
+    }
+
+    @Test
+    void replacedAlias() {
+        final var created = IdUtils.asAccount("0.0.1234");
+        final var anAlias = ByteString.copyFromUtf8("abcdefg");
+        final var subject =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAmount(1234)
+                                .setAccountID(AccountID.newBuilder().setAlias(anAlias))
+                                .build(),
+                        payer);
+
+        subject.replaceNonEmptyAliasWith(EntityNum.fromAccountId(created));
+        assertFalse(subject.hasAlias());
+        assertEquals(created, subject.accountId());
+        assertFalse(subject.hasNonEmptyCounterPartyAlias());
     }
 
     @Test
@@ -230,6 +250,9 @@ class BalanceChangeTest {
         assertEquals(created, subject.counterPartyAccountId());
         assertNotEquals(0, subject.counterPartyAccountId().getAccountNum());
         assertTrue(subject.isForNft());
+        assertEquals(
+                Pair.of(ByteString.copyFromUtf8(String.valueOf(anAlias)), created),
+                subject.getAliasToNewId());
     }
 
     @Test

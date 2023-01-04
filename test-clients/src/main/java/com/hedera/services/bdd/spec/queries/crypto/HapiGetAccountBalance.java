@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,12 +75,19 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
     private String aliasKeySource = null;
     private String literalHexedAlias = null;
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+    private boolean isContract = false;
     private boolean assertAccountIDIsNotAlias = false;
+    private ByteString rawAlias;
 
     List<Map.Entry<String, String>> expectedTokenBalances = Collections.EMPTY_LIST;
 
     public HapiGetAccountBalance(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
+    }
+
+    public HapiGetAccountBalance(String account, boolean isContract) {
+        this(account, ReferenceType.REGISTRY_NAME);
+        this.isContract = isContract;
     }
 
     public HapiGetAccountBalance(String reference, ReferenceType type) {
@@ -95,6 +102,11 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             account = reference;
             repr = account;
         }
+    }
+
+    public HapiGetAccountBalance(ByteString rawAlias, ReferenceType type) {
+        this.rawAlias = rawAlias;
+        this.referenceType = type;
     }
 
     public HapiGetAccountBalance(Supplier<String> supplier) {
@@ -304,8 +316,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
         }
 
         Consumer<CryptoGetAccountBalanceQuery.Builder> config;
-        if (spec.registry().hasContractId(account)) {
-            config = b -> b.setContractID(spec.registry().getContractId(account));
+        if (isContract || spec.registry().hasContractId(account)) {
+            config = b -> b.setContractID(TxnUtils.asContractId(account, spec));
         } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
             final var cid =
                     ContractID.newBuilder()
@@ -317,6 +329,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             AccountID id;
             if (referenceType == ReferenceType.REGISTRY_NAME) {
                 id = TxnUtils.asId(account, spec);
+            } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
+                id = AccountID.newBuilder().setAlias(rawAlias).build();
             } else {
                 id = spec.registry().aliasIdFor(aliasKeySource);
             }

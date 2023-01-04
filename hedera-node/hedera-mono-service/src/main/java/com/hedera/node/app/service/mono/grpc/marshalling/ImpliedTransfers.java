@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -39,26 +42,26 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class ImpliedTransfers {
     public static final Map<ByteString, EntityNum> NO_ALIASES = Collections.emptyMap();
     public static final List<CustomFeeMeta> NO_CUSTOM_FEE_META = Collections.emptyList();
-    public static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
+    public static final List<AssessedCustomFeeWrapper> NO_CUSTOM_FEES = Collections.emptyList();
 
     private final ImpliedTransfersMeta meta;
     private final List<BalanceChange> changes;
-    private final List<FcAssessedCustomFee> assessedCustomFees;
+    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper;
 
     private ImpliedTransfers(
             ImpliedTransfersMeta meta,
             List<BalanceChange> changes,
-            List<FcAssessedCustomFee> assessedCustomFees) {
+            List<AssessedCustomFeeWrapper> assessedCustomFees) {
         this.meta = meta;
         this.changes = changes;
-        this.assessedCustomFees = assessedCustomFees;
+        this.assessedCustomFeesWrapper = assessedCustomFees;
     }
 
     public static ImpliedTransfers valid(
             final ImpliedTransfersMeta.ValidationProps validationProps,
             final List<BalanceChange> changes,
             final List<CustomFeeMeta> customFeeMeta,
-            final List<FcAssessedCustomFee> assessedCustomFees) {
+            final List<AssessedCustomFeeWrapper> assessedCustomFees) {
         return valid(validationProps, changes, customFeeMeta, assessedCustomFees, NO_ALIASES);
     }
 
@@ -66,7 +69,7 @@ public class ImpliedTransfers {
             final ImpliedTransfersMeta.ValidationProps validationProps,
             final List<BalanceChange> changes,
             final List<CustomFeeMeta> customFeeMeta,
-            final List<FcAssessedCustomFee> assessedCustomFees,
+            final List<AssessedCustomFeeWrapper> assessedCustomFees,
             final Map<ByteString, EntityNum> aliases) {
         final var meta = new ImpliedTransfersMeta(validationProps, OK, customFeeMeta, aliases);
         return new ImpliedTransfers(meta, changes, assessedCustomFees);
@@ -76,7 +79,7 @@ public class ImpliedTransfers {
             final ImpliedTransfersMeta.ValidationProps validationProps,
             final List<BalanceChange> changes,
             final List<CustomFeeMeta> customFeeMeta,
-            final List<FcAssessedCustomFee> assessedCustomFees,
+            final List<AssessedCustomFeeWrapper> assessedCustomFees,
             final Map<ByteString, EntityNum> aliases,
             final int numAutoCreations,
             final int numLazyCreations) {
@@ -126,8 +129,30 @@ public class ImpliedTransfers {
         return changes;
     }
 
-    public List<FcAssessedCustomFee> getAssessedCustomFees() {
-        return assessedCustomFees;
+    public List<FcAssessedCustomFee> getUnaliasedAssessedCustomFees() {
+        final Map<ByteString, AccountID> aliasToId = new HashMap<>();
+        for (final var change : changes) {
+            final var aliasToNewId = change.getAliasToNewId();
+            if (aliasToNewId != null) {
+                aliasToId.put(aliasToNewId.getKey(), aliasToNewId.getValue());
+            }
+        }
+        final List<FcAssessedCustomFee> fcAssessedCustomFeeList =
+                new ArrayList<>(assessedCustomFeesWrapper.size());
+        for (final var assessedFee : assessedCustomFeesWrapper) {
+            fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
+        }
+        return fcAssessedCustomFeeList;
+    }
+
+    public boolean hasAssessedCustomFees() {
+        return assessedCustomFeesWrapper != null && !assessedCustomFeesWrapper.isEmpty();
+    }
+
+    public List<AssessedCustomFeeWrapper> getAssessedCustomFeeWrappers() {
+        return assessedCustomFeesWrapper == null
+                ? Collections.emptyList()
+                : assessedCustomFeesWrapper;
     }
 
     @Override
@@ -146,7 +171,7 @@ public class ImpliedTransfers {
                 .add("meta", meta)
                 .add("changes", changes)
                 .add("tokenFeeSchedules", meta.getCustomFeeMeta())
-                .add("assessedCustomFees", assessedCustomFees)
+                .add("assessedCustomFees", assessedCustomFeesWrapper)
                 .add("resolvedAliases", meta.getResolutions())
                 .add("numAutoCreations", meta.getNumAutoCreations())
                 .add("numLazyCreations", meta.getNumLazyCreations())

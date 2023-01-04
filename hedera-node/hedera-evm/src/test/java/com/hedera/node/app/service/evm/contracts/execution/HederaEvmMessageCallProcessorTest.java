@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -129,12 +129,12 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
 
         subject.start(frame, hederaEvmOperationTracer);
 
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
-        assertEquals(123, receiver.getBalance().getAsBigInteger().longValue());
     }
 
     @Test
@@ -229,5 +229,38 @@ class HederaEvmMessageCallProcessorTest {
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
         verify(nonHtsPrecompile).getName();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
+    }
+
+    @Test
+    void executesLazyCreate() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+    }
+
+    @Test
+    void executesLazyCreateFailed() {
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS))
+                .willAnswer(
+                        invocation -> {
+                            given(frame.getState()).willReturn(EXCEPTIONAL_HALT);
+                            return null;
+                        });
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+        verify(frame, never()).getSenderAddress();
     }
 }

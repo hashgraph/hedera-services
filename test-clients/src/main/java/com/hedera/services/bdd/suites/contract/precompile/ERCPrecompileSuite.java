@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2232,19 +2232,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                                         asHeadlongAddress(contractMirrorAddr.get()),
                                                         asHeadlongAddress(
-                                                                zCivilianMirrorAddr.get()),
-                                                        BigInteger.ONE)
-                                                .payingWith(GENESIS)
-                                                .via(MISSING_TO)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        SOME_ERC_721_SCENARIOS,
-                                                        TRANSFER_FROM,
-                                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2290,10 +2277,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(
                         childRecordsCheck(
                                 MISSING_FROM,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ACCOUNT_ID)),
-                        childRecordsCheck(
-                                MISSING_TO,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
@@ -2841,19 +2824,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                                         asHeadlongAddress(contractMirrorAddr.get()),
                                                         asHeadlongAddress(
-                                                                zCivilianMirrorAddr.get()),
-                                                        BigInteger.ONE)
-                                                .payingWith(GENESIS)
-                                                .via(MISSING_TO)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        SOME_ERC_20_SCENARIOS,
-                                                        DO_TRANSFER_FROM,
-                                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                                        asHeadlongAddress(contractMirrorAddr.get()),
-                                                        asHeadlongAddress(
                                                                 bCivilianMirrorAddr.get()),
                                                         BigInteger.ONE)
                                                 .payingWith(GENESIS)
@@ -2922,10 +2892,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 recordWith().status(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)),
                         childRecordsCheck(
                                 MISSING_FROM,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ACCOUNT_ID)),
-                        childRecordsCheck(
-                                MISSING_TO,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_ACCOUNT_ID)),
                         childRecordsCheck(
