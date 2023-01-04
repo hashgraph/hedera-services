@@ -364,13 +364,13 @@ class EvmEncodingFacadeTest {
     void decodeGetNonFungibleTokenInfo() {
         final var tokenInfo = tokenInfo();
         final var nftInfoWithoutSpender =
-            new EvmNftInfo(
-                1L,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005a6")),
-                7120543443612535051L,
-                ByteString.copyFromUtf8("First").toByteArray(),
-                null);
+                new EvmNftInfo(
+                        1L,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005a6")),
+                        7120543443612535051L,
+                        ByteString.copyFromUtf8("First").toByteArray(),
+                        null);
         assertEquals(Address.ZERO, nftInfoWithoutSpender.getSpender());
 
         final var nftInfo =
