@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -6428,7 +6428,7 @@ class SigRequirementsTest {
                                         DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY
                                                 .apply(scheduleStore))),
                         signatureWaivers,
-                        Mockito.mock(MapWarmer.class));
+                        () -> Mockito.mock(MapWarmer.class));
     }
 
     @SuppressWarnings("unchecked")

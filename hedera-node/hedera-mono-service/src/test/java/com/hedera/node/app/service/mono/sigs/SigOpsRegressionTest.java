@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -396,7 +396,7 @@ class SigOpsRegressionTest {
                                 ref -> null,
                                 ref -> null),
                         mockSignatureWaivers,
-                        mapWarmer);
+                        () -> mapWarmer);
         final var impliedOrdering =
                 keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
         final var impliedKey = impliedOrdering.getPayerKey();
@@ -421,7 +421,7 @@ class SigOpsRegressionTest {
                                 ref -> null,
                                 ref -> null),
                         mockSignatureWaivers,
-                        mapWarmer);
+                        () -> mapWarmer);
 
         return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
     }
@@ -437,7 +437,7 @@ class SigOpsRegressionTest {
                         ref -> null,
                         ref -> null);
         SigRequirements keyOrder =
-                new SigRequirements(sigMetaLookups, mockSignatureWaivers, mapWarmer);
+                new SigRequirements(sigMetaLookups, mockSignatureWaivers, () -> mapWarmer);
 
         final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
         expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -458,7 +458,7 @@ class SigOpsRegressionTest {
                         ref -> null,
                         ref -> null);
         SigRequirements keyOrder =
-                new SigRequirements(sigMetaLookups, mockSignatureWaivers, mapWarmer);
+                new SigRequirements(sigMetaLookups, mockSignatureWaivers, () -> mapWarmer);
 
         // given:
         final var rationalization =
@@ -488,7 +488,7 @@ class SigOpsRegressionTest {
                                 ref -> null,
                                 ref -> null),
                         mockSignatureWaivers,
-                        mapWarmer);
+                        () -> mapWarmer);
         final var payerKeys =
                 signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
         expectedSigs = new ArrayList<>();

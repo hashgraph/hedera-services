@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,28 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Singleton
 public class MapWarmer {
+
+    private static MapWarmer INSTANCE = null;
+
+    public static MapWarmer getInstance(
+            Supplier<AccountStorageAdapter> accountsStorageAdapter,
+            Supplier<UniqueTokenMapAdapter> nftsAdapter,
+            Supplier<TokenRelStorageAdapter> tokenRelsAdapter,
+            GlobalDynamicProperties globalDynamicProperties) {
+        if (INSTANCE == null) {
+            INSTANCE =
+                    new MapWarmer(
+                            accountsStorageAdapter,
+                            nftsAdapter,
+                            tokenRelsAdapter,
+                            globalDynamicProperties);
+        }
+        return INSTANCE;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(MapWarmer.class);
 
@@ -49,8 +64,7 @@ public class MapWarmer {
 
     private final Executor threadpool;
 
-    @Inject
-    public MapWarmer(
+    private MapWarmer(
             Supplier<AccountStorageAdapter> accountsStorageAdapter,
             Supplier<UniqueTokenMapAdapter> nftsAdapter,
             Supplier<TokenRelStorageAdapter> tokenRelsAdapter,

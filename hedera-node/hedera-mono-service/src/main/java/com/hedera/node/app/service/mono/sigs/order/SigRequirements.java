@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,22 +95,15 @@ public class SigRequirements {
 
     private final SignatureWaivers signatureWaivers;
     private final SigMetadataLookup sigMetaLookup;
-    private final MapWarmer mapWarmer;
+    private final Supplier<MapWarmer> mapWarmer;
 
     public SigRequirements(
             final SigMetadataLookup sigMetaLookup,
             final SignatureWaivers signatureWaivers,
-            final MapWarmer mapWarmer) {
+            final Supplier<MapWarmer> mapWarmer) {
         this.sigMetaLookup = sigMetaLookup;
         this.signatureWaivers = signatureWaivers;
         this.mapWarmer = mapWarmer;
-    }
-
-    public SigRequirements(
-            SigMetadataLookup sigMetadataLookup,
-            SignatureWaivers signatureWaivers,
-            Supplier<MapWarmer> mapWarmerSupplier) {
-        this(sigMetadataLookup, signatureWaivers, mapWarmerSupplier.get());
     }
 
     /**
@@ -711,8 +704,9 @@ public class SigRequirements {
             for (final NftTransfer adjust : xfers.getNftTransfersList()) {
                 final var sender = adjust.getSenderAccountID();
                 if (linkedRefsLoaded) {
-                    mapWarmer.warmAccount(
-                            EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
+                    mapWarmer
+                            .get()
+                            .warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
                 }
                 if ((failure =
                                 nftIncludeIfNecessary(
@@ -730,12 +724,17 @@ public class SigRequirements {
                 }
                 final var receiver = adjust.getReceiverAccountID();
                 if (linkedRefsLoaded) {
-                    mapWarmer.warmAccount(
-                            EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
-                    mapWarmer.warmNft(
-                            UniqueTokenKey.from(
-                                    NftNumPair.fromLongs(
-                                            token.getTokenNum(), receiver.getAccountNum())));
+                    mapWarmer
+                            .get()
+                            .warmAccount(
+                                    EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+                    mapWarmer
+                            .get()
+                            .warmNft(
+                                    UniqueTokenKey.from(
+                                            NftNumPair.fromLongs(
+                                                    token.getTokenNum(),
+                                                    receiver.getAccountNum())));
                 }
                 if ((failure =
                                 nftIncludeIfNecessary(
@@ -754,10 +753,13 @@ public class SigRequirements {
                             : accountFailure(failure, factory);
                 }
                 if (linkedRefsLoaded) {
-                    mapWarmer.warmTokenRel(
-                            EntityNumVirtualKey.fromPair(
-                                    EntityNumPair.fromLongs(
-                                            token.getTokenNum(), adjust.getSerialNumber())));
+                    mapWarmer
+                            .get()
+                            .warmTokenRel(
+                                    EntityNumVirtualKey.fromPair(
+                                            EntityNumPair.fromLongs(
+                                                    token.getTokenNum(),
+                                                    adjust.getSerialNumber())));
                 }
             }
         }
