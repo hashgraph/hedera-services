@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
-import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
-import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
-import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
-import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
-import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
-import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -52,17 +46,8 @@ import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
@@ -181,16 +166,16 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     List<DynamicTest> contractPrecompileEth() {
         return List.of(
-            concurrentEthSpecsFrom(
-                AssociatePrecompileSuite::new,
-                ContractBurnHTSSuite::new,
-                ContractHTSSuite::new,
-                ContractKeysHTSSuite::new,
-                ContractMintHTSSuite::new,
-                CreatePrecompileSuite::new,
-                DissociatePrecompileSuite::new,
-                CryptoTransferHTSSuite::new,
-                DelegatePrecompileSuite::new));
+                concurrentEthSpecsFrom(
+                        AssociatePrecompileSuite::new,
+                        ContractBurnHTSSuite::new,
+                        ContractHTSSuite::new,
+                        ContractKeysHTSSuite::new,
+                        ContractMintHTSSuite::new,
+                        CreatePrecompileSuite::new,
+                        DissociatePrecompileSuite::new,
+                        CryptoTransferHTSSuite::new,
+                        DelegatePrecompileSuite::new));
     }
 
     @Tag("contract")
@@ -215,9 +200,9 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompile2Eth() {
         return List.of(
                 new DynamicContainer[] {
-                    				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new), TODO FAILS
-                    				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-                    				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
+                    extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
+                    extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
+                    extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
                 });
     }
 
