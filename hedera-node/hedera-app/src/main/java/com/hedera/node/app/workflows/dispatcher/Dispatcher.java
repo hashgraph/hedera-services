@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
@@ -42,16 +44,16 @@ public class Dispatcher {
      * @param handlers a {@link Handlers} record with all available handlers
      * @param storeCache a {@link StoreCache} that maintains stores for all active {@link
      *     HederaState}s
-     * @param cryptoSignatureWaivers the {@link CryptoSignatureWaivers} to use in pre-handle
      * @throws NullPointerException if one of the parameters is {@code null}
      */
     public Dispatcher(
             @NonNull final Handlers handlers,
             @NonNull final StoreCache storeCache,
-            @NonNull final CryptoSignatureWaivers cryptoSignatureWaivers) {
+            @NonNull final PreHandleContext preHandleContext) {
         this.handlers = requireNonNull(handlers);
         this.storeCache = requireNonNull(storeCache);
-        this.cryptoSignatureWaivers = cryptoSignatureWaivers;
+        this.cryptoSignatureWaivers =
+                new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
     }
 
     /**

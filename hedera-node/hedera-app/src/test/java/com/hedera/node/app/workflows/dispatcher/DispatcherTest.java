@@ -41,7 +41,6 @@ import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
@@ -66,6 +65,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.*;
@@ -140,7 +143,11 @@ class DispatcherTest {
     @Mock private TokenUnpauseHandler tokenUnpauseHandler;
 
     @Mock private UtilPrngHandler utilPrngHandler;
-    @Mock private CryptoSignatureWaivers cryptoSignatureWaivers;
+
+    @Mock private HederaAccountNumbers numbers;
+    @Mock private HederaFileNumbers fileNumbers;
+    @Mock private AccountKeyLookup keyLookup;
+    private PreHandleContext preHandleCtx;
 
     private Handlers handlers;
     private Dispatcher dispatcher;
@@ -196,15 +203,16 @@ class DispatcherTest {
                         tokenUnpauseHandler,
                         utilPrngHandler);
 
-        dispatcher = new Dispatcher(handlers, storeCache, cryptoSignatureWaivers);
+        preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
+        dispatcher = new Dispatcher(handlers, storeCache, preHandleCtx);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new Dispatcher(null, storeCache, cryptoSignatureWaivers))
+        assertThatThrownBy(() -> new Dispatcher(null, storeCache, preHandleCtx))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Dispatcher(handlers, null, cryptoSignatureWaivers))
+        assertThatThrownBy(() -> new Dispatcher(handlers, null, preHandleCtx))
                 .isInstanceOf(NullPointerException.class);
     }
 

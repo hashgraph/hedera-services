@@ -35,23 +35,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @param keyLookup the {@link AccountKeyLookup} to use for key resolution
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
+     * @return the {@link TransactionMetadata} with all information that needs to be passed to
+     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public ScheduleTransactionMetadata preHandle(
