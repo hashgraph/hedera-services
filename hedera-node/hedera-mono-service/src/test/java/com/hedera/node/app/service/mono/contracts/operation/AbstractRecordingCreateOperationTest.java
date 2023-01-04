@@ -344,7 +344,7 @@ class AbstractRecordingCreateOperationTest {
                         .setEd25519(
                                 ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
                         .build();
-        given(accounts.get(eq(expectedAccountId), eq(AccountProperty.KEY)))
+        given(accounts.get(expectedAccountId, AccountProperty.KEY))
                 .willReturn(MiscUtils.asFcKeyUnchecked(nonEmptyKey));
         given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
