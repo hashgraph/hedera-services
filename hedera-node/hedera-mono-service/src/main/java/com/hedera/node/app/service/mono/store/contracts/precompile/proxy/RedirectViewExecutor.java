@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
