@@ -159,7 +159,7 @@ public class TraceabilitySuite extends HapiSuite {
                         vanillaBytecodeSidecar2(),
                         actionsShowPropagatedRevert(),
                         ethereumLazyCreateExportsExpectedSidecars(),
-//                        hollowAccountCreate2MergeExportsExpectedSidecars(),
+                        hollowAccountCreate2MergeExportsExpectedSidecars(),
                         assertSidecars())
                 .toList();
     }
@@ -7429,6 +7429,7 @@ public class TraceabilitySuite extends HapiSuite {
                 .preserving(LAZY_CREATE_PROPERTY, SIDECARS_PROP)
                 .given(
                         overriding(LAZY_CREATE_PROPERTY, "true"),
+                        overriding(SIDECARS_PROP, ""),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(create2Factory),
