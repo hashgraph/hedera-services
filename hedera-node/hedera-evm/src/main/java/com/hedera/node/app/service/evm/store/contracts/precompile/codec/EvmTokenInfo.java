@@ -136,7 +136,7 @@ public class EvmTokenInfo {
     }
 
     public Address getAutoRenewAccount() {
-        return autoRenewAccount;
+        return autoRenewAccount != null ? autoRenewAccount : Address.ZERO;
     }
 
     public EvmKey getPauseKey() {
