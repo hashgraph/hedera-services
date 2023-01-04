@@ -155,6 +155,18 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
         final Address contractAddress = targetContractAddress(frame);
 
+        if (!dynamicProperties.isLazyCreationEnabled()) {
+            final var hollowAccountID =
+                    matchingHollowAccountId(
+                            (HederaStackedWorldStateUpdater) frame.getWorldUpdater(),
+                            contractAddress);
+
+            if (hollowAccountID != null) {
+                fail(frame);
+                return;
+            }
+        }
+
         final long childGasStipend =
                 gasCalculator().gasAvailableForChildCreate(frame.getRemainingGas());
         frame.decrementRemainingGas(childGasStipend);
@@ -208,16 +220,14 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             final var sideEffects = new SideEffectsTracker();
 
-            final var accountID =
-                    accountIdFromEvmAddress(
-                            updater.aliases().resolveForEvm(childFrame.getContractAddress()));
-            final var accountKey = updater.trackingAccounts().get(accountID, KEY);
             ContractID createdContractId;
+            final var hollowAccountID =
+                    matchingHollowAccountId(updater, childFrame.getContractAddress());
 
             // if a hollow account exists at the alias address, finalize it to a contract
-            if (EMPTY_KEY.equals(accountKey)) {
-                finalizeHollowAccountIntoContract(accountID, updater);
-                createdContractId = EntityIdUtils.asContract(accountID);
+            if (hollowAccountID != null) {
+                finalizeHollowAccountIntoContract(hollowAccountID, updater);
+                createdContractId = EntityIdUtils.asContract(hollowAccountID);
             } else {
                 createdContractId = updater.idOfLastNewAddress();
             }
@@ -253,6 +263,13 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
         final int currentPC = frame.getPC();
         frame.setPC(currentPC + 1);
+    }
+
+    private AccountID matchingHollowAccountId(
+            HederaStackedWorldStateUpdater updater, Address contract) {
+        final var accountID = accountIdFromEvmAddress(updater.aliases().resolveForEvm(contract));
+        final var accountKey = updater.trackingAccounts().get(accountID, KEY);
+        return EMPTY_KEY.equals(accountKey) ? accountID : null;
     }
 
     private void finalizeHollowAccountIntoContract(

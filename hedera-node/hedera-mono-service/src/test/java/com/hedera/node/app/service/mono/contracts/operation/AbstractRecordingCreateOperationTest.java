@@ -210,6 +210,7 @@ class AbstractRecordingCreateOperationTest {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
@@ -276,6 +277,7 @@ class AbstractRecordingCreateOperationTest {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
@@ -323,8 +325,10 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
         givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
         final var initCode = "initCode".getBytes();
@@ -395,8 +399,10 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
         givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
@@ -436,6 +442,7 @@ class AbstractRecordingCreateOperationTest {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -478,7 +485,6 @@ class AbstractRecordingCreateOperationTest {
                 .willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
         given(updater.trackingAccounts()).willReturn(accounts);
         given(accounts.get(expectedAccountId, AccountProperty.KEY)).willReturn(expectedKey);
-        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
     }
 
     private void assertSameResult(
