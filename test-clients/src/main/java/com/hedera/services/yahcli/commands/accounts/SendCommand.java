@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  */
 package com.hedera.services.yahcli.commands.accounts;
 
-import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
-import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.SendSuite;
 import com.hedera.services.yahcli.suites.Utils;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.ParentCommand;
+
+import java.util.concurrent.Callable;
+
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
+import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 @Command(
         name = "send",
@@ -91,7 +92,12 @@ public class SendCommand implements Callable<Integer> {
         final var effectiveMemo = memo != null ? memo : "";
         var delegate =
                 new SendSuite(
-                        config.asSpecConfig(), beneficiary, amount, effectiveMemo, denomination);
+                        config.asSpecConfig(),
+                        beneficiary,
+                        amount,
+                        effectiveMemo,
+                        denomination,
+                        accountsCommand.getYahcli().getSchedule());
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
  */
 package com.hedera.services.yahcli.commands.accounts;
 
+import com.hedera.services.yahcli.suites.CreateSuite;
+import picocli.CommandLine;
+
+import java.io.File;
+import java.util.concurrent.Callable;
+
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hedera.services.yahcli.suites.CreateSuite.NOVELTY;
-
-import com.hedera.services.yahcli.suites.CreateSuite;
-import java.io.File;
-import java.util.concurrent.Callable;
-import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "create",
@@ -58,6 +59,12 @@ public class CreateCommand implements Callable<Integer> {
             defaultValue = "hbar")
     String denomination;
 
+    @CommandLine.Option(
+            names = {"-S", "--receiverSigRequired"},
+            paramLabel = "receiverSigRequired",
+            description = "If require receiver signature")
+    boolean receiverSigRequired;
+
     @Override
     public Integer call() throws Exception {
         final var yahcli = accountsCommand.getYahcli();
@@ -67,9 +74,16 @@ public class CreateCommand implements Callable<Integer> {
         final var effectiveMemo = memo != null ? memo : "";
         final var amount = SendCommand.validatedTinybars(yahcli, amountRepr, denomination);
         final var retries = boxedRetries != null ? boxedRetries.intValue() : DEFAULT_NUM_RETRIES;
+        final var effectiveReceiverSigRequired = receiverSigRequired;
 
         final var delegate =
-                new CreateSuite(config.asSpecConfig(), amount, effectiveMemo, noveltyLoc, retries);
+                new CreateSuite(
+                        config.asSpecConfig(),
+                        amount,
+                        effectiveMemo,
+                        noveltyLoc,
+                        retries,
+                        effectiveReceiverSigRequired);
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
@@ -79,7 +93,9 @@ public class CreateCommand implements Callable<Integer> {
                             + " has been created with balance "
                             + amount
                             + " tinybars "
-                            + "and memo '"
+                            + ", signatureRequired "
+                            + effectiveReceiverSigRequired
+                            + " and memo '"
                             + effectiveMemo
                             + "'");
         } else {
@@ -87,7 +103,9 @@ public class CreateCommand implements Callable<Integer> {
                     "FAILED to create a new account with "
                             + amount
                             + " tinybars "
-                            + "and memo '"
+                            + ", signatureRequired "
+                            + effectiveReceiverSigRequired
+                            + " and memo '"
                             + effectiveMemo
                             + "'");
             return 1;

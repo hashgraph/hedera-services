@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package com.hedera.services.yahcli.config;
 
-import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
-import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
-
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -29,6 +26,9 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.*;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -36,8 +36,9 @@ import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
+
+import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
+import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 public class ConfigUtils {
     public static String asId(String entity) {
@@ -178,6 +179,7 @@ public class ConfigUtils {
                         HapiSpec.class,
                         VersionInfoSpec.class,
                         SendSuite.class,
+                        ScheduleSuite.class,
                         CreateSuite.class,
                         SpecialFileHashSuite.class,
                         StakeSuite.class,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,22 +19,15 @@ import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.keys.KeysCommand;
-import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
-import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
-import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
-import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
-import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
-import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
+import com.hedera.services.yahcli.commands.schedules.ScheduleCommand;
+import com.hedera.services.yahcli.commands.system.*;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
-import java.util.concurrent.Callable;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.HelpCommand;
+import picocli.CommandLine.*;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.ParameterException;
-import picocli.CommandLine.Spec;
+
+import java.util.concurrent.Callable;
 
 @Command(
         name = "yahcli",
@@ -42,6 +35,7 @@ import picocli.CommandLine.Spec;
             HelpCommand.class,
             KeysCommand.class,
             AccountsCommand.class,
+            ScheduleCommand.class,
             SysFilesCommand.class,
             ValidationCommand.class,
             FeesCommand.class,
@@ -86,6 +80,12 @@ public class Yahcli implements Callable<Integer> {
     String payer;
 
     @Option(
+            names = {"-s", "--schedule"},
+            paramLabel = "schedule",
+            description = "boolean schedule param, if interested to schedule for signatures")
+    boolean schedule;
+
+    @Option(
             names = {"-c", "--config"},
             paramLabel = "config YAML",
             defaultValue = "config.yml")
@@ -114,6 +114,10 @@ public class Yahcli implements Callable<Integer> {
 
     public String getPayer() {
         return payer;
+    }
+
+    public boolean getSchedule() {
+        return schedule;
     }
 
     public String getConfigLoc() {
