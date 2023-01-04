@@ -16,8 +16,10 @@
 package com.hedera.node.app.service.evm.store.tokens;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmHederaKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +28,7 @@ import org.hyperledger.besu.datatypes.Address;
 public interface TokenAccessor {
     Optional<EvmTokenInfo> evmInfoForToken(final Address tokenId, final byte[] ledgerId);
 
-    Optional<EvmNftInfo> evmNftInfo(final Address target, final byte[] ledgerId);
+    Optional<EvmNftInfo> evmNftInfo(final NftID target, final byte[] ledgerId);
 
     boolean isTokenAddress(final Address address);
 
@@ -44,7 +46,7 @@ public interface TokenAccessor {
 
     Optional<TokenInfo> infoForToken(final Address tokenId, final byte[] ledgerId);
 
-    // TODO JKey keyOf(final TokenID tokenId, final Supplier<Enum> keyType);
+    EvmHederaKey keyOf(final Address tokenId, final Enum keyType);
 
     String nameOf(final Address tokenId);
 
@@ -58,14 +60,14 @@ public interface TokenAccessor {
 
     long staticAllowanceOf(final Address ownerId, final Address spenderId, final Address tokenId);
 
-    Address staticApprovedSpenderOf(final Address nftId);
+    Address staticApprovedSpenderOf(final NftID nftId);
 
     boolean staticIsOperator(
             final Address ownerId, final Address operatorId, final Address tokenId);
 
-    Address ownerOf(final Address nftId);
+    Address ownerOf(final NftID nftId);
 
     Address canonicalAddress(final Address addressOrAlias);
 
-    String metadataOf(final Address nftId);
+    String metadataOf(final NftID nftId);
 }

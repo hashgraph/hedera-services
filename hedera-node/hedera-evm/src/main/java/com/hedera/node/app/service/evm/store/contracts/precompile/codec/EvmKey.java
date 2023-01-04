@@ -17,7 +17,7 @@ package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import org.hyperledger.besu.datatypes.Address;
 
-public class EvmKey {
+public class EvmKey implements EvmHederaKey {
 
     private final Address contractId;
 
