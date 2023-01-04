@@ -125,21 +125,21 @@ public class Create2OperationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
-    private static final String GET_BYTECODE = "getBytecode";
-    private static final String DEPLOY = "deploy";
+    public static final String GET_BYTECODE = "getBytecode";
+    public static final String DEPLOY = "deploy";
     private static final String CREATE_2_TXN = "create2Txn";
     private static final String SWISS = "swiss";
-    private static final String SALT =
+    public static final String SALT =
             "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
     private static final String RETURNER = "Returner";
     private static final String CALL_RETURNER = "callReturner";
-    private static final String RETURNER_REPORTED_LOG_MESSAGE =
+    public static final String RETURNER_REPORTED_LOG_MESSAGE =
             "Returner reported {} when called with mirror address";
-    private static final String CONTRACT_REPORTED_LOG_MESSAGE =
+    public static final String CONTRACT_REPORTED_LOG_MESSAGE =
             "Contract reported TestContract initcode is {} bytes";
-    private static final String CONTRACT_REPORTED_ADDRESS_MESSAGE =
+    public static final String CONTRACT_REPORTED_ADDRESS_MESSAGE =
             "Contract reported address results {}";
-    private static final String EXPECTED_CREATE2_ADDRESS_MESSAGE =
+    public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE =
             "  --> Expected CREATE2 address is {}";
     private static final String ADMIN_KEY = "adminKey";
     public static final String GET_ADDRESS = "getAddress";
