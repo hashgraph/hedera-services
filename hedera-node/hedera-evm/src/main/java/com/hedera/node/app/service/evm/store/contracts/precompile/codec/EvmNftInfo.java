@@ -57,6 +57,6 @@ public class EvmNftInfo {
     }
 
     public Address getSpender() {
-        return spender;
+        return spender != null ? spender : Address.ZERO;
     }
 }
