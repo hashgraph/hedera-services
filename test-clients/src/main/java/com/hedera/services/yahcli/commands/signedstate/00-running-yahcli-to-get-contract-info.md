@@ -83,11 +83,55 @@ present, each contract line has an additional tab-separated field:
 So:
 
 ```bash
-grep -E '^60..60..52' < raw-unique-contract-bytecodes.txt > raw-unique-solidity-only-contract-bytecodes.txt
-```
+grep -E '^60..60..52' \
+     < raw-unique-contract-bytecodes.txt \
+     > raw-unique-solidity-only-contract-bytecodes.txt```
 
 - 481 "solidity only" contracts left (with maybe some false positives)
 
+### get a disassembly from a single contract
+
+* Takes a contract's bytecode (in hex) on command line, with contract id; output to stdout
+
+   ```bash
+   ./yahcli signedstate decompilecontract \
+            --with-code-offset --with-opcode --with-contract-bytecode \
+            --id <contract-id> --bytecode 60806040⬅·····⮕0033
+   ```
+  
+    - `--id <nnn>` - contract's id, will be put in the output for identification
+    - `--bytecode <hex>` - the bytecode of the contract
+      - (don't worry: MacOS can take command lines up to 1Mb long ...)
+    - `--with-code-offset` - put the code offset on each line with data bytes (in hex)
+    - `--with-opcode` - put the opcode on each line before the mnemonic (in hex)
+    - `--with-contract-bytecode` - put the contract bytecode (in hex) in the disassembly
+    
+#### get the disassembly of all contracts in a state file
+
+* Start with the following shell script which reads contracts (bytecode), one per line, from stdin
+  and writes disassemblies in separate files named `<contractid>.dis`:
+    ```bash
+    while read -r contract idscsv; do
+    if [ "$idscsv" != "" ]; then
+        ids=($(echo $idscsv | tr "," "\n"))
+        firstid=${ids[0]}
+        echo working on $firstid "--" $idscsv
+        > ${firstid}.dis ./yahcli signedstate decompilecontract \
+                                  --with-code-offset --with-opcode --with-contract-bytecode \
+                                  --id ${firstid} --bytecode ${contract}
+    else
+        echo missing id!
+    fi
+    done
+    ```
+  
+  then:
+
+  ```bash
+  ./disassemble-all-contracts.sh \
+      < raw-unique-solidity-only-contract-bytecodes.txt \
+      2>&1 | tee disassemble-all-contracts.log
+  ```
 ----
 
 <sup>†</sup> But other kinds of information extraction from a signed state file
