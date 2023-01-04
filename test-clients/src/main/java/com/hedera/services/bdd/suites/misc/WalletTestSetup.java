@@ -15,26 +15,26 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromMnemonic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class WalletTestSetup extends HapiApiSuite {
+public class WalletTestSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WalletTestSetup.class);
 
     static String DETERMINISTIC_WALLET = "deterministicWallet";
@@ -51,9 +51,9 @@ public class WalletTestSetup extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						createDeterministicWalletForRecovery(),
                     //						reviewDeterministicWallet(),
                     //						fundDeterministicWallet(),
@@ -61,7 +61,7 @@ public class WalletTestSetup extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec mnemonicToPem() {
+    private HapiSpec mnemonicToPem() {
         return defaultHapiSpec("MnemonicToPem")
                 .given(keyFromMnemonic("fm", mnemonic))
                 .when()
@@ -75,7 +75,7 @@ public class WalletTestSetup extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec createDeterministicWalletForRecovery() {
+    private HapiSpec createDeterministicWalletForRecovery() {
         return customHapiSpec("CreateDeterministicWalletForRecovery")
                 .withProperties(
                         Map.of(
@@ -137,7 +137,7 @@ public class WalletTestSetup extends HapiApiSuite {
                         );
     }
 
-    private HapiApiSpec fundDeterministicWallet() {
+    private HapiSpec fundDeterministicWallet() {
         long TINYBARS_PER_HBAR = 100_000_000L;
         long amount = 100_000 * TINYBARS_PER_HBAR;
         return customHapiSpec("FundDeterministicWallet")
@@ -150,7 +150,7 @@ public class WalletTestSetup extends HapiApiSuite {
                 .then(QueryVerbs.getAccountBalance(GENESIS));
     }
 
-    private HapiApiSpec reviewDeterministicWallet() {
+    private HapiSpec reviewDeterministicWallet() {
         return customHapiSpec("ReviewDeterministicWallet")
                 .withProperties(
                         Map.of(

@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -80,6 +81,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -193,6 +195,23 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
+    void revertsSourceIdIfCreated() {
+        final var sourceId = 123;
+        final var aRecord = ExpirableTxnRecord.newBuilder();
+        final var bRecord = ExpirableTxnRecord.newBuilder();
+
+        given(recordsHistorian.nextChildRecordSourceId()).willReturn(sourceId);
+
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, aRecord, TransactionBody.newBuilder());
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, bRecord, TransactionBody.newBuilder());
+        subject.revert();
+
+        verify(recordsHistorian).revertChildRecordsFromSource(sourceId);
+    }
+
+    @Test
     void revertsCommittedChildIdsSourceIdsIfCreated() {
         final var firstChildSourceId = 123;
         final var mySourceId = 666;
@@ -203,6 +222,26 @@ class AbstractLedgerWorldUpdaterTest {
 
         subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
         subject.manageInProgressRecord(recordsHistorian, aRecord, TransactionBody.newBuilder());
+        subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
+        subject.revert();
+
+        verify(recordsHistorian).revertChildRecordsFromSource(mySourceId);
+        verify(recordsHistorian).revertChildRecordsFromSource(firstChildSourceId);
+        verify(recordsHistorian).revertChildRecordsFromSource(secondChildSourceId);
+    }
+
+    @Test
+    void revertsCommittedChildIdSourceIdsIfCreated() {
+        final var firstChildSourceId = 123;
+        final var mySourceId = 666;
+        final var secondChildSourceId = 456;
+        final var aRecord = ExpirableTxnRecord.newBuilder();
+
+        given(recordsHistorian.nextChildRecordSourceId()).willReturn(mySourceId);
+
+        subject.addCommittedRecordSourceId(firstChildSourceId, recordsHistorian);
+        subject.manageInProgressPrecedingRecord(
+                recordsHistorian, aRecord, TransactionBody.newBuilder());
         subject.addCommittedRecordSourceId(secondChildSourceId, recordsHistorian);
         subject.revert();
 
@@ -330,7 +369,7 @@ class AbstractLedgerWorldUpdaterTest {
 
         subject.deleteAccount(aAddress);
 
-        verify(trackingAliases, never()).unlink(any());
+        verify(trackingAliases, never()).unlink(any(Address.class));
     }
 
     @Test
@@ -351,7 +390,7 @@ class AbstractLedgerWorldUpdaterTest {
     }
 
     @Test
-    void commitsToWrappedTrackingAccountsRejectChangesToMissingAccountBalances() {
+    void commitsToWrappedTrackingAccountsAllowsBalanceChangesToMissingAccount() {
         /* Get the wrapped accounts for the updater */
         final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
         final var wrappedAccounts = wrappedLedgers.accounts();
@@ -359,14 +398,40 @@ class AbstractLedgerWorldUpdaterTest {
         final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         backingAccounts.put(aAccount, aAccountMock);
         wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+        final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
+        given(aAccountMock.getAlias()).willReturn(alias);
 
-        /* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
         wrappedAccounts.create(aAccount);
         wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
         wrappedAccounts.put(aAccount, aAccountMock);
 
-        /* Verify we cannot commit the illegal change */
-        assertThrows(IllegalArgumentException.class, wrappedLedgers::commit);
+        /* Verify we can commit the change */
+        assertDoesNotThrow(() -> wrappedLedgers.commit());
+        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+    }
+
+    @Test
+    void commitsToWrappedTrackingAccountsAllowsBalanceChangesToNonUpdatedAccount() {
+        /* Get the wrapped accounts for the updater */
+        final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
+        final var wrappedAccounts = wrappedLedgers.accounts();
+        final var aAccountMock = mock(MerkleAccount.class);
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
+        backingAccounts.put(aAccount, aAccountMock);
+        wrappedAccounts.setCommitInterceptor(accountsCommitInterceptor);
+        final var alias = ByteStringUtils.wrapUnsafely("alias".getBytes());
+        given(aAccountMock.getAlias()).willReturn(alias);
+        final var accountMock = mock(Account.class);
+        given(worldState.get(aAddress)).willReturn(accountMock);
+        given(accountMock.getAddress()).willReturn(aAddress);
+
+        wrappedAccounts.create(aAccount);
+        wrappedAccounts.set(aAccount, BALANCE, aHbarBalance + 2);
+        wrappedAccounts.put(aAccount, aAccountMock);
+
+        /* Verify we can commit the change */
+        assertDoesNotThrow(() -> wrappedLedgers.commit());
+        assertTrue(subject.updatedAccounts.containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
@@ -558,6 +623,16 @@ class AbstractLedgerWorldUpdaterTest {
                         worldState, staticLedgersWith(aliases, null), customizer);
 
         assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
+    }
+
+    @Test
+    void tracksLazyCreateAccountAsExpected() {
+        subject.trackLazilyCreatedAccount(Address.ALTBN128_MUL);
+
+        final var lazyAccount = subject.updatedAccounts.get(Address.ALTBN128_MUL);
+        assertNotNull(lazyAccount);
+        assertEquals(Wei.ZERO, lazyAccount.getBalance());
+        assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
     }
 
     private void setupLedgers() {

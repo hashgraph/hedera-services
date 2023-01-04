@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -81,6 +82,7 @@ class TokenPrecompileReadOperationsTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
     @Mock private SideEffectsTracker sideEffects;
@@ -120,6 +122,7 @@ class TokenPrecompileReadOperationsTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -164,7 +167,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(TokenInfoWrapper.forToken(fungible));
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -194,7 +197,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
-        given(encoder.encodeIsToken(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -230,7 +233,7 @@ class TokenPrecompileReadOperationsTest {
         getTokenTypePrecompile
                 .when(() -> GetTokenTypePrecompile.decodeGetTokenType(pretendArguments))
                 .thenReturn(wrapper);
-        given(encoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
+        given(evmEncoder.encodeGetTokenType(0)).willReturn(RETURN_GET_TOKEN_TYPE);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
         // when

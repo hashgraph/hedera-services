@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -44,9 +44,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class ScheduleExecutionSpecStateful extends HapiApiSuite {
+public class ScheduleExecutionSpecStateful extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecStateful.class);
 
     private static final int TMP_MAX_TRANSFER_LENGTH = 2;
@@ -77,7 +77,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->
                         List.of(
@@ -90,7 +90,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                                 suiteCleanup()));
     }
 
-    private HapiApiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
+    private HapiSpec scheduledBurnWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledBurnWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate("schedulePayer"))
                 .when(
@@ -100,7 +100,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec scheduledUniqueMintFailsWithNftsDisabled() {
+    private HapiSpec scheduledUniqueMintFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
                 .given(
                         cryptoCreate("treasury"),
@@ -133,7 +133,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                                 .overridingProps(Map.of("tokens.nfts.areEnabled", "true")));
     }
 
-    private HapiApiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
+    private HapiSpec scheduledUniqueBurnFailsWithNftsDisabled() {
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithNftsDisabled")
                 .given(
                         cryptoCreate("treasury"),
@@ -164,7 +164,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                                 .overridingProps(Map.of("tokens.nfts.areEnabled", "true")));
     }
 
-    public HapiApiSpec executionWithTransferListWrongSizedFails() {
+    public HapiSpec executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -224,7 +224,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec executionWithTokenTransferListSizeExceedFails() {
+    private HapiSpec executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
@@ -267,7 +267,7 @@ public class ScheduleExecutionSpecStateful extends HapiApiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    private HapiApiSpec suiteCleanup() {
+    private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

@@ -71,12 +71,14 @@ public class PropertyNames {
     public static final String STAKING_PERIOD_MINS = "staking.periodMins";
     public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS =
             "staking.rewardHistory.numStoredPeriods";
+    public static final String STAKING_STARTUP_HELPER_RECOMPUTE = "staking.startupHelper.recompute";
 
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
+            "cryptoCreateWithAliasAndEvmAddress.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";
@@ -93,6 +95,9 @@ public class PropertyNames {
             "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
+
+    public static final String CONTRACTS_KEYS_LEGACY_ACTIVATIONS =
+            "contracts.keys.legacyActivations";
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES =
             "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";

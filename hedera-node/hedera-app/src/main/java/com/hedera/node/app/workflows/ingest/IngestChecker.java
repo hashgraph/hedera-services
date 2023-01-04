@@ -15,62 +15,99 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Encapsulates the workflow related to transaction ingestion. Given a Transaction, parses,
- * validates, and submits to the platform.
- */
-public interface IngestChecker {
+/** The {@code IngestChecker} contains checks that are specific to the ingest workflow */
+public class IngestChecker {
 
-    /**
-     * Validates a {@link Transaction}
-     *
-     * @param tx the {@code Transaction}
-     * @throws PreCheckException if validation fails
-     * @throws NullPointerException if {@code tx} is {@code null}
-     */
-    void checkTransaction(@NonNull Transaction tx) throws PreCheckException;
+    private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
+
+    private final AccountID nodeAccountID;
 
     /**
-     * Validates a {@link SignedTransaction}
+     * Constructor of the {@code IngestChecker}
      *
-     * @param tx the {@code SignedTransaction} to check
-     * @throws PreCheckException if validation fails
-     * @throws NullPointerException if {@code tx} is {@code null}
+     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
-    void checkSignedTransaction(@NonNull SignedTransaction tx) throws PreCheckException;
+    public IngestChecker(@NonNull final AccountID nodeAccountID) {
+        this.nodeAccountID = requireNonNull(nodeAccountID);
+    }
 
     /**
-     * Validates a {@link TransactionBody} with the paying {@link Object}
+     * Checks a transaction for semantic errors
      *
-     * @param txBody the {@code TransactionBody} to check
-     * @param account the paying {@code Object}
-     * @throws PreCheckException if validation fails
-     * @throws NullPointerException if any of the parameters is {@code null}
+     * @param txBody the {@link TransactionBody}
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if a semantic error was discovered. The contained {@code
+     *     responseCode} provides the error reason.
      */
-    void checkTransactionBody(@NonNull TransactionBody txBody, @NonNull Object account)
-            throws PreCheckException;
+    public void checkTransactionSemantics(
+            @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
+            throws PreCheckException {
+        requireNonNull(txBody);
+        requireNonNull(functionality);
+
+        if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
+
+        var txnId = txBody.getTransactionID();
+        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
+            throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
+        }
+    }
 
     /**
-     * Validates a signature.
+     * Checks the signature of the payer. <em>Currently not implemented.</em>
      *
-     * @param platformTx the signed bytes to check
-     * @param signatureMap the {@link SignatureMap} with all signatures
-     * @param reqKeys a list of required {@link HederaKey}s
-     * @throws PreCheckException if validation fails
-     * @throws NullPointerException if any of the parameters is {@code null}
+     * @param txBody the {@link TransactionBody}
+     * @param signatureMap the {@link SignatureMap} contained in the transaction
+     * @param payer the {@code Account} of the payer
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws PreCheckException if an error is found while checking the signature. The contained
+     *     {@code responseCode} provides the error reason.
      */
-    void verifySignatures(
-            @NonNull com.swirlds.common.system.transaction.Transaction platformTx,
-            @NonNull SignatureMap signatureMap,
-            @NonNull List<? extends HederaKey> reqKeys)
-            throws PreCheckException;
+    public void checkPayerSignature(
+            @NonNull final TransactionBody txBody,
+            @NonNull final SignatureMap signatureMap,
+            @NonNull final Account payer)
+            throws PreCheckException {
+        LOG.warn("IngestChecker.checkPayerSignature() has not been implemented yet");
+        // TODO: Implement once signature check is implemented
+    }
+
+    /**
+     * Checks the solvency of the payer
+     *
+     * @param txBody the {@link TransactionBody}
+     * @param functionality the {@link HederaFunctionality} of the transaction
+     * @param payer the {@code Account} of the payer
+     * @throws NullPointerException if one of the arguments is {@code null}
+     * @throws InsufficientBalanceException if the balance is sufficient
+     */
+    public void checkSolvency(
+            @NonNull final TransactionBody txBody,
+            @NonNull final HederaFunctionality functionality,
+            @NonNull final Account payer)
+            throws InsufficientBalanceException {
+        LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
+        // TODO: Implement once fee calculation is implemented
+    }
 }

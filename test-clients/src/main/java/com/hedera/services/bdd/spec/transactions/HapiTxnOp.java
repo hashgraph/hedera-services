@@ -35,8 +35,8 @@ import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
@@ -122,21 +122,20 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected abstract T self();
 
-    protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec)
-            throws Throwable;
+    protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable;
 
-    protected abstract Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec);
+    protected abstract Function<Transaction, TransactionResponse> callToUse(HapiSpec spec);
 
-    public byte[] serializeSignedTxnFor(HapiApiSpec spec) throws Throwable {
+    public byte[] serializeSignedTxnFor(HapiSpec spec) throws Throwable {
         return finalizedTxn(spec, opBodyDef(spec)).toByteArray();
     }
 
-    public Transaction signedTxnFor(HapiApiSpec spec) throws Throwable {
+    public Transaction signedTxnFor(HapiSpec spec) throws Throwable {
         return finalizedTxn(spec, opBodyDef(spec));
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         stats = new TxnObs(type());
         fixNodeFor(spec);
         configureTlsFor(spec);
@@ -244,7 +243,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return !deferStatusResolution;
     }
 
-    private TransactionResponse timedCall(HapiApiSpec spec, Transaction txn) {
+    private TransactionResponse timedCall(HapiSpec spec, Transaction txn) {
         submitTime = System.currentTimeMillis();
         TransactionResponse response = callToUse(spec).apply(txn);
         long after = System.currentTimeMillis();
@@ -252,7 +251,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return response;
     }
 
-    private void resolveStatus(HapiApiSpec spec) throws Throwable {
+    private void resolveStatus(HapiSpec spec) throws Throwable {
         actualStatus = resolvedStatusOfSubmission(spec);
         spec.updateResolvedCounts(actualStatus);
         if (actualStatus == INSUFFICIENT_PAYER_BALANCE) {
@@ -295,7 +294,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             }
         }
         if (!deferStatusResolution) {
-            if (spec.setup().costSnapshotMode() != HapiApiSpec.CostSnapshotMode.OFF) {
+            if (spec.setup().costSnapshotMode() != HapiSpec.CostSnapshotMode.OFF) {
                 publishFeeChargedTo(spec);
             }
         }
@@ -304,7 +303,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
     }
 
-    private void rechargePayerFor(HapiApiSpec spec) {
+    private void rechargePayerFor(HapiSpec spec) {
         long rechargeAmount = spec.registry().getRechargeAmount(payer.get());
         var bank = spec.setup().defaultPayerName();
         spec.registry()
@@ -313,11 +312,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         allRunFor(spec, cryptoTransfer(tinyBarsFromTo(bank, payer.get(), rechargeAmount)));
     }
 
-    private boolean payerIsRechargingFor(HapiApiSpec spec) {
+    private boolean payerIsRechargingFor(HapiSpec spec) {
         return payer.map(spec.registry()::isRecharging).orElse(Boolean.FALSE);
     }
 
-    private synchronized boolean payerNotRecentlyRecharged(HapiApiSpec spec) {
+    private synchronized boolean payerNotRecentlyRecharged(HapiSpec spec) {
         Instant lastInstant = payer.map(spec.registry()::getRechargingTime).orElse(Instant.MIN);
         Integer rechargeWindow = payer.map(spec.registry()::getRechargingWindow).orElse(0);
         return !lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now());
@@ -350,7 +349,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return EnumSet.copyOf(tolerating);
     }
 
-    private void publishFeeChargedTo(HapiApiSpec spec) throws Throwable {
+    private void publishFeeChargedTo(HapiSpec spec) throws Throwable {
         if (recordOfSubmission == null) {
             lookupSubmissionRecord(spec);
         }
@@ -358,7 +357,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         spec.recordPayment(new Payment(fee, self().getClass().getSimpleName(), TXN_FEE));
     }
 
-    private void assertRecordHasExpectedMemo(HapiApiSpec spec) throws Throwable {
+    private void assertRecordHasExpectedMemo(HapiSpec spec) throws Throwable {
         if (recordOfSubmission == null) {
             lookupSubmissionRecord(spec);
         }
@@ -382,17 +381,17 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     @Override
-    public boolean requiresFinalization(HapiApiSpec spec) {
+    public boolean requiresFinalization(HapiSpec spec) {
         return (actualPrecheck == OK)
                 && (deferStatusResolution || hasStatsToCollectDuringFinalization(spec));
     }
 
-    private boolean hasStatsToCollectDuringFinalization(HapiApiSpec spec) {
+    private boolean hasStatsToCollectDuringFinalization(HapiSpec spec) {
         return (!suppressStats && spec.setup().measureConsensusLatency());
     }
 
     @Override
-    protected void lookupSubmissionRecord(HapiApiSpec spec) throws Throwable {
+    protected void lookupSubmissionRecord(HapiSpec spec) throws Throwable {
         if (actualStatus == UNKNOWN) {
             throw new HapiTxnCheckStateException(
                     this + " tried to lookup the submission record before status was known!");
@@ -401,7 +400,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     @Override
-    public void finalizeExecFor(HapiApiSpec spec) throws Throwable {
+    public void finalizeExecFor(HapiSpec spec) throws Throwable {
         boolean explicitStatSuppression = suppressStats;
         suppressStats = true;
         if (deferStatusResolution) {
@@ -418,7 +417,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
     }
 
-    private void measureConsensusLatency(HapiApiSpec spec) throws Throwable {
+    private void measureConsensusLatency(HapiSpec spec) throws Throwable {
         if (acceptAnyStatus) {
             acceptAnyStatus = false;
             acceptAnyKnownStatus = true;
@@ -432,7 +431,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         stats.setConsensusLatency(consensusTime - submitTime);
     }
 
-    private ResponseCodeEnum resolvedStatusOfSubmission(HapiApiSpec spec) throws Throwable {
+    private ResponseCodeEnum resolvedStatusOfSubmission(HapiSpec spec) throws Throwable {
         long delayMS = spec.setup().statusPreResolvePauseMs();
         long elapsedMS = System.currentTimeMillis() - submitTime;
         if (elapsedMS <= delayMS) {
@@ -458,7 +457,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return UNKNOWN;
     }
 
-    private Response statusResponse(HapiApiSpec spec, Query receiptQuery) throws Throwable {
+    private Response statusResponse(HapiSpec spec, Query receiptQuery) throws Throwable {
         long before = System.currentTimeMillis();
         Response response = null;
         int allowedUnrecognizedExceptions = 10;
@@ -579,7 +578,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         signers =
                 Optional.of(
                         Stream.of(keys)
-                                .<Function<HapiApiSpec, Key>>map(
+                                .<Function<HapiSpec, Key>>map(
                                         k -> spec -> spec.registry().getKey(k))
                                 .collect(toList()));
         return self();

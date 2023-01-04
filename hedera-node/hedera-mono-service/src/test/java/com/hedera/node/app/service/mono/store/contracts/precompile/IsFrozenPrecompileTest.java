@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -90,6 +91,7 @@ class IsFrozenPrecompileTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
     @Mock private SideEffectsTracker sideEffects;
@@ -142,6 +144,7 @@ class IsFrozenPrecompileTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -182,10 +185,10 @@ class IsFrozenPrecompileTest {
         isFrozenPrecompile
                 .when(() -> decodeIsFrozen(any(), any()))
                 .thenReturn(tokenFreezeUnFreezeWrapper);
-        given(encoder.encodeIsFrozen(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsFrozen(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
-        given(encoder.encodeIsFrozen(true)).willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeIsFrozen(true)).willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when

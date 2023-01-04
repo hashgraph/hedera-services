@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -33,25 +33,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoAccountUpdateSuite extends HapiApiSuite {
+public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
-    private static final long initialBalance = 1000L;
+    public static final long INITIAL_BALANCE = 1000L;
 
     private static final String PAYER = "payer";
     private static final String ALIAS = "testAlias";
     private static final String TRANSFER_TXN = "transferTxn";
-    private static final String TRANSFER_TXN_2 = "transferTxn2";
+    public static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_TXN_3 = "transferTxn3";
 
     public static void main(String... args) {
@@ -64,19 +63,16 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    updateKeyOnAutoCreatedAccount(),
-                    accountCreatedAfterAliasAccountExpires(),
-                    modifySigRequiredAfterAutoAccountCreation(),
-                    //						accountCreatedAfterAliasAccountExpiresAndDelete()
-                });
+                updateKeyOnAutoCreatedAccount(),
+                accountCreatedAfterAliasAccountExpires(),
+                modifySigRequiredAfterAutoAccountCreation());
     }
 
-    private HapiApiSpec modifySigRequiredAfterAutoAccountCreation() {
+    private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
@@ -127,7 +123,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                                         (2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
-    private HapiApiSpec accountCreatedAfterAliasAccountExpires() {
+    private HapiSpec accountCreatedAfterAliasAccountExpires() {
         final var briefAutoRenew = 3L;
         return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
                 .given(
@@ -137,7 +133,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                 .overridingProps(
                                         propsForAccountAutoRenewOnWith(
                                                 briefAutoRenew, 20 * briefAutoRenew)),
-                        cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         /* auto account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
@@ -174,7 +170,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                 .overridingProps(disablingAutoRenewWithDefaults()));
     }
 
-    private HapiApiSpec updateKeyOnAutoCreatedAccount() {
+    private HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS =
@@ -187,7 +183,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(ALIAS),
                         newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),
-                        cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         /* auto account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
@@ -213,46 +209,5 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                                 .expectedBalanceWithChargedUsd(
                                                         (ONE_HUNDRED_HBARS), 0, 0)
                                                 .key(complexKey)));
-    }
-
-    // Can't be done without property change, since auto-renew period can't be reduced from 3 months
-    // after create.
-    private HapiApiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
-        final var briefAutoRenew = 3L;
-        return defaultHapiSpec("AccountCreatedAfterAliasAccountExpiresAndDelete")
-                .given(
-                        newKeyNamed(ALIAS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        propsForAccountAutoRenewOnWith(
-                                                briefAutoRenew, 2 * briefAutoRenew)),
-                        cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
-                .when(
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(accountWith().autoRenew(THREE_MONTHS_IN_SECONDS)))
-                .then(
-                        /* update auto renew period */
-                        cryptoUpdateAliased(ALIAS)
-                                .autoRenewPeriod(briefAutoRenew)
-                                .signedBy(ALIAS, PAYER),
-                        sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-                        getAutoCreatedAccountBalance(ALIAS)
-                                .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
-
-                        // Need to know why its INVALID_ACCOUNT_ID, same reason as Delete
-
-                        /* validate account is expired and deleted , so new account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWithDefaults()));
     }
 }

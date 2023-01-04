@@ -87,7 +87,7 @@ class HederaEvmWorldStateTest {
     }
 
     @Test
-    void returnsWorldStateAccountt() {
+    void returnsWorldStateAccount() {
         final var address = Address.RIPEMD160;
         given(hederaEvmEntityAccess.getBalance(address)).willReturn(balance);
         given(hederaEvmEntityAccess.isUsable(any())).willReturn(true);
@@ -123,5 +123,6 @@ class HederaEvmWorldStateTest {
     void updater() {
         var actualSubject = subject2.updater();
         assertEquals(0, actualSubject.getSbhRefund());
+        assertNull(actualSubject.updater().get(Address.RIPEMD160));
     }
 }

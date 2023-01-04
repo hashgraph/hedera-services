@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -67,6 +68,7 @@ class GetTokenDefaultKycStatusTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
     @Mock private SideEffectsTracker sideEffects;
@@ -105,6 +107,7 @@ class GetTokenDefaultKycStatusTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -141,10 +144,11 @@ class GetTokenDefaultKycStatusTest {
         getTokenDefaultKycStatus
                 .when(() -> decodeTokenDefaultKycStatus(any()))
                 .thenReturn(defaultKycStatusWrapper);
-        given(encoder.encodeGetTokenDefaultKycStatus(true)).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenDefaultKycStatus(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultKycStatus((any()))).willReturn(Boolean.TRUE);
-        given(encoder.encodeGetTokenDefaultKycStatus(true)).willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeGetTokenDefaultKycStatus(true))
+                .willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when

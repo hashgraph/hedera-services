@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
+import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -158,9 +159,10 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
     private boolean lazyCreationEnabled;
-    private boolean cryptoCreateWithAliasEnabled;
+    private boolean cryptoCreateWithAliasAndEvmAddressEnabled;
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
+    private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
     public GlobalDynamicProperties(
@@ -324,12 +326,14 @@ public class GlobalDynamicProperties implements EvmProperties {
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
         lazyCreationEnabled = properties.getBooleanProperty(LAZY_CREATION_ENABLED);
-        cryptoCreateWithAliasEnabled =
-                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED);
+        cryptoCreateWithAliasAndEvmAddressEnabled =
+                properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED);
         enforceContractCreationThrottle =
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors =
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        legacyContractIdActivations =
+                properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
 
     public int maxTokensPerAccount() {
@@ -780,8 +784,8 @@ public class GlobalDynamicProperties implements EvmProperties {
         return lazyCreationEnabled;
     }
 
-    public boolean isCryptoCreateWithAliasEnabled() {
-        return cryptoCreateWithAliasEnabled;
+    public boolean isCryptoCreateWithAliasAndEvmAddressEnabled() {
+        return cryptoCreateWithAliasAndEvmAddressEnabled;
     }
 
     public EntityScaleFactors entityScaleFactors() {
@@ -790,5 +794,13 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean shouldEnforceAccountCreationThrottleForContracts() {
         return enforceContractCreationThrottle;
+    }
+
+    public LegacyContractIdActivations legacyContractIdActivations() {
+        return legacyContractIdActivations;
+    }
+
+    public boolean isImplicitCreationEnabled() {
+        return autoCreationEnabled && lazyCreationEnabled;
     }
 }

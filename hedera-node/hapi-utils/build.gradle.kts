@@ -29,23 +29,18 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-evm"))
     annotationProcessor(libs.dagger.compiler)
 
-    implementation(libs.helidon.io.grpc)
-    implementation(libs.bundles.di)
-    implementation(libs.hapi)
-    implementation(libs.bundles.logging)
-    implementation(libs.protobuf.java)
+    api(project(":hedera-node:hedera-evm"))
+
     implementation(libs.jackson)
-    implementation(libs.swirlds.common)
+    implementation(libs.log4j.api)
     implementation(libs.bundles.bouncycastle)
     implementation(libs.headlong)
-    implementation(libs.besu.secp256k1)
     implementation(libs.commons.codec)
     implementation(libs.jna)
-    compileOnly(libs.spotbugs.annotations)
+    implementation(libs.javax.inject)
+    implementation(libs.dagger.api)
 
     testImplementation(testLibs.bundles.testing)
-    itestImplementation(libs.hapi)
 }

@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -66,6 +67,7 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
@@ -102,6 +104,7 @@ class GetTokenDefaultFreezeStatusTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -138,11 +141,11 @@ class GetTokenDefaultFreezeStatusTest {
         getTokenDefaultFreezeStatus
                 .when(() -> decodeTokenDefaultFreezeStatus(any()))
                 .thenReturn(HTSTestsUtil.defaultFreezeStatusWrapper);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(HTSTestsUtil.successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultFreezeStatus((any()))).willReturn(Boolean.TRUE);
-        given(encoder.encodeGetTokenDefaultFreezeStatus(true))
+        given(evmEncoder.encodeGetTokenDefaultFreezeStatus(true))
                 .willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 

@@ -118,38 +118,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
 
-        // Enable tracing of contract actions if action sidecars are enabled and this is not a
-        // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
-
-        super.setOperationTracer(hederaTracer);
-
-        try {
-            super.execute(
-                    sender,
-                    receiver,
-                    gasPrice,
-                    gasLimit,
-                    value,
-                    payload,
-                    contractCreation,
-                    isStatic,
-                    mirrorReceiver);
-        } catch (final ResourceLimitException e) {
-            handleResourceLimitExceeded(
-                    sender,
-                    gasPrice,
-                    gasLimit,
-                    value,
-                    isStatic,
-                    userOfferedGasPrice,
-                    maxGasAllowanceInTinybars,
-                    relayer,
-                    gasCost,
-                    upfrontCost);
-            return createResourceLimitExceededResult(gasPrice, gasLimit, e);
-        }
+        super.setupFields(contractCreation);
 
         final var chargingResult =
                 chargeForGas(
@@ -165,6 +134,30 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         sender.getId().asEvmAddress(),
                         relayer == null ? null : relayer.getId().asEvmAddress(),
                         (HederaWorldState.Updater) updater);
+
+        // Enable tracing of contract actions if action sidecars are enabled and this is not a
+        // static call
+        final HederaTracer hederaTracer =
+                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+        super.setOperationTracer(hederaTracer);
+
+        try {
+            super.execute(
+                    sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
+        } catch (final ResourceLimitException e) {
+            handleResourceLimitExceeded(
+                    sender,
+                    gasPrice,
+                    gasLimit,
+                    value,
+                    isStatic,
+                    userOfferedGasPrice,
+                    maxGasAllowanceInTinybars,
+                    relayer,
+                    gasCost,
+                    upfrontCost);
+            return createResourceLimitExceededResult(gasPrice, gasLimit, e);
+        }
 
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 

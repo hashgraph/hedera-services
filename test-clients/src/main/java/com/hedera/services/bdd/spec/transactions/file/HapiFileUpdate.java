@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
@@ -29,14 +29,14 @@ import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -90,7 +90,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     private Optional<ByteString> newContents = Optional.empty();
     private Optional<Set<String>> propDeletions = Optional.empty();
     private Optional<Map<String, String>> propOverrides = Optional.empty();
-    private Optional<Function<HapiApiSpec, ByteString>> contentFn = Optional.empty();
+    private Optional<Function<HapiSpec, ByteString>> contentFn = Optional.empty();
 
     Optional<Consumer<FileID>> preUpdateCb = Optional.empty();
     Optional<Consumer<ResponseCodeEnum>> postUpdateCb = Optional.empty();
@@ -129,7 +129,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         return this;
     }
 
-    public HapiFileUpdate contents(Function<HapiApiSpec, ByteString> fn) {
+    public HapiFileUpdate contents(Function<HapiSpec, ByteString> fn) {
         contentFn = Optional.of(fn);
         return this;
     }
@@ -213,7 +213,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         postUpdateCb.ifPresent(cb -> cb.accept(actualStatus));
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
@@ -247,7 +247,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         Supplier<Optional<Key>> normalWaclSupplier =
                 () ->
                         useEmptyWacl
@@ -332,14 +332,13 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     @SuppressWarnings("java:S5960")
-    private ServicesConfigurationList readBaseProps(HapiApiSpec spec) {
+    private ServicesConfigurationList readBaseProps(HapiSpec spec) {
         if (dropUnmentionedProperties) {
             return ServicesConfigurationList.getDefaultInstance();
         }
 
         if (!basePropsFile.isPresent()) {
-            if (!file.equals(HapiApiSuite.API_PERMISSIONS)
-                    && !file.equals(HapiApiSuite.APP_PROPERTIES)) {
+            if (!file.equals(HapiSuite.API_PERMISSIONS) && !file.equals(HapiSuite.APP_PROPERTIES)) {
                 throw new IllegalStateException(
                         "Property overrides make no sense for file '" + file + "'!");
             }
@@ -392,27 +391,27 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(oldDefaults());
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        List<Function<HapiSpec, Key>> signers = new ArrayList<>(oldDefaults());
         if (newWaclKey.isPresent()) {
             signers.add(spec -> spec.registry().getKey(newWaclKey.get()));
         }
         return signers;
     }
 
-    private List<Function<HapiApiSpec, Key>> oldDefaults() {
+    private List<Function<HapiSpec, Key>> oldDefaults() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(file));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::updateFile;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final FileGetInfoResponse.FileInfo info = lookupInfo(spec);
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -435,7 +434,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
     }
 
     @SuppressWarnings("java:S112")
-    private FileGetInfoResponse.FileInfo lookupInfo(HapiApiSpec spec) throws Throwable {
+    private FileGetInfoResponse.FileInfo lookupInfo(HapiSpec spec) throws Throwable {
         HapiGetFileInfo subOp = getFileInfo(file).noLogging().fee(ONE_HBAR);
         Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
@@ -460,11 +459,11 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         return helper;
     }
 
-    private String payerToUse(String designated, HapiApiSpec spec) {
+    private String payerToUse(String designated, HapiSpec spec) {
         return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
     }
 
-    private boolean isPrivileged(String account, HapiApiSpec spec) {
+    private boolean isPrivileged(String account, HapiSpec spec) {
         return account.equals(spec.setup().addressBookControlName())
                 || account.equals(spec.setup().exchangeRatesControlName())
                 || account.equals(spec.setup().feeScheduleControlName())

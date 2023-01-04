@@ -32,7 +32,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-node:hedera-app-spi"))
     implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
@@ -42,10 +42,8 @@ dependencies {
     implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
-
+    implementation(project(":hedera-node:hedera-evm"))
     implementation(libs.bundles.swirlds)
-    compileOnly(libs.spotbugs.annotations)
-    implementation(libs.hapi)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
 
@@ -58,6 +56,4 @@ dependencies {
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.testing)
-
-    testCompileOnly(libs.spotbugs.annotations)
 }

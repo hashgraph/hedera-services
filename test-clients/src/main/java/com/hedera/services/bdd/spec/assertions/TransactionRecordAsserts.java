@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -94,6 +94,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                             }
                             return EMPTY_LIST;
                         });
+        return this;
+    }
+
+    public TransactionRecordAsserts alias(ByteString alias) {
+        registerTypedProvider("alias", shouldBe(alias));
         return this;
     }
 
@@ -176,6 +181,22 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                                 Assertions.assertEquals(
                                         expected, receipt.getContractID(), "Bad targeted contract");
                             } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts targetedContractId(final ContractID id) {
+        this.<TransactionReceipt>registerTypedProvider(
+                "receipt",
+                spec ->
+                        receipt -> {
+                            try {
+                                Assertions.assertEquals(
+                                        id, receipt.getContractID(), "Bad targeted contract");
+                            } catch (Exception t) {
                                 return List.of(t);
                             }
                             return EMPTY_LIST;
@@ -310,7 +331,17 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts fee(Function<HapiApiSpec, Long> amountFn) {
+    public TransactionRecordAsserts hasNoAlias() {
+        registerTypedProvider("alias", shouldBe(ByteString.EMPTY));
+        return this;
+    }
+
+    public TransactionRecordAsserts evmAddress(ByteString evmAddress) {
+        registerTypedProvider("evmAddress", shouldBe(evmAddress));
+        return this;
+    }
+
+    public TransactionRecordAsserts fee(Function<HapiSpec, Long> amountFn) {
         registerTypedProvider("transactionFee", shouldBe(amountFn));
         return this;
     }

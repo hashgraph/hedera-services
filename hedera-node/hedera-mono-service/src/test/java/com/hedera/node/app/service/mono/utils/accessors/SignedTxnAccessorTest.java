@@ -48,6 +48,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -59,9 +60,9 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.KeyUtils;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.KeyUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -699,6 +700,19 @@ class SignedTxnAccessorTest {
     }
 
     @Test
+    void countsAutoCreationsInEthereumTransaction() {
+        final var accessor = SignedTxnAccessor.uncheckedFrom(signedEthereumTxnWithLazyCreate());
+
+        final var aliasManager = mock(AliasManager.class);
+        given(aliasManager.lookupIdBy(ByteStringUtils.wrapUnsafely(new byte[0])))
+                .willReturn(EntityNum.MISSING_NUM);
+
+        accessor.countImplicitCreationsWith(aliasManager);
+
+        assertEquals(1, accessor.getNumImplicitCreations());
+    }
+
+    @Test
     void setPrngMetaWorks() {
         final var op = UtilPrngTransactionBody.newBuilder().setRange(10).build();
         final var txn =
@@ -1029,6 +1043,36 @@ class SignedTxnAccessorTest {
 
     private Transaction signedNftMint() {
         return buildTransactionFrom(TxnUtils.nonFungibleMintOp());
+    }
+
+    private Transaction signedEthereumTxnWithLazyCreate() {
+        final var unsignedTx =
+                new EthTxData(
+                        null,
+                        EthTxData.EthTransactionType.EIP1559,
+                        new byte[0],
+                        1,
+                        null,
+                        new byte[0],
+                        new byte[0],
+                        0L,
+                        new byte[0],
+                        BigInteger.TEN,
+                        new byte[0],
+                        null,
+                        0,
+                        null,
+                        null,
+                        null);
+        final var ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+        return buildTransactionFrom(
+                TransactionBody.newBuilder()
+                        .setEthereumTransaction(
+                                EthereumTransactionBody.newBuilder()
+                                        .setEthereumData(
+                                                ByteStringUtils.wrapUnsafely(ethTxData.encodeTx()))
+                                        .build())
+                        .build());
     }
 
     private TransactionBody cryptoCreateOp() {

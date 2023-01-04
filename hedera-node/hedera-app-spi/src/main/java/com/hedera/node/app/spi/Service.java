@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -24,29 +23,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface Service {
     /**
-     * Creates and returns a new {@link PreTransactionHandler}
+     * Returns the name of the service. This name must be unique for each service deployed on the
+     * application.
      *
-     * @return A new {@link PreTransactionHandler}
+     * @return the name
      */
     @NonNull
-    PreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
-     * Creates and returns a new {@link TransactionHandler}
-     *
-     * @return A new {@link TransactionHandler}
-     */
-    default @NonNull TransactionHandler createTransactionHandler(@NonNull States states) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Creates and returns a new {@link QueryHandler}
-     *
-     * @return A new {@link QueryHandler}
-     */
-    default @NonNull QueryHandler createQueryHandler(@NonNull States states) {
-        throw new UnsupportedOperationException();
-    }
+    String getServiceName();
 }

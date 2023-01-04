@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -160,7 +160,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         final var details = response.getAccountDetails().getAccountDetails();
         if (assertAliasKeyMatches) {
             Objects.requireNonNull(aliasKeySource);
@@ -209,7 +209,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountDetailsQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -240,7 +240,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountDetailsQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -249,7 +249,7 @@ public class HapiGetAccountDetails extends HapiQueryOp<HapiGetAccountDetails> {
         return costFrom(response);
     }
 
-    private Query getAccountDetailsQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getAccountDetailsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         AccountID target;
         if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
             target =

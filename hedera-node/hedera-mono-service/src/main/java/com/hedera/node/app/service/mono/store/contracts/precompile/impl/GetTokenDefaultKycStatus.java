@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -39,8 +40,9 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(null, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -57,7 +59,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
                 "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());
-        return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
+        return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
     public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(
