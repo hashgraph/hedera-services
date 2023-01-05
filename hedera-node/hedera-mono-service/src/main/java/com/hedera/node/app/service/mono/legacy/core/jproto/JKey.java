@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmHederaKey;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -30,7 +29,7 @@ import java.util.Objects;
 import org.apache.commons.codec.DecoderException;
 
 /** Maps to proto Key. */
-public abstract class JKey implements HederaKey, EvmHederaKey {
+public abstract class JKey implements HederaKey {
     static final int MAX_KEY_DEPTH = 15;
 
     private static final byte[] MISSING_RSA_3072_KEY = new byte[0];

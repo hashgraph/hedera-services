@@ -28,9 +28,12 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.T
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.convertToEvmKey;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
@@ -54,8 +57,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.tokens.TokenKey;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -113,10 +118,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
-    private static final NftId target = new NftId(0, 0, 123, 456);
-    private static final TokenID nft = target.tokenId();
+    private static final NftId nftId = new NftId(0, 0, 123, 456);
+    private static final TokenID nft = nftId.tokenId();
+    private static final long serialNo = nftId.serialNo();
+    private static final Address nftAddress = asTypedEvmAddress(nft);
     private static final TokenID fungibleToken =
             TokenID.newBuilder().setShardNum(0L).setRealmNum(0L).setTokenNum(789).build();
+    private static final Address fungibleTokenAddress = asTypedEvmAddress(fungibleToken);
     private static final EntityId treasury = new EntityId(0, 0, 666);
     private static final EntityId notTreasury = new EntityId(0, 0, 777);
     private static final AccountID accountID = treasury.toGrpcAccountId();
@@ -145,7 +153,6 @@ class WorldLedgersTest {
             ByteString.copyFromUtf8("This is not a supported alias");
     private static final Address sponsor = Address.fromHexString("0xcba");
 
-    private static final NftId nftId = new NftId(0, 0, 123, 456);
     private static final AccountID payerAccountId = asAccount("0.0.9");
     private static final AccountID autoRenew = asAccount("0.0.6");
     private static final TokenID denomTokenId = asToken("0.0.5");
@@ -180,7 +187,8 @@ class WorldLedgersTest {
 
     @Mock private JKey key;
 
-    private WorldLedgers subject;
+    private TokenAccessorImpl tokenAccessor;
+    private WorldLedgers worldLedgers;
     private MerkleToken token;
     private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
     private final String tokenMemo = "Goodbye and keep cold";
@@ -201,10 +209,10 @@ class WorldLedgersTest {
 
     @BeforeEach
     void setUp() throws Throwable {
-        subject =
+        worldLedgers =
                 new WorldLedgers(
                         aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-
+        tokenAccessor();
         token =
                 new MerkleToken(
                         Long.MAX_VALUE,
@@ -223,38 +231,38 @@ class WorldLedgersTest {
     @Test
     void usesStaticAccessIfNotUsableLedgers() {
         final var owner = EntityNum.fromLong(1001).toEvmAddress();
-        given(staticEntityAccess.ownerOf(target)).willReturn(owner);
+        given(staticEntityAccess.ownerOf(nftId)).willReturn(owner);
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
-        assertSame(owner, subject.ownerOf(target));
+        assertSame(owner, worldLedgers.ownerOf(nftId));
     }
 
     @Test
     void resolvesOwnerDirectlyIfNotTreasury() {
-        given(nftsLedger.get(target, OWNER)).willReturn(notTreasury);
+        given(nftsLedger.get(nftId, OWNER)).willReturn(notTreasury);
 
         final var expected = notTreasury.toEvmAddress();
-        final var actual = subject.ownerOf(target);
+        final var actual = tokenAccessor.ownerOf(nftAddress, serialNo);
         assertEquals(expected, actual);
     }
 
     @Test
     void resolvesTreasuryOwner() {
-        given(nftsLedger.get(target, OWNER)).willReturn(MISSING_ENTITY_ID);
+        given(nftsLedger.get(nftId, OWNER)).willReturn(MISSING_ENTITY_ID);
         given(tokensLedger.get(nft, TokenProperty.TREASURY)).willReturn(treasury);
 
         final var expected = treasury.toEvmAddress();
-        final var actual = subject.ownerOf(target);
+        final var actual = tokenAccessor.ownerOf(nftAddress, serialNo);
         assertEquals(expected, actual);
     }
 
     @Test
     void metadataOfWorksWithStatic() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         given(staticEntityAccess.metadataOf(nftId)).willReturn("There, the eyes are");
 
-        assertEquals("There, the eyes are", subject.metadataOf(nftId));
+        assertEquals("There, the eyes are", worldLedgers.metadataOf(nftId));
     }
 
     @Test
@@ -262,64 +270,81 @@ class WorldLedgersTest {
         given(nftsLedger.exists(nftId)).willReturn(true);
         given(nftsLedger.get(nftId, METADATA)).willReturn("There, the eyes are".getBytes());
 
-        assertEquals("There, the eyes are", subject.metadataOf(nftId));
+        assertEquals("There, the eyes are", tokenAccessor.metadataOf(nftAddress, serialNo));
     }
 
     @Test
     void ownerIfPresentOnlyAvailableForMutable() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        assertThrows(IllegalStateException.class, () -> subject.ownerIfPresent(nftId));
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        assertThrows(IllegalStateException.class, () -> worldLedgers.ownerIfPresent(nftId));
     }
 
     @Test
     void ownerIfPresentReturnsNullForNonexistentNftId() {
-        assertNull(subject.ownerIfPresent(nftId));
+        assertNull(worldLedgers.ownerIfPresent(nftId));
     }
 
     @Test
     void ownerIfPresentReturnsOwnerIfPresent() {
         given(nftsLedger.contains(nftId)).willReturn(true);
         given(nftsLedger.get(nftId, OWNER)).willReturn(notTreasury);
-        assertEquals(notTreasury, subject.ownerIfPresent(nftId));
+        assertEquals(notTreasury, worldLedgers.ownerIfPresent(nftId));
     }
 
     @Test
     void staticAllowanceDelegatesAsExpected() {
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.staticAllowanceOf(ownerId, spenderId, fungibleToken));
+                () -> worldLedgers.staticAllowanceOf(ownerId, spenderId, fungibleToken));
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
+
         given(staticEntityAccess.allowanceOf(ownerId, spenderId, fungibleToken)).willReturn(123L);
-        assertEquals(123L, subject.staticAllowanceOf(ownerId, spenderId, fungibleToken));
+        assertEquals(
+                123L,
+                tokenAccessor.staticAllowanceOf(
+                        asTypedEvmAddress(ownerId),
+                        asTypedEvmAddress(spenderId),
+                        asTypedEvmAddress(fungibleToken)));
     }
 
     @Test
     void staticApprovedDelegatesAsExpected() {
-        assertThrows(IllegalStateException.class, () -> subject.staticApprovedSpenderOf(nftId));
+        assertThrows(
+                IllegalStateException.class, () -> worldLedgers.staticApprovedSpenderOf(nftId));
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
+
         given(staticEntityAccess.approvedSpenderOf(nftId)).willReturn(Address.ALTBN128_ADD);
-        assertEquals(Address.ALTBN128_ADD, subject.staticApprovedSpenderOf(nftId));
+        assertEquals(
+                Address.ALTBN128_ADD, tokenAccessor.staticApprovedSpenderOf(nftAddress, serialNo));
     }
 
     @Test
     void staticOperatorDelegatesAsExpected() {
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.staticIsOperator(ownerId, spenderId, nft));
+                () -> worldLedgers.staticIsOperator(ownerId, spenderId, nft));
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
+
         given(staticEntityAccess.isOperator(ownerId, spenderId, nft)).willReturn(true);
-        assertTrue(subject.staticIsOperator(ownerId, spenderId, nft));
+        assertTrue(
+                tokenAccessor.staticIsOperator(
+                        asTypedEvmAddress(ownerId),
+                        asTypedEvmAddress(spenderId),
+                        asTypedEvmAddress(nft)));
     }
 
     @Test
     void approvedForAllLookupOnlyAvailableForMutable() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.hasApprovedForAll(ownerId, accountID, nft));
+                () -> worldLedgers.hasApprovedForAll(ownerId, accountID, nft));
     }
 
     @Test
@@ -327,7 +352,7 @@ class WorldLedgersTest {
         given(accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES))
                 .willReturn(Collections.emptySet());
 
-        final var ans = subject.hasApprovedForAll(ownerId, accountID, nft);
+        final var ans = worldLedgers.hasApprovedForAll(ownerId, accountID, nft);
 
         assertFalse(ans);
     }
@@ -337,7 +362,7 @@ class WorldLedgersTest {
         given(accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES))
                 .willReturn(Set.of(FcTokenAllowanceId.from(nft, accountID)));
 
-        final var ans = subject.hasApprovedForAll(ownerId, accountID, nft);
+        final var ans = worldLedgers.hasApprovedForAll(ownerId, accountID, nft);
 
         assertTrue(ans);
     }
@@ -346,12 +371,13 @@ class WorldLedgersTest {
     void metadataOfWorksWithNonExistent() {
         given(nftsLedger.exists(nftId)).willReturn(false);
 
-        assertEquals(URI_QUERY_NON_EXISTING_TOKEN_ERROR, subject.metadataOf(nftId));
+        assertEquals(URI_QUERY_NON_EXISTING_TOKEN_ERROR, worldLedgers.metadataOf(nftId));
     }
 
     @Test
     void staticTokenInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
 
         given(staticEntityAccess.infoForToken(fungibleToken)).willReturn(Optional.of(tokenInfo));
         given(tokenInfo.getPauseStatus()).willReturn(Paused);
@@ -364,7 +390,7 @@ class WorldLedgersTest {
         given(tokenInfo.getDecimals()).willReturn(1);
         given(tokenInfo.getCustomFeesList()).willReturn(grpcCustomFees);
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = tokenAccessor.infoForToken(fungibleTokenAddress, ledgerId).get();
 
         assertEquals(Paused, tokenInfo.getPauseStatus());
         assertEquals(token.memo(), tokenInfo.getMemo());
@@ -379,7 +405,7 @@ class WorldLedgersTest {
 
     @Test
     void staticEvmTokenInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
         given(staticEntityAccess.evmInfoForToken(fungibleToken))
                 .willReturn(Optional.of(evmTokenInfo));
@@ -389,7 +415,7 @@ class WorldLedgersTest {
         given(evmTokenInfo.getTotalSupply()).willReturn(100L);
         given(evmTokenInfo.getDecimals()).willReturn(1);
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = worldLedgers.evmInfoForToken(fungibleToken, ledgerId).get();
 
         assertEquals(token.memo(), tokenInfo.getMemo());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
@@ -402,7 +428,7 @@ class WorldLedgersTest {
     void nonStaticEvmTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = tokenAccessor.evmInfoForToken(fungibleTokenAddress, ledgerId).get();
 
         assertEquals(token.memo(), tokenInfo.getMemo());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
@@ -415,7 +441,7 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId).get();
 
         assertEquals(Paused, tokenInfo.getPauseStatus());
         assertEquals(token.memo(), tokenInfo.getMemo());
@@ -432,7 +458,7 @@ class WorldLedgersTest {
     void nonStaticTokenEvmInfoWorksForMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId);
+        final var tokenInfo = worldLedgers.evmInfoForToken(fungibleToken, ledgerId);
         assertEquals(Optional.empty(), tokenInfo);
     }
 
@@ -440,13 +466,13 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorksForMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId);
+        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId);
         assertEquals(Optional.empty(), tokenInfo);
     }
 
     @Test
     void staticNftTokenInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
@@ -458,7 +484,7 @@ class WorldLedgersTest {
         given(tokenNftInfo.getCreationTime()).willReturn(fromJava(nftCreation).toGrpc());
         given(tokenNftInfo.getMetadata()).willReturn(ByteString.copyFrom(nftMeta));
 
-        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+        final var tokenNftInfo = worldLedgers.infoForNft(nftId, ledgerId).get();
 
         assertEquals(ledgerId, tokenNftInfo.getLedgerId());
         assertEquals(nftId, tokenNftInfo.getNftID());
@@ -470,8 +496,10 @@ class WorldLedgersTest {
 
     @Test
     void staticEvmNftTokenInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        final var nftAddr = asTypedEvmAddress(nftTokenId);
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
 
@@ -481,13 +509,13 @@ class WorldLedgersTest {
         given(tokenNftInfo.getMetadata()).willReturn(ByteString.copyFrom(nftMeta));
         given(tokenNftInfo.getSpenderId()).willReturn(spenderId);
 
-        final var tokenNftInfo = subject.evmNftInfo(nftId, ledgerId).get();
+        final var tokenNftInfo = tokenAccessor.evmNftInfo(nftAddr, 1L, ledgerId).get();
 
         assertEquals(nftId.getSerialNumber(), tokenNftInfo.getSerialNumber());
-        assertEquals(EntityIdUtils.asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
+        assertEquals(asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
         assertEquals(fromJava(nftCreation).toGrpc().getSeconds(), tokenNftInfo.getCreationTime());
         assertArrayEquals(nftMeta, tokenNftInfo.getMetadata());
-        assertEquals(EntityIdUtils.asTypedEvmAddress(spenderId), tokenNftInfo.getSpender());
+        assertEquals(asTypedEvmAddress(spenderId), tokenNftInfo.getSpender());
     }
 
     @Test
@@ -497,7 +525,7 @@ class WorldLedgersTest {
         given(nftsLedger.contains(targetKey)).willReturn(true);
         given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
 
-        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+        final var tokenNftInfo = worldLedgers.infoForNft(nftId, ledgerId).get();
 
         assertEquals(ledgerId, tokenNftInfo.getLedgerId());
         assertEquals(nftId, tokenNftInfo.getNftID());
@@ -513,7 +541,7 @@ class WorldLedgersTest {
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         given(nftsLedger.contains(targetKey)).willReturn(false);
 
-        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId);
+        final var tokenNftInfo = worldLedgers.infoForNft(nftId, ledgerId);
 
         assertEquals(Optional.empty(), tokenNftInfo);
     }
@@ -527,7 +555,7 @@ class WorldLedgersTest {
         given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
         given(tokensLedger.getImmutableRef(nftTokenId)).willReturn(token);
 
-        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId).get();
+        final var tokenNftInfo = worldLedgers.infoForNft(nftId, ledgerId).get();
 
         assertEquals(ledgerId, tokenNftInfo.getLedgerId());
         assertEquals(nftId, tokenNftInfo.getNftID());
@@ -546,19 +574,19 @@ class WorldLedgersTest {
         given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
         given(tokensLedger.getImmutableRef(nftTokenId)).willReturn(null);
 
-        final var tokenNftInfo = subject.infoForNft(nftId, ledgerId);
+        final var tokenNftInfo = worldLedgers.infoForNft(nftId, ledgerId);
 
         assertEquals(Optional.empty(), tokenNftInfo);
     }
 
     @Test
     void staticTokenCustomFeesInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
         given(customFees.size()).willReturn(3);
         given(staticEntityAccess.infoForTokenCustomFees(fungibleToken)).willReturn(customFees);
 
-        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
+        final var customFeesInfo = worldLedgers.infoForTokenCustomFees(fungibleToken).get();
         assertEquals(3, customFeesInfo.size());
     }
 
@@ -566,7 +594,7 @@ class WorldLedgersTest {
     void nonStaticTokenCustomFeesInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken).get();
+        final var customFeesInfo = tokenAccessor.infoForTokenCustomFees(fungibleTokenAddress).get();
         assertEquals(4, customFeesInfo.size());
     }
 
@@ -574,7 +602,7 @@ class WorldLedgersTest {
     void nonStaticTokenCustomFeesInfoWorksWithMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken);
+        final var customFeesInfo = worldLedgers.infoForTokenCustomFees(fungibleToken);
         assertEquals(Optional.empty(), customFeesInfo);
     }
 
@@ -582,14 +610,15 @@ class WorldLedgersTest {
     void nonStaticTokenCustomFeesInfoWorkOnThrownException() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willThrow(NullPointerException.class);
 
-        final var customFeesInfo = subject.infoForTokenCustomFees(fungibleToken);
+        final var customFeesInfo = worldLedgers.infoForTokenCustomFees(fungibleToken);
         assertEquals(Optional.empty(), customFeesInfo);
     }
 
     @Test
     void staticKeyInfoWorks() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
+        EvmKey evmKey = convertToEvmKey(asKeyUnchecked(key));
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.FREEZE_KEY)).willReturn(key);
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.KYC_KEY)).willReturn(key);
@@ -599,14 +628,17 @@ class WorldLedgersTest {
                 .willReturn(key);
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY)).willReturn(key);
 
-        final var adminKey = subject.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
-        final var freezeKey = subject.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
-        final var kycKey = subject.keyOf(fungibleToken, TokenProperty.KYC_KEY);
-        final var wipeKey = subject.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
-        final var pauseKey = subject.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
-        final var feeScheduleKey = subject.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
-        final var supplyKey = subject.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
+        final var evmAdminKey = tokenAccessor.keyOf(fungibleTokenAddress, TokenKey.ADMIN_KEY);
+        final var adminKey = worldLedgers.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
+        final var freezeKey = worldLedgers.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
+        final var kycKey = worldLedgers.keyOf(fungibleToken, TokenProperty.KYC_KEY);
+        final var wipeKey = worldLedgers.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
+        final var pauseKey = worldLedgers.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
+        final var feeScheduleKey =
+                worldLedgers.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
+        final var supplyKey = worldLedgers.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
 
+        assertEquals(evmKey.getEd25519(), evmAdminKey.getEd25519());
         assertEquals(key, adminKey);
         assertEquals(key, freezeKey);
         assertEquals(key, kycKey);
@@ -633,13 +665,14 @@ class WorldLedgersTest {
         given(tokensLedger.get(fungibleToken, TokenProperty.SUPPLY_KEY))
                 .willReturn(MISC_ACCOUNT_KT.asJKey());
 
-        final var adminKey = subject.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
-        final var freezeKey = subject.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
-        final var kycKey = subject.keyOf(fungibleToken, TokenProperty.KYC_KEY);
-        final var wipeKey = subject.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
-        final var pauseKey = subject.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
-        final var feeScheduleKey = subject.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
-        final var supplyKey = subject.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
+        final var adminKey = worldLedgers.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
+        final var freezeKey = worldLedgers.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
+        final var kycKey = worldLedgers.keyOf(fungibleToken, TokenProperty.KYC_KEY);
+        final var wipeKey = worldLedgers.keyOf(fungibleToken, TokenProperty.WIPE_KEY);
+        final var pauseKey = worldLedgers.keyOf(fungibleToken, TokenProperty.PAUSE_KEY);
+        final var feeScheduleKey =
+                worldLedgers.keyOf(fungibleToken, TokenProperty.FEE_SCHEDULE_KEY);
+        final var supplyKey = worldLedgers.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY);
 
         assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(), adminKey);
         assertEquals(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(), freezeKey);
@@ -652,7 +685,7 @@ class WorldLedgersTest {
 
     @Test
     void commitsAsExpectedNoHistorian() {
-        subject.commit();
+        worldLedgers.commit();
 
         verify(tokenRelsLedger).commit();
         verify(accountsLedger).commit();
@@ -665,7 +698,7 @@ class WorldLedgersTest {
     void aliasIsCanonicalCreate2SourceAddress() {
         given(aliases.isInUse(alias)).willReturn(true);
 
-        assertSame(alias, subject.canonicalAddress(alias));
+        assertSame(alias, worldLedgers.canonicalAddress(alias));
     }
 
     @Test
@@ -674,27 +707,27 @@ class WorldLedgersTest {
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.EMPTY);
 
-        assertSame(sponsor, subject.canonicalAddress(sponsor));
+        assertSame(sponsor, tokenAccessor.canonicalAddress(sponsor));
     }
 
     @Test
     void missingMirrorIsCanonicalSourceWithLedgers() {
-        assertSame(sponsor, subject.canonicalAddress(sponsor));
+        assertSame(sponsor, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
     void missingMirrorIsCanonicalSourceWithStaticAccess() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        assertSame(sponsor, subject.canonicalAddress(sponsor));
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        assertSame(sponsor, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
     void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         given(staticEntityAccess.isExtant(sponsor)).willReturn(true);
         given(staticEntityAccess.alias(sponsor)).willReturn(ByteString.EMPTY);
 
-        assertSame(sponsor, subject.canonicalAddress(sponsor));
+        assertSame(sponsor, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
@@ -702,7 +735,7 @@ class WorldLedgersTest {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
-        assertEquals(alias, subject.canonicalAddress(sponsor));
+        assertEquals(alias, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
@@ -710,7 +743,7 @@ class WorldLedgersTest {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(pkAlias);
-        assertEquals(pkAddress, subject.canonicalAddress(sponsor));
+        assertEquals(pkAddress, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
@@ -719,14 +752,14 @@ class WorldLedgersTest {
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS))
                 .willReturn(unsupportedAlias, pkAliasBadProtobuf, pkAliasBadFormat);
-        assertEquals(sponsor, subject.canonicalAddress(sponsor));
-        assertEquals(sponsor, subject.canonicalAddress(sponsor));
-        assertEquals(sponsor, subject.canonicalAddress(sponsor));
+        assertEquals(sponsor, worldLedgers.canonicalAddress(sponsor));
+        assertEquals(sponsor, worldLedgers.canonicalAddress(sponsor));
+        assertEquals(sponsor, worldLedgers.canonicalAddress(sponsor));
     }
 
     @Test
     void commitsAsExpectedWithHistorian() {
-        subject.commit(sigImpactHistorian);
+        worldLedgers.commit(sigImpactHistorian);
 
         verify(tokenRelsLedger).commit();
         verify(accountsLedger).commit();
@@ -737,7 +770,7 @@ class WorldLedgersTest {
 
     @Test
     void revertsAsExpected() {
-        subject.revert();
+        worldLedgers.revert();
 
         verify(tokenRelsLedger).rollback();
         verify(accountsLedger).rollback();
@@ -893,7 +926,7 @@ class WorldLedgersTest {
 
         given(tokensLedger.contains(htsId)).willReturn(true);
 
-        assertTrue(subject.isTokenAddress(htsProxy));
+        assertTrue(tokenAccessor.isTokenAddress(htsProxy));
     }
 
     @Test
@@ -902,9 +935,9 @@ class WorldLedgersTest {
 
         given(staticEntityAccess.isTokenAccount(htsProxy)).willReturn(true);
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
-        assertTrue(subject.isTokenAddress(htsProxy));
+        assertTrue(worldLedgers.isTokenAddress(htsProxy));
     }
 
     @Test
@@ -920,37 +953,40 @@ class WorldLedgersTest {
         given(staticEntityAccess.defaultKycStatus(fungibleToken)).willReturn(false);
         given(staticEntityAccess.isFrozen(accountID, fungibleToken)).willReturn(true);
 
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        tokenAccessor();
 
-        assertEquals(name, subject.nameOf(fungibleToken));
-        assertEquals(symbol, subject.symbolOf(fungibleToken));
-        assertEquals(decimals, subject.decimalsOf(fungibleToken));
-        assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
-        assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
-        assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
-        assertFalse(subject.isKyc(accountID, fungibleToken));
-        assertFalse(subject.defaultFreezeStatus(fungibleToken));
-        assertFalse(subject.defaultKycStatus(fungibleToken));
-        assertTrue(subject.isFrozen(accountID, fungibleToken));
+        assertEquals(name, tokenAccessor.nameOf(fungibleTokenAddress));
+        assertEquals(symbol, tokenAccessor.symbolOf(fungibleTokenAddress));
+        assertEquals(decimals, tokenAccessor.decimalsOf(fungibleTokenAddress));
+        assertEquals(
+                balance,
+                tokenAccessor.balanceOf(asTypedEvmAddress(accountID), fungibleTokenAddress));
+        assertEquals(totalSupply, tokenAccessor.totalSupplyOf(fungibleTokenAddress));
+        assertEquals(FUNGIBLE_COMMON, tokenAccessor.typeOf(fungibleTokenAddress));
+        assertFalse(tokenAccessor.isKyc(asTypedEvmAddress(accountID), fungibleTokenAddress));
+        assertFalse(tokenAccessor.defaultFreezeStatus(fungibleTokenAddress));
+        assertFalse(tokenAccessor.defaultKycStatus(fungibleTokenAddress));
+        assertTrue(tokenAccessor.isFrozen(asTypedEvmAddress(accountID), fungibleTokenAddress));
     }
 
     @Test
     void failsIfNoFungibleTokenMetaAvailableFromLedgers() {
-        assertFailsWith(() -> subject.nameOf(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.symbolOf(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.decimalsOf(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.isKyc(accountID, fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.totalSupplyOf(fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_TOKEN_ID);
-        assertFailsWith(() -> subject.isFrozen(accountID, fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.nameOf(fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.symbolOf(fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.decimalsOf(fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.isKyc(accountID, fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.totalSupplyOf(fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.balanceOf(accountID, fungibleToken), INVALID_TOKEN_ID);
+        assertFailsWith(() -> worldLedgers.isFrozen(accountID, fungibleToken), INVALID_TOKEN_ID);
     }
 
     @Test
     void failsIfAccountMissingFromLedgers() {
         given(tokensLedger.exists(fungibleToken)).willReturn(true);
-        assertFailsWith(() -> subject.isKyc(accountID, fungibleToken), INVALID_ACCOUNT_ID);
-        assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_ACCOUNT_ID);
-        assertFailsWith(() -> subject.isFrozen(accountID, fungibleToken), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> worldLedgers.isKyc(accountID, fungibleToken), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> worldLedgers.balanceOf(accountID, fungibleToken), INVALID_ACCOUNT_ID);
+        assertFailsWith(() -> worldLedgers.isFrozen(accountID, fungibleToken), INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -960,7 +996,7 @@ class WorldLedgersTest {
         given(accountsLedger.exists(accountID)).willReturn(true);
         given(tokenRelsLedger.exists(key)).willReturn(true);
         given(tokenRelsLedger.get(key, IS_KYC_GRANTED)).willReturn(true);
-        assertTrue(subject.isKyc(accountID, fungibleToken));
+        assertTrue(worldLedgers.isKyc(accountID, fungibleToken));
     }
 
     @Test
@@ -970,7 +1006,7 @@ class WorldLedgersTest {
         given(accountsLedger.exists(accountID)).willReturn(true);
         given(tokenRelsLedger.exists(key)).willReturn(true);
         given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
-        assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
+        assertEquals(balance, worldLedgers.balanceOf(accountID, fungibleToken));
     }
 
     @Test
@@ -980,14 +1016,17 @@ class WorldLedgersTest {
         given(accountsLedger.exists(accountID)).willReturn(true);
         given(tokenRelsLedger.exists(key)).willReturn(true);
         given(tokenRelsLedger.get(key, IS_FROZEN)).willReturn(true);
-        assertTrue(subject.isFrozen(accountID, fungibleToken));
+        assertTrue(worldLedgers.isFrozen(accountID, fungibleToken));
     }
 
     @Test
     void getsZeroBalanceWhenNoKeyPresent() {
         given(tokensLedger.exists(fungibleToken)).willReturn(true);
         given(accountsLedger.exists(accountID)).willReturn(true);
-        assertEquals(0, subject.balanceOf(accountID, fungibleToken));
+        assertEquals(
+                0,
+                tokenAccessor.balanceOf(
+                        asTypedEvmAddress(accountID), asTypedEvmAddress(fungibleToken)));
     }
 
     @Test
@@ -998,11 +1037,11 @@ class WorldLedgersTest {
         given(tokensLedger.get(fungibleToken, SYMBOL)).willReturn(symbol);
         given(tokensLedger.get(fungibleToken, TOKEN_TYPE)).willReturn(FUNGIBLE_COMMON);
 
-        assertEquals(name, subject.nameOf(fungibleToken));
-        assertEquals(symbol, subject.symbolOf(fungibleToken));
-        assertEquals(decimals, subject.decimalsOf(fungibleToken));
-        assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
-        assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
+        assertEquals(name, tokenAccessor.nameOf(fungibleTokenAddress));
+        assertEquals(symbol, tokenAccessor.symbolOf(fungibleTokenAddress));
+        assertEquals(decimals, tokenAccessor.decimalsOf(fungibleTokenAddress));
+        assertEquals(totalSupply, tokenAccessor.totalSupplyOf(fungibleTokenAddress));
+        assertEquals(FUNGIBLE_COMMON, tokenAccessor.typeOf(fungibleTokenAddress));
     }
 
     private void setUpToken(final MerkleToken token) throws DecoderException {
@@ -1013,6 +1052,10 @@ class WorldLedgersTest {
         token.setSupplyType(TokenSupplyType.FINITE);
         token.setFeeScheduleFrom(grpcCustomFees);
         token.setTokenType(FUNGIBLE_COMMON);
+    }
+
+    private void tokenAccessor() {
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
     }
 
     private static final int decimals = 666666;

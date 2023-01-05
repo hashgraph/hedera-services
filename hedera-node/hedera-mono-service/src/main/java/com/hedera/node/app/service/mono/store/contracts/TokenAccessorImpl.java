@@ -15,18 +15,22 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.convertToEvmKey;
 import static com.hedera.node.app.service.mono.store.models.NftId.fromGrpc;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmHederaKey;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.node.app.service.evm.store.tokens.TokenKey;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
@@ -41,14 +45,19 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Optional<EvmTokenInfo> evmInfoForToken(Address tokenId, byte[] ledgerId) {
-        return trackingLedgers.evmInfoForToken(
-                tokenIdFromEvmAddress(tokenId), ByteString.copyFrom(ledgerId));
+    public Optional<EvmTokenInfo> evmInfoForToken(Address tokenId, ByteString ledgerId) {
+        return trackingLedgers.evmInfoForToken(tokenIdFromEvmAddress(tokenId), ledgerId);
     }
 
     @Override
-    public Optional<EvmNftInfo> evmNftInfo(NftID target, byte[] ledgerId) {
-        return trackingLedgers.evmNftInfo(target, ByteString.copyFrom(ledgerId));
+    public Optional<EvmNftInfo> evmNftInfo(
+            final Address tokenId, long serialNo, final ByteString ledgerId) {
+        final var target =
+                NftID.newBuilder()
+                        .setSerialNumber(serialNo)
+                        .setTokenID(tokenIdFromEvmAddress(tokenId))
+                        .build();
+        return trackingLedgers.evmNftInfo(target, ledgerId);
     }
 
     @Override
@@ -89,14 +98,17 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Optional<TokenInfo> infoForToken(Address tokenId, byte[] ledgerId) {
-        return trackingLedgers.infoForToken(
-                tokenIdFromEvmAddress(tokenId), ByteString.copyFrom(ledgerId));
+    public Optional<TokenInfo> infoForToken(Address tokenId, ByteString ledgerId) {
+        return trackingLedgers.infoForToken(tokenIdFromEvmAddress(tokenId), ledgerId);
     }
 
     @Override
-    public EvmHederaKey keyOf(Address tokenId, Enum keyType) {
-        return trackingLedgers.keyOf(tokenIdFromEvmAddress(tokenId), (TokenProperty) keyType);
+    public EvmKey keyOf(Address tokenId, TokenKey keyType) {
+        final var key =
+                trackingLedgers.keyOf(
+                        tokenIdFromEvmAddress(tokenId), TokenProperty.valueOf(keyType.name()));
+
+        return convertToEvmKey(asKeyUnchecked(key));
     }
 
     @Override
@@ -134,8 +146,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Address staticApprovedSpenderOf(NftID nftId) {
-        return trackingLedgers.staticApprovedSpenderOf(fromGrpc(nftId));
+    public Address staticApprovedSpenderOf(final Address nftId, long serialNo) {
+        return trackingLedgers.staticApprovedSpenderOf(nftIdOf(nftId, serialNo));
     }
 
     @Override
@@ -147,8 +159,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Address ownerOf(NftID nftId) {
-        return trackingLedgers.ownerOf(fromGrpc(nftId));
+    public Address ownerOf(final Address nftId, long serialNo) {
+        return trackingLedgers.ownerOf(nftIdOf(nftId, serialNo));
     }
 
     @Override
@@ -157,7 +169,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public String metadataOf(NftID nftId) {
-        return trackingLedgers.metadataOf(fromGrpc(nftId));
+    public String metadataOf(final Address nftId, long serialNo) {
+        return trackingLedgers.metadataOf(nftIdOf(nftId, serialNo));
+    }
+
+    private NftId nftIdOf(Address tokenId, long serialNo) {
+        return fromGrpc(tokenIdFromEvmAddress(tokenId), serialNo);
     }
 }

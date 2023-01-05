@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
+package com.hedera.node.app.service.evm.store.tokens;
 
-public interface EvmHederaKey {}
+public enum TokenKey {
+    ADMIN_KEY,
+    KYC_KEY,
+    WIPE_KEY,
+    SUPPLY_KEY,
+    FEE_SCHEDULE_KEY,
+    PAUSE_KEY
+}

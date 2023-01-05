@@ -15,20 +15,20 @@
  */
 package com.hedera.node.app.service.evm.store.tokens;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmHederaKey;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface TokenAccessor {
-    Optional<EvmTokenInfo> evmInfoForToken(final Address tokenId, final byte[] ledgerId);
+    Optional<EvmTokenInfo> evmInfoForToken(final Address tokenId, final ByteString ledgerId);
 
-    Optional<EvmNftInfo> evmNftInfo(final NftID target, final byte[] ledgerId);
+    Optional<EvmNftInfo> evmNftInfo(final Address nftId, long serialNo, final ByteString ledgerId);
 
     boolean isTokenAddress(final Address address);
 
@@ -44,9 +44,9 @@ public interface TokenAccessor {
 
     TokenType typeOf(final Address tokenId);
 
-    Optional<TokenInfo> infoForToken(final Address tokenId, final byte[] ledgerId);
+    Optional<TokenInfo> infoForToken(final Address tokenId, final ByteString ledgerId);
 
-    EvmHederaKey keyOf(final Address tokenId, final Enum keyType);
+    EvmKey keyOf(final Address tokenId, final TokenKey keyType);
 
     String nameOf(final Address tokenId);
 
@@ -60,14 +60,14 @@ public interface TokenAccessor {
 
     long staticAllowanceOf(final Address ownerId, final Address spenderId, final Address tokenId);
 
-    Address staticApprovedSpenderOf(final NftID nftId);
+    Address staticApprovedSpenderOf(final Address nftId, long serialNo);
 
     boolean staticIsOperator(
             final Address ownerId, final Address operatorId, final Address tokenId);
 
-    Address ownerOf(final NftID nftId);
+    Address ownerOf(final Address nftId, long serialNo);
 
     Address canonicalAddress(final Address addressOrAlias);
 
-    String metadataOf(final NftID nftId);
+    String metadataOf(final Address nftId, long serialNo);
 }
