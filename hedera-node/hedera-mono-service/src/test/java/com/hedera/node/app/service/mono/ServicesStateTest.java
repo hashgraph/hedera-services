@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,8 @@ import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
@@ -78,6 +80,7 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.ResponsibleVMapUser;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
@@ -118,7 +121,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-class ServicesStateTest {
+class ServicesStateTest extends ResponsibleVMapUser {
     private final String signedStateDir = "src/test/resources/signedState/";
     private final SoftwareVersion justPriorVersion = forHapiAndHedera("0.29.1", "0.29.2");
     private final SoftwareVersion currentVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
@@ -165,7 +168,7 @@ class ServicesStateTest {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
                 .setServices(SemanticVersion.newBuilder().setMinor(32).build());
-        subject = new ServicesState();
+        subject = tracked(new ServicesState());
         setAllChildren();
     }
 
@@ -257,7 +260,7 @@ class ServicesStateTest {
 
     @Test
     void onReleaseAndArchiveNoopIfMetadataNull() {
-        setAllMmsTo(mock(MerkleMap.class));
+        mockAllMaps(mock(MerkleMap.class), mock(VirtualMap.class));
         Assertions.assertDoesNotThrow(subject::archive);
         Assertions.assertDoesNotThrow(subject::destroyNode);
     }
@@ -279,7 +282,7 @@ class ServicesStateTest {
         final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
 
         subject.setMetadata(metadata);
-        setAllMmsTo(mockMm);
+        mockAllMaps(mockMm, mock(VirtualMap.class));
 
         // when:
         subject.archive();
@@ -302,7 +305,7 @@ class ServicesStateTest {
 
     @Test
     void handleThrowsIfImmutable() {
-        subject.copy();
+        tracked(subject.copy());
 
         assertThrows(
                 MutabilityException.class, () -> subject.handleConsensusRound(round, dualState));
@@ -435,7 +438,7 @@ class ServicesStateTest {
     @Test
     void genesisWhenVirtualNftsEnabled() {
         // setup:
-        subject = new ServicesState(bootstrapProperties);
+        subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK))
@@ -639,7 +642,7 @@ class ServicesStateTest {
 
     @Test
     void nonGenesisInitHandlesNftMigration() {
-        subject = new ServicesState(bootstrapProperties);
+        subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
@@ -651,7 +654,7 @@ class ServicesStateTest {
         given(vmf.apply(any())).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
-        setAllMmsTo(mock(MerkleMap.class));
+        mockAllMaps(mock(MerkleMap.class), vmap);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
@@ -687,7 +690,7 @@ class ServicesStateTest {
 
     @Test
     void nonGenesisInitHandlesTokenRelMigrationToDisk() {
-        subject = new ServicesState(bootstrapProperties);
+        subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(false);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_STORE_ON_DISK))
@@ -699,7 +702,7 @@ class ServicesStateTest {
         given(vmf.apply(any())).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
-        setAllMmsTo(mock(MerkleMap.class));
+        mockAllMaps(mock(MerkleMap.class), vmap);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.STORAGE, vmap);
         subject.setChild(StateChildIndices.CONTRACT_STORAGE, vmap);
@@ -735,7 +738,7 @@ class ServicesStateTest {
     @Test
     void copySetsMutabilityAsExpected() {
         // when:
-        final var copy = subject.copy();
+        final var copy = tracked(subject.copy());
 
         // then:
         assertTrue(subject.isImmutable());
@@ -751,7 +754,7 @@ class ServicesStateTest {
         given(app.workingState()).willReturn(workingState);
 
         // when:
-        final var copy = subject.copy();
+        final var copy = tracked(subject.copy());
 
         // then:
         verify(workingState).updateFrom(copy);
@@ -774,7 +777,7 @@ class ServicesStateTest {
         given(app.workingState()).willReturn(workingState);
 
         // when:
-        final var copy = subject.copy();
+        final var copy = tracked(subject.copy());
 
         // then:
         assertEquals(10, copy.getDeserializedStateVersion());
@@ -793,8 +796,7 @@ class ServicesStateTest {
         assertDoesNotThrow(
                 () -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
-        ref.get()
-                .getSwirldState()
+        tracked((ServicesState) ref.get().getSwirldState())
                 .init(
                         mockPlatform,
                         createPretendBookFrom(mockPlatform, false),
@@ -806,7 +808,7 @@ class ServicesStateTest {
     @Test
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
-        final var servicesState = new ServicesState();
+        final var servicesState = tracked(new ServicesState());
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
@@ -827,7 +829,7 @@ class ServicesStateTest {
 
     @Test
     void testUniqueTokensWhenVirtual() {
-        final var vmap = new VirtualMap<>();
+        final var vmap = this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>());
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, vmap);
         assertTrue(subject.uniqueTokens().isVirtual());
         assertSame(vmap, subject.uniqueTokens().virtualMap());
@@ -901,12 +903,12 @@ class ServicesStateTest {
         return signedPair.signedState();
     }
 
-    private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {
+    private void mockAllMaps(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> mockVm) {
         subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
         subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
         subject.setChild(StateChildIndices.TOKENS, mockMm);
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
-        subject.setChild(StateChildIndices.STORAGE, mockMm);
+        subject.setChild(StateChildIndices.STORAGE, mockVm);
         subject.setChild(StateChildIndices.TOPICS, mockMm);
         subject.setChild(StateChildIndices.SCHEDULE_TXS, mock(MerkleScheduledTransactions.class));
         subject.setChild(StateChildIndices.STAKING_INFO, mockMm);
