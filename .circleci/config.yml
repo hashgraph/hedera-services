@@ -239,7 +239,7 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
+            gsutil -m rsync -r "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
   # Command Name:                     gcp_import_credentials
