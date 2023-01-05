@@ -18,11 +18,10 @@ package com.hedera.services.yahcli.suites;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.suites.HapiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ScheduleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleSuite.class);

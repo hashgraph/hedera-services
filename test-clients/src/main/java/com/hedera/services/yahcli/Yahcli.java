@@ -22,12 +22,11 @@ import com.hedera.services.yahcli.commands.keys.KeysCommand;
 import com.hedera.services.yahcli.commands.schedules.ScheduleCommand;
 import com.hedera.services.yahcli.commands.system.*;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
+import java.util.concurrent.Callable;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
 import picocli.CommandLine.*;
 import picocli.CommandLine.Model.CommandSpec;
-
-import java.util.concurrent.Callable;
 
 @Command(
         name = "yahcli",
