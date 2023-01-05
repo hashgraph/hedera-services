@@ -454,6 +454,28 @@ class AbstractRecordingCreateOperationTest {
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
+    @Test
+    void failsWhenMatchingHollowAccountExistsAndLazyCreationDisabled() {
+        given(frame.stackSize()).willReturn(3);
+        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
+        given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(value));
+        given(frame.getRecipientAddress()).willReturn(recipient);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.getAccount(recipient)).willReturn(recipientAccount);
+        given(recipientAccount.getMutable()).willReturn(mutableAccount);
+        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+
+        subject.execute(frame, evm);
+
+        verify(frame).readMutableMemory(1L, 1L);
+        verify(frame).popStackItems(3);
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
     private void givenBuilderPrereqs() {
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(updater.updater()).willReturn(updater);
