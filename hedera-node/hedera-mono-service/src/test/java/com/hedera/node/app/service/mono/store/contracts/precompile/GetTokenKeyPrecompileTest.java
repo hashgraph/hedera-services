@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -95,6 +96,7 @@ class GetTokenKeyPrecompileTest {
     @Mock private JContractIDKey jContractIDKey;
     @Mock private JDelegatableContractIDKey jDelegatableContractIDKey;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final Bytes GET_TOKEN_KEY_INPUT =
             Bytes.fromHexString(
@@ -135,7 +137,8 @@ class GetTokenKeyPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
     }
 

@@ -80,6 +80,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
@@ -224,6 +225,7 @@ class ERC721PrecompilesTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
     @Mock private Account account;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -262,7 +264,8 @@ class ERC721PrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils

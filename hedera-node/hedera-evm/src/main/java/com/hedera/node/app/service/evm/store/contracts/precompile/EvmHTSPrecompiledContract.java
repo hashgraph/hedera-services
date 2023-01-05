@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.evm.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
@@ -11,29 +26,25 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class EvmHTSPrecompiledContract {
 
-  private final InfrastructureFactory infrastructureFactory;
+    private final InfrastructureFactory infrastructureFactory;
 
-  @Inject
-  public EvmHTSPrecompiledContract(InfrastructureFactory infrastructureFactory) {
-    this.infrastructureFactory = infrastructureFactory;
-  }
+    @Inject
+    public EvmHTSPrecompiledContract(InfrastructureFactory infrastructureFactory) {
+        this.infrastructureFactory = infrastructureFactory;
+    }
 
-  public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator) {
+    public Pair<Long, Bytes> computeCosted(
+            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator) {
         if (isTokenProxyRedirect(input)) {
-          final var executor =
-              infrastructureFactory.newRedirectExecutor(
-                  input, frame, viewGasCalculator);
-          return executor.computeCosted();
+            final var executor =
+                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator);
+            return executor.computeCosted();
         } else if (isViewFunction(input)) {
-          final var executor =
-              infrastructureFactory.newViewExecutor(
-                  input,
-                  frame,
-                  viewGasCalculator);
-          return executor.computeCosted();
+            final var executor =
+                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator);
+            return executor.computeCosted();
         }
 
-    return Pair.of(-1L, Bytes.EMPTY);
-  }
-
+        return Pair.of(-1L, Bytes.EMPTY);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final MessageFrame frame,
             final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame, (now, minimumTinybarCost) -> minimumTinybarCost);
+            final var costedResult =
+                    htsPrecompile.computeCosted(
+                            frame.getInputData(),
+                            frame,
+                            (now, minimumTinybarCost) -> minimumTinybarCost);
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }

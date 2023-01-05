@@ -102,6 +102,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
@@ -223,6 +224,7 @@ class HTSPrecompiledContractTest {
     private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     private MockedStatic<BurnPrecompile> burnPrecompile;
     @Mock private AssetsLoader assetLoader;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
@@ -273,7 +275,8 @@ class HTSPrecompiledContractTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
         associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);

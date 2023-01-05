@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -115,6 +116,7 @@ class IsFrozenPrecompileTest {
             tokenRels;
 
     @Mock private AssetsLoader assetLoader;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     public static final Bytes IS_FROZEN_INPUT =
             Bytes.fromHexString(
@@ -150,7 +152,8 @@ class IsFrozenPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
     }
 
