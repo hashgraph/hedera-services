@@ -35,9 +35,6 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class DescriptorUtils {
 
-    private static final int ADDRESS_BYTES_LENGTH = 20;
-    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
-
     public static boolean isTokenProxyRedirect(final Bytes input) {
         return ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
     }
@@ -63,8 +60,7 @@ public class DescriptorUtils {
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {
         final var tokenBytes = input.slice(4, 20);
-        final var tokenAddress =
-                Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
+        final var tokenAddress = Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
         final var nestedInput = input.slice(24);
         return new RedirectTarget(nestedInput.getInt(0), tokenAddress);
     }
