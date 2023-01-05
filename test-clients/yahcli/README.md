@@ -517,7 +517,7 @@ decline_reward {
 
 # Scheduling a transaction
 
-You can schedule a transaction to be signed by the reciepent of the transaction. For example,
+You can schedule a transaction to be signed by the recipient of the transaction. For example,
 ```
 Use accounts create -S to create a new receiver account with signature required 0.0.R
 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
@@ -525,7 +525,7 @@ Use accounts create -S to create a new receiver account with signature required 
 Use accounts send --schedule to schedule a transfer to 0.0.R, and create a transaction 0.0.T that has been scheduled
 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts send --denomination hbar --to 0.0.R --memo "test" 8
 
-Use schedule sign schedule sign scheduleId T paying with account 0.0.R to trigger the transfer
+Use  schedule sign scheduleId T paying with account 0.0.R to trigger the transfer
 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId T
 
 ```
