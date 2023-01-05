@@ -52,7 +52,7 @@ public class SignCommand implements Callable<Integer> {
             COMMON_MESSAGES.info(
                     "SUCCESS - " + "scheduleId " + effectiveScheduleId + " " + " signed");
         } else {
-            COMMON_MESSAGES.info("FAILED - " + "could not sign scheduleId " + effectiveScheduleId);
+            COMMON_MESSAGES.warn("FAILED - " + "could not sign scheduleId " + effectiveScheduleId);
             return 1;
         }
 
