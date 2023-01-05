@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,13 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
@@ -54,12 +48,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCreateToken(TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleCreateToken(
+            final TransactionBody txn, final AccountID payer) {
         final var tokenCreateTxnBody = txn.getTokenCreation();
         final var customFees = tokenCreateTxnBody.getCustomFeesList();
         final var treasuryId = tokenCreateTxnBody.getTreasury();
         final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
-        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
@@ -68,7 +62,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
             adminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
-        addCustomFeeKey(meta, hasSigRecKey, customFees);
+        addCustomFeeKey(payer, meta, customFees);
         return meta.build();
     }
 
@@ -245,51 +239,47 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     }
 
     private void addCustomFeeKey(
+            final AccountID payer,
             SigTransactionMetadataBuilder meta,
-            final KeyOrLookupFailureReason hasSigRecKey,
             final List<CustomFee> customFeesList) {
+        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
-            final var hasCollector = customFee.hasFeeCollectorAccountId();
-            if (hasCollector) {
-                final var collector = customFee.getFeeCollectorAccountId();
-                /* A fractional fee collector and a collector for a fixed fee denominated
-                in the units of the newly created token both must always sign a TokenCreate,
-                since these are automatically associated to the newly created token. */
-                final boolean alwaysAdd;
-                if (customFee.hasFixedFee()) {
-                    final var fixedFee = customFee.getFixedFee();
-                    alwaysAdd =
-                            fixedFee.hasDenominatingTokenId()
-                                    && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                    if (!hasSigRecKey.equals(PRESENT_BUT_NOT_REQUIRED)) {
-                        meta.addNonPayerKeyIfReceiverSigRequired(collector, RECEIVER_SIG_REQUIRED);
-                    } else if (alwaysAdd) {
-                        meta.addNonPayerKey(collector, failureStatus);
-                    } else {
-                        meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
-                    }
-                } else if (customFee.hasFractionalFee()) {
+            final var collector = customFee.getFeeCollectorAccountId();
+            /* A fractional fee collector and a collector for a fixed fee denominated
+            in the units of the newly created token both must always sign a TokenCreate,
+            since these are automatically associated to the newly created token. */
+            if (customFee.hasFixedFee()) {
+                final var fixedFee = customFee.getFixedFee();
+                final var alwaysAdd =
+                        fixedFee.hasDenominatingTokenId()
+                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                if (alwaysAdd) {
                     meta.addNonPayerKey(collector, failureStatus);
-                } else if (customFee.hasRoyaltyFee()) {
-                    final var royaltyFee = customFee.getRoyaltyFee();
-                    if (royaltyFee.hasFallbackFee()) {
-                        final var fFee = royaltyFee.getFallbackFee();
-                        alwaysAdd =
-                                fFee.hasDenominatingTokenId()
-                                        && fFee.getDenominatingTokenId().getTokenNum() == 0;
-                        if (!hasSigRecKey.equals(PRESENT_BUT_NOT_REQUIRED)) {
-                            meta.addNonPayerKeyIfReceiverSigRequired(
-                                    collector, RECEIVER_SIG_REQUIRED);
-                        } else if (alwaysAdd) {
-                            meta.addNonPayerKey(collector, failureStatus);
-                        } else {
-                            meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
-                        }
-                    }
+                } else {
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            collector, INVALID_CUSTOM_FEE_COLLECTOR);
                 }
+                return;
+            } else if (customFee.hasFractionalFee()) {
+                meta.addNonPayerKey(collector, failureStatus);
+                return;
             } else {
-                meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
+                final var royaltyFee = customFee.getRoyaltyFee();
+                var alwaysAdd = false;
+                if (royaltyFee.hasFallbackFee()) {
+                    final var fFee = royaltyFee.getFallbackFee();
+                    alwaysAdd =
+                            fFee.hasDenominatingTokenId()
+                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                }
+                if (alwaysAdd) {
+                    meta.addNonPayerKey(collector, failureStatus);
+                } else {
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            collector, INVALID_CUSTOM_FEE_COLLECTOR);
+                }
+                return;
             }
         }
     }
