@@ -160,6 +160,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private WorldLedgers ledgers;
     private Address senderAddress;
     private HederaStackedWorldStateUpdater updater;
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Inject
     public HTSPrecompiledContract(
@@ -174,7 +175,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory) {
+            final InfrastructureFactory infrastructureFactory,
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.evmEncoder = evmEncoder;
@@ -187,6 +189,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
+        this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -198,8 +201,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
-              final var htsPrecompile = new EvmHTSPrecompiledContract();
-              return htsPrecompile.computeCosted(input, frame);
+              return evmHTSPrecompiledContract.computeCosted(input, frame, precompilePricingUtils::computeViewFunctionGas);
             }
         }
         final var result = computePrecompile(input, frame);

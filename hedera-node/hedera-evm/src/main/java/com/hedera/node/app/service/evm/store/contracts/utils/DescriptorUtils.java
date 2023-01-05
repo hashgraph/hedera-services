@@ -14,9 +14,14 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class DescriptorUtils {
+
+  private static final int ADDRESS_BYTES_LENGTH = 20;
+  private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 
   public static boolean isTokenProxyRedirect(final Bytes input) {
     return ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
@@ -39,6 +44,16 @@ public class DescriptorUtils {
           ABI_ID_GET_TOKEN_EXPIRY_INFO -> true;
       default -> false;
     };
+  }
+
+  public static RedirectTarget getRedirectTarget(final Bytes input) {
+    final var tokenBytes = input.slice(4, 20);
+    final var tokenAddress =
+        Address.wrap(
+            Bytes.wrap(tokenBytes.toArrayUnsafe())
+                .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+    final var nestedInput = input.slice(24);
+    return new RedirectTarget(nestedInput.getInt(0), tokenAddress);
   }
 
 }

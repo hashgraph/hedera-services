@@ -84,7 +84,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final MessageFrame frame,
             final OperationTracer operationTracer) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame, (now, minimumTinybarCost) -> minimumTinybarCost);
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }
