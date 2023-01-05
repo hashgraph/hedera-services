@@ -15,19 +15,20 @@
  */
 package com.hedera.services.yahcli.suites;
 
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.suites.HapiSuite;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class SendSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SendSuite.class);
@@ -78,9 +79,6 @@ public class SendSuite extends HapiSuite {
         // flag that transferred as parameter to schedule a transaction or to execute right away
         if (schedule) {
             transfer = scheduleCreate("original", transfer).logged();
-
-            //            COMMON_MESSAGES.info("Scheduled transaction created" + );
-
         }
 
         return HapiSpec.customHapiSpec("DoSend")
