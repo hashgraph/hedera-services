@@ -55,7 +55,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var isToken = ledgers.tokens().contains(tokenId);
-        return encoder.encodeIsToken(isToken);
+        return evmEncoder.encodeIsToken(isToken);
     }
 
     public static TokenInfoWrapper<TokenID> decodeIsToken(final Bytes input) {

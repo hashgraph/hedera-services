@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.*;
@@ -140,6 +144,11 @@ class DispatcherTest {
 
     @Mock private UtilPrngHandler utilPrngHandler;
 
+    @Mock private HederaAccountNumbers numbers;
+    @Mock private HederaFileNumbers fileNumbers;
+    @Mock private AccountKeyLookup keyLookup;
+    private PreHandleContext preHandleCtx;
+
     private Handlers handlers;
     private Dispatcher dispatcher;
 
@@ -194,15 +203,16 @@ class DispatcherTest {
                         tokenUnpauseHandler,
                         utilPrngHandler);
 
-        dispatcher = new Dispatcher(handlers, storeCache);
+        preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
+        dispatcher = new Dispatcher(handlers, storeCache, preHandleCtx);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new Dispatcher(null, storeCache))
+        assertThatThrownBy(() -> new Dispatcher(null, storeCache, preHandleCtx))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Dispatcher(handlers, null))
+        assertThatThrownBy(() -> new Dispatcher(handlers, null, preHandleCtx))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -335,7 +345,9 @@ class DispatcherTest {
                                         CryptoCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.cryptoCreateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.cryptoCreateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoUpdateAccount(
@@ -344,7 +356,7 @@ class DispatcherTest {
                         (Consumer<Handlers>)
                                 h ->
                                         verify(h.cryptoUpdateHandler())
-                                                .preHandle(any(), any(), any())),
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoTransfer(
@@ -444,13 +456,17 @@ class DispatcherTest {
                                         ScheduleCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.scheduleCreateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleCreateHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setScheduleSign(ScheduleSignTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.scheduleSignHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleSignHandler())
+                                                .preHandle(any(), any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setScheduleDelete(

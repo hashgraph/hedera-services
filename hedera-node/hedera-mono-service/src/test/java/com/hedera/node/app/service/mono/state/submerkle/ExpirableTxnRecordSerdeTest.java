@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.submerkle;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0340_VERSION;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
@@ -60,6 +61,9 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
         }
         if (version < RELEASE_0280_VERSION) {
             seeded.clearPrngData();
+        }
+        if (version < RELEASE_0340_VERSION) {
+            seeded.clearEvmAddress();
         }
         return seeded;
     }

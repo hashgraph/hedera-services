@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,12 +76,12 @@ public class QueryVerbs {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }
 
-    public static HapiGetAccountInfo getLiteralAliasAccountInfo(final String alias) {
-        return new HapiGetAccountInfo(alias, ReferenceType.HEXED_CONTRACT_ALIAS);
+    public static HapiGetAccountInfo getAliasedAccountInfo(final ByteString evmAlias) {
+        return new HapiGetAccountInfo(evmAlias, ReferenceType.LITERAL_ACCOUNT_ALIAS);
     }
 
-    public static HapiGetAccountInfo getAliasedAccountInfo(final ByteString alias) {
-        return new HapiGetAccountInfo(alias);
+    public static HapiGetAccountInfo getLiteralAliasAccountInfo(final String alias) {
+        return new HapiGetAccountInfo(alias, ReferenceType.HEXED_CONTRACT_ALIAS);
     }
 
     public static HapiGetAccountRecords getAccountRecords(final String account) {
@@ -164,6 +164,11 @@ public class QueryVerbs {
         return new HapiGetAccountBalance(account);
     }
 
+    public static HapiGetAccountBalance getAccountBalance(
+            final String account, final boolean isContract) {
+        return new HapiGetAccountBalance(account, isContract);
+    }
+
     public static HapiGetAccountBalance getAutoCreatedAccountBalance(final String sourceKey) {
         return new HapiGetAccountBalance(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }
@@ -173,7 +178,7 @@ public class QueryVerbs {
     }
 
     public static HapiGetAccountBalance getAliasedAccountBalance(final ByteString alias) {
-        return new HapiGetAccountBalance(alias, ReferenceType.RAW_ALIAS);
+        return new HapiGetAccountBalance(alias, ReferenceType.LITERAL_ACCOUNT_ALIAS);
     }
 
     public static HapiGetAccountBalance getAccountBalance(final Supplier<String> supplier) {

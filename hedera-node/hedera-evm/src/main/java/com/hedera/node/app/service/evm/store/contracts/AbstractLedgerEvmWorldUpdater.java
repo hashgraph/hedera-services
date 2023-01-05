@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -36,11 +35,6 @@ public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public EvmAccount createAccount(Address address, long nonce, Wei balance) {
-        return null;
-    }
-
-    @Override
-    public EvmAccount getAccount(Address address) {
         return null;
     }
 
@@ -77,11 +71,6 @@ public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
     @Override
     public WorldUpdater updater() {
         return this;
-    }
-
-    @Override
-    public Account get(Address address) {
-        return new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
     }
 
     public boolean isTokenAddress(Address address) {
