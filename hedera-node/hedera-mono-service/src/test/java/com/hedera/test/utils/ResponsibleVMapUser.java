@@ -24,7 +24,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 
@@ -87,16 +86,9 @@ public abstract class ResponsibleVMapUser {
             map.release();
             System.out.println("Released #" + numReleased.incrementAndGet());
             try {
-                if (map.getDataSource() != null) {
-                    map.getDataSource().close();
-                    System.out.println("Closed #" + numClosed.incrementAndGet());
-                }
+                map.getDataSource().close();
             } catch (final NullPointerException ignore) {
                 // A few tests use the VirtualMap default constructor, which doesn't initialize root
-            }
-            try {
-                TimeUnit.MILLISECONDS.sleep(500L);
-            } catch (InterruptedException ignore) {
             }
         }
     }
