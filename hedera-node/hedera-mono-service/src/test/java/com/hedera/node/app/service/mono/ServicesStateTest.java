@@ -66,8 +66,6 @@ import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
@@ -829,7 +827,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void testUniqueTokensWhenVirtual() {
-        final var vmap = this.<UniqueTokenKey, UniqueTokenValue>trackedMap(new VirtualMap<>());
+        final var vmap = new VirtualMap<>();
         subject.setChild(StateChildIndices.UNIQUE_TOKENS, vmap);
         assertTrue(subject.uniqueTokens().isVirtual());
         assertSame(vmap, subject.uniqueTokens().virtualMap());

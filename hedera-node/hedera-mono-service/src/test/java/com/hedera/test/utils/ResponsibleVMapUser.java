@@ -69,11 +69,11 @@ public abstract class ResponsibleVMapUser {
         }
         final var tokenRels = state.tokenAssociations();
         if (tokenRels != null && tokenRels.areOnDisk()) {
-            trackedMap(tokenRels.getOnDiskRels());
+            release(tokenRels.getOnDiskRels());
         }
         final var nfts = state.uniqueTokens();
         if (nfts != null && nfts.isVirtual()) {
-            trackedMap(nfts.getOnDiskNfts());
+            release(nfts.getOnDiskNfts());
         }
     }
 
