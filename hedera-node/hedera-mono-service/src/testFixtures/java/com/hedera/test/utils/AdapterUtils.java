@@ -20,15 +20,6 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
@@ -38,24 +29,17 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
 import org.mockito.Mockito;
 
 public class AdapterUtils {
-    private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
 
@@ -64,51 +48,23 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that exist
-     * in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit
-     * tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require
-     * an {@link ReadableAccountStore}.
+     * Returns the {@link AccountKeyLookup} containing the "well-known" accounts and aliases that
+     * exist in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
+     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
+     * require an {@link AccountKeyLookup}.
      *
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownAccountStoreAt(final Instant mockLastModified) {
-        return new ReadableAccountStore(
+    public static AccountKeyLookup wellKnownKeyLookupAt(final Instant mockLastModified) {
+        return new SimpleKeyLookup(
                 mockStates(
                         Map.of(
                                 ALIASES_KEY, wellKnownAliasState(mockLastModified),
                                 ACCOUNTS_KEY, wellKnownAccountsState(mockLastModified))));
     }
 
-    /**
-     * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a {@code
-     * SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests of
-     * {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a {@link
-     * TokenStore}.
-     *
-     * @param mockLastModified the mock last modified time for the store to assume
-     * @return the well-known token store
-     */
-    public static ReadableTokenStore wellKnownTokenStoreAt(final Instant mockLastModified) {
-        final var source = sigReqsMockTokenStore();
-        final MerkleMap<EntityNum, MerkleToken> destination = new MerkleMap<>();
-        List.of(
-                        KNOWN_TOKEN_IMMUTABLE,
-                        KNOWN_TOKEN_NO_SPECIAL_KEYS,
-                        KNOWN_TOKEN_WITH_PAUSE,
-                        KNOWN_TOKEN_WITH_FREEZE,
-                        KNOWN_TOKEN_WITH_KYC,
-                        KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY,
-                        KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK,
-                        KNOWN_TOKEN_WITH_SUPPLY,
-                        KNOWN_TOKEN_WITH_WIPE)
-                .forEach(id -> destination.put(EntityNum.fromTokenId(id), source.get(id)));
-        final var wrappedState = new InMemoryStateImpl<>(TOKENS_KEY, destination, mockLastModified);
-        final var state = new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
-        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
-    }
-
-    private static States mockStates(final Map<String, State> keysToMock) {
+    public static States mockStates(final Map<String, State> keysToMock) {
         final var mockStates = Mockito.mock(States.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
         return mockStates;
@@ -138,18 +94,5 @@ public class AdapterUtils {
                                 FIRST_TOKEN_SENDER_LITERAL_ALIAS,
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
         return new RebuiltStateImpl<>(ALIASES_KEY, wellKnownAliases, mockLastModified);
-    }
-
-    @SuppressWarnings("java:S1604")
-    private static com.hedera.node.app.service.mono.store.tokens.TokenStore
-            sigReqsMockTokenStore() {
-        final var dummyScenario =
-                new TxnHandlingScenario() {
-                    @Override
-                    public PlatformTxnAccessor platformTxn() {
-                        throw new NotImplementedException();
-                    }
-                };
-        return dummyScenario.tokenStore();
     }
 }

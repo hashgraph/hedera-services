@@ -16,9 +16,12 @@
 package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import java.util.List;
 import java.util.function.Function;
 
 public class KeyUtils {
@@ -83,4 +86,25 @@ public class KeyUtils {
                                                     .addKeys(KEY_BUILDER.apply(B_NAME))
                                                     .addKeys(B_COMPLEX_KEY)))
                     .build();
+
+    public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
+        return jKeys.stream()
+                .map(
+                        jKey -> {
+                            try {
+                                return JKey.mapJKey((JKey) jKey);
+                            } catch (Exception ignore) {
+                            }
+                            throw new AssertionError("All keys should be mappable!");
+                        })
+                .toList();
+    }
+
+    public static Key sanityRestored(HederaKey jKey) {
+        try {
+            return JKey.mapJKey((JKey) jKey);
+        } catch (Exception ignore) {
+            throw new AssertionError("All keys should be mappable!");
+        }
+    }
 }

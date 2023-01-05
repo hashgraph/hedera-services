@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.sigs.order.SigRequirementsTest.sanityRestored;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -56,21 +55,23 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.mocks.MockAccountNumbers;
-import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -79,30 +80,28 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PreHandleCryptoTransferParityTest {
-    private final HederaAccountNumbers accountNumbers = new MockAccountNumbers();
-    private final HederaFileNumbers fileNumbers = new MockFileNumbers();
+class CryptoTransferHandlerParityTest {
+    private AccountKeyLookup keyLookup;
+    private ReadableTokenStore readableTokenStore;
 
-    private CryptoPreTransactionHandlerImpl subject;
+    private final CryptoTransferHandler subject = new CryptoTransferHandler();
 
     @BeforeEach
     void setUp() {
         final var now = Instant.now();
-        final var accountStore = AdapterUtils.wellKnownAccountStoreAt(now);
-        final PreHandleContext preHandleContext =
-                new PreHandleContext(accountNumbers, fileNumbers, accountStore);
-        subject =
-                new CryptoPreTransactionHandlerImpl(
-                        AdapterUtils.wellKnownTokenStoreAt(now),
-                        AdapterUtils.wellKnownAccountStoreAt(now),
-                        preHandleContext);
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
+        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
     }
 
     @Test
     void cryptoTransferReceiverIsMissingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -115,7 +114,11 @@ class PreHandleCryptoTransferParityTest {
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()), contains(NO_RECEIVER_SIG_KT.asKey()));
@@ -125,7 +128,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferSenderIsMissingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
 
@@ -133,7 +140,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNoReceiverSigUsingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
@@ -142,7 +153,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -153,7 +168,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferTokenToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
@@ -164,7 +183,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNftFromMissingSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
         // NOW
@@ -175,7 +198,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNftToMissingReceiverAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -186,7 +213,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNftFromImmutableSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
@@ -197,7 +228,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNftToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -209,7 +244,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferFromImmutableSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
@@ -220,7 +259,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferNoReceiverSigScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
     }
 
@@ -228,7 +271,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferReceiverSigScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
     }
@@ -237,7 +284,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferReceiverSigUsingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
     }
@@ -246,7 +297,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferMissingAccountScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
 
@@ -254,7 +309,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithExtantSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -265,7 +324,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactMovingHbarsWithExtantSender() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -277,7 +340,11 @@ class PreHandleCryptoTransferParityTest {
         final var theTxn =
                 txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -288,7 +355,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithReceiverSigReqAndExtantSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -302,7 +373,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithMissingSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
@@ -310,7 +385,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChange() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -321,7 +400,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChangeUsingAlias() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -332,7 +415,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChangeReceiverSigReq() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -346,7 +433,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChangeNoReceiverSigReq() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -359,7 +450,11 @@ class PreHandleCryptoTransferParityTest {
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -372,7 +467,11 @@ class PreHandleCryptoTransferParityTest {
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
     }
@@ -383,7 +482,11 @@ class PreHandleCryptoTransferParityTest {
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -396,7 +499,11 @@ class PreHandleCryptoTransferParityTest {
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
@@ -408,7 +515,11 @@ class PreHandleCryptoTransferParityTest {
         final var theTxn =
                 txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_TOKEN_ID);
     }
 
@@ -416,7 +527,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChangeMissingSender() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
 
@@ -424,7 +539,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransactWithOwnershipChangeMissingReceiver() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
@@ -432,7 +551,11 @@ class PreHandleCryptoTransferParityTest {
     void cryptoTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
@@ -442,7 +565,11 @@ class PreHandleCryptoTransferParityTest {
     void tokenTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
@@ -451,10 +578,21 @@ class PreHandleCryptoTransferParityTest {
     void nftTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
+    }
+
+    @Test
+    void handleNotImplemented() {
+        final var metaToHandle = mock(TransactionMetadata.class);
+
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
     }
 
     private void assertMetaFailedWithReqPayerKeyAnd(

@@ -38,7 +38,7 @@ class PreHandleScheduleCreateParityTest {
     @BeforeEach
     void setUp() {
         final var now = Instant.now();
-        final var accountStore = AdapterUtils.wellKnownAccountStoreAt(now);
+        final var accountStore = AdapterUtils.wellKnownKeyLookupAt(now);
         subject = new SchedulePreTransactionHandlerImpl(accountStore);
     }
 

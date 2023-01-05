@@ -1,6 +1,7 @@
 module com.hedera.node.app.service.mono.testFixtures {
     exports com.hedera.test.utils;
     exports com.hedera.test.factories.txns;
+    exports com.hedera.test.factories.keys;
     exports com.hedera.test.mocks;
     exports com.hedera.test.factories.scenarios;
 
