@@ -36,7 +36,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TokenUpdateHandlerParityTest {
+class TokenUpdateHandlerParityTest {
 
     private AccountKeyLookup keyLookup;
     private ReadableTokenStore readableTokenStore;
