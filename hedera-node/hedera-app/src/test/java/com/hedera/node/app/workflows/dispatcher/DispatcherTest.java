@@ -481,7 +481,7 @@ class DispatcherTest {
                                 .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.tokenCreateHandler()).preHandle(any(), any())),
+                                h -> verify(h.tokenCreateHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())

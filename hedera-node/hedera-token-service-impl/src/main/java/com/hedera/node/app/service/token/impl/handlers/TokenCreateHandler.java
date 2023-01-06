@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,21 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -44,8 +54,30 @@ public class TokenCreateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final ReadableAccountStore accountStore) {
+        final var tokenCreateTxnBody = txBody.getTokenCreation();
+        final var customFees = tokenCreateTxnBody.getCustomFeesList();
+        final var treasuryId = tokenCreateTxnBody.getTreasury();
+        final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
+        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
+
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
+
+        meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+
+        if (tokenCreateTxnBody.hasAutoRenewAccount()) {
+            meta.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
+        }
+        if (tokenCreateTxnBody.hasAdminKey()) {
+            final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
+            adminKey.ifPresent(meta::addToReqNonPayerKeys);
+        }
+
+        addCustomFeeKey(meta, customFees, hasSigRecKey);
+        return meta.build();
     }
 
     /**
@@ -59,5 +91,51 @@ public class TokenCreateHandler implements TransactionHandler {
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /* --------------- Helper methods --------------- */
+
+    /**
+     * Validates the collector key from the custom fees and signs the metadata.
+     *
+     * @param meta given transaction metadata
+     * @param customFeesList list with the custom fees
+     */
+    private void addCustomFeeKey(
+            SigTransactionMetadataBuilder meta,
+            final List<CustomFee> customFeesList,
+            final KeyOrLookupFailureReason hasSigRequired) {
+        final var failureStatus = INVALID_CUSTOM_FEE_COLLECTOR;
+        for (final var customFee : customFeesList) {
+            if (customFee.hasFeeCollectorAccountId()) {
+                final var collector = customFee.getFeeCollectorAccountId();
+                /* A fractional fee collector and a collector for a fixed fee denominated
+                in the units of the newly created token both must always sign a TokenCreate,
+                since these are automatically associated to the newly created token. */
+                if (customFee.hasFixedFee()) {
+                    final var fixedFee = customFee.getFixedFee();
+                    final var alwaysAdd =
+                            fixedFee.hasDenominatingTokenId()
+                                    && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                    if (alwaysAdd || hasSigRequired.failureReason() == null) {
+                        meta.addNonPayerKey(collector, failureStatus);
+                    }
+                } else if (customFee.hasFractionalFee()) {
+                    meta.addNonPayerKey(collector, failureStatus);
+                } else {
+                    final var royaltyFee = customFee.getRoyaltyFee();
+                    var alwaysAdd = false;
+                    if (royaltyFee.hasFallbackFee()) {
+                        final var fFee = royaltyFee.getFallbackFee();
+                        alwaysAdd =
+                                fFee.hasDenominatingTokenId()
+                                        && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                    }
+                    if (alwaysAdd || hasSigRequired.failureReason() == null) {
+                        meta.addNonPayerKey(collector, failureStatus);
+                    }
+                }
+            }
+        }
     }
 }

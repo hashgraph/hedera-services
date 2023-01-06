@@ -242,7 +242,6 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             final AccountID payer,
             SigTransactionMetadataBuilder meta,
             final List<CustomFee> customFeesList) {
-        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
