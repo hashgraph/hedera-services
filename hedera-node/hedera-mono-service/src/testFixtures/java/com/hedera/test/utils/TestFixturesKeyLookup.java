@@ -35,11 +35,11 @@ import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class SimpleKeyLookup implements AccountKeyLookup {
+public class TestFixturesKeyLookup implements AccountKeyLookup {
     private final State<ByteString, Long> aliases;
     private final State<Long, HederaAccount> accounts;
 
-    public SimpleKeyLookup(@NonNull final States states) {
+    public TestFixturesKeyLookup(@NonNull final States states) {
         this.accounts = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

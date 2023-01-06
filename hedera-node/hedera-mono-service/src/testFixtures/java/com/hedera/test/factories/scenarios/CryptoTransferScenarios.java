@@ -32,6 +32,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
+    CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoTransfer()
+                            .adjusting(DEFAULT_PAYER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+                            .adjustingAlias(
+                                    CURRENTLY_UNUSED_ALIAS, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
+                            .get());
+        }
+    },
     CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -330,6 +341,8 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
                     newSignedCryptoTransfer()
+                            .adjustingHbars(FIRST_TOKEN_SENDER, -1)
+                            .adjustingHbars(DEFAULT_PAYER, +1)
                             .changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
                             .get());
         }

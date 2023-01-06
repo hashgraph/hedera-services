@@ -19,6 +19,7 @@ import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static java.util.Comparator.comparingLong;
 import static java.util.stream.Collectors.toList;
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -95,6 +96,21 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
         adjustments
                 .computeIfAbsent(tId, ignore -> new ArrayList<>())
                 .add(AccountAmount.newBuilder().setAccountID(aId).setAmount(amount).build());
+        return this;
+    }
+
+    public CryptoTransferFactory adjustingAlias(String alias, TokenID tId, long amount) {
+        usesTokenBuilders = true;
+        adjustments
+                .computeIfAbsent(tId, ignore -> new ArrayList<>())
+                .add(
+                        AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder()
+                                                .setAlias(ByteString.copyFromUtf8(alias))
+                                                .build())
+                                .setAmount(amount)
+                                .build());
         return this;
     }
 
