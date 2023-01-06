@@ -58,9 +58,8 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
-import com.hedera.node.app.service.evm.store.tokens.TokenKeyType;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -154,7 +153,6 @@ class WorldLedgersTest {
     private static final Address sponsor = Address.fromHexString("0xcba");
 
     private static final AccountID payerAccountId = asAccount("0.0.9");
-    private static final AccountID autoRenew = asAccount("0.0.6");
     private static final TokenID denomTokenId = asToken("0.0.5");
     private static final TokenID nftTokenId = asToken("0.0.3");
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
@@ -179,7 +177,6 @@ class WorldLedgersTest {
     @Mock private TokenInfo tokenInfo;
     @Mock private EvmTokenInfo evmTokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
-    @Mock private EvmNftInfo evmNftInfo;
 
     @Mock
     private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>

@@ -20,6 +20,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFe
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
 import java.util.Optional;
