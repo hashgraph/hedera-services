@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -75,7 +76,7 @@ class BackedSystemAccountsCreatorTest {
     private AddressBook book;
     private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
-    private AccountNumbers accountNums;
+    private HederaAccountNumbers accountNums;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private BackedSystemAccountsCreator subject;

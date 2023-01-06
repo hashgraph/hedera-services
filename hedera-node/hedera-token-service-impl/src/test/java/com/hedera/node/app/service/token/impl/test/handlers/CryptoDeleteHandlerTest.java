@@ -53,6 +53,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
         given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+        given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(false);
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
@@ -67,7 +68,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
-
         final var keyUsed = (JKey) payerKey;
 
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
