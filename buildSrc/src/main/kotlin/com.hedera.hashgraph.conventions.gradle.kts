@@ -161,7 +161,8 @@ testing {
 
 // Increase the heap size for the unit tests
 tasks.test {
-    maxHeapSize = "1024m"
+    maxHeapSize = "2048m"
+    testLogging.showStandardStreams = true
 }
 
 tasks.getByName<Test>("itest") {
