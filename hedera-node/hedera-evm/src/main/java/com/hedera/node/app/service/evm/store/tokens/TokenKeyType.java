@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.tokens;
 
-public enum TokenKey {
+public enum TokenKeyType {
     ADMIN_KEY,
     KYC_KEY,
     WIPE_KEY,

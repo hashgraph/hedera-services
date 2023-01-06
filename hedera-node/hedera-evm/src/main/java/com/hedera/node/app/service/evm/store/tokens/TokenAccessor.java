@@ -26,48 +26,47 @@ import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface TokenAccessor {
-    Optional<EvmTokenInfo> evmInfoForToken(final Address tokenId, final ByteString ledgerId);
+    Optional<EvmTokenInfo> evmInfoForToken(final Address token, final ByteString ledgerId);
 
-    Optional<EvmNftInfo> evmNftInfo(final Address nftId, long serialNo, final ByteString ledgerId);
+    Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo, final ByteString ledgerId);
 
     boolean isTokenAddress(final Address address);
 
-    boolean isFrozen(final Address accountId, final Address tokenId);
+    boolean isFrozen(final Address account, final Address token);
 
-    boolean defaultFreezeStatus(final Address tokenId);
+    boolean defaultFreezeStatus(final Address token);
 
-    boolean defaultKycStatus(final Address tokenId);
+    boolean defaultKycStatus(final Address token);
 
-    boolean isKyc(final Address accountId, final Address tokenId);
+    boolean isKyc(final Address account, final Address token);
 
-    Optional<List<CustomFee>> infoForTokenCustomFees(final Address tokenId);
+    Optional<List<CustomFee>> infoForTokenCustomFees(final Address token);
 
-    TokenType typeOf(final Address tokenId);
+    TokenType typeOf(final Address token);
 
-    Optional<TokenInfo> infoForToken(final Address tokenId, final ByteString ledgerId);
+    Optional<TokenInfo> infoForToken(final Address token, final ByteString ledgerId);
 
-    EvmKey keyOf(final Address tokenId, final TokenKey keyType);
+    EvmKey keyOf(final Address tokenId, final TokenKeyType keyType);
 
-    String nameOf(final Address tokenId);
+    String nameOf(final Address token);
 
-    String symbolOf(final Address tokenId);
+    String symbolOf(final Address token);
 
-    long totalSupplyOf(final Address tokenId);
+    long totalSupplyOf(final Address token);
 
-    int decimalsOf(final Address tokenId);
+    int decimalsOf(final Address token);
 
-    long balanceOf(final Address accountId, final Address tokenId);
+    long balanceOf(final Address account, final Address token);
 
-    long staticAllowanceOf(final Address ownerId, final Address spenderId, final Address tokenId);
+    long staticAllowanceOf(final Address owner, final Address spender, final Address token);
 
-    Address staticApprovedSpenderOf(final Address nftId, long serialNo);
+    Address staticApprovedSpenderOf(final Address nft, long serialNo);
 
-    boolean staticIsOperator(
-            final Address ownerId, final Address operatorId, final Address tokenId);
+    boolean staticIsOperator(final Address owner, final Address operator, final Address token);
 
-    Address ownerOf(final Address nftId, long serialNo);
+    Address ownerOf(final Address nft, long serialNo);
 
     Address canonicalAddress(final Address addressOrAlias);
 
-    String metadataOf(final Address nftId, long serialNo);
+    String metadataOf(final Address nft, long serialNo);
 }

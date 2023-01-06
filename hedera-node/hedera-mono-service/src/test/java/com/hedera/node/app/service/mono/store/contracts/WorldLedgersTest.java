@@ -60,7 +60,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
-import com.hedera.node.app.service.evm.store.tokens.TokenKey;
+import com.hedera.node.app.service.evm.store.tokens.TokenKeyType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -628,7 +628,7 @@ class WorldLedgersTest {
                 .willReturn(key);
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.SUPPLY_KEY)).willReturn(key);
 
-        final var evmAdminKey = tokenAccessor.keyOf(fungibleTokenAddress, TokenKey.ADMIN_KEY);
+        final var evmAdminKey = tokenAccessor.keyOf(fungibleTokenAddress, TokenKeyType.ADMIN_KEY);
         final var adminKey = worldLedgers.keyOf(fungibleToken, TokenProperty.ADMIN_KEY);
         final var freezeKey = worldLedgers.keyOf(fungibleToken, TokenProperty.FREEZE_KEY);
         final var kycKey = worldLedgers.keyOf(fungibleToken, TokenProperty.KYC_KEY);
