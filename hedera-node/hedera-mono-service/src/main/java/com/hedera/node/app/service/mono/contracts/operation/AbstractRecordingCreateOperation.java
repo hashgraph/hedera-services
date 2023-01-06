@@ -266,10 +266,15 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
     }
 
     private AccountID matchingHollowAccountId(
-            HederaStackedWorldStateUpdater updater, Address contract) {
+        HederaStackedWorldStateUpdater updater, Address contract) {
         final var accountID = accountIdFromEvmAddress(updater.aliases().resolveForEvm(contract));
-        final var accountKey = updater.trackingAccounts().get(accountID, KEY);
-        return EMPTY_KEY.equals(accountKey) ? accountID : null;
+        final var trackingAccounts = updater.trackingAccounts();
+        if (trackingAccounts.contains(accountID)) {
+            final var accountKey = updater.trackingAccounts().get(accountID, KEY);
+            return EMPTY_KEY.equals(accountKey) ? accountID : null;
+        } else {
+            return null;
+        }
     }
 
     private void finalizeHollowAccountIntoContract(
