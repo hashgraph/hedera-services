@@ -266,7 +266,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
     }
 
     private AccountID matchingHollowAccountId(
-        HederaStackedWorldStateUpdater updater, Address contract) {
+            HederaStackedWorldStateUpdater updater, Address contract) {
         final var accountID = accountIdFromEvmAddress(updater.aliases().resolveForEvm(contract));
         final var trackingAccounts = updater.trackingAccounts();
         if (trackingAccounts.contains(accountID)) {
