@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BOOL;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.addSignedAdjustment;

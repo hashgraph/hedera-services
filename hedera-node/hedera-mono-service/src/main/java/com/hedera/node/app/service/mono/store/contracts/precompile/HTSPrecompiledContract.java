@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isViewFunction;

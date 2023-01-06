@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.exceptions;
+package com.hedera.node.app.service.evm.utils;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 /**
@@ -29,12 +30,6 @@ public final class ValidationUtils {
     public static void validateTrue(final boolean flag, final ResponseCodeEnum code) {
         if (!flag) {
             throw new InvalidTransactionException(code);
-        }
-    }
-
-    public static void validateResourceLimit(final boolean flag, final ResponseCodeEnum code) {
-        if (!flag) {
-            throw new ResourceLimitException(code);
         }
     }
 

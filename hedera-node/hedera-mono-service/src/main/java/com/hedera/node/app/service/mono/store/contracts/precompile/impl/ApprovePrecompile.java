@@ -20,7 +20,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BOOL;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;

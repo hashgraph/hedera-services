@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;

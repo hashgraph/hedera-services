@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalseOrRevert;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;

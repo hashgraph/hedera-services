@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.contract;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;

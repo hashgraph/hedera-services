@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;

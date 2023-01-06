@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.models;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;

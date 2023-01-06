@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.models;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;

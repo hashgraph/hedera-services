@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;

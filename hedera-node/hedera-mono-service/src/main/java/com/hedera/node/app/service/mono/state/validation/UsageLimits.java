@@ -15,17 +15,18 @@
  */
 package com.hedera.node.app.service.mono.state.validation;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.context.MutableStateChildren;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 @Singleton
 public class UsageLimits implements ContractStorageLimits, AccountUsageTracking {

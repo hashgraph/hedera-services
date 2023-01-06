@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;

@@ -15,11 +15,14 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalseOrRevert;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
@@ -29,9 +32,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_S
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Test;
 
 class ValidationUtilsTest {
 

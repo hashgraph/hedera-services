@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;

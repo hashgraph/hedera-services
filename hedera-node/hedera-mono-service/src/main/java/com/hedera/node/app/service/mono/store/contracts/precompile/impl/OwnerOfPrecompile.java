@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;

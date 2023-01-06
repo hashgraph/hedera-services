@@ -22,7 +22,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTION
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.FIXED_FEE_DECODER;

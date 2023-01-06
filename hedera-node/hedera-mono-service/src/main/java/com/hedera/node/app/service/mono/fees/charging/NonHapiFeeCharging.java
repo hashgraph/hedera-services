@@ -15,11 +15,6 @@
  */
 package com.hedera.node.app.service.mono.fees.charging;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -27,7 +22,13 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import javax.inject.Inject;
+
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 
 /**
  * Responsible for charging the auto-renewal fee and storage rent from the payer or auto-renew

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts;
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.WILDCARD_OWNER;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.node.app.service.mono.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
