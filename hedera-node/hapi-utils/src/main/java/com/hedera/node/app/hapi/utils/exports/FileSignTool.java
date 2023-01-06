@@ -83,22 +83,22 @@ import org.apache.logging.log4j.core.LoggerContext;
  * <p>Please see README.md for format details
  */
 public class FileSignTool {
-    public static final String CSV_EXTENSION = ".csv";
-    public static final String ACCOUNT_BALANCE_EXTENSION = ".pb";
-    public static final String SIG_FILE_NAME_END = "_sig";
+    private static final String CSV_EXTENSION = ".csv";
+    private static final String ACCOUNT_BALANCE_EXTENSION = ".pb";
+    private static final String SIG_FILE_NAME_END = "_sig";
     /** next bytes are signature */
-    public static final byte TYPE_SIGNATURE = 3;
+    private static final byte TYPE_SIGNATURE = 3;
     /** next 48 bytes are hash384 of content of the file to be signed */
-    public static final byte TYPE_FILE_HASH = 4;
+    private static final byte TYPE_FILE_HASH = 4;
 
-    public static final String STREAM_TYPE_JSON_PROPERTY = "streamTypeJson";
-    public static final String LOG_CONFIG_PROPERTY = "logConfig";
-    public static final String FILE_NAME_PROPERTY = "fileName";
-    public static final String KEY_PROPERTY = "key";
-    public static final String DEST_DIR_PROPERTY = "destDir";
-    public static final String ALIAS_PROPERTY = "alias";
-    public static final String PASSWORD_PROPERTY = "password";
-    public static final String DIR_PROPERTY = "dir";
+    private static final String STREAM_TYPE_JSON_PROPERTY = "streamTypeJson";
+    private static final String LOG_CONFIG_PROPERTY = "logConfig";
+    private static final String FILE_NAME_PROPERTY = "fileName";
+    private static final String KEY_PROPERTY = "key";
+    private static final String DEST_DIR_PROPERTY = "destDir";
+    private static final String ALIAS_PROPERTY = "alias";
+    private static final String PASSWORD_PROPERTY = "password";
+    private static final String DIR_PROPERTY = "dir";
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
     private static final int BYTES_COUNT_IN_INT = 4;
