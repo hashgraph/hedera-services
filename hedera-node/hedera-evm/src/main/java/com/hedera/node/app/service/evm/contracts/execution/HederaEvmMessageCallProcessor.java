@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -82,9 +83,14 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        if (!"HTS".equals(contract.getName())) {
-            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-            gasRequirement = contract.gasRequirement(frame.getInputData());
+        if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
+            final var costedResult =
+                    htsPrecompile.computeCosted(
+                            frame.getInputData(),
+                            frame,
+                            (now, minimumTinybarCost) -> minimumTinybarCost);
+            output = costedResult.getValue();
+            gasRequirement = costedResult.getKey();
         }
 
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
