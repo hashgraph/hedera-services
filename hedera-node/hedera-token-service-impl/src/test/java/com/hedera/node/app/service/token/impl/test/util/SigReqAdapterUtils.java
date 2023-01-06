@@ -33,6 +33,7 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -81,5 +82,13 @@ public class SigReqAdapterUtils {
                     }
                 };
         return dummyScenario.tokenStore();
+    }
+
+    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
+        try {
+            return scenario.platformTxn().getTxn();
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }
