@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
 import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;
@@ -67,8 +65,10 @@ import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.test.utils.CryptoConfigUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -86,7 +86,7 @@ import org.junit.jupiter.api.Test;
 class SigOpsRegressionTest {
     private HederaFs hfs;
     private AliasManager aliasManager;
-    private FileNumbers fileNumbers = new MockFileNumbers();
+    private HederaFileNumbers fileNumbers = new MockFileNumbers();
     private List<TransactionSignature> expectedSigs;
     private ResponseCodeEnum expectedErrorStatus;
     private PlatformTxnAccessor platformTxn;

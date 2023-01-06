@@ -29,7 +29,6 @@ import org.junit.jupiter.api.AfterEach;
 
 public abstract class ResponsibleVMapUser {
     private static final AtomicInteger numReleased = new AtomicInteger();
-    private static final AtomicInteger numClosed = new AtomicInteger();
     private final List<ServicesState> statesToRelease = new ArrayList<>();
     private final List<VirtualMap<?, ?>> mapsToRelease = new ArrayList<>();
 
