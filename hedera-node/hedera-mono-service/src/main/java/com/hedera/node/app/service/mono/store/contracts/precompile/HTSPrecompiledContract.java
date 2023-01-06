@@ -202,7 +202,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
                 return evmHTSPrecompiledContract.computeCosted(
-                        input, frame, precompilePricingUtils::computeViewFunctionGas);
+                        input, frame, precompilePricingUtils::computeViewFunctionGas,currentView.getNetworkInfo().ledgerId());
             }
         }
         final var result = computePrecompile(input, frame);
