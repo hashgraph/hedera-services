@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,8 +46,13 @@ public class ContractCallHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup) {
+        return new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txBody)
+                .payerKeyFor(payer)
+                .build();
     }
 
     /**
