@@ -17,6 +17,7 @@ package com.hedera.node.app.service.evm.store.tokens;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -29,11 +30,11 @@ class TemporaryEnumTest {
     void dummyEnumTest() {
         assertEquals(TokenType.FUNGIBLE_COMMON, TokenType.valueOf("FUNGIBLE_COMMON"));
         assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, TokenType.valueOf("NON_FUNGIBLE_UNIQUE"));
-        assertEquals(TokenKey.ADMIN_KEY, TokenKey.valueOf("ADMIN_KEY"));
-        assertEquals(TokenKey.KYC_KEY, TokenKey.valueOf("KYC_KEY"));
-        assertEquals(TokenKey.WIPE_KEY, TokenKey.valueOf("WIPE_KEY"));
-        assertEquals(TokenKey.SUPPLY_KEY, TokenKey.valueOf("SUPPLY_KEY"));
-        assertEquals(TokenKey.FEE_SCHEDULE_KEY, TokenKey.valueOf("FEE_SCHEDULE_KEY"));
-        assertEquals(TokenKey.PAUSE_KEY, TokenKey.valueOf("PAUSE_KEY"));
+        assertEquals(TokenKeyType.ADMIN_KEY, TokenKeyType.valueOf("ADMIN_KEY"));
+        assertEquals(TokenKeyType.KYC_KEY, TokenKeyType.valueOf("KYC_KEY"));
+        assertEquals(TokenKeyType.WIPE_KEY, TokenKeyType.valueOf("WIPE_KEY"));
+        assertEquals(TokenKeyType.SUPPLY_KEY, TokenKeyType.valueOf("SUPPLY_KEY"));
+        assertEquals(TokenKeyType.FEE_SCHEDULE_KEY, TokenKeyType.valueOf("FEE_SCHEDULE_KEY"));
+        assertEquals(TokenKeyType.PAUSE_KEY, TokenKeyType.valueOf("PAUSE_KEY"));
     }
 }
