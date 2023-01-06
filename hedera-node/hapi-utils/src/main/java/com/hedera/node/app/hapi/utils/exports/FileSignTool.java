@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ import org.apache.logging.log4j.core.LoggerContext;
  * .rcd, the Hash in the signature file is a SHA384 hash of all bytes in the file to be signed.
  *
  * <p>For .evts files, it generates version 5 signature files.
+ *
  * <p>For .rcd files, it generates version 6 signature files.
  *
  * <p>Please see README.md for format details
