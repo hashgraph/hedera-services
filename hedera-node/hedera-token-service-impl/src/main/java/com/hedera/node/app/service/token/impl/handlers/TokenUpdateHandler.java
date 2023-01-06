@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -24,6 +30,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenUpdate}.
+ *
+ * <p><b>NOTE:</b> this class intentionally changes the following error response codes relative to
+ * SigRequirements:
+ *
+ * <ol>
+ *   <li>When a missing account is used as a token treasury, fails with {@code INVALID_ACCOUNT_ID} *
+ *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}. *
+ * </ol>
+ *
+ * * EET expectations may need to be updated accordingly
  */
 public class TokenUpdateHandler implements TransactionHandler {
 
@@ -37,15 +53,40 @@ public class TokenUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final ReadableTokenStore tokenStore) {
+        final var op = txn.getTokenUpdate();
+        final var tokenId = op.getToken();
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (tokenMeta.failed()) {
+            meta.status(tokenMeta.failureReason());
+        } else {
+            final var tokenMetadata = tokenMeta.metadata();
+            final var adminKey = tokenMetadata.adminKey();
+            adminKey.ifPresent(meta::addToReqNonPayerKeys);
+            if (op.hasAutoRenewAccount()) {
+                meta.addNonPayerKey(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+            }
+            if (op.hasTreasury()) {
+                meta.addNonPayerKey(op.getTreasury());
+            }
+            if (op.hasAdminKey()) {
+                final var newAdminKey = asHederaKey(op.getAdminKey());
+                newAdminKey.ifPresent(meta::addToReqNonPayerKeys);
+            }
+        }
+        return meta.build();
     }
 
     /**

@@ -148,7 +148,12 @@ public class Dispatcher {
                     .preHandle(transactionBody, payer);
 
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
-            case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer);
+            case TOKENUPDATE -> handlers.tokenUpdateHandler()
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case TOKENMINT -> handlers.tokenMintHandler().preHandle(transactionBody, payer);
             case TOKENBURN -> handlers.tokenBurnHandler().preHandle(transactionBody, payer);
             case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(transactionBody, payer);
