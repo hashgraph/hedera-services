@@ -34,7 +34,7 @@ dependencies {
     api(project(":hedera-node:hedera-evm"))
 
     implementation(libs.jackson)
-    implementation(libs.log4j.api)
+    implementation(libs.log4j.logging)
     implementation(libs.bundles.bouncycastle)
     implementation(libs.headlong)
     implementation(libs.commons.codec)
