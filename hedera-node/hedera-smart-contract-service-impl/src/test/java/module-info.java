@@ -6,8 +6,10 @@ module com.hedera.node.app.service.contract.impl.test {
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.mockito;
     requires org.hamcrest;
+    requires org.assertj.core;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;
-    opens com.hedera.node.app.service.contract.impl.test.handlers to org.junit.platform.commons;
+    opens com.hedera.node.app.service.contract.impl.test.handlers to
+            org.junit.platform.commons;
 }

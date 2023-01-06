@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
@@ -23,8 +25,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -54,15 +54,13 @@ public class ContractCreateHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup keyLookup) {
         final var op = txBody.getContractCreateInstance();
-        final var meta = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txBody)
-                .payerKeyFor(payer);
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
         final var adminKey = asHederaKey(op.getAdminKey());
-        if(adminKey.isPresent() && !((JKey)adminKey.get()).hasContractID()){
+        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
             meta.addToReqNonPayerKeys(adminKey.get());
         }
-        if(op.hasAutoRenewAccountId() &&
-                !op.getAutoRenewAccountId().equals(MISSING_ACCOUNT_ID)){
+        if (op.hasAutoRenewAccountId() && !op.getAutoRenewAccountId().equals(MISSING_ACCOUNT_ID)) {
             meta.addNonPayerKey(op.getAutoRenewAccountId());
         }
         return meta.build();
