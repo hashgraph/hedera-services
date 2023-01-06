@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -359,6 +359,13 @@ class HederaStackedWorldStateUpdaterTest {
         subject.revert();
         assertEquals(0L, subject.getSbhRefund());
         verify(worldState, times(3)).reclaimContractId();
+    }
+
+    @Test
+    void reclaimLatestContractIdBehavesAsExpected() {
+        subject.countIdsAllocatedByStacked(1);
+        subject.reclaimLatestContractId();
+        verify(worldState, times(1)).reclaimContractId();
     }
 
     @Test
