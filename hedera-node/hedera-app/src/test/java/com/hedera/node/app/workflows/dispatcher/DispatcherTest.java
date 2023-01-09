@@ -15,55 +15,18 @@
  */
 package com.hedera.node.app.workflows.dispatcher;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.*;
+import com.hedera.node.app.service.file.impl.handlers.*;
 import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.*;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -72,8 +35,6 @@ import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,6 +43,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DispatcherTest {
@@ -309,7 +277,9 @@ class DispatcherTest {
                                         ContractCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractCreateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCreateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractUpdateInstance(
@@ -322,7 +292,9 @@ class DispatcherTest {
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractCallHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCallHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractDeleteInstance(

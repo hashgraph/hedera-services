@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -26,6 +24,8 @@ import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@code Dispatcher} provides functionality to forward pre-check, pre-handle, and handle-requests
@@ -85,10 +85,11 @@ public class Dispatcher {
                     .preHandle(transactionBody, payer);
 
             case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler()
                     .preHandle(transactionBody, payer);
-            case CONTRACTCALL -> handlers.contractCallHandler().preHandle(transactionBody, payer);
+            case CONTRACTCALL -> handlers.contractCallHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTDELETEINSTANCE -> handlers.contractDeleteHandler()
                     .preHandle(transactionBody, payer);
             case ETHEREUMTRANSACTION -> handlers.etherumTransactionHandler()
