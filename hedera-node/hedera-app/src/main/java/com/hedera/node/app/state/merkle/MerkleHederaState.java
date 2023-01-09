@@ -417,7 +417,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         }
 
         @Override
-        public boolean contains(@NonNull String stateKey) {
+        public boolean contains(@NonNull final String stateKey) {
             return stateMetadata.containsKey(stateKey);
         }
 
