@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.sigs.metadata.FileSigningMetadata;
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 
 /**
@@ -36,9 +36,9 @@ public class HfsSigMetaLookup implements FileSigMetaLookup {
             new SafeLookupResult<>(SPECIAL_FILE_META);
 
     private final HederaFs hfs;
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
 
-    public HfsSigMetaLookup(final HederaFs hfs, final FileNumbers fileNumbers) {
+    public HfsSigMetaLookup(final HederaFs hfs, final HederaFileNumbers fileNumbers) {
         this.hfs = hfs;
         this.fileNumbers = fileNumbers;
     }

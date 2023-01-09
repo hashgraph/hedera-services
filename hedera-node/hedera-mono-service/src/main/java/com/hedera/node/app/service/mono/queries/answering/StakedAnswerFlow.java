@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
@@ -37,6 +36,7 @@ import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.txns.submission.PlatformSubmissionManager;
 import com.hedera.node.app.service.mono.txns.submission.TransactionPrecheck;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -52,7 +52,7 @@ import java.util.function.Supplier;
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;
     private final QueryFeeCheck queryFeeCheck;
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final HapiOpPermissions hapiOpPermissions;
     private final Supplier<StateView> stateViews;
     private final UsagePricesProvider resourceCosts;
@@ -63,7 +63,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 
     public StakedAnswerFlow(
             final FeeCalculator fees,
-            final AccountNumbers accountNums,
+            final HederaAccountNumbers accountNums,
             final Supplier<StateView> stateViews,
             final UsagePricesProvider resourceCosts,
             final FunctionalityThrottling throttles,

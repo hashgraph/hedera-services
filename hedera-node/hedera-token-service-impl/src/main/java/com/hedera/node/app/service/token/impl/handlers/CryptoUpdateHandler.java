@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
+import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -29,16 +33,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class CryptoUpdateHandler implements TransactionHandler {
 
     /**
-     * This method is called during the pre-handle workflow.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
      * @param accountStore the {@link ReadableAccountStore} with the current data
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
@@ -46,10 +45,25 @@ public class CryptoUpdateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final CryptoSignatureWaivers waivers) {
+        final var op = txn.getCryptoUpdateAccount();
+        final var updateAccountId = op.getAccountIDToUpdate();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+
+        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
+        if (targetAccountKeyMustSign) {
+            meta.addNonPayerKey(updateAccountId);
+        }
+        if (newAccountKeyMustSign && op.hasKey()) {
+            final var candidate = asHederaKey(op.getKey());
+            candidate.ifPresent(meta::addToReqNonPayerKeys);
+        }
+        return meta.build();
     }
 
     /**
