@@ -153,8 +153,6 @@ class GetTokenKeyPrecompileTest {
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);

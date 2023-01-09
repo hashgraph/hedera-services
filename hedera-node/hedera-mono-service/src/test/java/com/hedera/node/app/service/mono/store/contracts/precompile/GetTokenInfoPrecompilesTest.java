@@ -831,9 +831,9 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
-        given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
