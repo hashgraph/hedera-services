@@ -26,14 +26,37 @@ class Utils {
         @JvmStatic
         fun updateVersion(project: Project, newVersion: SemVer) {
             val gradlePropFile = File(project.projectDir, "gradle.properties")
-            val props = Properties()
+            var lines: List<String> = mutableListOf()
 
             if (gradlePropFile.exists()) {
-                props.load(gradlePropFile.inputStream())
+                lines = gradlePropFile.readLines(Charsets.UTF_8)
             }
 
-            props.setProperty("version", newVersion.toString())
-            props.store(gradlePropFile.bufferedWriter(), null)
+            var versionStr = "version=${newVersion.toString()}"
+            val finalLines: List<String>
+
+
+            if (lines.isNotEmpty()) {
+                finalLines = lines.map {
+                    if (it.trimStart().startsWith("version=")) {
+                        versionStr
+                    } else {
+                        it
+                    }
+                }
+            } else {
+                finalLines = listOf(versionStr)
+            }
+
+
+            gradlePropFile.bufferedWriter(Charsets.UTF_8).use {
+                val writer = it
+                finalLines.forEach {
+                    writer.write(it)
+                    writer.newLine()
+                }
+                writer.flush()
+            }
         }
 
         @JvmStatic
