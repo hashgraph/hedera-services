@@ -15,6 +15,18 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -23,21 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.States;
-import com.hederahashgraph.api.proto.java.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 @ExtendWith(MockitoExtension.class)
 public class ContractHandlerTestBase {
     protected static final String ACCOUNTS = "ACCOUNTS";
@@ -45,8 +42,8 @@ public class ContractHandlerTestBase {
     protected final AccountID payer = asAccount("0.0.3");
     protected final AccountID autoRenewAccountId = asAccount("0.0.10001");
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
-    protected Key adminKey = A_COMPLEX_KEY;
-    protected Key adminContractKey =
+    protected final Key adminKey = A_COMPLEX_KEY;
+    protected final Key adminContractKey =
             Key.newBuilder().setContractID(asContract("0.0.10002")).build();
     protected final HederaKey adminHederaKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final HederaKey autoRenewHederaKey = asHederaKey(A_COMPLEX_KEY).get();
@@ -55,10 +52,7 @@ public class ContractHandlerTestBase {
     protected final ContractID targetContract =
             ContractID.newBuilder().setContractNum(9_999L).build();
 
-    @Mock protected RebuiltStateImpl aliases;
-    @Mock protected InMemoryStateImpl accounts;
     @Mock protected MerkleAccount payerAccount;
-    @Mock protected States states;
     @Mock protected AccountKeyLookup keyLookup;
 
     @BeforeEach

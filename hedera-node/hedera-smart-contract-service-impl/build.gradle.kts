@@ -31,7 +31,6 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-smart-contract-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
-    testImplementation(project(mapOf("path" to ":hedera-node:hedera-mono-service")))
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
