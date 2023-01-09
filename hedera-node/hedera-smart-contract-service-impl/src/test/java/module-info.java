@@ -7,6 +7,7 @@ module com.hedera.node.app.service.contract.impl.test {
     requires org.mockito;
     requires org.hamcrest;
     requires org.assertj.core;
+    requires org.mockito.junit.jupiter;
 
     opens com.hedera.node.app.service.contract.impl.test to
             org.junit.platform.commons;

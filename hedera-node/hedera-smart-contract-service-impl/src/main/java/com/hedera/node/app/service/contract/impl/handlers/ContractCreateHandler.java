@@ -31,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractCreate}.
  */
 public class ContractCreateHandler implements TransactionHandler {
-    private static final AccountID MISSING_ACCOUNT_ID = AccountID.getDefaultInstance();
+    private static final AccountID MISSING_ACCOUNT_ID = AccountID.newBuilder().build();
 
     /**
      * This method is called during the pre-handle workflow.

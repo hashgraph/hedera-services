@@ -17,7 +17,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.contract.impl;
+            com.hedera.node.app.service.contract.impl,
+            com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -33,7 +34,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.merkle to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.mono.utils.accessors;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.testFixtures;
