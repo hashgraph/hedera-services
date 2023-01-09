@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.R
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -31,16 +32,19 @@ public class ViewExecutor {
     private final MessageFrame frame;
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
+    private final TokenAccessor tokenAccessor;
 
     public ViewExecutor(
             final Bytes input,
             final MessageFrame frame,
             final EvmEncodingFacade evmEncoder,
-            final ViewGasCalculator gasCalculator) {
+            final ViewGasCalculator gasCalculator,
+            final TokenAccessor tokenAccessor) {
         this.input = input;
         this.frame = frame;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
+        this.tokenAccessor = tokenAccessor;
     }
 
     public Pair<Long, Bytes> computeCosted() {

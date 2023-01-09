@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -34,14 +35,15 @@ public class EvmHTSPrecompiledContract {
     }
 
     public Pair<Long, Bytes> computeCosted(
-            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator) {
+            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator,
+        final TokenAccessor tokenAccessor) {
         if (isTokenProxyRedirect(input)) {
             final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator);
+                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
             return executor.computeCosted();
         } else if (isViewFunction(input)) {
             final var executor =
-                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator);
+                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             return executor.computeCosted();
         }
 

@@ -45,6 +45,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.TokenAccessorImpl;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
@@ -202,7 +203,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
                 return evmHTSPrecompiledContract.computeCosted(
-                        input, frame, precompilePricingUtils::computeViewFunctionGas);
+                        input, frame, precompilePricingUtils::computeViewFunctionGas,
+                    new TokenAccessorImpl(proxyUpdater.trackingLedgers()));
             }
         }
         final var result = computePrecompile(input, frame);

@@ -15,10 +15,26 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -32,16 +48,19 @@ public class RedirectViewExecutor {
     private final MessageFrame frame;
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
+    private final TokenAccessor tokenAccessor;
 
     public RedirectViewExecutor(
             final Bytes input,
             final MessageFrame frame,
             final EvmEncodingFacade evmEncoder,
-            final ViewGasCalculator gasCalculator) {
+            final ViewGasCalculator gasCalculator,
+            final TokenAccessor tokenAccessor) {
         this.input = input;
         this.frame = frame;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
+        this.tokenAccessor = tokenAccessor;
     }
 
     public static Timestamp asSecondsTimestamp(final long now) {
@@ -52,12 +71,8 @@ public class RedirectViewExecutor {
         final var target = getRedirectTarget(input);
         final var now = asSecondsTimestamp(frame.getBlockValues().getTimestamp());
         final var costInGas = gasCalculator.compute(now, MINIMUM_TINYBARS_COST);
-
         final var selector = target.descriptor();
-        // TODO: fix
-        //    final var isFungibleToken = FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-        final var isFungibleToken = true;
-
+        final var isFungibleToken = FUNGIBLE_COMMON.equals(tokenAccessor.typeOf(target.token()));
         try {
             final var answer = answerGiven(selector, target.token(), isFungibleToken);
             return Pair.of(costInGas, answer);
@@ -72,7 +87,62 @@ public class RedirectViewExecutor {
 
     private Bytes answerGiven(
             final int selector, final Address token, final boolean isFungibleToken) {
-
-        return Bytes.EMPTY;
+        if (selector == ABI_ID_ERC_NAME) {
+            final var name = tokenAccessor.nameOf(token);
+            return evmEncoder.encodeName(name);
+        } else if (selector == ABI_ID_ERC_SYMBOL) {
+            final var symbol = tokenAccessor.symbolOf(token);
+            return evmEncoder.encodeSymbol(symbol);
+        }
+//        else if (selector == ABI_ID_ERC_ALLOWANCE) {
+//            final var wrapper =
+//                AllowancePrecompile.decodeTokenAllowance(input, tokenId, updater::unaliased);
+//            final var allowance =
+//                tokenAccessor.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
+//            return evmEncoder.encodeAllowance(allowance);
+//        }
+//        else if (selector == ABI_ID_ERC_GET_APPROVED) {
+//            final var wrapper = GetApprovedPrecompile.decodeGetApproved(input, tokenId);
+//            final var spender =
+//                tokenAccessor.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
+//            final var priorityAddress = ledgers.canonicalAddress(spender);
+//            return evmEncoder.encodeGetApproved(priorityAddress);
+//        }
+//        else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
+//            final var wrapper =
+//                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
+//                    input, tokenId, updater::unaliased);
+//            final var isOperator =
+//                tokenAccessor.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
+//            return evmEncoder.encodeIsApprovedForAll(isOperator);
+//        }
+        else if (selector == ABI_ID_ERC_DECIMALS) {
+//            validateTrue(isFungibleToken, INVALID_TOKEN_ID);
+            final var decimals = tokenAccessor.decimalsOf(token);
+            return evmEncoder.encodeDecimals(decimals);
+        } else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN) {
+            final var totalSupply = tokenAccessor.totalSupplyOf(token);
+            return evmEncoder.encodeTotalSupply(totalSupply);
+        }
+//        else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
+//            final var wrapper =
+//                BalanceOfPrecompile.decodeBalanceOf(input.slice(24), updater::unaliased);
+//            final var balance = tokenAccessor.balanceOf(wrapper.account(), tokenId);
+//            return evmEncoder.encodeBalance(balance);
+//        }
+        else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
+//            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
+            final var wrapper = EvmOwnerOfPrecompile.decodeOwnerOf(input.slice(24));
+            final var owner = tokenAccessor.ownerOf(token, wrapper.serialNo());
+            final var priorityAddress = tokenAccessor.canonicalAddress(owner);
+            return evmEncoder.encodeOwner(priorityAddress);
+        } else if (selector == ABI_ID_ERC_TOKEN_URI_NFT) {
+//            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
+            final var wrapper = EvmTokenURIPrecompile.decodeTokenUriNFT(input.slice(24));
+            final var metadata = tokenAccessor.metadataOf(token, wrapper.serialNo());
+            return evmEncoder.encodeTokenUri(metadata);
+        } else {
+            throw new InvalidTransactionException(NOT_SUPPORTED);
+        }
     }
 }
