@@ -15,10 +15,6 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -27,7 +23,12 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class ContractCallHandlerTest extends ContractHandlerTestBase {
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+
+class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallHandler subject = new ContractCallHandler();
 
     @Test
@@ -48,6 +49,13 @@ public class ContractCallHandlerTest extends ContractHandlerTestBase {
         final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(payerKey, meta.payerKey());
+    }
+
+    @Test
+    void callHandle() {
+        final var txn = contractCallTransaction();
+        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
     }
 
     private TransactionBody contractCallTransaction() {

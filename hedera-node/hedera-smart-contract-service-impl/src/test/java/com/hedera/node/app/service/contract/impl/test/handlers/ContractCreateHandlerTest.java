@@ -15,19 +15,21 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class ContractCreateHandlerTest extends ContractHandlerTestBase {
+import java.util.List;
+
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+
+class ContractCreateHandlerTest extends ContractHandlerTestBase {
     private ContractCreateHandler subject = new ContractCreateHandler();
 
     @Test
@@ -91,6 +93,13 @@ public class ContractCreateHandlerTest extends ContractHandlerTestBase {
         //        FUTURE: uncomment this after JKey removal
         //        assertEquals(List.of(adminHederaKey, autoRenewHederaKey),
         // meta.requiredNonPayerKeys());
+    }
+
+    @Test
+    void callHandle() {
+        final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
+        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
     }
 
     private TransactionBody contractCreateTransaction(
