@@ -69,6 +69,11 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                 updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))

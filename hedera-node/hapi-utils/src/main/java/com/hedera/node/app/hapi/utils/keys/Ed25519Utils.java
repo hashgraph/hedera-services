@@ -70,8 +70,8 @@ public final class Ed25519Utils {
         }
     }
 
-    private static final String TEST_CLIENTS_PREFIX = "test-clients" + File.separator;
-    private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
+    public static final String TEST_CLIENTS_PREFIX = "test-clients" + File.separator;
+    public static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
 
     public static Path relocatedIfNotPresentInWorkingDir(final Path p) {
         return relocatedIfNotPresentInWorkingDir(p.toFile()).toPath();
@@ -81,6 +81,9 @@ public final class Ed25519Utils {
         if (!f.exists()) {
             final var absPath = f.getAbsolutePath();
             final var idx = absPath.indexOf(RESOURCE_PATH_SEGMENT);
+            if (idx == -1) {
+                return f;
+            }
             final var testClientsPath = TEST_CLIENTS_PREFIX + absPath.substring(idx);
             return new File(testClientsPath);
         } else {
