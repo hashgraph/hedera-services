@@ -57,7 +57,7 @@ public class AdapterUtils {
      * @return the well-known account store
      */
     public static AccountKeyLookup wellKnownKeyLookupAt(final Instant mockLastModified) {
-        return new SimpleKeyLookup(
+        return new TestFixturesKeyLookup(
                 mockStates(
                         Map.of(
                                 ALIASES_KEY, wellKnownAliasState(mockLastModified),

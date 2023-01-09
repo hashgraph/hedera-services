@@ -123,44 +123,40 @@ public class CryptoTransferHandler implements TransactionHandler {
             final CryptoTransferTransactionBody op,
             final AccountKeyLookup keyLookup) {
         for (final var nftTransfer : nftTransfersList) {
-            if (nftTransfer.hasSenderAccountID()) {
-                final var senderKeyOrFailure = keyLookup.getKey(nftTransfer.getSenderAccountID());
-                if (!senderKeyOrFailure.failed()) {
-                    if (!nftTransfer.getIsApproval()) {
-                        meta.addNonPayerKey(nftTransfer.getSenderAccountID());
-                    }
-                } else {
-                    meta.status(senderKeyOrFailure.failureReason());
+            final var senderKeyOrFailure = keyLookup.getKey(nftTransfer.getSenderAccountID());
+            if (!senderKeyOrFailure.failed()) {
+                if (!nftTransfer.getIsApproval()) {
+                    meta.addNonPayerKey(nftTransfer.getSenderAccountID());
                 }
+            } else {
+                meta.status(senderKeyOrFailure.failureReason());
+            }
 
-                final var receiverKeyOrFailure =
-                        keyLookup.getKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID());
-                if (!receiverKeyOrFailure.failed()) {
-                    if (!receiverKeyOrFailure.equals(
-                            KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED)) {
-                        meta.addNonPayerKeyIfReceiverSigRequired(
-                                nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                    } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
-                            && !receivesFungibleValue(nftTransfer.getSenderAccountID(), op)) {
-                        // Fallback situation; but we still need to check if the treasury is
-                        // the sender or receiver, since in neither case will the fallback
-                        // fee actually be charged
-                        final var treasury = tokenMeta.metadata().treasury().toGrpcAccountId();
-                        if (!treasury.equals(nftTransfer.getSenderAccountID())
-                                && !treasury.equals(nftTransfer.getReceiverAccountID())) {
-                            meta.addNonPayerKey(nftTransfer.getReceiverAccountID());
-                        }
-                    }
-                } else {
-                    final var isMissingAcc =
-                            INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
-                                    && isAlias(nftTransfer.getReceiverAccountID());
-                    if (!isMissingAcc) {
-                        meta.status(receiverKeyOrFailure.failureReason());
+            final var receiverKeyOrFailure =
+                    keyLookup.getKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID());
+            if (!receiverKeyOrFailure.failed()) {
+                if (!receiverKeyOrFailure.equals(
+                        KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED)) {
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
+                        && !receivesFungibleValue(nftTransfer.getSenderAccountID(), op)) {
+                    // Fallback situation; but we still need to check if the treasury is
+                    // the sender or receiver, since in neither case will the fallback
+                    // fee actually be charged
+                    final var treasury = tokenMeta.metadata().treasury().toGrpcAccountId();
+                    if (!treasury.equals(nftTransfer.getSenderAccountID())
+                            && !treasury.equals(nftTransfer.getReceiverAccountID())) {
+                        meta.addNonPayerKey(nftTransfer.getReceiverAccountID());
                     }
                 }
             } else {
-                meta.status(INVALID_ACCOUNT_ID);
+                final var isMissingAcc =
+                        INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
+                                && isAlias(nftTransfer.getReceiverAccountID());
+                if (!isMissingAcc) {
+                    meta.status(receiverKeyOrFailure.failureReason());
+                }
             }
         }
     }
