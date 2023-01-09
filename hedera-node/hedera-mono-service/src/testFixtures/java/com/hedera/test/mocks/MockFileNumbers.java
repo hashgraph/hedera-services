@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.config;
+package com.hedera.test.mocks;
 
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 
-public class MockFileNumbers extends FileNumbers {
-    public MockFileNumbers() {
-        super(null, null);
-    }
-
+public class MockFileNumbers implements HederaFileNumbers {
     @Override
     public long addressBook() {
         return 101;
@@ -67,7 +64,6 @@ public class MockFileNumbers extends FileNumbers {
         return 123;
     }
 
-    @Override
     public FileID toFid(long num) {
         return FileID.newBuilder().setRealmNum(0).setShardNum(0).setFileNum(num).build();
     }

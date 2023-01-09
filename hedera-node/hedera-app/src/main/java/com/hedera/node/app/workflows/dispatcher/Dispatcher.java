@@ -103,7 +103,11 @@ public class Dispatcher {
                             storeCache.getAccountStore(state),
                             cryptoSignatureWaivers);
             case CRYPTOTRANSFER -> handlers.cryptoTransferHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case CRYPTODELETE -> handlers.cryptoDeleteHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CRYPTOAPPROVEALLOWANCE -> handlers.cryptoApproveAllowanceHandler()

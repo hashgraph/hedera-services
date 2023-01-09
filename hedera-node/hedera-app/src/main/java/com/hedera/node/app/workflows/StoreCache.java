@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -46,6 +47,17 @@ public class StoreCache {
      */
     @NonNull
     public ReadableScheduleStore getScheduleStore(@NonNull final HederaState state) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /**
+     * Returns the {@link ReadableTokenStore} for the provided {@link HederaState}.
+     *
+     * @param state the {@code HederaState} that is the base for the {@code TokenStore}
+     * @return the {@code TokenStore} for the provided state, either new or cached
+     */
+    @NonNull
+    public ReadableTokenStore getTokenStore(@NonNull final HederaState state) {
         throw new UnsupportedOperationException("not implemented");
     }
 }

@@ -438,6 +438,34 @@ class AbstractRecordingCreateOperationTest {
     }
 
     @Test
+    void hasExpectedHollowAccountCompletionWithoutLazyCreationEnabled() {
+        given(frame.stackSize()).willReturn(3);
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
+        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
+        given(frame.getRecipientAddress()).willReturn(recipient);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.getAccount(recipient)).willReturn(recipientAccount);
+        given(recipientAccount.getMutable()).willReturn(mutableAccount);
+        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(updater.updater()).willReturn(updater);
+        given(frame.getOriginatorAddress()).willReturn(recipient);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(frame.getMiningBeneficiary()).willReturn(recipient);
+        given(frame.getBlockHashLookup()).willReturn(l -> Hash.ZERO);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        given(updater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willReturn(EntityIdUtils.asTypedEvmAddress(hollowAccountId));
+        given(updater.trackingAccounts()).willReturn(accounts);
+        given(accounts.contains(hollowAccountId)).willReturn(false);
+
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+    }
+
+    @Test
     void hasExpectedChildCompletionOnFailure() {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
@@ -506,6 +534,7 @@ class AbstractRecordingCreateOperationTest {
         given(aliases.resolveForEvm(any()))
                 .willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
         given(updater.trackingAccounts()).willReturn(accounts);
+        given(accounts.contains(expectedAccountId)).willReturn((expectedKey != null));
         given(accounts.get(expectedAccountId, AccountProperty.KEY)).willReturn(expectedKey);
     }
 

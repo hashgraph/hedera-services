@@ -363,7 +363,9 @@ class DispatcherTest {
                                         CryptoTransferTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.cryptoTransferHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.cryptoTransferHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
