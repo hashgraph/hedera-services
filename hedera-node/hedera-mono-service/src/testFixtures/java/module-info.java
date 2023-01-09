@@ -1,6 +1,8 @@
 module com.hedera.node.app.service.mono.testFixtures {
     exports com.hedera.test.utils;
     exports com.hedera.test.factories.txns;
+    exports com.hedera.test.factories.keys;
+    exports com.hedera.test.mocks;
     exports com.hedera.test.factories.scenarios;
 
     requires org.junit.jupiter.api;
@@ -15,6 +17,6 @@ module com.hedera.node.app.service.mono.testFixtures {
     requires net.i2p.crypto.eddsa;
     requires org.bouncycastle.provider;
     requires org.apache.commons.codec;
-    requires com.hedera.node.app.spi;
     requires org.apache.commons.lang3;
+    requires com.hedera.node.app.spi;
 }

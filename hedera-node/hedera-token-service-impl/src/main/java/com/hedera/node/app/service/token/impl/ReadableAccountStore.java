@@ -102,7 +102,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * Returns the account leaf for the given account number. If the account doesn't exist returns
      * {@code Optional.empty()}
      *
-     * @param id given account number13257L
+     * @param id given account number
      * @return merkle leaf for the given account number
      */
     private Optional<HederaAccount> getAccountLeaf(final AccountID id) {

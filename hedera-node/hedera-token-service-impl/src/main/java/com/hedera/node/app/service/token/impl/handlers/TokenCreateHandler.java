@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -49,6 +49,7 @@ public class TokenCreateHandler implements TransactionHandler {
      *
      * @param txBody the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param accountStore the {@link AccountKeyLookup} to use to resolve keys
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -56,7 +57,7 @@ public class TokenCreateHandler implements TransactionHandler {
     public TransactionMetadata preHandle(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
+            @NonNull final AccountKeyLookup accountStore) {
         final var tokenCreateTxnBody = txBody.getTokenCreation();
         final var customFees = tokenCreateTxnBody.getCustomFeesList();
         final var treasuryId = tokenCreateTxnBody.getTreasury();

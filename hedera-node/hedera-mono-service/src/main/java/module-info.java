@@ -48,12 +48,6 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.store.tokens to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.mono.state.impl to
-            com.hedera.node.app.service.mono.testFixtures,
-            com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.mono.state.migration to
-            com.hedera.node.app.service.mono.testFixtures,
-            com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.mono.context;
     exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
@@ -88,7 +82,8 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.stream to
             com.swirlds.common;
 
-    exports com.hedera.node.app.service.mono.store;
+    exports com.hedera.node.app.service.mono.state.impl;
+    exports com.hedera.node.app.service.mono.state.migration;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
@@ -97,6 +92,7 @@ module com.hedera.node.app.service.mono {
     requires com.hedera.node.app.spi;
     requires com.google.protobuf;
     requires com.google.common;
+    requires org.slf4j;
     requires org.apache.logging.log4j;
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.merkle;
