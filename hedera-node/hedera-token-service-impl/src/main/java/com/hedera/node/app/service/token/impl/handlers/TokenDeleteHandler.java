@@ -49,8 +49,8 @@ public class TokenDeleteHandler implements TransactionHandler {
     public TransactionMetadata preHandle(
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            @NonNull AccountKeyLookup keyLookup,
-            @NonNull ReadableTokenStore tokenStore) {
+            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final ReadableTokenStore tokenStore) {
         final var op = txn.getTokenDeletion();
         final var tokenId = op.getToken();
         final var meta =

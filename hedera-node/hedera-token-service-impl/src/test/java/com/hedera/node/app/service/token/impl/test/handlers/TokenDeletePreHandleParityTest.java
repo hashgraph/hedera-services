@@ -35,7 +35,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TokenDeletePreHandleParityTest {
+class TokenDeletePreHandleParityTest {
 
     private AccountKeyLookup keyLookup;
     private ReadableTokenStore readableTokenStore;
