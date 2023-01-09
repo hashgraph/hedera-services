@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDATE_FILE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
@@ -49,7 +49,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
             ignore -> OK;
 
     private final HederaFs hfs;
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
     private final TransactionContext txnCtx;
     private final SigImpactHistorian sigImpactHistorian;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -57,7 +57,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
     @Inject
     public FileAppendTransitionLogic(
             final HederaFs hfs,
-            final FileNumbers fileNumbers,
+            final HederaFileNumbers fileNumbers,
             final TransactionContext txnCtx,
             final SigImpactHistorian sigImpactHistorian,
             final Supplier<MerkleNetworkContext> networkCtx) {

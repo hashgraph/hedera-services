@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.config;
 
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -25,13 +27,15 @@ import javax.inject.Singleton;
 public class EntityNumbers {
     public static final long UNKNOWN_NUMBER = Long.MIN_VALUE;
 
-    private final FileNumbers fileNumbers;
+    private final HederaFileNumbers fileNumbers;
     private final HederaNumbers hederaNumbers;
-    private final AccountNumbers accountNumbers;
+    private final HederaAccountNumbers accountNumbers;
 
     @Inject
     public EntityNumbers(
-            FileNumbers fileNumbers, HederaNumbers hederaNumbers, AccountNumbers accountNumbers) {
+            final HederaFileNumbers fileNumbers,
+            final HederaNumbers hederaNumbers,
+            final HederaAccountNumbers accountNumbers) {
         this.fileNumbers = fileNumbers;
         this.hederaNumbers = hederaNumbers;
         this.accountNumbers = accountNumbers;
@@ -56,11 +60,11 @@ public class EntityNumbers {
         return hederaNumbers;
     }
 
-    public FileNumbers files() {
+    public HederaFileNumbers files() {
         return fileNumbers;
     }
 
-    public AccountNumbers accounts() {
+    public HederaAccountNumbers accounts() {
         return accountNumbers;
     }
 }
