@@ -9,7 +9,7 @@ Details about the required pre-checks can be found [here](transaction-prechecks.
 
 The package `com.hedera.node.app.workflows.ingest` contains the ingest workflow. A rough overview can be seen in the diagram below.
 
-![Diagram of ingest workflow](images/Ingest%20Workflow.png)
+![Diagram of ingest workflow](images/Ingest%20Workflow.svg)
 
 When a new message arrives at the HAPI-endpoint, the byte-buffer that contains the transaction is sent to the ingest workflow.
 The gRPC-server is responsible for `Thread`-Management.
@@ -33,7 +33,7 @@ In case of insufficient funds, the returned `TransactionResponse` also contains 
 
 The `com.hedera.node.app.workflows.prehandle` package contains the workflow for pre-handling transactions. A rough overview can be seen in the diagram below.
 
-![Diagram of pre-handle transaction workflow](images/Pre-Handle%20Transaction%20Workflow.png)
+![Diagram of pre-handle transaction workflow](images/Pre-Handle%20Transaction%20Workflow.svg)
 
 An `Event` at a time is sent to the `prehandle` with a reference to the latest immutable state.
 It iterates through each transaction and initiates the pre-handle workflow in a separate thread.
@@ -58,7 +58,7 @@ The query workflow is by far the most complex workflow.
 Unlike transaction processing, it is not split into several phases, but covers the whole query from receiving the request until sending the response.
 Also, a query typically contains a `CryptoTransfer` to cover the costs.
 
-![Diagram of query worflow](images/Query%20Workflow.png)
+![Diagram of query worflow](images/Query%20Workflow.svg)
 
 When a query arrives at the HAPI-endpoint,  the byte-buffer that contains the query is sent to the query workflow.
 The gRPC-server is responsible for `Thread`-management.
