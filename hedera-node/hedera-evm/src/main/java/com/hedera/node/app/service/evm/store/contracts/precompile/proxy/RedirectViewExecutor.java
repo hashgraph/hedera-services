@@ -32,6 +32,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsApprovedForAllPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -93,29 +96,25 @@ public class RedirectViewExecutor {
         } else if (selector == ABI_ID_ERC_SYMBOL) {
             final var symbol = tokenAccessor.symbolOf(token);
             return evmEncoder.encodeSymbol(symbol);
+        } else if (selector == ABI_ID_ERC_ALLOWANCE) {
+            final var wrapper =
+                EvmAllowancePrecompile.decodeTokenAllowance(input);
+            final var allowance =
+                tokenAccessor.staticAllowanceOf(Address.wrap(Bytes.wrap(wrapper.owner())), Address.wrap(Bytes.wrap(wrapper.spender())), Address.wrap(Bytes.wrap(wrapper.token())));
+            return evmEncoder.encodeAllowance(allowance);
+        } else if (selector == ABI_ID_ERC_GET_APPROVED) {
+            final var wrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
+            final var spender =
+                tokenAccessor.staticApprovedSpenderOf(Address.wrap(Bytes.wrap(wrapper.token())), wrapper.serialNo());
+            final var priorityAddress = tokenAccessor.canonicalAddress(spender);
+            return evmEncoder.encodeGetApproved(priorityAddress);
+        } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
+            final var wrapper =
+                EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
+            final var isOperator =
+                tokenAccessor.staticIsOperator(Address.wrap(Bytes.wrap(wrapper.owner())), Address.wrap(Bytes.wrap(wrapper.operator())), Address.wrap(Bytes.wrap(wrapper.token())));
+            return evmEncoder.encodeIsApprovedForAll(isOperator);
         }
-//        else if (selector == ABI_ID_ERC_ALLOWANCE) {
-//            final var wrapper =
-//                AllowancePrecompile.decodeTokenAllowance(input, tokenId, updater::unaliased);
-//            final var allowance =
-//                tokenAccessor.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
-//            return evmEncoder.encodeAllowance(allowance);
-//        }
-//        else if (selector == ABI_ID_ERC_GET_APPROVED) {
-//            final var wrapper = GetApprovedPrecompile.decodeGetApproved(input, tokenId);
-//            final var spender =
-//                tokenAccessor.staticApprovedSpenderOf(NftId.fromGrpc(tokenId, wrapper.serialNo()));
-//            final var priorityAddress = ledgers.canonicalAddress(spender);
-//            return evmEncoder.encodeGetApproved(priorityAddress);
-//        }
-//        else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
-//            final var wrapper =
-//                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-//                    input, tokenId, updater::unaliased);
-//            final var isOperator =
-//                tokenAccessor.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
-//            return evmEncoder.encodeIsApprovedForAll(isOperator);
-//        }
         else if (selector == ABI_ID_ERC_DECIMALS) {
 //            validateTrue(isFungibleToken, INVALID_TOKEN_ID);
             final var decimals = tokenAccessor.decimalsOf(token);
