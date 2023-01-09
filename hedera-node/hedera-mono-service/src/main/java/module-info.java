@@ -96,6 +96,7 @@ module com.hedera.node.app.service.mono {
     requires com.hedera.node.app.spi;
     requires com.google.protobuf;
     requires com.google.common;
+    requires org.slf4j;
     requires org.apache.logging.log4j;
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.merkle;
