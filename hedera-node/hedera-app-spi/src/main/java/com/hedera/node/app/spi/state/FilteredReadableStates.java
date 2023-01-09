@@ -56,7 +56,7 @@ public class FilteredReadableStates implements ReadableStates {
     @Override
     public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
-        if (!stateKeys.contains(stateKey)) {
+        if (!contains(stateKey)) {
             throw new IllegalArgumentException("Could not find state " + stateKey);
         }
 
@@ -65,7 +65,7 @@ public class FilteredReadableStates implements ReadableStates {
 
     @Override
     public boolean contains(@NonNull String stateKey) {
-        return stateKeys.contains(stateKey) && delegate.contains(stateKey);
+        return stateKeys.contains(stateKey);
     }
 
     @NonNull
