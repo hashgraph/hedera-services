@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,15 +40,31 @@ public class TokenDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull AccountKeyLookup keyLookup,
+            @NonNull ReadableTokenStore tokenStore) {
+        final var op = txn.getTokenDeletion();
+        final var tokenId = op.getToken();
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (tokenMeta.failed()) {
+            meta.status(tokenMeta.failureReason());
+        } else {
+            final var tokenMetadata = tokenMeta.metadata();
+            final var adminKey = tokenMetadata.adminKey();
+            // we will fail in handle() if token has no admin key
+            adminKey.ifPresent(meta::addToReqNonPayerKeys);
+        }
+        return meta.build();
     }
 
     /**
