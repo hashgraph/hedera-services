@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.workflows.dispatcher;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -24,8 +26,6 @@ import com.hedera.node.app.workflows.StoreCache;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@code Dispatcher} provides functionality to forward pre-check, pre-handle, and handle-requests
