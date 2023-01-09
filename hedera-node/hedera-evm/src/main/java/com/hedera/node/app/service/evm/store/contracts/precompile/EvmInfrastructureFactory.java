@@ -38,7 +38,7 @@ public class EvmInfrastructureFactory {
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor);
     }
 
     public ViewExecutor newViewExecutor(

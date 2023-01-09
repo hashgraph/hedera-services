@@ -20,6 +20,26 @@ public class AbiConstants {
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
     public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
+    // name()
+    public static final int ABI_ID_ERC_NAME = 0x06fdde03;
+    // symbol()
+    public static final int ABI_ID_ERC_SYMBOL = 0x95d89b41;
+    // allowance(address owner, address spender)
+    public static final int ABI_ID_ERC_ALLOWANCE = 0xdd62ed3e;
+    // getApproved(uint256 tokenId)
+    public static final int ABI_ID_ERC_GET_APPROVED = 0x081812fc;
+    // isApprovedForAll(address owner, address operator)
+    public static final int ABI_ID_ERC_IS_APPROVED_FOR_ALL = 0xe985e9c5;
+    // decimals()
+    public static final int ABI_ID_ERC_DECIMALS = 0x313ce567;
+    // totalSupply()
+    public static final int ABI_ID_ERC_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
+    // balanceOf(address account)
+    public static final int ABI_ID_ERC_BALANCE_OF_TOKEN = 0x70a08231;
+    // ownerOf(uint256 tokenId)
+    public static final int ABI_ID_ERC_OWNER_OF_NFT = 0x6352211e;
+    // tokenURI(uint256 tokenId)
+    public static final int ABI_ID_ERC_TOKEN_URI_NFT = 0xc87b56dd;
 
     // isFrozen(address token, address account)
     public static final int ABI_ID_IS_FROZEN = 0x46de0fb1;
