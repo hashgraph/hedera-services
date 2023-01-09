@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,6 +176,7 @@ public class ContractDeleteSuite extends HapiSuite {
                                         contractCall(tokenMirrorAddr.get())
                                                 .sending(1L)
                                                 .payingWith(TOKEN_TREASURY)
+                                                .refusingEthConversion()
                                                 .via(externalViolation)
                                                 .hasKnownStatus(
                                                         LOCAL_CALL_MODIFICATION_EXCEPTION))))
