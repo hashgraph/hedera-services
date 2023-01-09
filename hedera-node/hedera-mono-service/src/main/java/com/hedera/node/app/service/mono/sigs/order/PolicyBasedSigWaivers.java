@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -42,7 +42,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class PolicyBasedSigWaivers implements SignatureWaivers {
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final SystemOpPolicies opPolicies;
 
     @Inject

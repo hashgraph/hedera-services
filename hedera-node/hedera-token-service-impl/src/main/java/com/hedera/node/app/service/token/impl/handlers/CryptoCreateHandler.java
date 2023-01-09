@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,17 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -28,24 +34,25 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class CryptoCreateHandler implements TransactionHandler {
 
     /**
-     * This method is called during the pre-handle workflow.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param tx the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param accountStore the {@link ReadableAccountStore} to use for account resolution
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody tx,
+            @NonNull final AccountID payer,
+            @NonNull final ReadableAccountStore accountStore) {
+        final var op = tx.getCryptoCreateAccount();
+        final var key = asHederaKey(op.getKey());
+        final var receiverSigReq = op.getReceiverSigRequired();
+        return createAccountSigningMetadata(tx, key, receiverSigReq, payer, accountStore);
     }
 
     /**
@@ -59,5 +66,31 @@ public class CryptoCreateHandler implements TransactionHandler {
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /* --------------- Helper methods --------------- */
+
+    /**
+     * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
+     * for signing the transaction
+     *
+     * @param txn given transaction body
+     * @param key key provided in the transaction body
+     * @param receiverSigReq flag for receiverSigReq on the given transaction body
+     * @param payer payer for the transaction
+     * @return transaction's metadata needed to validate signatures
+     */
+    private TransactionMetadata createAccountSigningMetadata(
+            final TransactionBody txn,
+            final Optional<HederaKey> key,
+            final boolean receiverSigReq,
+            final AccountID payer,
+            @NonNull final ReadableAccountStore accountStore) {
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+        if (receiverSigReq && key.isPresent()) {
+            meta.addToReqNonPayerKeys(key.get());
+        }
+        return meta.build();
     }
 }

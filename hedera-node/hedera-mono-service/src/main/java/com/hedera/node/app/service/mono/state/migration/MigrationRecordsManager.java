@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.initialization.BackedSystem
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -39,6 +38,7 @@ import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -81,7 +81,7 @@ public class MigrationRecordsManager {
     private final ConsensusTimeTracker consensusTimeTracker;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final Supplier<AccountStorageAdapter> accounts;
-    private final AccountNumbers accountNumbers;
+    private final HederaAccountNumbers accountNumbers;
     private final BootstrapProperties bootstrapProperties;
     private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
@@ -95,7 +95,7 @@ public class MigrationRecordsManager {
             final ConsensusTimeTracker consensusTimeTracker,
             final Supplier<AccountStorageAdapter> accounts,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final AccountNumbers accountNumbers,
+            final HederaAccountNumbers accountNumbers,
             final BootstrapProperties bootstrapProperties) {
         this.systemAccountsCreator = systemAccountsCreator;
         this.sigImpactHistorian = sigImpactHistorian;

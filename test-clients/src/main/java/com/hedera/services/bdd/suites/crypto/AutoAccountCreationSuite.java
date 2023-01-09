@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     public static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
     private static final String NFT_FINITE_SUPPLY_TOKEN = "nftB";
     private static final String MULTI_KEY = "multi";
-    private static final String PARTY = "party";
+    public static final String PARTY = "party";
     private static final String COUNTERPARTY = "counterparty";
 
     private static final String CIVILIAN = "somebody";

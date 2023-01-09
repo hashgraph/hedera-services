@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,22 @@
  */
 package com.hedera.node.app.service.evm.store.models;
 
+import static org.apache.tuweni.units.bigints.UInt256.MIN_VALUE;
+import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import java.util.Collections;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,9 +44,14 @@ class UpdatedHederaEvmAccountTest {
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     private UpdatedHederaEvmAccount subject;
 
+    @Mock private HederaEvmEntityAccess hederaEvmEntityAccess;
+
     @BeforeEach
     void setUp() {
-        subject = new UpdatedHederaEvmAccount(address, 1, Wei.ONE);
+        subject = new UpdatedHederaEvmAccount(address);
+        subject.setBalance(Wei.ONE);
+        subject.setNonce(1L);
+        subject.setEvmEntityAccess(hederaEvmEntityAccess);
     }
 
     @Test
@@ -58,7 +68,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void addressHash() {
-        assertNull(subject.getAddressHash());
+        assertEquals(Hash.hash(address), subject.getAddressHash());
     }
 
     @Test
@@ -75,26 +85,58 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void getCode() {
-        assertNull(subject.getCode());
+        assertEquals(Bytes.EMPTY, subject.getCode());
     }
 
     @Test
     void getCodeHash() {
-        assertNull(subject.getCodeHash());
+        assertEquals(Hash.hash(Bytes.EMPTY), subject.getCodeHash());
     }
 
     @Test
     void getStorageValue() {
-        assertNull(subject.getStorageValue(UInt256.MIN_VALUE));
+        subject.setStorageValue(MIN_VALUE, MIN_VALUE);
+        assertEquals(ZERO, subject.getStorageValue(MIN_VALUE));
+    }
+
+    @Test
+    void getStorageValueFromDb() {
+        given(hederaEvmEntityAccess.getStorage(address, MIN_VALUE)).willReturn(MIN_VALUE);
+        assertEquals(ZERO, subject.getStorageValue(MIN_VALUE));
     }
 
     @Test
     void getOriginalStorageValue() {
-        assertNull(subject.getOriginalStorageValue(UInt256.MIN_VALUE));
+        subject = new UpdatedHederaEvmAccount(address, 0, Wei.ZERO);
+        assertEquals(ZERO, subject.getOriginalStorageValue(MIN_VALUE));
     }
 
     @Test
     void storageEntriesFrom() {
         assertEquals(Collections.emptyNavigableMap(), subject.storageEntriesFrom(Bytes32.ZERO, 0));
+    }
+
+    @Test
+    void getUpdatedStorage() {
+        subject.setStorageValue(MIN_VALUE, MIN_VALUE);
+        assertEquals(MIN_VALUE, subject.getUpdatedStorage().get(MIN_VALUE));
+    }
+
+    @Test
+    void clearStorage() {
+        subject.setStorageValue(MIN_VALUE, MIN_VALUE);
+        subject.clearStorage();
+        assertEquals(0, subject.getUpdatedStorage().size());
+    }
+
+    @Test
+    void getMutable() {
+        assertEquals(subject, subject.getMutable());
+    }
+
+    @Test
+    void setCode() {
+        subject.setCode(Bytes.EMPTY);
+        assertEquals(Bytes.EMPTY, subject.getCode());
     }
 }
