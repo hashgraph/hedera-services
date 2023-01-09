@@ -157,7 +157,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -182,7 +182,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -206,7 +206,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -230,7 +230,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -254,7 +254,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -278,7 +278,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -302,7 +302,7 @@ class GetTokenKeyPrecompileTest {
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);

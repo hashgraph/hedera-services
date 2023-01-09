@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -28,6 +29,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -68,12 +70,12 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
         Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
-                new TokenExpiryWrapper(
-                        tokenInfo.getExpiry().getSeconds(),
-                        tokenInfo.getAutoRenewAccount(),
-                        tokenInfo.getAutoRenewPeriod().getSeconds());
+            new TokenExpiryInfo(
+                tokenInfo.getExpiry().getSeconds(),
+                EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
+                tokenInfo.getAutoRenewPeriod().getSeconds());
 
-        return encoder.encodeGetTokenExpiryInfo(expiryInfo);
+        return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
 
     public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {

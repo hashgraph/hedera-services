@@ -30,7 +30,6 @@ public final class ParsingConstants {
     public static final String INT_BOOL_PAIR = "(int,bool)";
     public static final String BYTES32 = "(bytes32)";
     public static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
-    public static final String ADDRESS_TRIO_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     public static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     public static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
     public static final String INT = "(int)";

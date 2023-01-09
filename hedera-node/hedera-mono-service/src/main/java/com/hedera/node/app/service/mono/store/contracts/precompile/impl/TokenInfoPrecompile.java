@@ -57,10 +57,10 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var tokenInfo =
-                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-        return encoder.encodeGetTokenInfo(tokenInfo);
+        return evmEncoder.encodeGetTokenInfo(tokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetTokenInfo(final Bytes input) {
