@@ -45,7 +45,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenKeyWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;

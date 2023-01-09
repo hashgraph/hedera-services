@@ -26,13 +26,14 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenKeyWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -42,7 +43,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
+public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements EvmGetTokenKeyPrecompile {
     private static final Function GET_TOKEN_KEYS_FUNCTION =
             new Function("getTokenKey(address,uint256)");
     private static final Bytes GET_TOKEN_KEYS_SELECTOR =
@@ -50,6 +51,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     private static final ABIType<Tuple> GET_TOKEN_KEYS_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
     private TokenProperty keyType;
+    private GetTokenKeyWrapper<TokenID> getTokenKeyWrapper;
 
     public GetTokenKeyPrecompile(
             final TokenID tokenId,
@@ -64,9 +66,9 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var getTokenKeyWrapper = decodeGetTokenKey(input);
-        tokenId = getTokenKeyWrapper.tokenID();
-        keyType = getTokenKeyWrapper.tokenKeyType();
+        getTokenKeyWrapper = decodeGetTokenKey(input);
+        tokenId = getTokenKeyWrapper.token();
+        keyType = TokenProperty.valueOf(getTokenKeyWrapper.tokenKeyType().name());
         return super.body(input, aliasResolver);
     }
 
@@ -78,11 +80,10 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
     }
 
-    public static GetTokenKeyWrapper decodeGetTokenKey(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
+    public static GetTokenKeyWrapper<TokenID> decodeGetTokenKey(final Bytes input) {
+        final var rawGetTokenKeyWrapper = EvmGetTokenKeyPrecompile.decodeGetTokenKey(input);
+        final var tokenID = convertAddressBytesToTokenID(rawGetTokenKeyWrapper.token());
+        final var tokenType = rawGetTokenKeyWrapper.keyType();
         return new GetTokenKeyWrapper(tokenID, tokenType);
     }
 }

@@ -23,6 +23,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungib
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsFrozenPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
@@ -34,7 +35,6 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 import java.util.Objects;
@@ -53,6 +53,9 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenTypePrecompile.decodeGetTokenType;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor.asSecondsTimestamp;
+import static com.hedera.node.app.service.evm.utils.EntityIdUtil.addressFromBytes;
+import static com.hedera.node.app.service.evm.utils.EntityIdUtil.asTypedEvmAddress;
+import static com.hedera.node.app.service.evm.utils.EntityIdUtil.tokenIdFromEvmAddress;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -132,14 +135,15 @@ public class ViewExecutor {
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-                //TODO token from address
                 final var nftID =
                         NftID.newBuilder()
-                                .setTokenID(wrapper.token())
+                                .setTokenID(tokenIdFromEvmAddress(wrapper.token()))
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
+                final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
+                final var nftSerialNo = nftID.getSerialNumber();
                 final var nonFungibleTokenInfo =
-                        tokenAccessor.evmNftInfo(nftID, ledgerId)
+                        tokenAccessor.evmNftInfo(nftAddress,nftSerialNo, ledgerId)
                                 .orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
@@ -229,31 +233,26 @@ public class ViewExecutor {
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
                 Objects.requireNonNull(tokenInfo);
-                //TODO
                 final var expiryInfo =
                         new TokenExpiryInfo(
                                 tokenInfo.getExpiry().getSeconds(),
-                                addressFromBytes(tokenInfo.getAutoRenewAccount()),
+                                asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
                                 tokenInfo.getAutoRenewPeriod().getSeconds());
 
                 return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
             case ABI_ID_GET_TOKEN_KEY -> {
-                final var wrapper = GetTokenKeyPrecompile.decodeGetTokenKey(input);
+                final var wrapper = EvmGetTokenKeyPrecompile.decodeGetTokenKey(input);
 
                 validateTrueOrRevert(
-                        tokenAccessor.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var key = tokenAccessor.keyOf(wrapper.tokenID(), wrapper.tokenKeyType());
-                final var evmKey = convertToEvmKey(asKeyUnchecked(key));
+                final var evmKey = tokenAccessor.keyOf(addressFromBytes(wrapper.token()), wrapper.tokenKeyType());
                 return evmEncoder.encodeGetTokenKey(evmKey);
             }
             // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
-    }
-    public static Address addressFromBytes(final byte[] bytes) {
-        return Address.wrap(Bytes.wrap(bytes));
     }
 }
