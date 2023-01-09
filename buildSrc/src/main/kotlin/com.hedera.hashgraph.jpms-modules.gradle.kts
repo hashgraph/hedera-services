@@ -1,7 +1,7 @@
 import gradle.kotlin.dsl.accessors._34a132ac50631db3ea5353237b274f3d.extraJavaModuleInfo
 
 /*
- * Copyright 2016-2022 Hedera Hashgraph, LLC
+ * Copyright 2016-2023 Hedera Hashgraph, LLC
  *
  * This software is the confidential and proprietary information of
  * Hedera Hashgraph, LLC. ("Confidential Information"). You shall not

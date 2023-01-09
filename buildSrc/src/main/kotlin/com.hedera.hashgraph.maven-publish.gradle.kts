@@ -2,7 +2,7 @@ import com.diffplug.gradle.spotless.JavaExtension
 import java.time.Duration
 
 /*
- * Copyright 2016-2022 Hedera Hashgraph, LLC
+ * Copyright 2016-2023 Hedera Hashgraph, LLC
  *
  * This software is the confidential and proprietary information of
  * Hedera Hashgraph, LLC. ("Confidential Information"). You shall not
