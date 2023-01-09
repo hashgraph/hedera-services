@@ -26,9 +26,9 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_INFO_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_KEY_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,22 +230,28 @@ class GetTokenInfoPrecompilesTest {
 
         tokenKeys.add(tokenKey);
         tokenInfo = createTokenInfoWithSingleKey(1, false);
-        evmTokenInfo =  new EvmTokenInfo(
-            fromString("0x03").toByteArray(),
-            1,
-            false,
-            "FT",
-            "NAME",
-            "MEMO",
-            Address.wrap(
-                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-            1L,
-            1000L,
-            0,
-            0L);
+        evmTokenInfo =
+                new EvmTokenInfo(
+                        fromString("0x03").toByteArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
 
-        evmNftInfo = new EvmNftInfo(serialNumber, EntityIdUtils.asTypedEvmAddress(payer),
-            creationTime, metadata.toByteArray(), EntityIdUtils.asTypedEvmAddress(sender));
+        evmNftInfo =
+                new EvmNftInfo(
+                        serialNumber,
+                        EntityIdUtils.asTypedEvmAddress(payer),
+                        creationTime,
+                        metadata.toByteArray(),
+                        EntityIdUtils.asTypedEvmAddress(sender));
         nonFungibleTokenInfo =
                 TokenNftInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))

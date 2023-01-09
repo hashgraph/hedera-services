@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -28,22 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;

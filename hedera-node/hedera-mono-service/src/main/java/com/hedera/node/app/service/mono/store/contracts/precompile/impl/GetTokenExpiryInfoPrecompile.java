@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,10 +69,10 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
         Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
-            new TokenExpiryInfo(
-                tokenInfo.getExpiry().getSeconds(),
-                EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
-                tokenInfo.getAutoRenewPeriod().getSeconds());
+                new TokenExpiryInfo(
+                        tokenInfo.getExpiry().getSeconds(),
+                        EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
+                        tokenInfo.getAutoRenewPeriod().getSeconds());
 
         return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
     }

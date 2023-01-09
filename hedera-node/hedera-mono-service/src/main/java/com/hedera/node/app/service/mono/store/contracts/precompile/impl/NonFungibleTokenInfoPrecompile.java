@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,8 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var tokenInfo =
-                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
+                        .orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         final var nftID =

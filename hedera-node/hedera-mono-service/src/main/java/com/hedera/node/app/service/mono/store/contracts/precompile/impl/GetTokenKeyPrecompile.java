@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.valida
 import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.convertToEvmKey;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.esaulpaugh.headlong.abi.ABIType;
