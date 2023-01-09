@@ -56,7 +56,7 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.TokenAccessorImpl;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
@@ -99,7 +99,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class InfrastructureFactory extends EvmInfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
-    private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -140,7 +139,6 @@ public class InfrastructureFactory extends EvmInfrastructureFactory {
             final EntityCreator entityCreator) {
         super(evmEncoder);
         this.ids = ids;
-        this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -269,22 +267,21 @@ public class InfrastructureFactory extends EvmInfrastructureFactory {
                 feeDistribution);
     }
 
+    @Override
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
+        tokenAccessor(frame);
+        return super.newRedirectExecutor(input, frame, gasCalculator);
     }
 
     @Override
     public ViewExecutor newViewExecutor(
             final Bytes input,
             final MessageFrame frame,
-            final com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator gasCalculator,
+            final ViewGasCalculator gasCalculator,
             final ByteString ledgerId) {
-        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var ledgers = updater.trackingLedgers();
-        final var tokenAccessor = new TokenAccessorImpl(ledgers);
-        return new com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor(input, frame,
-                evmEncoder, gasCalculator, tokenAccessor, ledgerId);
+        tokenAccessor(frame);
+        return super.newViewExecutor(input, frame, gasCalculator, ledgerId);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
@@ -377,5 +374,11 @@ public class InfrastructureFactory extends EvmInfrastructureFactory {
             txnRecord.onlyExternalizeIfSuccessful();
             updater.manageInProgressPrecedingRecord(recordsHistorian, txnRecord, txnBody);
         };
+    }
+
+    private void tokenAccessor(final MessageFrame frame) {
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var ledgers = updater.trackingLedgers();
+        tokenAccessor = new TokenAccessorImpl(ledgers);
     }
 }
