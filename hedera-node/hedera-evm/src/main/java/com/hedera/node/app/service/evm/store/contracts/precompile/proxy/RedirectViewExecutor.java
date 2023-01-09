@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsApprovedForAllPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
@@ -122,14 +123,12 @@ public class RedirectViewExecutor {
         } else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN) {
             final var totalSupply = tokenAccessor.totalSupplyOf(token);
             return evmEncoder.encodeTotalSupply(totalSupply);
-        }
-//        else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
-//            final var wrapper =
-//                BalanceOfPrecompile.decodeBalanceOf(input.slice(24), updater::unaliased);
-//            final var balance = tokenAccessor.balanceOf(wrapper.account(), tokenId);
-//            return evmEncoder.encodeBalance(balance);
-//        }
-        else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
+        } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
+            final var wrapper =
+                EvmBalanceOfPrecompile.decodeBalanceOf(input.slice(24));
+            final var balance = tokenAccessor.balanceOf(Address.wrap(Bytes.wrap(wrapper.account())), token);
+            return evmEncoder.encodeBalance(balance);
+        } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
 //            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
             final var wrapper = EvmOwnerOfPrecompile.decodeOwnerOf(input.slice(24));
             final var owner = tokenAccessor.ownerOf(token, wrapper.serialNo());
