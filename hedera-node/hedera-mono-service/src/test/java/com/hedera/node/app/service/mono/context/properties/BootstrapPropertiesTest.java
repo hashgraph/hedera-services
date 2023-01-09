@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, 10000L),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
-                    entry("cryptoTransferWarmThreads", 30),     // temporary addition
+                    entry("cryptoTransferWarmThreads", 30), // temporary addition
                     entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
                     entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
