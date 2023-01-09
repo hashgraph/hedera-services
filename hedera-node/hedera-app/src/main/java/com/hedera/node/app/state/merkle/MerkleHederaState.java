@@ -352,7 +352,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @return The found node
      */
     @NonNull
-    private MerkleNode findNode(@NonNull StateMetadata<?, ?> md) {
+    private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
         final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
         if (index == -1) {
             // This can only happen if there WAS a node here, and it was removed!
