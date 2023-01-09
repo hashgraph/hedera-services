@@ -1,4 +1,4 @@
-# Yahcli v0.3.5
+# Yahcli v0.3.6
 Yahcli (_Yet Another Hedera Command Line Interface_) supports DevOps
 actions against the Hedera networks listed in a _config.yml_ file.
 
@@ -26,6 +26,7 @@ appear below.
 14. [Printing key details](#printing-key-details)
 15. [Changing a staking election](#changing-a-staking-election)
 16. [Scheduling a transaction](#scheduling-a-transaction)
+17. [Scheduling public key list update](#scheduling-public-key-list-update)
 
 # Setting up the working directory
 
@@ -52,20 +53,32 @@ networks:
 ```
 
 We can add details for multiple networks to this config file; for example,
-we can add information about the stable testnet. And we can override the 
-default payer account or default node account for any network using the 
-`defaultPayer` and `defaultNodeAccount` fields, respectively. 
+we can add information about the stable testnet. And we can override the
+default payer account or default node account for any network using the
+`defaultPayer` and `defaultNodeAccount` fields, respectively.
 
-We can add also allowedReceiverAccountIds of beneficiaries that the funds can be sent to and the format is list example:`[123,456,789]`
+We can add also allowedReceiverAccountIds of beneficiaries that the funds can be sent to and the format is list
+example:`[123,456,789]`
 or it can be `null` by default.
 
-We can also use the command line option `-p` to override `defaultPayer`, and 
-the command line option `-a/--node-account` to override `defaultNodeAccount`. 
+For Example:
 
-It is also possible to use the `-i/--node-ip` option to choose a target 
-node by its IP adress. However, if the IP address given to the `-i` option does 
+```agsl
+networks:
+  previewnet:
+    allowedReceiverAccountIds:[123,456,789]
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
+```
+
+We can also use the command line option `-p` to override `defaultPayer`, and
+the command line option `-a/--node-account` to override `defaultNodeAccount`.
+
+It is also possible to use the `-i/--node-ip` option to choose a target
+node by its IP adress. However, if the IP address given to the `-i` option does
 not appear in the _config.yml_, then we **must** explicitly give its node
 account via the `-a` option. So with the above _config.yml_, it is enough to do,
+
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.5 -p 2 -n previewnet \
 > -i 35.231.208.148
@@ -528,4 +541,36 @@ Use accounts send --schedule to schedule a transfer to 0.0.R, and create a trans
 Use  schedule sign scheduleId T paying with account 0.0.R to trigger the transfer
 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId T
 
+```
+
+# Scheduling public key list update
+
+You can schedule a transaction to update key list for targeted account by multiple signer. For example scenario,
+
+```
+Use accounts create to create a new account with signature required 0.0.R
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+
+Use accounts create -S to create a new account with signature required 0.0.T
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+
+Use accounts create -S to create a new account with signature required 0.0.S (This account we will change the key list)
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+
+Use key get public keys to get public keys of 0.0.R and 0.0.T
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountR.pem -x {passphrase}
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountT.pem -x {passphrase}
+
+copyu them to text file each public key in seperate line (example: account.txt)
+
+Use accounts update --schedule to schedule a key replacement for 0.0.S using the file path for the keys and targeted account. (This is trx Z)
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts update --pathKeys ~/account.txt --targetAccount S --memo "test update"
+
+Use  schedule sign scheduleId T paying with account 0.0.R, 0.0.T and 0.0.S to sign the replacemnt of the keys
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId Z
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.T schedule sign --scheduleId Z
+--config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.S schedule sign --scheduleId Z 
+
+Use info account S to check the key list of the account
+--config /test-clients/yahcli/config.yml  -a 3 -n localhost -p 2 accounts info S
 ```
