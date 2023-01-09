@@ -22,8 +22,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAdd
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -70,7 +69,7 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
             throw new IllegalArgumentException("Provided Key is null");
         }
         if (key.isEmpty()) {
-            return withFailureReason(ALIAS_IS_IMMUTABLE);
+            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
         }
         return withKey(key);
     }

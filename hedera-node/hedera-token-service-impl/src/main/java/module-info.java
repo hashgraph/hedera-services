@@ -17,7 +17,7 @@ module com.hedera.node.app.service.token.impl {
 
     exports com.hedera.node.app.service.token.impl to
             com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app;
+            com.hedera.node.app, com.hedera.node.app.service.contract.impl;
     exports com.hedera.node.app.service.token.impl.entity to
             com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.token.impl.util to

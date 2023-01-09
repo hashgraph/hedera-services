@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -142,6 +143,15 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
         return self();
     }
 
+    public T addNonPayerKey(@NonNull final ContractID id) {
+        if (isNotNeeded(Objects.requireNonNull(asAccount(id)))) {
+            return self();
+        }
+        final var result = keyLookup.getKey(id);
+        addToKeysOrFail(result, null, false);
+        return self();
+    }
+
     /**
      * Checks if the accountId is same as payer or the status of the metadata is already failed. If
      * either of the above is true, doesn't look up the keys for given account. Else, looks up the
@@ -159,6 +169,15 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, failureStatusToUse, false);
+        return self();
+    }
+
+    public T addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
+        if (isNotNeeded(Objects.requireNonNull(asAccount(id)))) {
+            return self();
+        }
+        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        addToKeysOrFail(result, null, false);
         return self();
     }
 
@@ -223,6 +242,14 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 this.requiredNonPayerKeys.add(result.key());
             }
         }
+    }
+
+    private AccountID asAccount(final ContractID cid) {
+        return AccountID.newBuilder()
+                .setRealmNum(cid.getRealmNum())
+                .setShardNum(cid.getShardNum())
+                .setAccountNum(cid.getContractNum())
+                .build();
     }
 
     /**

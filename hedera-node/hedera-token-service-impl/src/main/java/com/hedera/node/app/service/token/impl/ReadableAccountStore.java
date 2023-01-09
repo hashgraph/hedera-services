@@ -16,17 +16,16 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
 import static com.hedera.node.app.service.token.impl.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.token.impl.util.AliasUtils.fromMirror;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.token.entity.Account;
@@ -36,6 +35,7 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -68,19 +68,54 @@ public class ReadableAccountStore implements AccountKeyLookup {
         if (account.isEmpty()) {
             return withFailureReason(INVALID_ACCOUNT_ID);
         }
-        return validateKey(account.get().getAccountKey());
+        return validateKey(account.get().getAccountKey(), false);
     }
 
     /** {@inheritDoc} */
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
             return withFailureReason(INVALID_ACCOUNT_ID);
         }
 
-        final var responseIgnoringSigReq = validateKey(account.get().getAccountKey());
+        final var responseIgnoringSigReq = validateKey(account.get().getAccountKey(), false);
         if (responseIgnoringSigReq.failed() || account.get().isReceiverSigRequired()) {
+            return responseIgnoringSigReq;
+        } else {
+            return PRESENT_BUT_NOT_REQUIRED;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias) {
+        final var optContract = getAccountLeaf(asAccount(idOrAlias));
+        if (optContract.isEmpty()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+        final var contract = optContract.get();
+        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+        return validateKey(contract.getAccountKey(), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias) {
+        final var optContract = getAccountLeaf(asAccount(idOrAlias));
+        if (optContract.isEmpty()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+
+        final var contract = optContract.get();
+        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+
+        final var responseIgnoringSigReq = validateKey(contract.getAccountKey(), true);
+        if (responseIgnoringSigReq.failed() || contract.isReceiverSigRequired()) {
             return responseIgnoringSigReq;
         } else {
             return PRESENT_BUT_NOT_REQUIRED;
@@ -134,12 +169,14 @@ public class ReadableAccountStore implements AccountKeyLookup {
         return id.getAccountNum();
     }
 
-    private KeyOrLookupFailureReason validateKey(final JKey key) {
+    private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {
         if (key == null) {
             throw new IllegalArgumentException("Provided Key is null");
         }
         if (key.isEmpty()) {
-            return withFailureReason(ALIAS_IS_IMMUTABLE);
+            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
+        } else if(isContractKey && key instanceof JContractIDKey){
+            return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
         }
         return withKey(key);
     }
