@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ public class TreasuryClonerTest {
     private static final long pretendExpiry = 1_234_567L;
     private static final JKey pretendTreasuryKey =
             new JEd25519Key("a123456789a123456789a123456789a1".getBytes());
-    private static final AccountNumbers nums = new MockAccountNumbers();
+    private static final HederaAccountNumbers nums = new MockAccountNumbers();
 
     @Mock private BackingStore<AccountID, HederaAccount> accounts;
 
