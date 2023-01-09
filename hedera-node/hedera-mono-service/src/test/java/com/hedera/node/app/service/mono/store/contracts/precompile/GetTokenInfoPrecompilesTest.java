@@ -762,8 +762,6 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -798,8 +796,6 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
