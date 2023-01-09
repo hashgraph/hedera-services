@@ -15,6 +15,23 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -32,22 +49,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
-import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class RedirectViewExecutor {
     public static final long MINIMUM_TINYBARS_COST = 100;
