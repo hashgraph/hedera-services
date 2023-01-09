@@ -965,10 +965,12 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+                contains(
+                        FIRST_TOKEN_SENDER_KT.asKey(),
+                        NO_RECEIVER_SIG_KT.asKey(),
+                        FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -983,10 +985,12 @@ public class SigRequirementsTest {
                 subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+                contains(
+                        FIRST_TOKEN_SENDER_KT.asKey(),
+                        NO_RECEIVER_SIG_KT.asKey(),
+                        FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test

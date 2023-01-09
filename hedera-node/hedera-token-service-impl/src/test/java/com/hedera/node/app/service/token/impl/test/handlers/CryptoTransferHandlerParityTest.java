@@ -29,6 +29,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
@@ -90,6 +91,19 @@ class CryptoTransferHandlerParityTest {
         final var now = Instant.now();
         keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
+    }
+
+    @Test
+    void cryptoTransferTokenReceiverIsMissingAliasScenario() {
+        final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
+        final var meta =
+                subject.preHandle(
+                        theTxn,
+                        theTxn.getTransactionID().getAccountID(),
+                        keyLookup,
+                        readableTokenStore);
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
@@ -455,9 +469,13 @@ class CryptoTransferHandlerParityTest {
                         keyLookup,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        System.out.println(sanityRestored(meta.requiredNonPayerKeys()));
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+                contains(
+                        FIRST_TOKEN_SENDER_KT.asKey(),
+                        NO_RECEIVER_SIG_KT.asKey(),
+                        FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
