@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -52,7 +50,9 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -94,7 +94,7 @@ class RecordedStorageFeeChargingTest {
     private NonHapiFeeCharging nonHapiFeeCharging;
 
     private RecordedStorageFeeCharging subject;
-    private final AccountNumbers numbers = new MockAccountNumbers();
+    private final HederaAccountNumbers numbers = new MockAccountNumbers();
 
     @BeforeEach
     void setUp() {

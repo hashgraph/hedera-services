@@ -11,11 +11,14 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.hyperledger.besu.datatypes;
     requires org.assertj.core;
+    requires org.hamcrest;
 
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.util to
+            org.junit.platform.commons;
+    opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons;
 }
