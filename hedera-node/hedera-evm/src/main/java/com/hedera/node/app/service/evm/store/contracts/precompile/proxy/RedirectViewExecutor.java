@@ -27,6 +27,8 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -117,7 +119,7 @@ public class RedirectViewExecutor {
             return evmEncoder.encodeIsApprovedForAll(isOperator);
         }
         else if (selector == ABI_ID_ERC_DECIMALS) {
-//            validateTrue(isFungibleToken, INVALID_TOKEN_ID);
+            validateTrue(isFungibleToken, INVALID_TOKEN_ID);
             final var decimals = tokenAccessor.decimalsOf(token);
             return evmEncoder.encodeDecimals(decimals);
         } else if (selector == ABI_ID_ERC_TOTAL_SUPPLY_TOKEN) {
@@ -129,13 +131,13 @@ public class RedirectViewExecutor {
             final var balance = tokenAccessor.balanceOf(Address.wrap(Bytes.wrap(wrapper.account())), token);
             return evmEncoder.encodeBalance(balance);
         } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
-//            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
+            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
             final var wrapper = EvmOwnerOfPrecompile.decodeOwnerOf(input.slice(24));
             final var owner = tokenAccessor.ownerOf(token, wrapper.serialNo());
             final var priorityAddress = tokenAccessor.canonicalAddress(owner);
             return evmEncoder.encodeOwner(priorityAddress);
         } else if (selector == ABI_ID_ERC_TOKEN_URI_NFT) {
-//            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
+            validateFalse(isFungibleToken, INVALID_TOKEN_ID);
             final var wrapper = EvmTokenURIPrecompile.decodeTokenUriNFT(input.slice(24));
             final var metadata = tokenAccessor.metadataOf(token, wrapper.serialNo());
             return evmEncoder.encodeTokenUri(metadata);
