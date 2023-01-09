@@ -507,7 +507,9 @@ class DispatcherTest {
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.tokenDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.tokenDeleteHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
