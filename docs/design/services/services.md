@@ -11,8 +11,8 @@ several services. For example, it may have a `TokenService` and a `CryptoService
 code, we have a `Service` subtype for each different *service* in our protobuf schema definitions.
 
 The actual implementation class for a service is in the corresponding implementation. For example, the
-`hedera-token-service-api` module defines an `AccountService` interface that extends from `Service`, while the
-`hedera-token-service` implementation module defines an implementation class such as `AccountServiceImpl`.
+`hedera-token-service-api` module defines an `CryptoService` interface that extends from `Service`, while the
+`hedera-token-service` implementation module defines an implementation class such as `CryptoServiceImpl`.
 
 The `hedera-app` module has access to all modules, including implementation modules, and uses this ability to create,
 at construction time, instances of each service implementation. We could have instead used a reflection-based approach
