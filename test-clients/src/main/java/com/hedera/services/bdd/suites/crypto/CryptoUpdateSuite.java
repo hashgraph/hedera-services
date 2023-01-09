@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class CryptoUpdateSuite extends HapiSuite {
     public static final String UPD_KEY = "updKey";
 
     public static void main(String... args) {
-        new CryptoUpdateSuite().runSuiteSync();
+        new CryptoUpdateSuite().runSuiteAsync();
     }
 
     private final SigControl twoLevelThresh =
@@ -110,7 +110,7 @@ public class CryptoUpdateSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -406,7 +406,6 @@ public class CryptoUpdateSuite extends HapiSuite {
 
     private HapiSpec updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
-        final int tokenAssociations_adventurousNetwork = 1_000;
         final int originalMax = 2;
         final int newBadMax = originalMax - 1;
         final int newGoodMax = originalMax + 1;

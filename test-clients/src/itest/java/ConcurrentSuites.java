@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
@@ -66,12 +67,14 @@ import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
 import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
@@ -124,7 +127,10 @@ public class ConcurrentSuites {
                     ChunkingSuite::new,
                     CryptoTransferSuite::new,
                     CannotDeleteSystemEntitiesSuite::new,
+                    CryptoUpdateSuite::new,
+                    SelfDestructSuite::new,
                     // contract.hapi
+                    LogsSuite::new,
                     ContractCallLocalSuite::new,
                     ContractCallSuite::new,
                     ContractCreateSuite::new,

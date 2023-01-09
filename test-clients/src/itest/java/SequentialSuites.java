@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
-import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
-import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
@@ -35,11 +32,8 @@ public class SequentialSuites {
                     TargetNetworkPrep::new,
                     FeatureFlagSuite::new,
                     SpecialAccountsAreExempted::new,
-                    CryptoUpdateSuite::new,
                     PrivilegedOpsSuite::new,
                     TraceabilitySuite::new,
-                    LogsSuite::new,
-                    SelfDestructSuite::new,
                     LeakyContractTestsSuite::new,
                     LeakyCryptoTestsSuite::new,
                     Create2OperationSuite::new,
