@@ -67,6 +67,6 @@ public interface ReadableStates {
      * @return True if there are no states in this instance.
      */
     default boolean isEmpty() {
-        return size() == 0;
+        return stateKeys().isEmpty();
     }
 }
