@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,15 +56,15 @@ public class ReadableScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.getScheduleNum());
-        return schedule == null
-                ? Optional.empty()
-                : Optional.of(
-                        new ScheduleMetadata(
-                                schedule.adminKey(),
-                                schedule.ordinaryViewOfScheduledTxn(),
-                                schedule.hasExplicitPayer()
-                                        ? Optional.of(schedule.payer().toGrpcAccountId())
-                                        : Optional.empty()));
+        return Optional.ofNullable(schedule)
+                .map(
+                        s ->
+                                new ScheduleMetadata(
+                                        schedule.adminKey(),
+                                        schedule.ordinaryViewOfScheduledTxn(),
+                                        schedule.hasExplicitPayer()
+                                                ? Optional.of(schedule.payer().toGrpcAccountId())
+                                                : Optional.empty()));
     }
 
     /**
