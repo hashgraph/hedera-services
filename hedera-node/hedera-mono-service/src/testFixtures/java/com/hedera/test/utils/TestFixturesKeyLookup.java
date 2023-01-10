@@ -42,8 +42,11 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
 
     @Override
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
-        return Optional.ofNullable(accounts.get(accountNumOf(idOrAlias)))
-                .map(HederaAccount::getAccountKey)
+        final var account = accounts.get(accountNumOf(idOrAlias));
+        if (account == null) {
+            return withFailureReason(INVALID_ACCOUNT_ID);
+        }
+        return Optional.of(account.getAccountKey())
                 .map(this::validateKey)
                 .orElse(withFailureReason(INVALID_ACCOUNT_ID));
     }
@@ -84,6 +87,7 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
             if (value == null) {
                 return 0L;
             }
+            return value;
         }
         return id.getAccountNum();
     }

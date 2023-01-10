@@ -15,11 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -29,9 +24,14 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import java.time.Instant;
-import java.util.Map;
 import org.mockito.Mockito;
+
+import java.util.Map;
+
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static org.mockito.BDDMockito.given;
 
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
@@ -47,15 +47,14 @@ public class AdapterUtils {
      * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that
      * require an {@link AccountKeyLookup}.
      *
-     * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known account store
      */
-    public static AccountKeyLookup wellKnownKeyLookupAt(final Instant mockLastModified) {
+    public static AccountKeyLookup wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(
                 mockStates(
                         Map.of(
                                 ALIASES_KEY, wellKnownAliasState(),
-                                ACCOUNTS_KEY, wellKnownAccountsState(mockLastModified))));
+                                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
@@ -64,8 +63,7 @@ public class AdapterUtils {
         return mockStates;
     }
 
-    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState(
-            final Instant mockLastModified) {
+    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
         final var wrappedState =
                 new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
@@ -81,6 +79,6 @@ public class AdapterUtils {
                         Map.entry(
                                 FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
-        return new MapReadableKVState<String, Long>(ALIASES_KEY, wellKnownAliases);
+        return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 }

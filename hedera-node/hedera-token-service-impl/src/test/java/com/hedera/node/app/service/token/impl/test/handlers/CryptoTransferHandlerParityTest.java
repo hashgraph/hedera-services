@@ -88,9 +88,8 @@ class CryptoTransferHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 
     @Test

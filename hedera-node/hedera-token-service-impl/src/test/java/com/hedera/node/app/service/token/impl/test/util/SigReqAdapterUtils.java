@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.util;
 
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
-
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -25,11 +22,14 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
-import java.time.Instant;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
+
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
@@ -40,10 +40,9 @@ public class SigReqAdapterUtils {
      * of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a
      * {@link ReadableTokenStore}.
      *
-     * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known token store
      */
-    public static ReadableTokenStore wellKnownTokenStoreAt(final Instant mockLastModified) {
+    public static ReadableTokenStore wellKnownTokenStoreAt() {
         final var source = sigReqsMockTokenStore();
         final Map<EntityNum, MerkleToken> destination = new HashMap<>();
         List.of(
