@@ -78,7 +78,7 @@ public final class StateUtils {
         for (int i = 0; i < stateKey.length(); i++) {
             final var c = stateKey.charAt(i);
             if (!isAsciiUnderscoreOrDash(c) && !isAsciiLetter(c) && !isAsciiNumber(c)) {
-                throw new IllegalArgumentException("Illegal character at position " + i);
+                throw new IllegalArgumentException("Illegal character '" + c + "' at position " + i);
             }
         }
 
