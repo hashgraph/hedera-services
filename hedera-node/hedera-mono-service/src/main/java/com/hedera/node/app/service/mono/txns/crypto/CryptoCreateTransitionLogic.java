@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,6 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
-    static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
 
     private final UsageLimits usageLimits;

@@ -15,4 +15,8 @@ module com.hedera.node.app.service.schedule.impl.test {
 
     exports com.hedera.node.app.service.schedule.impl.test to
             org.mockito;
+
+    opens com.hedera.node.app.service.schedule.impl.test.handlers to
+            org.junit.platform.commons,
+            org.mockito;
 }

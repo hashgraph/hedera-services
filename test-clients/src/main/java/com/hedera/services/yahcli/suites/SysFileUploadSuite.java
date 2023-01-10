@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,7 +181,16 @@ public class SysFileUploadSuite extends HapiSuite {
 
         int position = Math.min(bytesPerOp, bytesToUpload);
         int appendsToSkip = 0;
+        int numBetweenLogs = 100;
+        int i = 0;
         do {
+            i++;
+            if (i % numBetweenLogs == 0) {
+                log.info(
+                        "Considering skipping appends ending at {} (consideration #{})",
+                        position,
+                        i);
+            }
             final var hashSoFar = hexedPrefixHash(position);
             if (hashSoFar.equals(hexedCurrentHash)) {
                 return appendsToSkip;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,6 +237,11 @@ public class HederaStackedWorldStateUpdater
             numAllocatedIds--;
         }
         sbhRefund = 0L;
+    }
+
+    public void reclaimLatestContractId() {
+        worldState.reclaimContractId();
+        numAllocatedIds--;
     }
 
     @Override

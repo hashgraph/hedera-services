@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
+    CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoTransfer()
+                            .adjusting(DEFAULT_PAYER, KNOWN_TOKEN_NO_SPECIAL_KEYS, -1_000)
+                            .adjustingAlias(
+                                    CURRENTLY_UNUSED_ALIAS, KNOWN_TOKEN_NO_SPECIAL_KEYS, +1_000)
+                            .get());
+        }
+    },
     CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -84,7 +95,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -107,8 +117,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
-    CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO {
+    CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
                     newSignedCryptoTransfer()
@@ -120,7 +129,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -133,7 +141,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -143,7 +150,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -335,6 +341,8 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
                     newSignedCryptoTransfer()
+                            .adjustingHbars(FIRST_TOKEN_SENDER, -1)
+                            .adjustingHbars(DEFAULT_PAYER, +1)
                             .changingOwner(ROYALTY_TOKEN_NFT, FIRST_TOKEN_SENDER, NO_RECEIVER_SIG)
                             .get());
         }
@@ -408,7 +416,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-    TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+    TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -418,7 +426,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-    NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+    NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
