@@ -13,31 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.test.utils;
+package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
-import static org.mockito.BDDMockito.given;
-
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.StateKeyAdapter;
+import com.hedera.test.utils.TestFixturesKeyLookup;
+import org.mockito.Mockito;
+
 import java.time.Instant;
 import java.util.Map;
-import org.mockito.Mockito;
+
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static org.mockito.BDDMockito.given;
 
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
@@ -60,39 +55,39 @@ public class AdapterUtils {
         return new TestFixturesKeyLookup(
                 mockStates(
                         Map.of(
-                                ALIASES_KEY, wellKnownAliasState(mockLastModified),
+                                ALIASES_KEY, wellKnownAliasState(),
                                 ACCOUNTS_KEY, wellKnownAccountsState(mockLastModified))));
     }
 
-    public static States mockStates(final Map<String, State> keysToMock) {
-        final var mockStates = Mockito.mock(States.class);
+    public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
+        final var mockStates = Mockito.mock(ReadableStates.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
         return mockStates;
     }
 
-    private static State<Long, ? extends HederaAccount> wellKnownAccountsState(
+    private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState(
             final Instant mockLastModified) {
         final var wrappedState =
-                new InMemoryStateImpl<>(
-                        ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts(), mockLastModified);
+                new MapReadableKVState<>(
+                        ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
     }
 
-    private static State<ByteString, Long> wellKnownAliasState(final Instant mockLastModified) {
-        final var wellKnownAliases =
+    private static MapReadableKVState<String, Long> wellKnownAliasState() {
+        final Map<String, Long> wellKnownAliases =
                 Map.ofEntries(
                         Map.entry(
-                                ByteString.copyFromUtf8(CURRENTLY_UNUSED_ALIAS),
+                               CURRENTLY_UNUSED_ALIAS,
                                 MISSING_NUM.longValue()),
                         Map.entry(
-                                ByteString.copyFromUtf8(NO_RECEIVER_SIG_ALIAS),
+                                NO_RECEIVER_SIG_ALIAS,
                                 fromAccountId(NO_RECEIVER_SIG).longValue()),
                         Map.entry(
-                                ByteString.copyFromUtf8(RECEIVER_SIG_ALIAS),
+                                RECEIVER_SIG_ALIAS,
                                 fromAccountId(RECEIVER_SIG).longValue()),
                         Map.entry(
-                                FIRST_TOKEN_SENDER_LITERAL_ALIAS,
+                                FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
-        return new RebuiltStateImpl<>(ALIASES_KEY, wellKnownAliases, mockLastModified);
+        return new MapReadableKVState<String, Long>(ALIASES_KEY, wellKnownAliases);
     }
 }

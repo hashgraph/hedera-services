@@ -15,38 +15,36 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class TestFixturesKeyLookup implements AccountKeyLookup {
-    private final State<ByteString, Long> aliases;
-    private final State<Long, HederaAccount> accounts;
+import java.util.Optional;
+import java.util.stream.Stream;
 
-    public TestFixturesKeyLookup(@NonNull final States states) {
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+
+public class TestFixturesKeyLookup implements AccountKeyLookup {
+    private final ReadableKVState<String, Long> aliases;
+    private final ReadableKVState<Long, HederaAccount> accounts;
+
+    public TestFixturesKeyLookup(@NonNull final ReadableStates states) {
         this.accounts = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }
 
     @Override
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
-        return accounts.get(accountNumOf(idOrAlias))
+        return Optional.ofNullable(accounts.get(accountNumOf(idOrAlias)))
                 .map(HederaAccount::getAccountKey)
                 .map(this::validateKey)
                 .orElse(withFailureReason(INVALID_ACCOUNT_ID));
@@ -55,12 +53,12 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
         final var account = accounts.get(accountNumOf(idOrAlias));
-        if (account.isEmpty()) {
+        if (account == null) {
             return withFailureReason(INVALID_ACCOUNT_ID);
         } else {
-            return account.map(HederaAccount::getAccountKey)
+            return Optional.of(account.getAccountKey())
                     .map(this::validateKey)
-                    .filter(reason -> reason.failed() || account.get().isReceiverSigRequired())
+                    .filter(reason -> reason.failed() || account.isReceiverSigRequired())
                     .orElse(PRESENT_BUT_NOT_REQUIRED);
         }
     }
@@ -84,7 +82,10 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
                     return numFromEvmAddress(evmAddress);
                 }
             }
-            return aliases.get(alias).orElse(0L);
+            final var value =  aliases.get(alias.toStringUtf8());
+            if (value == null) {
+                return 0L;
+            }
         }
         return id.getAccountNum();
     }
