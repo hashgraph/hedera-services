@@ -110,12 +110,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -175,6 +177,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
         if (APPS.includes(selfId.getId())) {
             APPS.clear(selfId.getId());
         }
+    }
+
+    @AfterAll
+    static void clearMocks() {
+        Mockito.framework().clearInlineMocks();
     }
 
     @Test
