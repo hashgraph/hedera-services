@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** An implementation of {@link WritableStates} that is always empty. */
-public class EmptyWritableStates implements WritableStates {
+public final class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
     public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {

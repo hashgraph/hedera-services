@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /** An implementation of {@link ReadableStates} that is always empty. */
-public class EmptyReadableStates implements ReadableStates {
+public final class EmptyReadableStates implements ReadableStates {
     @NonNull
     @Override
     public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
