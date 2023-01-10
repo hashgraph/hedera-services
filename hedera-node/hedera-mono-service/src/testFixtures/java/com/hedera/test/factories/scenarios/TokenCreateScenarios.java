@@ -91,6 +91,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
+    TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+            return PlatformTxnAccessor.from(
+                    newSignedTokenCreate()
+                            .missingAdmin()
+                            .plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector, false))
+                            .get());
+        }
+    },
     TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
@@ -173,6 +183,24 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
+
+    TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
+            return PlatformTxnAccessor.from(
+                    newSignedTokenCreate()
+                            .missingAdmin()
+                            .plusCustomFee(
+                                    royaltyFee(
+                                            1,
+                                            2,
+                                            new FixedFeeSpec(1, MISSING_ENTITY_ID),
+                                            collector,
+                                            false))
+                            .get());
+        }
+    },
+
     TOKEN_CREATE_WITH_MISSING_COLLECTOR {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);

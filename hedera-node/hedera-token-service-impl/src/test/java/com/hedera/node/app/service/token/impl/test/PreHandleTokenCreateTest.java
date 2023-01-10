@@ -24,6 +24,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
@@ -32,6 +33,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_TREASURY;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER;
@@ -239,6 +241,20 @@ class PreHandleTokenCreateTest {
     }
 
     @Test
+    void tokenCreateCustomFixedFeeCollectorSigReqAndDenomWildcard() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
     void tokenCreateCustomFractionalFeeNoCollectorSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -279,6 +295,21 @@ class PreHandleTokenCreateTest {
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateCustomRoyaltyFeeFallbackWildcardAndSigReq() {
+        final var txn =
+                txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
 
