@@ -71,7 +71,7 @@ public class UpdateCommand implements Callable<Integer> {
 
         final var effectivePublicKeys = unHexListOfKeys(readPublicKeyFromFile(keysPath));
 
-        var delegate =
+        final var delegate =
                 new UpdateSuite(
                         config.asSpecConfig(),
                         effectiveMemo,
@@ -91,7 +91,7 @@ public class UpdateCommand implements Callable<Integer> {
                             + memo
                             + "'");
         } else {
-            COMMON_MESSAGES.info(
+            COMMON_MESSAGES.warn(
                     "FAILED - "
                             + "Schedule update account "
                             + effectiveTargetAccount
