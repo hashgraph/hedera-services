@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.contract.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -25,12 +24,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -38,14 +35,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LogsSuite extends HapiSuite {
+    private static final long GAS_TO_OFFER = 25_000L;
 
     private static final Logger log = LogManager.getLogger(LogsSuite.class);
     private static final String CONTRACT = "Logs";
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
-            "contracts.maxRefundPercentOfGasLimit";
 
     public static void main(String... args) {
-        new LogsSuite().runSuiteSync();
+        new LogsSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
@@ -59,16 +60,14 @@ public class LogsSuite extends HapiSuite {
     }
 
     private HapiSpec log0Works() {
-        return propertyPreservingHapiSpec("log0Works")
-                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT)
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15)).via("log0"))
+        return defaultHapiSpec("log0Works")
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .when(
+                        contractCall(CONTRACT, "log0", BigInteger.valueOf(15))
+                                .via("log0")
+                                .gas(GAS_TO_OFFER))
                 .then(
                         getTxnRecord("log0")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -84,14 +83,13 @@ public class LogsSuite extends HapiSuite {
 
     private HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15)).via("log1"))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .when(
+                        contractCall(CONTRACT, "log1", BigInteger.valueOf(15))
+                                .via("log1")
+                                .gas(GAS_TO_OFFER))
                 .then(
                         getTxnRecord("log1")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -107,20 +105,18 @@ public class LogsSuite extends HapiSuite {
                                                                                                                         "Log1(uint256)"),
                                                                                                                 parsedToByteString(
                                                                                                                         15)))))
-                                                                .gasUsed(22_583))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                                                                .gasUsed(22_583))));
     }
 
     private HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO).via("log2"))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .when(
+                        contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO)
+                                .gas(GAS_TO_OFFER)
+                                .via("log2"))
                 .then(
                         getTxnRecord("log2")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -138,16 +134,12 @@ public class LogsSuite extends HapiSuite {
                                                                                                                         1),
                                                                                                                 parsedToByteString(
                                                                                                                         2)))))
-                                                                .gasUsed(23_112))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                                                                .gasUsed(23_112))));
     }
 
     private HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
                         contractCall(
                                         CONTRACT,
@@ -155,10 +147,10 @@ public class LogsSuite extends HapiSuite {
                                         BigInteger.ONE,
                                         BigInteger.TWO,
                                         BigInteger.valueOf(3))
+                                .gas(GAS_TO_OFFER)
                                 .via("log3"))
                 .then(
                         getTxnRecord("log3")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -178,16 +170,12 @@ public class LogsSuite extends HapiSuite {
                                                                                                                         2),
                                                                                                                 parsedToByteString(
                                                                                                                         3)))))
-                                                                .gasUsed(23_638))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                                                                .gasUsed(23_638))));
     }
 
     private HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
+                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
                         contractCall(
                                         CONTRACT,
@@ -196,10 +184,10 @@ public class LogsSuite extends HapiSuite {
                                         BigInteger.TWO,
                                         BigInteger.valueOf(3),
                                         BigInteger.valueOf(4))
+                                .gas(GAS_TO_OFFER)
                                 .via("log4"))
                 .then(
                         getTxnRecord("log4")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -221,7 +209,6 @@ public class LogsSuite extends HapiSuite {
                                                                                                                         2),
                                                                                                                 parsedToByteString(
                                                                                                                         3)))))
-                                                                .gasUsed(24_294))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                                                                .gasUsed(24_294))));
     }
 }
