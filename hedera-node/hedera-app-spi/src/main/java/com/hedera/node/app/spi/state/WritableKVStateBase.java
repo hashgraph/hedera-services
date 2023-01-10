@@ -200,6 +200,8 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
      * then return it to the caller. At the very end, when the backing store iterator tells us it is
      * out of keys, we start going through everything in maybeAddedKeys.
      *
+     * <p>This iterator is not fail-fast.
+     *
      * @param <K> The type of key
      */
     private static final class KVStateKeyIterator<K extends Comparable<K>> implements Iterator<K> {
