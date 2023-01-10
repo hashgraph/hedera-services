@@ -39,7 +39,9 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSuite {
-
+    //The first 0 refers to the shard of the target network.
+    // So by hard-coding this, we do add some technical debt we will have to resolve when multiple shards are deployed.
+    public static final String DEFAULT_SHARD = "0.0.";
     public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";

@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
@@ -28,6 +27,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -108,10 +108,10 @@ public class UpdateCommand implements Callable<Integer> {
 
     private List<String> readPublicKeyFromFile(final String fileKeyPath) throws IOException {
         File file = new File(fileKeyPath);
-        return Files.readLines(file, Charsets.UTF_8);
+        return Files.readLines(file, StandardCharsets.UTF_8);
     }
 
-    private List<Key> unHexListOfKeys(final List<String> hexedKeys) throws IOException {
+    private List<Key> unHexListOfKeys(final List<String> hexedKeys) {
         List<Key> unHexedKeys = Lists.newArrayList();
         for (String hexedKey : hexedKeys) {
             ByteString byteString = ByteString.copyFrom(CommonUtils.unhex(hexedKey));

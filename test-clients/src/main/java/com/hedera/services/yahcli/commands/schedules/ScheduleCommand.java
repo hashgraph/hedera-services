@@ -29,7 +29,7 @@ public class ScheduleCommand implements Callable<Integer> {
     @ParentCommand Yahcli yahcli;
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() throws CommandLine.ParameterException {
         throw new CommandLine.ParameterException(
                 yahcli.getSpec().commandLine(), "Please specify a schedule subcommand!");
     }

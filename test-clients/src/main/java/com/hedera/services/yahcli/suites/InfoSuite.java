@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,7 +41,7 @@ public class InfoSuite extends HapiSuite {
     }
 
     private List<String> rationalized(final String[] accounts) {
-        return Arrays.stream(accounts).map(Utils::extractAccount).collect(Collectors.toList());
+        return Arrays.stream(accounts).map(Utils::extractAccount).toList();
     }
 
     @Override

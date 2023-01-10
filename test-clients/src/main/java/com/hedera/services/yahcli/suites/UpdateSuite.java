@@ -57,9 +57,11 @@ public class UpdateSuite extends HapiSuite {
     private HapiSpec doUpdate() {
         Key newList = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keys)).build();
         HapiTxnOp<?> update =
-                new HapiCryptoUpdate("0.0." + targetAccount)
+                new HapiCryptoUpdate(DEFAULT_SHARD + targetAccount)
                         .signedBy(DEFAULT_PAYER)
-                        .proboKey(newList);
+                        .proboKey(newList)
+                        .blankMemo()
+                        .entityMemo(memo);
 
         // flag that transferred as parameter to schedule a key change or to execute right away
         if (schedule) {
