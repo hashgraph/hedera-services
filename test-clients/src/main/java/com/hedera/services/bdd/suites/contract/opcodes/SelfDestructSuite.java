@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -54,7 +54,7 @@ public class SelfDestructSuite extends HapiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
@@ -74,13 +74,10 @@ public class SelfDestructSuite extends HapiSuite {
                                     final var registry = spec.registry();
                                     final var destroyedNum =
                                             registry.getContractId(contract).getContractNum();
-                                    final var nextNum =
-                                            registry.getAccountID(nextAccount).getAccountNum();
-                                    assertEquals(
-                                            destroyedNum + 2,
-                                            nextNum,
-                                            "Two ID numbers should be consumed by the"
-                                                    + " self-destroying contract");
+                                    final var childInfoQuery =
+                                            getContractInfo("0.0." + (destroyedNum + 1))
+                                                    .has(contractWith().isNotDeleted());
+                                    allRunFor(spec, childInfoQuery);
                                 }));
     }
 

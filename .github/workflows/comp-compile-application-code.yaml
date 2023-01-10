@@ -153,12 +153,13 @@ jobs:
           arguments: check --scan
 
       - name: Publish Unit Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Unit Test Results
-          report_paths: "**/build/test-results/test/TEST-*.xml"
-          require_tests: "false"
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/test/TEST-*.xml"
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
@@ -176,12 +177,13 @@ jobs:
           arguments: itest --scan
 
       - name: Publish Integration Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Integration Test Results
-          report_paths: "**/build/test-results/itest/TEST-*.xml"
-          require_tests: false
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/itest/TEST-*.xml"
 
       - name: E2E Testing
         id: gradle-eet
@@ -192,12 +194,13 @@ jobs:
           arguments: eet --scan
 
       - name: Publish E2E Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: E2E Test Results
-          report_paths: "**/build/test-results/eet/TEST-*.xml"
-          require_tests: false
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/eet/TEST-*.xml"
 
       - name: Jacoco Coverage Report
         uses: gradle/gradle-build-action@v2

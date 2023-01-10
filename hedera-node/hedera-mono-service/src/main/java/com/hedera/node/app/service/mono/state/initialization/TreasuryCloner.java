@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import static com.hedera.node.app.service.mono.config.HederaNumbers.LAST_RESERVE
 import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +40,14 @@ public class TreasuryCloner {
 
     private static final Logger log = LogManager.getLogger(TreasuryCloner.class);
 
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final Supplier<HederaAccount> accountSupplier;
     private final BackingStore<AccountID, HederaAccount> accounts;
     private final List<HederaAccount> clonesCreated = new ArrayList<>();
 
     @Inject
     public TreasuryCloner(
-            final AccountNumbers accountNums,
+            final HederaAccountNumbers accountNums,
             final Supplier<HederaAccount> accountSupplier,
             final BackingStore<AccountID, HederaAccount> accounts) {
         this.accountSupplier = accountSupplier;

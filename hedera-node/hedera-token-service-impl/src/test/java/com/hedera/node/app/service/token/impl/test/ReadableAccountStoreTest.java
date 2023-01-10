@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,6 +210,7 @@ class ReadableAccountStoreTest {
     void getsNullKeyIfAndReceiverSigNotRequired() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
@@ -222,6 +223,7 @@ class ReadableAccountStoreTest {
     @Test
     void getsNullKeyFromAccountIfReceiverKeyNotRequired() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
         final var result = subject.getKeyIfReceiverSigRequired(payer);
@@ -237,8 +239,6 @@ class ReadableAccountStoreTest {
         given(account.getAccountKey()).willReturn(null);
 
         assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
-
-        given(account.isReceiverSigRequired()).willReturn(true);
         assertThrows(
                 IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
     }
@@ -254,7 +254,6 @@ class ReadableAccountStoreTest {
         assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
-        given(account.isReceiverSigRequired()).willReturn(true);
         result = subject.getKeyIfReceiverSigRequired(payer);
 
         assertTrue(result.failed());
