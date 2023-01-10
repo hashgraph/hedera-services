@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
@@ -41,7 +40,8 @@ import org.mockito.Mockito;
  * series of tests that will replace the values for A, B, or remove them, or add new values.
  */
 class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
-    private static final String NUM_ITERATIONS_ARG = "WritableKVStateBaseTest.DeterministicUpdates.numIterations";
+    private static final String NUM_ITERATIONS_ARG =
+            "WritableKVStateBaseTest.DeterministicUpdates.numIterations";
     protected WritableKVStateBase<String, String> state;
 
     @Override
@@ -775,27 +775,32 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     }
 
     /**
-     * It is essential that EVERY node causes the exact same mutations on the backend
-     * data store in the exact same order. If we have a map containing all modifications,
-     * it may be that iterating the map on different nodes produces mutations in a different
-     * order, since maps do not guarantee deterministic ordering (unless you use some kind of
-     * sorted map).
+     * It is essential that EVERY node causes the exact same mutations on the backend data store in
+     * the exact same order. If we have a map containing all modifications, it may be that iterating
+     * the map on different nodes produces mutations in a different order, since maps do not
+     * guarantee deterministic ordering (unless you use some kind of sorted map).
      *
-     * <p>This kind of error is very hard to test directly, so we use a "hammer" test to
-     * just do many iterations on many threads concurrently to try to cause it to fail. If the
-     * test succeeds, it does not mean there is no bug, but if the test fails, it means there
-     * is DEFINITELY a bug. This test may be flaky, but if it ever fails, you must investigate!
+     * <p>This kind of error is very hard to test directly, so we use a "hammer" test to just do
+     * many iterations on many threads concurrently to try to cause it to fail. If the test
+     * succeeds, it does not mean there is no bug, but if the test fails, it means there is
+     * DEFINITELY a bug. This test may be flaky, but if it ever fails, you must investigate!
      */
     @Test
     @DisplayName("Updates to the underlying data source are deterministic")
     @Tag("Hammer")
     void deterministicUpdates() {
-        // We will execute 'numIterations' iterations. This is parameterized with a system property so
-        // that we may dial the number up or down for certain types of tests (for example, nightly vs. continuous).
-        // Each iteration will construct a list of modifications (add, remove, modify). We will then create
-        // 39 threads each with their own WritableKVStateBase. Each will apply the modifications and commit
-        // them. We will then join back and verify that the order in which modifications were applied is
-        // identical. The hope is that if there is any non-determinism, we will tease it out by hammering
+        // We will execute 'numIterations' iterations. This is parameterized with a system property
+        // so
+        // that we may dial the number up or down for certain types of tests (for example, nightly
+        // vs. continuous).
+        // Each iteration will construct a list of modifications (add, remove, modify). We will then
+        // create
+        // 39 threads each with their own WritableKVStateBase. Each will apply the modifications and
+        // commit
+        // them. We will then join back and verify that the order in which modifications were
+        // applied is
+        // identical. The hope is that if there is any non-determinism, we will tease it out by
+        // hammering
         // it in this way.
         final int numIterations = Integer.getInteger(NUM_ITERATIONS_ARG, 100);
         final var numMutations = 20;
@@ -821,28 +826,32 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             final var latch = new CountDownLatch(numThreads);
             final var mutationOrders = new ArrayList<List<Integer>>();
             for (int t = 0; t < numThreads; t++) {
-                final var state = new MapWritableKVState<Integer, String>(FRUIT_STATE_KEY) {
-                    private final List<Integer> keys = new ArrayList<>();
-                    @Override
-                    protected void putIntoDataSource(@NonNull Integer key, @NonNull String value) {
-                        keys.add(key);
-                        super.putIntoDataSource(key, value);
-                    }
+                final var state =
+                        new MapWritableKVState<Integer, String>(FRUIT_STATE_KEY) {
+                            private final List<Integer> keys = new ArrayList<>();
 
-                    @Override
-                    protected void removeFromDataSource(@NonNull Integer key) {
-                        keys.add(key);
-                        super.removeFromDataSource(key);
-                    }
-                };
+                            @Override
+                            protected void putIntoDataSource(
+                                    @NonNull Integer key, @NonNull String value) {
+                                keys.add(key);
+                                super.putIntoDataSource(key, value);
+                            }
+
+                            @Override
+                            protected void removeFromDataSource(@NonNull Integer key) {
+                                keys.add(key);
+                                super.removeFromDataSource(key);
+                            }
+                        };
                 mutationOrders.add(state.keys);
-                executors.execute(() -> {
-                    for (var mutator : mutations) {
-                        mutator.accept(state);
-                    }
-                    state.commit();
-                    latch.countDown();
-                });
+                executors.execute(
+                        () -> {
+                            for (var mutator : mutations) {
+                                mutator.accept(state);
+                            }
+                            state.commit();
+                            latch.countDown();
+                        });
             }
 
             try {

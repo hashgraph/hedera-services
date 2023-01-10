@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.hedera.node.app.service.token.impl.CryptoPreTransactionHandlerImpl;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -123,7 +124,7 @@ class CryptoPreTransactionHandlerImplTest {
 
     @Mock private ReadableKVState<Long, MerkleAccount> aliases;
     @Mock private ReadableKVState<Long, MerkleAccount> accounts;
-    @Mock private ReadableStates states;
+    @Mock private MapReadableStates states;
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;

@@ -11,6 +11,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.hyperledger.besu.datatypes;
     requires org.assertj.core;
+    requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
 
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons;
