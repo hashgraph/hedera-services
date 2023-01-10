@@ -49,11 +49,13 @@ COPY gradle /opt/hedera/services/gradle
 COPY gradlew /opt/hedera/services/gradlew
 COPY gradle.properties /opt/hedera/services/gradle.properties
 COPY settings.gradle.kts /opt/hedera/services/settings.gradle.kts
+COPY build.gradle.kts /opt/hedera/services/build.gradle.kts
+
 RUN ./gradlew assemble copyLib copyApp
 
 ## Finishes by copying the Services JAR to the base runtime
 FROM base-runtime AS final-image
-COPY image-utils/ /opt/hedera/services
+COPY docker/start-services.sh /opt/hedera/services/start-services.sh
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
