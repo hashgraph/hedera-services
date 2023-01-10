@@ -60,7 +60,6 @@ dependencies {
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
-    implementation(libs.hapi)
     implementation(libs.helidon.io.grpc)
     implementation(libs.headlong)
     implementation(
@@ -72,13 +71,12 @@ dependencies {
     implementation(libs.commons.io)
     implementation(libs.commons.collections4)
     implementation(libs.eclipse.collections)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
-    testImplementation(testLibs.google.truth)
     testCompileOnly(libs.spotbugs.annotations)
 
+    testFixturesApi(project(":hedera-node:hedera-app-spi"))
     testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)

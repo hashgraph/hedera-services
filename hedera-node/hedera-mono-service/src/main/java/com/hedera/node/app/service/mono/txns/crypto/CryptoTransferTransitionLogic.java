@@ -77,7 +77,7 @@ public class CryptoTransferTransitionLogic implements TransitionLogic {
 
         ledger.doZeroSum(changes);
 
-        txnCtx.setAssessedCustomFees(impliedTransfers.getAssessedCustomFees());
+        txnCtx.setAssessedCustomFees(impliedTransfers.getUnaliasedAssessedCustomFees());
     }
 
     private ImpliedTransfers finalImpliedTransfersFor(TxnAccessor accessor) {

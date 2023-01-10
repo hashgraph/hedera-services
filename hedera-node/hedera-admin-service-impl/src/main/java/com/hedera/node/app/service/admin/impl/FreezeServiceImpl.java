@@ -13,25 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile;
+package com.hedera.node.app.service.admin.impl;
 
-/** All key types used by {@link Precompile} implementations, in one place for easy review. */
-public enum TokenKeyType {
-    ADMIN_KEY(1),
-    KYC_KEY(2),
-    FREEZE_KEY(4),
-    WIPE_KEY(8),
-    SUPPLY_KEY(16),
-    FEE_SCHEDULE_KEY(32),
-    PAUSE_KEY(64);
+import com.hedera.node.app.service.admin.FreezeService;
 
-    private final int value;
-
-    TokenKeyType(final int value) {
-        this.value = value;
-    }
-
-    public int value() {
-        return value;
-    }
-}
+/** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
+public final class FreezeServiceImpl implements FreezeService {}

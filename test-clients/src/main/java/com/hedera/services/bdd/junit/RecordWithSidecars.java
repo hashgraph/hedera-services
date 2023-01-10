@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.network.impl;
+package com.hedera.services.bdd.junit;
 
-import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.services.stream.proto.RecordStreamFile;
+import com.hedera.services.stream.proto.SidecarFile;
+import java.util.List;
 
 /**
- * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
+ * Contains a single record stream file and a list of the sidecar files that include sidecars for
+ * ANY record in the record stream file.
  */
-public final class StandardNetworkService implements NetworkService {}
+public record RecordWithSidecars(RecordStreamFile recordFile, List<SidecarFile> sidecarFiles) {}

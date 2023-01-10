@@ -16,11 +16,11 @@
 package com.hedera.node.app.service.util.impl.test;
 
 import com.hedera.node.app.service.util.UtilService;
-import com.hedera.node.app.service.util.impl.StandardUtilService;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardUtilServiceTest {
+class UtilServiceImplTest {
 
     @Test
     void testSpi() {
@@ -30,8 +30,8 @@ class StandardUtilServiceTest {
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardUtilService.class,
+                UtilServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardUtilService");
+                "We must always receive an instance of type " + UtilServiceImpl.class.getName());
     }
 }

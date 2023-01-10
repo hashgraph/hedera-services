@@ -262,6 +262,19 @@ class ExpiringCreationsTest {
     }
 
     @Test
+    void includesHollowAccountUpdate() {
+        given(sideEffectsTracker.hasTrackedHollowAccountUpdate()).willReturn(true);
+        given(sideEffectsTracker.getTrackedHollowAccountId()).willReturn(effPayer);
+
+        final var record =
+                subject.createSuccessfulSyntheticRecord(
+                        customFeesCharged, sideEffectsTracker, EMPTY_MEMO);
+
+        assertEquals(SUCCESS.toString(), record.getReceiptBuilder().getStatus());
+        assertEquals(effPayer, record.getReceiptBuilder().getAccountId().toGrpcAccountId());
+    }
+
+    @Test
     void createsExpectedRecordForNonTriggeredTxnWithNoTokenChanges() {
         setupTrackerNoUnitOrOwnershipChanges();
         setUpForExpiringRecordBuilder();

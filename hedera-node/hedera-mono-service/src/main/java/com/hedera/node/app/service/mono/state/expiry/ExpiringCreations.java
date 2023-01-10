@@ -167,6 +167,12 @@ public class ExpiringCreations implements EntityCreator {
                     EntityId.fromGrpcAccountId(
                             sideEffectsTracker.getTrackedAutoCreatedAccountId()));
         }
+
+        if (sideEffectsTracker.hasTrackedHollowAccountUpdate()) {
+            receiptBuilder.setAccountId(
+                    EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedHollowAccountId()));
+        }
+
         final var tokenChanges = sideEffectsTracker.getNetTrackedTokenUnitAndOwnershipChanges();
         if (!tokenChanges.isEmpty()) {
             setTokensAndTokenAdjustments(baseRecord, tokenChanges);
