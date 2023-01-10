@@ -58,6 +58,14 @@ public class HapiParserUtil {
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
+    public static Address[] asHeadlongAddressArray(final byte[]... addresses) {
+        Address[] headlongAddresses = new Address[addresses.length];
+        for (int i = 0; i < addresses.length; i++) {
+            headlongAddresses[i] = asHeadlongAddress(addresses[i]);
+        }
+        return headlongAddresses;
+    }
+
     public static Address evmAddressFromSecp256k1Key(final Key key) {
         if (key.hasECDSASecp256K1()) {
             return asHeadlongAddress(
