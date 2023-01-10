@@ -7,14 +7,111 @@
   {
     "inputs": [
       {
-        "internalType": "address[]",
-        "name": "_addresses",
-        "type": "address[]"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "senderAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiverAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "serialNumber",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.NftTransfer[]",
+            "name": "nftTransfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TokenTransferList[]",
+        "name": "tokenTransfers",
+        "type": "tuple[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "senderAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiverAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "serialNumber",
+                "type": "int64"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.NftTransfer[]",
+            "name": "nftTransfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TokenTransferList[]",
+        "name": "tokenTransfers2",
+        "type": "tuple[]"
       }
     ],
-    "name": "createTooManyHollowAccounts",
+    "name": "cryptoTransferV1LazyCreate",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -165,32 +262,6 @@
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "_to",
-        "type": "address"
-      }
-    ],
-    "name": "nestedLazyCreateThenRevert",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address payable",
-        "name": "_to",
-        "type": "address"
-      }
-    ],
-    "name": "nestedLazyCreateThenSendMore",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
