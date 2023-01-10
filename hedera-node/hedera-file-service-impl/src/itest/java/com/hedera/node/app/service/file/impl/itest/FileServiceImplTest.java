@@ -22,16 +22,16 @@ import org.junit.jupiter.api.Test;
 
 class FileServiceImplTest {
 
-	@Test
-	void testSpi() {
-		// when
-		final FileService service = FileService.getInstance();
+    @Test
+    void testSpi() {
+        // when
+        final FileService service = FileService.getInstance();
 
-		// then
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				FileServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type " + FileServiceImpl.class.getName());
-	}
+        // then
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                FileServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type " + FileServiceImpl.class.getName());
+    }
 }

@@ -22,15 +22,15 @@ import org.junit.jupiter.api.Test;
 
 class ScheduleServiceImplTest {
 
-	@Test
-	void testsSpi() {
-		final ScheduleService service = ScheduleService.getInstance();
-		Assertions.assertNotNull(service, "We must always receive an instance");
-		Assertions.assertEquals(
-				ScheduleServiceImpl.class,
-				service.getClass(),
-				"We must always receive an instance of type "
-						+ ScheduleServiceImpl.class.getName());
-		Assertions.assertEquals("ScheduleService", service.getServiceName());
-	}
+    @Test
+    void testsSpi() {
+        final ScheduleService service = ScheduleService.getInstance();
+        Assertions.assertNotNull(service, "We must always receive an instance");
+        Assertions.assertEquals(
+                ScheduleServiceImpl.class,
+                service.getClass(),
+                "We must always receive an instance of type "
+                        + ScheduleServiceImpl.class.getName());
+        Assertions.assertEquals("ScheduleService", service.getServiceName());
+    }
 }

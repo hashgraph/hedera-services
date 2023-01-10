@@ -15,19 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-
-import java.util.List;
-import java.util.Optional;
-
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -42,115 +29,126 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+
 class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
-	private final AccountID updateAccountId = asAccount("0.0.32132");
-	private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
-	@Mock
-	private MerkleAccount updateAccount;
+    private final AccountID updateAccountId = asAccount("0.0.32132");
+    private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
+    @Mock private MerkleAccount updateAccount;
 
-	private final CryptoUpdateHandler subject = new CryptoUpdateHandler();
+    private final CryptoUpdateHandler subject = new CryptoUpdateHandler();
 
-	@Test
-	void cryptoUpdateVanilla() {
-		final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-		given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
-		given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-		given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-		given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+    @Test
+    void cryptoUpdateVanilla() {
+        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
+        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-		final var meta = subject.preHandle(txn, payer, store, waivers);
-		basicMetaAssertions(meta, 2, false, OK);
-		assertEquals(payerKey, meta.payerKey());
-		assertTrue(meta.requiredNonPayerKeys().contains(updateAccountKey));
-	}
+        final var meta = subject.preHandle(txn, payer, store, waivers);
+        basicMetaAssertions(meta, 2, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertTrue(meta.requiredNonPayerKeys().contains(updateAccountKey));
+    }
 
-	@Test
-	void cryptoUpdateNewSignatureKeyWaivedVanilla() {
-		final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-		given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
-		given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
-		given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-		given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+    @Test
+    void cryptoUpdateNewSignatureKeyWaivedVanilla() {
+        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
+        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-		final var meta = subject.preHandle(txn, payer, store, waivers);
-		basicMetaAssertions(meta, 1, false, OK);
-		assertEquals(payerKey, meta.payerKey());
-		assertIterableEquals(List.of(updateAccountKey), meta.requiredNonPayerKeys());
-	}
+        final var meta = subject.preHandle(txn, payer, store, waivers);
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(updateAccountKey), meta.requiredNonPayerKeys());
+    }
 
-	@Test
-	void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
-		final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-		given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
-		given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
+    @Test
+    void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
+        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
-		final var meta = subject.preHandle(txn, payer, store, waivers);
-		basicMetaAssertions(meta, 1, false, OK);
-		assertEquals(payerKey, meta.payerKey());
-		assertFalse(meta.requiredNonPayerKeys().contains(updateAccountKey));
-	}
+        final var meta = subject.preHandle(txn, payer, store, waivers);
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertFalse(meta.requiredNonPayerKeys().contains(updateAccountKey));
+    }
 
-	@Test
-	void cryptoUpdatePayerMissingFails() {
-		final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-		given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+    @Test
+    void cryptoUpdatePayerMissingFails() {
+        final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
 
-		given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
-		given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
+        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-		final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-		basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-		assertNull(meta.payerKey());
-	}
+        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
+        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertNull(meta.payerKey());
+    }
 
-	@Test
-	void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
-		final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
-		given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+    @Test
+    void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
+        final var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
 
-		given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
-		given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
+        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-		final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
-		basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-		assertNull(meta.payerKey());
-	}
+        final var meta = subject.preHandle(txn, updateAccountId, store, waivers);
+        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertNull(meta.payerKey());
+    }
 
-	@Test
-	void cryptoUpdateUpdateAccountMissingFails() {
-		final var txn = cryptoUpdateTransaction(payer, updateAccountId);
-		given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+    @Test
+    void cryptoUpdateUpdateAccountMissingFails() {
+        final var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
 
-		given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
-		given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-		final var meta = subject.preHandle(txn, payer, store, waivers);
-		basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
-		assertEquals(payerKey, meta.payerKey());
-	}
+        final var meta = subject.preHandle(txn, payer, store, waivers);
+        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
+        assertEquals(payerKey, meta.payerKey());
+    }
 
-	@Test
-	void handleNotImplemented() {
-		assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
-	}
+    @Test
+    void handleNotImplemented() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.handle(metaToHandle));
+    }
 
-	private TransactionBody cryptoUpdateTransaction(
-			final AccountID payerId, final AccountID accountToUpdate) {
-		if (payerId.equals(payer)) {
-			setUpPayer();
-		}
-		final var transactionID =
-				TransactionID.newBuilder()
-						.setAccountID(payerId)
-						.setTransactionValidStart(consensusTimestamp);
-		final var updateTxnBody =
-				CryptoUpdateTransactionBody.newBuilder()
-						.setAccountIDToUpdate(accountToUpdate)
-						.setKey(key)
-						.build();
-		return TransactionBody.newBuilder()
-				.setTransactionID(transactionID)
-				.setCryptoUpdateAccount(updateTxnBody)
-				.build();
-	}
+    private TransactionBody cryptoUpdateTransaction(
+            final AccountID payerId, final AccountID accountToUpdate) {
+        if (payerId.equals(payer)) {
+            setUpPayer();
+        }
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAccountIDToUpdate(accountToUpdate)
+                        .setKey(key)
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoUpdateAccount(updateTxnBody)
+                .build();
+    }
 }
