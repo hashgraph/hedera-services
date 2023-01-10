@@ -319,7 +319,8 @@ class PreHandleTokenCreateTest {
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 

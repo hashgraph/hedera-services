@@ -117,7 +117,8 @@ public class TokenCreateHandler implements TransactionHandler {
                 final var alwaysAdd =
                         fixedFee.hasDenominatingTokenId()
                                 && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                if (alwaysAdd || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
+                if (alwaysAdd
+                        || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
                     meta.addNonPayerKey(collector, failureStatus);
                 }
             } else if (customFee.hasFractionalFee()) {
@@ -131,7 +132,8 @@ public class TokenCreateHandler implements TransactionHandler {
                             fFee.hasDenominatingTokenId()
                                     && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
-                if (alwaysAdd || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
+                if (alwaysAdd
+                        || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
                     meta.addNonPayerKey(collector, failureStatus);
                 }
             }
