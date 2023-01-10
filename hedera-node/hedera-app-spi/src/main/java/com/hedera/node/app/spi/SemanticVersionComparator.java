@@ -19,26 +19,14 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.Comparator;
 
 /**
- * An implementation of {@link Comparator} for {@link SemanticVersion}s.
+ * Provides an implementation of {@link Comparator} for {@link SemanticVersion}s.
  *
  * <p>NOTE: When PBJ automatically generates {@link SemanticVersion} as {@link Comparable} then we
  * can remove this class.
  */
-public class SemanticVersionComparator implements Comparator<SemanticVersion> {
-    public static final SemanticVersionComparator INSTANCE = new SemanticVersionComparator();
-
-    @Override
-    public int compare(SemanticVersion a, SemanticVersion b) {
-        int result = Integer.compare(a.getMajor(), b.getMajor());
-        if (result != 0) {
-            return result;
-        }
-
-        result = Integer.compare(a.getMinor(), b.getMinor());
-        if (result != 0) {
-            return result;
-        }
-
-        return Integer.compare(a.getPatch(), b.getPatch());
-    }
+public class SemanticVersionComparator {
+    public static final Comparator<SemanticVersion> INSTANCE =
+            Comparator.comparingInt(SemanticVersion::getMajor)
+            .thenComparingInt(SemanticVersion::getMinor)
+            .thenComparingInt(SemanticVersion::getPatch);
 }
