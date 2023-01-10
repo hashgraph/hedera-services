@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -24,14 +29,8 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import org.mockito.Mockito;
-
 import java.util.Map;
-
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
-import static org.mockito.BDDMockito.given;
+import org.mockito.Mockito;
 
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
