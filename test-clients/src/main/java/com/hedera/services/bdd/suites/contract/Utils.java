@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract;
 
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -111,7 +112,7 @@ public class Utils {
 
     public static ByteString extractByteCode(String path) {
         try {
-            final var bytes = Files.readAllBytes(Path.of(path));
+            final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
             return ByteString.copyFrom(bytes);
         } catch (IOException e) {
             log.warn("An error occurred while reading file", e);
@@ -208,7 +209,7 @@ public class Utils {
     public static String getResourcePath(String resourceName, final String extension) {
         resourceName = resourceName.replaceAll("\\d*$", "");
         final var path = String.format(RESOURCE_PATH + extension, resourceName);
-        final var file = new File(path);
+        final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
             throw new IllegalArgumentException(
                     "Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
