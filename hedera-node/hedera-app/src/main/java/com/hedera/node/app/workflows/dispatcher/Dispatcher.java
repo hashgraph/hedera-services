@@ -76,7 +76,7 @@ public class Dispatcher {
 
         return switch (transactionBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler()
                     .preHandle(transactionBody, payer);
             case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()

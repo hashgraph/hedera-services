@@ -15,11 +15,17 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -39,13 +45,29 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      *
      * @param txBody the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup) {
+        final var metaBuilder =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+
+        final var op = txBody.getConsensusCreateTopic();
+        final var adminKey = asHederaKey(op.getAdminKey());
+        final var submitKey = asHederaKey(op.getSubmitKey());
+        if (adminKey.isPresent() || submitKey.isPresent()) {
+            final var otherReqs = new ArrayList<HederaKey>();
+            adminKey.ifPresent(otherReqs::add);
+            submitKey.ifPresent(otherReqs::add);
+            metaBuilder.addAllReqKeys(otherReqs);
+        }
+
+        return metaBuilder.build();
     }
 
     /**
