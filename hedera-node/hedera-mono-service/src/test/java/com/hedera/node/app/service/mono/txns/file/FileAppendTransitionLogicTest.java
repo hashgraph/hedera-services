@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -48,7 +46,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
@@ -95,7 +95,7 @@ class FileAppendTransitionLogicTest {
     MerkleNetworkContext networkCtx;
 
     FileAppendTransitionLogic subject;
-    FileNumbers numbers = new MockFileNumbers();
+    HederaFileNumbers numbers = new MockFileNumbers();
 
     @BeforeEach
     void setup() throws Throwable {

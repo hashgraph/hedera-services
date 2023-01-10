@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.hapi.utils.keys;
 
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentWithCurrentPathPrefix;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
+import java.nio.file.Paths;
 import java.security.KeyPair;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.junit.jupiter.api.Test;
@@ -47,6 +50,39 @@ class Ed25519UtilsTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> Ed25519Utils.writeKeyTo(seed, tmpLoc, tmpPassphrase));
+    }
+
+    @Test
+    void canRelocateFromWhenFileIsMissing() {
+        final var missingLoc = "test/resources/vectors/genesis.pem";
+
+        final var relocated =
+                relocatedIfNotPresentWithCurrentPathPrefix(
+                        new File(missingLoc), "test", "src" + File.separator);
+
+        assertEquals("src/test/resources/vectors/genesis.pem", relocated.getPath());
+    }
+
+    @Test
+    void doesNotRelocateIfSegmentMissing() {
+        final var missingLoc = "test/resources/vectors/genesis.pem";
+
+        final var relocated =
+                relocatedIfNotPresentWithCurrentPathPrefix(
+                        new File(missingLoc), "NOPE", "src" + File.separator);
+
+        assertEquals(missingLoc, relocated.getPath());
+    }
+
+    @Test
+    void triesToRelocateObviouslyMissingPath() {
+        final var notPresent = Paths.get("nowhere/src/main/resources/nothing.txt");
+
+        final var expected = Paths.get("test-clients/src/main/resources/nothing.txt");
+
+        final var actual = relocatedIfNotPresentInWorkingDir(notPresent);
+
+        assertEquals(expected, actual);
     }
 
     @Test

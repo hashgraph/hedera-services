@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.hedera.test.utils.ResponsibleVMapUser;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
@@ -48,14 +49,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 @ExtendWith(LogCaptureExtension.class)
-class UniqueTokensLinkManagerTest {
+class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final UniqueTokenMapAdapter uniqueTokens =
             UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
             UniqueTokenMapAdapter.wrap(
-                    new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage());
+                    trackedMap(
+                            new VirtualMapFactory(JasperDbBuilder::new)
+                                    .newVirtualizedUniqueTokenStorage()));
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,13 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.contracts.operation.AbstractRecordingCreateOperation.haltWith;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,22 +29,32 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
@@ -82,6 +97,8 @@ class AbstractRecordingCreateOperationTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private ContractCustomizer contractCustomizer;
     @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private ContractAliases aliases;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     private static final long childStipend = 1_000_000L;
     private static final Wei gasPrice = Wei.of(1000L);
@@ -92,6 +109,13 @@ class AbstractRecordingCreateOperationTest {
             new Operation.OperationResult(Subject.PRETEND_COST, null);
     private static final EntityId autoRenewId = new EntityId(0, 0, 8);
 
+    private static final JKey nonEmptyKey =
+            MiscUtils.asFcKeyUnchecked(
+                    Key.newBuilder()
+                            .setEd25519(
+                                    ByteString.copyFrom(
+                                            "01234567890123456789012345678901".getBytes()))
+                            .build());
     private Subject subject;
 
     @BeforeEach
@@ -185,10 +209,11 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
         given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         final var initCode = "initCode".getBytes();
         given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
         final var newContractMock = mock(Account.class);
@@ -251,10 +276,11 @@ class AbstractRecordingCreateOperationTest {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
         given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
-        given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
@@ -284,10 +310,167 @@ class AbstractRecordingCreateOperationTest {
     }
 
     @Test
+    void hasExpectedHollowAccountCompletionOnSuccessWithSidecarEnabled() {
+        final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final var liveRecord =
+                ExpirableTxnRecord.newBuilder()
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation =
+                TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.newBuilder()
+                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+        final var initCode = "initCode".getBytes();
+        given(frame.readMemory(anyLong(), anyLong())).willReturn(Bytes.wrap(initCode));
+        final var newContractMock = mock(Account.class);
+        final var runtimeCode = "runtimeCode".getBytes();
+        given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
+        given(updater.get(Subject.PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
+        final var sidecarRecord =
+                TransactionSidecarRecord.newBuilder()
+                        .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(666L).build());
+        final var sidecarUtilsMockedStatic = mockStatic(SidecarUtils.class);
+        sidecarUtilsMockedStatic
+                .when(
+                        () ->
+                                SidecarUtils.createContractBytecodeSidecarFrom(
+                                        EntityIdUtils.asContract(hollowAccountId),
+                                        initCode,
+                                        runtimeCode))
+                .thenReturn(sidecarRecord);
+        given(dynamicProperties.enabledSidecars())
+                .willReturn(Set.of(SidecarType.CONTRACT_BYTECODE));
+
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        // then:
+        verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+        verify(creator)
+                .createSuccessfulSyntheticRecord(
+                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater).reclaimLatestContractId();
+        verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
+        verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
+        verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
+        verify(updater)
+                .manageInProgressRecord(
+                        recordsHistorian, liveRecord, mockCreation, List.of(sidecarRecord));
+        // and:
+        final var tracker = trackerCaptor.getValue();
+        assertTrue(tracker.hasTrackedContractCreation());
+        assertEquals(EntityIdUtils.asContract(hollowAccountId), tracker.getTrackedNewContractId());
+        assertArrayEquals(
+                Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
+                tracker.getNewEntityAlias().toByteArray());
+        // and:
+        assertTrue(liveRecord.shouldNotBeExternalized());
+        sidecarUtilsMockedStatic.close();
+    }
+
+    @Test
+    void hasExpectedHollowAccountCompletionOnSuccessWithoutSidecarEnabled() {
+        final var trackerCaptor = ArgumentCaptor.forClass(SideEffectsTracker.class);
+        final var liveRecord =
+                ExpirableTxnRecord.newBuilder()
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
+        final var mockCreation =
+                TransactionBody.newBuilder()
+                        .setContractCreateInstance(
+                                ContractCreateTransactionBody.newBuilder()
+                                        .setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
+        final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+        givenSpawnPrereqs();
+        givenBuilderPrereqs();
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+        given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+        given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
+        given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
+
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+
+        verify(stack).addFirst(frameCaptor.capture());
+        final var childFrame = frameCaptor.getValue();
+        // when:
+        childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
+        childFrame.notifyCompletion();
+        // then:
+        verify(frame).pushStackItem(Words.fromAddress(Subject.PRETEND_CONTRACT_ADDRESS));
+        verify(creator)
+                .createSuccessfulSyntheticRecord(
+                        eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
+        verify(updater).reclaimLatestContractId();
+        verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
+        verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
+        verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
+        verify(updater)
+                .manageInProgressRecord(
+                        recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
+        // and:
+        final var tracker = trackerCaptor.getValue();
+        assertTrue(tracker.hasTrackedContractCreation());
+        assertEquals(EntityIdUtils.asContract(hollowAccountId), tracker.getTrackedNewContractId());
+        assertArrayEquals(
+                Subject.PRETEND_CONTRACT_ADDRESS.toArrayUnsafe(),
+                tracker.getNewEntityAlias().toByteArray());
+        // and:
+        assertTrue(liveRecord.shouldNotBeExternalized());
+    }
+
+    @Test
+    void hasExpectedHollowAccountCompletionWithoutLazyCreationEnabled() {
+        given(frame.stackSize()).willReturn(3);
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
+        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
+        given(frame.getRecipientAddress()).willReturn(recipient);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.getAccount(recipient)).willReturn(recipientAccount);
+        given(recipientAccount.getMutable()).willReturn(mutableAccount);
+        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(updater.updater()).willReturn(updater);
+        given(frame.getOriginatorAddress()).willReturn(recipient);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getBlockValues()).willReturn(blockValues);
+        given(frame.getMiningBeneficiary()).willReturn(recipient);
+        given(frame.getBlockHashLookup()).willReturn(l -> Hash.ZERO);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(false);
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        given(updater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willReturn(EntityIdUtils.asTypedEvmAddress(hollowAccountId));
+        given(updater.trackingAccounts()).willReturn(accounts);
+        given(accounts.contains(hollowAccountId)).willReturn(false);
+
+        assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
+    }
+
+    @Test
     void hasExpectedChildCompletionOnFailure() {
         final var captor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        givenUpdaterWithAliases(EntityIdUtils.parseAccount("0.0.1234"), nonEmptyKey);
 
         assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 
@@ -296,6 +479,28 @@ class AbstractRecordingCreateOperationTest {
         // when:
         childFrame.setState(MessageFrame.State.COMPLETED_FAILED);
         childFrame.notifyCompletion();
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
+    void failsWhenMatchingHollowAccountExistsAndLazyCreationDisabled() {
+        given(frame.stackSize()).willReturn(3);
+        given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST);
+        given(frame.getStackItem(0)).willReturn(Bytes.ofUnsignedLong(value));
+        given(frame.getRecipientAddress()).willReturn(recipient);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.getAccount(recipient)).willReturn(recipientAccount);
+        given(recipientAccount.getMutable()).willReturn(mutableAccount);
+        given(mutableAccount.getBalance()).willReturn(Wei.of(value));
+        given(frame.getMessageStackDepth()).willReturn(1023);
+        given(frame.getStackItem(anyInt())).willReturn(Bytes.ofUnsignedLong(1));
+        final var hollowAccountId = EntityIdUtils.parseAccount("0.0.5678");
+        givenUpdaterWithAliases(hollowAccountId, EMPTY_KEY);
+
+        subject.execute(frame, evm);
+
+        verify(frame).readMutableMemory(1L, 1L);
+        verify(frame).popStackItems(3);
         verify(frame).pushStackItem(UInt256.ZERO);
     }
 
@@ -321,6 +526,16 @@ class AbstractRecordingCreateOperationTest {
         given(recipientAccount.getMutable()).willReturn(mutableAccount);
         given(mutableAccount.getBalance()).willReturn(Wei.of(value));
         given(frame.getMessageStackDepth()).willReturn(1023);
+    }
+
+    private void givenUpdaterWithAliases(
+            final AccountID expectedAccountId, final JKey expectedKey) {
+        given(updater.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(any()))
+                .willReturn(EntityIdUtils.asTypedEvmAddress(expectedAccountId));
+        given(updater.trackingAccounts()).willReturn(accounts);
+        given(accounts.contains(expectedAccountId)).willReturn((expectedKey != null));
+        given(accounts.get(expectedAccountId, AccountProperty.KEY)).willReturn(expectedKey);
     }
 
     private void assertSameResult(

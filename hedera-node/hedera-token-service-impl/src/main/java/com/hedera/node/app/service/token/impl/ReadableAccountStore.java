@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -78,10 +78,12 @@ public class ReadableAccountStore implements AccountKeyLookup {
             return withFailureReason(INVALID_ACCOUNT_ID);
         }
 
-        if (!account.get().isReceiverSigRequired()) {
+        final var responseIgnoringSigReq = validateKey(account.get().getAccountKey());
+        if (responseIgnoringSigReq.failed() || account.get().isReceiverSigRequired()) {
+            return responseIgnoringSigReq;
+        } else {
             return PRESENT_BUT_NOT_REQUIRED;
         }
-        return validateKey(account.get().getAccountKey());
     }
 
     /**
@@ -102,7 +104,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
+    private Optional<HederaAccount> getAccountLeaf(final AccountID id) {
         final var accountNum = getAccountNum(id);
         if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();
@@ -138,13 +140,12 @@ public class ReadableAccountStore implements AccountKeyLookup {
             throw new IllegalArgumentException("Provided Key is null");
         }
         if (key.isEmpty()) {
-            // FUTURE : need new response code ACCOUNT_IS_IMMUTABLE
             return withFailureReason(ALIAS_IS_IMMUTABLE);
         }
         return withKey(key);
     }
 
-    private Account mapAccount(final AccountID idOrAlias, final MerkleAccount account) {
+    private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {
         final var builder =
                 new AccountBuilderImpl()
                         .key(account.getAccountKey())
