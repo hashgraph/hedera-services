@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -85,7 +84,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceVanilla() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
@@ -97,7 +96,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsWithInvalidOwner() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.empty());
+        given(accounts.get(owner.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var meta = subject.preHandle(txn, payer, store);
@@ -108,7 +107,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
@@ -120,10 +119,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceAddsDelegatingSpender() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.getAccountNum()))
-                .willReturn(Optional.of(payerAccount));
+        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var meta = subject.preHandle(txn, payer, store);
@@ -134,9 +132,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(Optional.empty());
+        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var meta = subject.preHandle(txn, payer, store);

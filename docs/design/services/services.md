@@ -23,5 +23,5 @@ We accept this downside for the time being. A future revision may institute a **
 depend on reflection, outside from what the `ServiceLoader` does.
 
 Each `Service` implementation takes in its constructor a `StateRegistry` which is used for setting up the service state
-in the merkle tree. The `Service` also acts as a factory for `TransactionHandler`s, `PreTransactionHandler`s, and
-`QueryHandler`s, and the main entrypoint into all API provided by the service module.
+in the merkle tree. The `Service` implementation also acts as a factory for `TransactionHandler`s,
+`PreTransactionHandler`s, and `QueryHandler`s, and the main entrypoint into all API provided by the service module.

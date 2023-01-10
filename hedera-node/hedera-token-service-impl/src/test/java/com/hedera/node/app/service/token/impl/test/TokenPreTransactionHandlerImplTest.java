@@ -67,8 +67,8 @@ class TokenPreTransactionHandlerImplTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private ReadableKVState aliases;
-    @Mock private ReadableKVState accounts;
+    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
+    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
     @Mock private ReadableStates states;
     @Mock private MerkleAccount payerAccount;
     @Mock private ReadableTokenStore tokenStore;
@@ -79,8 +79,8 @@ class TokenPreTransactionHandlerImplTest {
 
     @BeforeEach
     void setUp() {
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
+        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
         given(accounts.get(payerNum)).willReturn(payerAccount);
         given(payerAccount.getAccountKey()).willReturn((JKey) payerKey);
 

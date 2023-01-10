@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class OnDiskReadableStateTest extends MerkleTestBase {
-    @TempDir Path storageDir;
     private StateMetadata<String, String> md;
     private VirtualMap<OnDiskKey<String>, OnDiskValue<String>> virtualMap;
 
@@ -43,7 +42,7 @@ class OnDiskReadableStateTest extends MerkleTestBase {
                         new TestSchema(1),
                         new StateDefinition<>(
                                 FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
-        virtualMap = createVirtualMap("TEST LABEL", storageDir, md);
+        virtualMap = createVirtualMap("TEST LABEL", md);
     }
 
     @Nested

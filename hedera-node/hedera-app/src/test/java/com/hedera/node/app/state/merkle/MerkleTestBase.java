@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,10 +138,8 @@ public class MerkleTestBase extends TestBase {
 
     /**
      * Sets up the "Fruit" virtual map, label, and metadata.
-     *
-     * @param storageDir The storage location for the virtual map's database files
      */
-    protected void setupFruitVirtualMap(Path storageDir) {
+    protected void setupFruitVirtualMap() {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitVirtualMetadata =
                 new StateMetadata<>(
@@ -149,7 +147,7 @@ public class MerkleTestBase extends TestBase {
                         new TestSchema(1),
                         new StateDefinition<>(
                                 FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
-        fruitVirtualMap = createVirtualMap(fruitVirtualLabel, storageDir, fruitVirtualMetadata);
+        fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
@@ -233,14 +231,13 @@ public class MerkleTestBase extends TestBase {
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
-            String label, Path storageDir, StateMetadata<String, String> md) {
+            String label, StateMetadata<String, String> md) {
         final var keySerializer = new OnDiskKeySerializer<>(md);
         final var builder =
                 new JasperDbBuilder<OnDiskKey<String>, OnDiskValue<String>>()
                         // Force all hashes to disk, to make sure we're going through all the
                         // serialization paths we can
                         .internalHashesRamToDiskThreshold(0)
-                        .storageDir(storageDir)
                         .maxNumOfKeys(100)
                         .preferDiskBasedIndexes(true)
                         .keySerializer(keySerializer)

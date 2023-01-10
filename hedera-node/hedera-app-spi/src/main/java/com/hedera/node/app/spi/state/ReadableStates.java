@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,6 @@ public interface ReadableStates {
      * @return True if there are no states in this instance.
      */
     default boolean isEmpty() {
-        return size() == 0;
+        return stateKeys().isEmpty();
     }
 }

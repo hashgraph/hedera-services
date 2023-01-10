@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,10 +76,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
-            @NonNull final Path storageDir,
+            @Nullable final Path storageDir,
             @NonNull final String serviceName) {
         this.constructableRegistry = Objects.requireNonNull(constructableRegistry);
-        this.storageDir = Objects.requireNonNull(storageDir);
+        this.storageDir = storageDir;
         this.serviceName = StateUtils.validateStateKey(Objects.requireNonNull(serviceName));
     }
 
@@ -173,7 +173,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             final var ds =
                                     new OnDiskDataSourceBuilder()
                                             .maxNumOfKeys(def.maxKeysHint())
-                                            .storageDir(storageDir)
                                             .keySerializer(ks)
                                             .virtualLeafRecordSerializer(
                                                     new VirtualLeafRecordSerializer(
@@ -186,6 +185,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                             DataFileCommon.VARIABLE_DATA_SIZE,
                                                             new OnDiskValueSerializer(md),
                                                             true));
+
+                            if (storageDir != null) {
+                                ds.storageDir(storageDir);
+                            }
 
                             final var label = StateUtils.computeLabel(serviceName, def.stateKey());
                             hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));

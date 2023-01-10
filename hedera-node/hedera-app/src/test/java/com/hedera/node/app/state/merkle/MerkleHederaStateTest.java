@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,12 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.merkle.map.MerkleMap;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 class MerkleHederaStateTest extends MerkleTestBase {
@@ -125,9 +123,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @Test
         @DisplayName("Adding a service with VirtualMap")
-        void addingVirtualMapService(@TempDir Path storageDir) {
+        void addingVirtualMapService() {
             // Given a virtual map
-            setupFruitVirtualMap(storageDir);
+            setupFruitVirtualMap();
 
             // When added to the merkle tree
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitVirtualMap);
@@ -351,9 +349,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @Test
         @DisplayName("Read a virtual map")
-        void readVirtualMap(@TempDir Path storageDir) {
+        void readVirtualMap() {
             // Given a HederaState with the fruit virtual map
-            setupFruitVirtualMap(storageDir);
+            setupFruitVirtualMap();
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitVirtualMap);
 
             // When we get the ReadableStates
@@ -522,9 +520,9 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @Test
         @DisplayName("Read a virtual map")
-        void readVirtualMap(@TempDir Path storageDir) {
+        void readVirtualMap() {
             // Given a HederaState with the fruit virtual map
-            setupFruitVirtualMap(storageDir);
+            setupFruitVirtualMap();
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitVirtualMap);
 
             // When we get the WritableStates
