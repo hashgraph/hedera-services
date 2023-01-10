@@ -22,8 +22,6 @@ import java.util.Set;
 
 /** An implementation of {@link WritableStates} that is always empty. */
 public class EmptyWritableStates implements WritableStates {
-    private static final Set<String> EMPTY_SET = Collections.emptySet();
-
     @NonNull
     @Override
     public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
@@ -39,6 +37,6 @@ public class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
     public Set<String> stateKeys() {
-        return EMPTY_SET;
+        return Collections.emptySet();
     }
 }
