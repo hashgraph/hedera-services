@@ -17,12 +17,19 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -34,6 +41,7 @@ import org.mockito.Mockito;
  * series of tests that will replace the values for A, B, or remove them, or add new values.
  */
 class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
+    private static final String NUM_ITERATIONS_ARG = "WritableKVStateBaseTest.DeterministicUpdates.numIterations";
     protected WritableKVStateBase<String, String> state;
 
     @Override
@@ -168,7 +176,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
          * <p>When committed, the most current "put" value is sent to the backing store.
          */
         @Test
-        @DisplayName("A key that was put (and did not exist before) first")
+        @DisplayName("A key that was put and did not exist before")
         void getForModifyAfterPut() {
             // Put some value
             state.put(C_KEY, CHERRY);
@@ -764,5 +772,92 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         state.reset();
         assertThat(state.readKeys()).isEmpty();
         assertThat(state.modifiedKeys()).isEmpty();
+    }
+
+    /**
+     * It is essential that EVERY node causes the exact same mutations on the backend
+     * data store in the exact same order. If we have a map containing all modifications,
+     * it may be that iterating the map on different nodes produces mutations in a different
+     * order, since maps do not guarantee deterministic ordering (unless you use some kind of
+     * sorted map).
+     *
+     * <p>This kind of error is very hard to test directly, so we use a "hammer" test to
+     * just do many iterations on many threads concurrently to try to cause it to fail. If the
+     * test succeeds, it does not mean there is no bug, but if the test fails, it means there
+     * is DEFINITELY a bug. This test may be flaky, but if it ever fails, you must investigate!
+     */
+    @Test
+    @DisplayName("Updates to the underlying data source are deterministic")
+    @Tag("Hammer")
+    void deterministicUpdates() {
+        // We will execute 'numIterations' iterations. This is parameterized with a system property so
+        // that we may dial the number up or down for certain types of tests (for example, nightly vs. continuous).
+        // Each iteration will construct a list of modifications (add, remove, modify). We will then create
+        // 39 threads each with their own WritableKVStateBase. Each will apply the modifications and commit
+        // them. We will then join back and verify that the order in which modifications were applied is
+        // identical. The hope is that if there is any non-determinism, we will tease it out by hammering
+        // it in this way.
+        final int numIterations = Integer.getInteger(NUM_ITERATIONS_ARG, 100);
+        final var numMutations = 20;
+        final var numThreads = 39;
+        final var executors = Executors.newFixedThreadPool(numThreads);
+        for (int i = 0; i < numIterations; i++) {
+            // Contains lambdas that will mutate the map in some way, and then populate the
+            // mutation list with random mutations (puts and removes)
+            List<Consumer<WritableKVStateBase<Integer, String>>> mutations = new ArrayList<>();
+            for (int j = 0; j < numMutations; j++) {
+                final var key = random().nextInt(100);
+                if (random().nextInt(10) < 8) {
+                    final var randomSuffix = randomString("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 10);
+                    mutations.add(state -> state.put(key, randomSuffix));
+                } else {
+                    mutations.add(state -> state.remove(key));
+                }
+            }
+
+            // Now, spin up the threads. Each one will have its own unique state. The state
+            // is special in that it keeps track of the order in which remove and add calls
+            // were made to it, so we can compare those later.
+            final var latch = new CountDownLatch(numThreads);
+            final var mutationOrders = new ArrayList<List<Integer>>();
+            for (int t = 0; t < numThreads; t++) {
+                final var state = new MapWritableKVState<Integer, String>(FRUIT_STATE_KEY) {
+                    private final List<Integer> keys = new ArrayList<>();
+                    @Override
+                    protected void putIntoDataSource(@NonNull Integer key, @NonNull String value) {
+                        keys.add(key);
+                        super.putIntoDataSource(key, value);
+                    }
+
+                    @Override
+                    protected void removeFromDataSource(@NonNull Integer key) {
+                        keys.add(key);
+                        super.removeFromDataSource(key);
+                    }
+                };
+                mutationOrders.add(state.keys);
+                executors.execute(() -> {
+                    for (var mutator : mutations) {
+                        mutator.accept(state);
+                    }
+                    state.commit();
+                    latch.countDown();
+                });
+            }
+
+            try {
+                if (!latch.await(1, TimeUnit.SECONDS)) {
+                    fail("Failed to complete task in a reasonable time");
+                }
+            } catch (InterruptedException e) {
+                fail("Test was interrupted");
+            }
+
+            // Now we verify that every single "mutationOrder" array is the same
+            List<Integer> mutationOrder = mutationOrders.get(0);
+            for (final var mo : mutationOrders) {
+                assertThat(mo).containsExactlyElementsOf(mutationOrder);
+            }
+        }
     }
 }
