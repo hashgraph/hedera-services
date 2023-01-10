@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.aliasAndEvmAddressProvided;
@@ -209,6 +210,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             customizer.key(key);
         } else if (onlyEvmAddressProvided(op)) {
             customizer.alias(op.getEvmAddress());
+            customizer.key(EMPTY_KEY);
         } else if (onlyAliasProvided(op)) {
             populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
         } else if (keyAndAliasProvided(op)) {
