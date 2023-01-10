@@ -337,6 +337,16 @@ class PreHandleTokenCreateTest {
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 
+    @Test
+    void handleFunctionalityTest() {
+        final var notImplemented = "Not implemented";
+        try {
+            subject.handle(null);
+        } catch (final UnsupportedOperationException e) {
+            assertEquals(e.getMessage(), notImplemented);
+        }
+    }
+
     private void basicMetaAssertions(
             final TransactionMetadata meta,
             final int keysSize,
