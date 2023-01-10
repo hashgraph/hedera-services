@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_ONLY;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER;
@@ -33,6 +34,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -70,6 +72,20 @@ class PreHandleTokenCreateTest {
     @Test
     void tokenCreateWithAdminKey() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateWithAdminKeyAndFreeze() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
         final var meta =
                 subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
@@ -292,6 +308,19 @@ class PreHandleTokenCreateTest {
                 sanityRestored(meta.requiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateTreasuryAsCustomPayer() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test

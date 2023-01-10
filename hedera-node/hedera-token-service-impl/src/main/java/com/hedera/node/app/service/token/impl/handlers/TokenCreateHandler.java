@@ -108,33 +108,31 @@ public class TokenCreateHandler implements TransactionHandler {
             final KeyOrLookupFailureReason hasSigRequired) {
         final var failureStatus = INVALID_CUSTOM_FEE_COLLECTOR;
         for (final var customFee : customFeesList) {
-            if (customFee.hasFeeCollectorAccountId()) {
-                final var collector = customFee.getFeeCollectorAccountId();
-                /* A fractional fee collector and a collector for a fixed fee denominated
-                in the units of the newly created token both must always sign a TokenCreate,
-                since these are automatically associated to the newly created token. */
-                if (customFee.hasFixedFee()) {
-                    final var fixedFee = customFee.getFixedFee();
-                    final var alwaysAdd =
-                            fixedFee.hasDenominatingTokenId()
-                                    && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                    if (alwaysAdd || hasSigRequired.failureReason() == null) {
-                        meta.addNonPayerKey(collector, failureStatus);
-                    }
-                } else if (customFee.hasFractionalFee()) {
+            final var collector = customFee.getFeeCollectorAccountId();
+            /* A fractional fee collector and a collector for a fixed fee denominated
+            in the units of the newly created token both must always sign a TokenCreate,
+            since these are automatically associated to the newly created token. */
+            if (customFee.hasFixedFee()) {
+                final var fixedFee = customFee.getFixedFee();
+                final var alwaysAdd =
+                        fixedFee.hasDenominatingTokenId()
+                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                if (alwaysAdd || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
                     meta.addNonPayerKey(collector, failureStatus);
-                } else {
-                    final var royaltyFee = customFee.getRoyaltyFee();
-                    var alwaysAdd = false;
-                    if (royaltyFee.hasFallbackFee()) {
-                        final var fFee = royaltyFee.getFallbackFee();
-                        alwaysAdd =
-                                fFee.hasDenominatingTokenId()
-                                        && fFee.getDenominatingTokenId().getTokenNum() == 0;
-                    }
-                    if (alwaysAdd || hasSigRequired.failureReason() == null) {
-                        meta.addNonPayerKey(collector, failureStatus);
-                    }
+                }
+            } else if (customFee.hasFractionalFee()) {
+                meta.addNonPayerKey(collector, failureStatus);
+            } else {
+                final var royaltyFee = customFee.getRoyaltyFee();
+                var alwaysAdd = false;
+                if (royaltyFee.hasFallbackFee()) {
+                    final var fFee = royaltyFee.getFallbackFee();
+                    alwaysAdd =
+                            fFee.hasDenominatingTokenId()
+                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                }
+                if (alwaysAdd || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
+                    meta.addNonPayerKey(collector, failureStatus);
                 }
             }
         }
