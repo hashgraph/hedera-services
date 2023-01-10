@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.token.impl.test.util;
 
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -22,15 +25,11 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";

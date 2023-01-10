@@ -17,15 +17,16 @@ package com.hedera.test.utils;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Iterator;
 import java.util.function.Function;
 
-public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2>, V> implements ReadableKVState<K2, V> {
+public class StateKeyAdapter<K1 extends Comparable<K1>, K2 extends Comparable<K2>, V>
+        implements ReadableKVState<K2, V> {
     private final ReadableKVState<K1, V> delegate;
     private final Function<K2, K1> keyAdapter;
 
-    public StateKeyAdapter(final ReadableKVState<K1, V> delegate, final Function<K2, K1> keyAdapter) {
+    public StateKeyAdapter(
+            final ReadableKVState<K1, V> delegate, final Function<K2, K1> keyAdapter) {
         this.delegate = delegate;
         this.keyAdapter = keyAdapter;
     }

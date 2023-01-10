@@ -15,6 +15,12 @@
  */
 package com.hedera.test.utils;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -23,15 +29,7 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Optional;
-import java.util.stream.Stream;
-
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 public class TestFixturesKeyLookup implements AccountKeyLookup {
     private final ReadableKVState<String, Long> aliases;
@@ -82,7 +80,7 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
                     return numFromEvmAddress(evmAddress);
                 }
             }
-            final var value =  aliases.get(alias.toStringUtf8());
+            final var value = aliases.get(alias.toStringUtf8());
             if (value == null) {
                 return 0L;
             }

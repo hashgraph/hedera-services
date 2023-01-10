@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -122,8 +121,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
     void cryptoApproveAllowanceAddsDelegatingSpender() {
         given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
-        given(accounts.get(delegatingSpender.getAccountNum()))
-                .willReturn(payerAccount);
+        given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var meta = subject.preHandle(txn, payer, store);

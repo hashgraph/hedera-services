@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -24,15 +29,9 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import org.mockito.Mockito;
-
 import java.time.Instant;
 import java.util.Map;
-
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
-import static org.mockito.BDDMockito.given;
+import org.mockito.Mockito;
 
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
@@ -68,23 +67,17 @@ public class AdapterUtils {
     private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState(
             final Instant mockLastModified) {
         final var wrappedState =
-                new MapReadableKVState<>(
-                        ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
+                new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
     }
 
     private static MapReadableKVState<String, Long> wellKnownAliasState() {
         final Map<String, Long> wellKnownAliases =
                 Map.ofEntries(
+                        Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
                         Map.entry(
-                               CURRENTLY_UNUSED_ALIAS,
-                                MISSING_NUM.longValue()),
-                        Map.entry(
-                                NO_RECEIVER_SIG_ALIAS,
-                                fromAccountId(NO_RECEIVER_SIG).longValue()),
-                        Map.entry(
-                                RECEIVER_SIG_ALIAS,
-                                fromAccountId(RECEIVER_SIG).longValue()),
+                                NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
+                        Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
                         Map.entry(
                                 FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
