@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOp
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
-import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV032;
 import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreate2Operation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;
@@ -41,6 +41,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -64,7 +65,12 @@ public interface ContractsV_0_32Module {
     @ContractsModule.V_0_32
     static BiPredicate<Address, MessageFrame> provideAddressValidator(
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return (address, frame) -> true;
+        final var precompiles =
+                precompiledContractMap.keySet().stream()
+                        .map(Address::fromHexString)
+                        .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
     }
 
     @Provides
@@ -146,9 +152,14 @@ public interface ContractsV_0_32Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @ContractsModule.V_0_32 final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaCallOperationV032(
+                sigsVerifier,
+                gasCalculator,
+                addressValidator,
+                precompiledContractMap,
+                globalDynamicProperties);
     }
 
     @Provides
