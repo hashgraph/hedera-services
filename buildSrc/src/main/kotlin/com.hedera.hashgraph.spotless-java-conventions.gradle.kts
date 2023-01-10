@@ -54,6 +54,6 @@ spotless {
             * limitations under the License.
             */
         """.trimIndent(), "(package|import)"
-        )
+        ).updateYearWithLatest(true)
     })
 }

@@ -1420,6 +1420,11 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
     }
 
+    public static Tuple accountAmountAlias(
+            final byte[] alias, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
 
@@ -1435,6 +1440,18 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender,
+            final byte[] alias,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber,
+                isApproval);
     }
 
     public static Tuple nftTransfer(
