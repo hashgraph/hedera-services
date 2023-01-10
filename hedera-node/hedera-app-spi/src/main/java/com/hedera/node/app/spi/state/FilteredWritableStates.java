@@ -25,11 +25,9 @@ import java.util.Set;
  * An implementation of {@link WritableStates} that delegates to another instance, and filters the
  * available set of states.
  */
-public class FilteredWritableStates implements WritableStates {
+public class FilteredWritableStates extends FilteredReadableStates implements WritableStates {
     /** The {@link WritableStates} to delegate to */
     private final WritableStates delegate;
-    /** The set of states to honor in {@link #delegate}. */
-    private final Set<String> stateKeys;
 
     /**
      * Create a new instance.
@@ -39,17 +37,8 @@ public class FilteredWritableStates implements WritableStates {
      */
     public FilteredWritableStates(
             @NonNull final WritableStates delegate, @NonNull final Set<String> stateKeys) {
+        super(delegate, stateKeys);
         this.delegate = Objects.requireNonNull(delegate);
-
-        // Only include those state keys that are actually in the underlying delegate
-        final var set = new HashSet<String>(stateKeys.size());
-        for (final var stateKey : stateKeys) {
-            if (delegate.contains(stateKey)) {
-                set.add(stateKey);
-            }
-        }
-
-        this.stateKeys = Collections.unmodifiableSet(set);
     }
 
     @NonNull
@@ -61,16 +50,5 @@ public class FilteredWritableStates implements WritableStates {
         }
 
         return delegate.get(stateKey);
-    }
-
-    @Override
-    public boolean contains(@NonNull String stateKey) {
-        return stateKeys.contains(stateKey);
-    }
-
-    @NonNull
-    @Override
-    public Set<String> stateKeys() {
-        return stateKeys;
     }
 }

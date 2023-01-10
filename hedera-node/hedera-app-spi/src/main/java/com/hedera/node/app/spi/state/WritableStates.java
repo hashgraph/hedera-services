@@ -16,10 +16,9 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 
 /** Essentially, a map of {@link WritableKVState}s. Each state may be retrieved by key. */
-public interface WritableStates {
+public interface WritableStates extends ReadableStates {
     /**
      * Gets the {@link WritableKVState} associated with the given stateKey. If the state cannot be
      * found, an exception is thrown. This should **never** happen in an application, and represents
@@ -33,40 +32,7 @@ public interface WritableStates {
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
+    @Override
     @NonNull
     <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
-
-    /**
-     * Gets whether the given state key is a member of this set.
-     *
-     * @param stateKey The state key
-     * @return true if a subsequent call to {@link #get(String)} with this state key would succeed.
-     */
-    boolean contains(@NonNull String stateKey);
-
-    /**
-     * Gets the set of all state keys supported by this map of states.
-     *
-     * @return The set of all state keys.
-     */
-    @NonNull
-    Set<String> stateKeys();
-
-    /**
-     * Gets the number of states contained in this instance.
-     *
-     * @return The number of states. The value will be non-negative.
-     */
-    default int size() {
-        return stateKeys().size();
-    }
-
-    /**
-     * Gets whether this instance is empty, that is, it has no states.
-     *
-     * @return True if there are no states in this instance.
-     */
-    default boolean isEmpty() {
-        return size() == 0;
-    }
 }
