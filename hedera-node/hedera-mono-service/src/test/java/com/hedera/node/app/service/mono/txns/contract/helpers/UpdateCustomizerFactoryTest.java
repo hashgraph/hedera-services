@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_RED
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,6 +34,7 @@ import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -339,5 +341,31 @@ class UpdateCustomizerFactoryTest {
                                         StringValue.newBuilder()
                                                 .setValue("Interesting to see you here!"))
                                 .build()));
+    }
+
+    @Test
+    void rejectsExcessAutoAssociations() {
+        // given:
+        var mutableContract =
+                MerkleAccountFactory.newContract()
+                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                        .get();
+        // and:
+        var op =
+                ContractUpdateTransactionBody.newBuilder()
+                        .setMaxAutomaticTokenAssociations(
+                                Int32Value.newBuilder()
+                                        .setValue(
+                                                CryptoCreateChecks.MAX_CHARGEABLE_AUTO_ASSOCIATIONS
+                                                        + 1))
+                        .build();
+
+        // when:
+        var result = subject.customizerFor(mutableContract, optionValidator, op);
+
+        // then:
+        assertTrue(result.getLeft().isEmpty());
+        assertEquals(
+                REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, result.getRight());
     }
 }

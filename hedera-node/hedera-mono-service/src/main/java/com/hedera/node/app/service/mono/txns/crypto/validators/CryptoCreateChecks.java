@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class CryptoCreateChecks {
-    static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
+    public static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
     private final GlobalDynamicProperties dynamicProperties;
     private final OptionValidator validator;
     private final Supplier<AccountStorageAdapter> accounts;

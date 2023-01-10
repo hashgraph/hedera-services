@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.aliasAndEvmAddressProvided;
@@ -210,6 +211,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             customizer.key(key);
         } else if (onlyEvmAddressProvided(op)) {
             customizer.alias(op.getEvmAddress());
+            customizer.key(EMPTY_KEY);
         } else if (onlyAliasProvided(op)) {
             populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
         } else if (keyAndAliasProvided(op)) {
