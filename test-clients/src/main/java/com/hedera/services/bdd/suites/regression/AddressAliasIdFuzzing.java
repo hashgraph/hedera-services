@@ -29,6 +29,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * We want to make this suite exercise all forms of identity a Hedera account may have, under all
+ * possible circumstances. (This could take us a while to do.)
+ *
+ * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
+ */
 public class AddressAliasIdFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 
