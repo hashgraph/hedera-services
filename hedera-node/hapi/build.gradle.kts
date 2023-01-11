@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
-    id("com.hedera.pbj.pbj-compiler").version("0.2.2")
+    id("com.hedera.pbj.pbj-compiler").version("0.3.0")
 }
 
 description = "Hedera API"
@@ -25,7 +25,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("com.hedera.pbj:pbj-runtime:0.2.2")
+    implementation("com.hedera.pbj:pbj-runtime:0.3.0")
     implementation(libs.bundles.di)
     testImplementation(testLibs.bundles.testing)
     // we depend on the protoc compiled hapi during test as we test our pbj generated code against it to make sure it is compatible
