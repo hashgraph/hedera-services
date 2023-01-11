@@ -76,6 +76,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
         validateTrue(ledgers.tokens().exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(keyType);
         final JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
+        validateTrue(key != null, ResponseCodeEnum.KEY_NOT_PROVIDED);
         final var evmKey = convertToEvmKey(asKeyUnchecked(key));
         return evmEncoder.encodeGetTokenKey(evmKey);
     }
