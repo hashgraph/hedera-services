@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
@@ -77,6 +82,7 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -85,13 +91,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.inject.Provider;
-
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class InfrastructureFactoryTest {
@@ -160,7 +159,9 @@ class InfrastructureFactoryTest {
         given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
         given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
         assertInstanceOf(
-                ViewExecutor.class, subject.newViewExecutor(fakeInput, frame, gasCalculator, view.getNetworkInfo().ledgerId()));
+                ViewExecutor.class,
+                subject.newViewExecutor(
+                        fakeInput, frame, gasCalculator, view.getNetworkInfo().ledgerId()));
     }
 
     @Test

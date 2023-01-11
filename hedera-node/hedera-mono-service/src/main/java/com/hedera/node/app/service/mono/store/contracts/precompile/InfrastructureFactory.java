@@ -278,13 +278,14 @@ public class InfrastructureFactory extends EvmInfrastructureFactory {
     public ViewExecutor newViewExecutor(
             final Bytes input,
             final MessageFrame frame,
-            final com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator gasCalculator,
+            final com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator
+                    gasCalculator,
             final ByteString ledgerId) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var ledgers = updater.trackingLedgers();
         final var tokenAccessor = new TokenAccessorImpl(ledgers);
-        return new com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor(input, frame,
-                evmEncoder, gasCalculator, tokenAccessor, ledgerId);
+        return new com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor(
+                input, frame, evmEncoder, gasCalculator, tokenAccessor, ledgerId);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

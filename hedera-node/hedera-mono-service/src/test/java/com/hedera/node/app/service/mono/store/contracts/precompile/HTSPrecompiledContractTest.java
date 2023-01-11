@@ -36,7 +36,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
@@ -107,7 +106,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -145,7 +143,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpauseP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
@@ -340,43 +337,43 @@ class HTSPrecompiledContractTest {
         assertNull(result.getValue());
     }
 
-//    @Test
-//    void computeCostedWorksForRedirectView() {
-//        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
-//        given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-//        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
-//        given(messageFrame.isStatic()).willReturn(true);
-//        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-//        given(worldUpdater.isInTransaction()).willReturn(false);
-//
-//        final var redirectViewExecutor =
-//                new RedirectViewExecutor(
-//                        input,
-//                        messageFrame,
-//                        evmEncoder,
-//                        precompilePricingUtils::computeViewFunctionGas);
-//        given(infrastructureFactory.newRedirectExecutor(any(), any(), any()))
-//                .willReturn(redirectViewExecutor);
-//        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-//                .willReturn(mockFeeObject);
-//        given(
-//                        feeCalculator.estimatedGasPriceInTinybars(
-//                                HederaFunctionality.ContractCall,
-//                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
-//                .willReturn(1L);
-//        given(mockFeeObject.getNodeFee()).willReturn(1L);
-//        given(mockFeeObject.getNetworkFee()).willReturn(1L);
-//        given(mockFeeObject.getServiceFee()).willReturn(1L);
-//
-//        final var name = "name";
-//        given(wrappedLedgers.nameOf(fungible)).willReturn(name);
-//        given(evmEncoder.encodeName(name)).willReturn(Bytes.of(1));
-//
-//        final var result = subject.computeCosted(input, messageFrame);
-//
-//        verify(messageFrame, never()).setRevertReason(any());
-//        assertEquals(Bytes.of(1), result.getValue());
-//    }
+    //    @Test
+    //    void computeCostedWorksForRedirectView() {
+    //        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
+    //        given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
+    //        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
+    //        given(messageFrame.isStatic()).willReturn(true);
+    //        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+    //        given(worldUpdater.isInTransaction()).willReturn(false);
+    //
+    //        final var redirectViewExecutor =
+    //                new RedirectViewExecutor(
+    //                        input,
+    //                        messageFrame,
+    //                        evmEncoder,
+    //                        precompilePricingUtils::computeViewFunctionGas);
+    //        given(infrastructureFactory.newRedirectExecutor(any(), any(), any()))
+    //                .willReturn(redirectViewExecutor);
+    //        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+    //                .willReturn(mockFeeObject);
+    //        given(
+    //                        feeCalculator.estimatedGasPriceInTinybars(
+    //                                HederaFunctionality.ContractCall,
+    //                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
+    //                .willReturn(1L);
+    //        given(mockFeeObject.getNodeFee()).willReturn(1L);
+    //        given(mockFeeObject.getNetworkFee()).willReturn(1L);
+    //        given(mockFeeObject.getServiceFee()).willReturn(1L);
+    //
+    //        final var name = "name";
+    //        given(wrappedLedgers.nameOf(fungible)).willReturn(name);
+    //        given(evmEncoder.encodeName(name)).willReturn(Bytes.of(1));
+    //
+    //        final var result = subject.computeCosted(input, messageFrame);
+    //
+    //        verify(messageFrame, never()).setRevertReason(any());
+    //        assertEquals(Bytes.of(1), result.getValue());
+    //    }
 
     @Test
     void computeCostedWorksForView() {
