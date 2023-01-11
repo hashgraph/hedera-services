@@ -81,7 +81,7 @@ public class Yahcli implements Callable<Integer> {
     @Option(
             names = {"-s", "--schedule"},
             paramLabel = "schedule",
-            description = "boolean schedule param, if interested to schedule for signatures")
+            description = "true if the transaction should be scheduled, false otherwise")
     boolean schedule;
 
     @Option(
@@ -115,7 +115,7 @@ public class Yahcli implements Callable<Integer> {
         return payer;
     }
 
-    public boolean getSchedule() {
+    public boolean isScheduled() {
         return schedule;
     }
 

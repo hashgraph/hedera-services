@@ -77,7 +77,7 @@ public class UpdateCommand implements Callable<Integer> {
                         effectiveMemo,
                         effectivePublicKeys,
                         effectiveTargetAccount,
-                        accountsCommand.getYahcli().getSchedule());
+                        accountsCommand.getYahcli().isScheduled());
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
