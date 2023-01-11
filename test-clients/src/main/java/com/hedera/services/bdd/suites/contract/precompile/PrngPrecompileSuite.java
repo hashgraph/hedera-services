@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -32,8 +32,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-public class PrngPrecompileSuite extends HapiApiSuite {
+public class PrngPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrngPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_GRACEFULLY_FAILING_PRNG_CONTRACT = "GracefullyFailingPrng";
@@ -58,20 +58,20 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 + "00000000d83bf9a1000000000d83bf9a1000";
 
     public static void main(String... args) {
-        new PrngPrecompileSuite().runSuiteSync();
+        new PrngPrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
                 functionCallWithLessThanFourBytesFailsGracefully(),
                 nonSupportedAbiCallGracefullyFails(),
@@ -79,11 +79,11 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 emptyInputCallFails());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(prngPrecompileHappyPathWorks(), multipleCallsHaveIndependentResults());
     }
 
-    private HapiApiSpec multipleCallsHaveIndependentResults() {
+    private HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -133,7 +133,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                         contractCallLocal(prng, GET_SEED).gas(gasToOffer));
     }
 
-    private HapiApiSpec emptyInputCallFails() {
+    private HapiSpec emptyInputCallFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var emptyInputCall = "emptyInputCall";
         return defaultHapiSpec("emptyInputCallFails")
@@ -168,7 +168,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec invalidLargeInputFails() {
+    private HapiSpec invalidLargeInputFails() {
         final var prng = THE_PRNG_CONTRACT;
         final var largeInputCall = "largeInputCall";
         return defaultHapiSpec("invalidLargeInputFails")
@@ -204,7 +204,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec nonSupportedAbiCallGracefullyFails() {
+    private HapiSpec nonSupportedAbiCallGracefullyFails() {
         final var prng = THE_GRACEFULLY_FAILING_PRNG_CONTRACT;
         final var failedCall = "failedCall";
         return defaultHapiSpec("nonSupportedAbiCallGracefullyFails")
@@ -234,7 +234,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec functionCallWithLessThanFourBytesFailsGracefully() {
+    private HapiSpec functionCallWithLessThanFourBytesFailsGracefully() {
         final var lessThan4Bytes = "lessThan4Bytes";
         return defaultHapiSpec("functionCallWithLessThanFourBytesFailsGracefully")
                 .given(
@@ -274,7 +274,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec prngPrecompileHappyPathWorks() {
+    private HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")

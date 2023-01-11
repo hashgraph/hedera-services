@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
-import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -26,15 +24,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.ResourceLimitException;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.submerkle.*;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.factories.txns.CryptoTransferFactory;
+import com.hedera.test.factories.txns.TinyBarsFromTo;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.List;
@@ -42,6 +47,11 @@ import java.util.Random;
 import java.util.UUID;
 
 public class TxnUtils {
+    public static com.swirlds.common.system.transaction.Transaction mockTransaction(
+            final byte[] contents) {
+        throw new AssertionError("Not implemented");
+    }
+
     public static TransferList withAdjustments(
             AccountID a, long A, AccountID b, long B, AccountID c, long C) {
         return TransferList.newBuilder()
@@ -242,10 +252,10 @@ public class TxnUtils {
 
     public static Transaction payerSponsoredTransfer(
             String payer, KeyTree payerKey, String beneficiary, long amount) throws Throwable {
-        return newSignedCryptoTransfer()
+        return CryptoTransferFactory.newSignedCryptoTransfer()
                 .payer(payer)
                 .payerKt(payerKey)
-                .transfers(tinyBarsFromTo(payer, beneficiary, amount))
+                .transfers(TinyBarsFromTo.tinyBarsFromTo(payer, beneficiary, amount))
                 .get();
     }
 

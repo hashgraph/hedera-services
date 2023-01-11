@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.stats;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 
 public class ThroughputObs {
     private int numOpsAtObservationStart;
@@ -26,7 +26,7 @@ public class ThroughputObs {
     private final long expectedQueueSaturationTime;
     private final String name;
 
-    public ThroughputObs(String name, long expectedQueueSaturationTime, HapiApiSpec spec) {
+    public ThroughputObs(String name, long expectedQueueSaturationTime, HapiSpec spec) {
         this.name = name;
         this.creationTime = System.currentTimeMillis();
         this.expectedQueueSaturationTime = expectedQueueSaturationTime;

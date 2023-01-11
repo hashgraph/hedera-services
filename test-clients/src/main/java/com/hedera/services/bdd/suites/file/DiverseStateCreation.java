@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -33,9 +33,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -55,7 +55,7 @@ import org.apache.logging.log4j.Logger;
  * <p>It then writes a JSON metadata file that {@link DiverseStateValidation} can use to validate
  * this state is as expected (e.g. after a migration).
  */
-public final class DiverseStateCreation extends HapiApiSuite {
+public final class DiverseStateCreation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateCreation.class);
 
     private static byte[] SMALL_CONTENTS;
@@ -98,7 +98,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();
@@ -110,7 +110,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
         return List.of(createDiverseState());
     }
 
-    private HapiApiSpec createDiverseState() {
+    private HapiSpec createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE =

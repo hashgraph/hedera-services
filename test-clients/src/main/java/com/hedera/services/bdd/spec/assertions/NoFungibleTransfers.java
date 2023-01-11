@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class NoFungibleTransfers implements ErroringAssertsProvider<List<TokenTr
     }
 
     @Override
-    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiApiSpec spec) {
+    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
         final List<Throwable> unexpectedFungibleChanges = new ArrayList<>();
         return tokenTransfers -> {
             for (var tokenTransfer : tokenTransfers) {

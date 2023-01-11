@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetailsNoPayment;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -47,9 +47,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -58,7 +58,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RandomOps extends HapiApiSuite {
+public class RandomOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RandomOps.class);
 
     public static void main(String... args) {
@@ -66,9 +66,9 @@ public class RandomOps extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						freezeDemo(),
                     //						retryLimitDemo()
                     //						execTimesDemo(),
@@ -76,7 +76,7 @@ public class RandomOps extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec getAccountDetailsDemo() {
+    private HapiSpec getAccountDetailsDemo() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -136,7 +136,7 @@ public class RandomOps extends HapiApiSuite {
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(1)
@@ -145,7 +145,7 @@ public class RandomOps extends HapiApiSuite {
                         getAccountDetailsNoPayment(owner)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(2)
@@ -154,7 +154,7 @@ public class RandomOps extends HapiApiSuite {
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiApiSpec execTimesDemo() {
+    private HapiSpec execTimesDemo() {
         final var cryptoTransfer = "cryptoTransfer";
         final var submitMessage = "submitMessage";
         final var contractCall = "contractCall";
@@ -206,7 +206,7 @@ public class RandomOps extends HapiApiSuite {
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiApiSpec retryLimitDemo() {
+    private HapiSpec retryLimitDemo() {
         return defaultHapiSpec("RetryLimitDemo")
                 .given()
                 .when()
@@ -218,7 +218,7 @@ public class RandomOps extends HapiApiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 7L)));
     }
 
-    private HapiApiSpec freezeDemo() {
+    private HapiSpec freezeDemo() {
         return customHapiSpec("FreezeDemo")
                 .withProperties(
                         Map.of(

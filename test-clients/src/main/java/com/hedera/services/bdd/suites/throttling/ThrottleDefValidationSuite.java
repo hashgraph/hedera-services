@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -26,15 +26,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OPERATION_REPE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ThrottleDefValidationSuite extends HapiApiSuite {
+public class ThrottleDefValidationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ThrottleDefValidationSuite.class);
 
     private static final String defaultCongestionMultipliers =
@@ -45,9 +45,9 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     throttleDefsRejectUnauthorizedPayers(),
                     throttleUpdateRejectsMultiGroupAssignment(),
                     throttleUpdateWithZeroGroupOpsPerSecFails(),
@@ -56,7 +56,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec updateWithMissingTokenMintGetsWarning() {
+    private HapiSpec updateWithMissingTokenMintGetsWarning() {
         var missingMintThrottles =
                 protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
 
@@ -70,7 +70,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS_BUT_MISSING_EXPECTED_OPERATION));
     }
 
-    private HapiApiSpec ensureDefaultsRestored() {
+    private HapiSpec ensureDefaultsRestored() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
 
         return defaultHapiSpec("EnsureDefaultsRestored")
@@ -88,7 +88,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
                                                 defaultCongestionMultipliers)));
     }
 
-    private HapiApiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
+    private HapiSpec throttleUpdateWithZeroGroupOpsPerSecFails() {
         var zeroOpsPerSecThrottles = protoDefsFromResource("testSystemFiles/zero-ops-group.json");
 
         return defaultHapiSpec("ThrottleUpdateWithZeroGroupOpsPerSecFails")
@@ -101,7 +101,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
                                 .hasKnownStatus(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC));
     }
 
-    private HapiApiSpec throttleUpdateRejectsMultiGroupAssignment() {
+    private HapiSpec throttleUpdateRejectsMultiGroupAssignment() {
         var multiGroupThrottles =
                 protoDefsFromResource("testSystemFiles/duplicated-operation.json");
 
@@ -115,7 +115,7 @@ public class ThrottleDefValidationSuite extends HapiApiSuite {
                                 .hasKnownStatus(OPERATION_REPEATED_IN_BUCKET_GROUPS));
     }
 
-    private HapiApiSpec throttleDefsRejectUnauthorizedPayers() {
+    private HapiSpec throttleDefsRejectUnauthorizedPayers() {
         return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
                 .given(
                         cryptoCreate("civilian"),

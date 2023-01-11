@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
  * Given a state loaded from a preprod network (usually stable testnet), we want to "re-key" the
  * treasury account for use in dev migration testing.
  */
-public class RekeySavedStateTreasury extends HapiApiSuite {
+public class RekeySavedStateTreasury extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RekeySavedStateTreasury.class);
 
     public static void main(String... args) {
@@ -39,9 +39,9 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     rekeyTreasury(),
                 });
     }
@@ -50,7 +50,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
     static final String newTreasuryPassphrase = "passphrase";
     static final String devKeyPemLoc = "devGenesisKeypair.pem";
 
-    private HapiApiSpec rekeyTreasury() {
+    private HapiSpec rekeyTreasury() {
         final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
         final var passphraseForOriginalPemLoc = "<SECRET>";
 

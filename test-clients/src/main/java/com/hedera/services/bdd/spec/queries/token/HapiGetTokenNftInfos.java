@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.queries.token;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -60,7 +60,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         var actualInfo = response.getTokenGetNftInfos().getNftsList();
         var expectedInfo = new ArrayList<TokenNftInfo>();
         expectedNfts.ifPresent(
@@ -97,7 +97,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTokenNftInfosQuery(spec, payment, false);
         response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
@@ -108,7 +108,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTokenNftInfosQuery(spec, payment, true);
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
@@ -130,7 +130,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
         return this;
     }
 
-    private Query getTokenNftInfosQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getTokenNftInfosQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asTokenId(token, spec);
         TokenGetNftInfosQuery getTokenNftInfosQuery =
                 TokenGetNftInfosQuery.newBuilder()

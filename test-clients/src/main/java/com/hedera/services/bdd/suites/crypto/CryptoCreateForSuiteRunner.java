@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
@@ -24,9 +24,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.SuiteRunner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.List;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Assertions;
  * each test client. This class should be used only for that purpose and not be used in any other
  * testing.
  */
-public class CryptoCreateForSuiteRunner extends HapiApiSuite {
+public class CryptoCreateForSuiteRunner extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateForSuiteRunner.class);
     private final String nodes;
     private final String defaultNode;
@@ -63,12 +63,12 @@ public class CryptoCreateForSuiteRunner extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(createAccount());
     }
 
     @SuppressWarnings({"java:S5960", "java:S1141", "java:S1135"})
-    private HapiApiSpec createAccount() {
+    private HapiSpec createAccount() {
         int maxRetries = 5;
         return customHapiSpec("CreatePayerAccountForEachClient")
                 .withProperties(Map.of("nodes", nodes, "default.node", "0.0." + defaultNode))

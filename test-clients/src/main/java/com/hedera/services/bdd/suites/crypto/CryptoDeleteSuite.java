@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -41,14 +41,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoDeleteSuite extends HapiApiSuite {
+public class CryptoDeleteSuite extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
     private static final long TOKEN_INITIAL_SUPPLY = 500;
 
@@ -62,9 +62,9 @@ public class CryptoDeleteSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     fundsTransferOnDelete(),
                     cannotDeleteAccountsWithNonzeroTokenBalances(),
                     cannotDeleteAlreadyDeletedAccount(),
@@ -74,7 +74,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec deletedAccountCannotBePayer() {
+    private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
         String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
@@ -108,7 +108,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec fundsTransferOnDelete() {
+    private HapiSpec fundsTransferOnDelete() {
         long B = HapiSpecSetup.getDefaultInstance().defaultBalance();
 
         return defaultHapiSpec("FundsTransferOnDelete")
@@ -127,7 +127,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                                                                         B)))));
     }
 
-    private HapiApiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
+    private HapiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
         return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
                 .given(
                         newKeyNamed("admin"),
@@ -168,7 +168,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                         cryptoDelete(TOKEN_TREASURY));
     }
 
-    private HapiApiSpec cannotDeleteAlreadyDeletedAccount() {
+    private HapiSpec cannotDeleteAlreadyDeletedAccount() {
         return defaultHapiSpec("CannotDeleteAlreadyDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"), cryptoCreate("transferAccount"))
                 .when(
@@ -181,7 +181,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec cannotDeleteAccountWithSameBeneficiary() {
+    private HapiSpec cannotDeleteAccountWithSameBeneficiary() {
         return defaultHapiSpec("CannotDeleteAccountWithSameBeneficiary")
                 .given(cryptoCreate("toBeDeleted"))
                 .when()
@@ -191,7 +191,7 @@ public class CryptoDeleteSuite extends HapiApiSuite {
                                 .hasPrecheck(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT));
     }
 
-    private HapiApiSpec cannotDeleteTreasuryAccount() {
+    private HapiSpec cannotDeleteTreasuryAccount() {
         return defaultHapiSpec("CannotDeleteTreasuryAccount")
                 .given(cryptoCreate("treasury"), cryptoCreate("transferAccount"))
                 .when(

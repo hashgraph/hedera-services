@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -45,8 +45,8 @@ import static com.hedera.services.bdd.suites.file.DiverseStateCreation.SMALL_FIL
 import static com.hedera.services.bdd.suites.file.DiverseStateCreation.STATE_META_JSON_LOC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -63,7 +63,7 @@ import org.apache.logging.log4j.Logger;
  * Client that validates the blobs mentioned in a JSON metadata file created by {@link
  * DiverseStateCreation} are present in state as expected (e.g. after a migration).
  */
-public final class DiverseStateValidation extends HapiApiSuite {
+public final class DiverseStateValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DiverseStateValidation.class);
 
     private static byte[] SMALL_CONTENTS;
@@ -78,7 +78,7 @@ public final class DiverseStateValidation extends HapiApiSuite {
     private final AtomicReference<Map<String, String>> hexedBytecode = new AtomicReference<>();
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         try {
             SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
             LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();
@@ -90,7 +90,7 @@ public final class DiverseStateValidation extends HapiApiSuite {
     }
 
     @SuppressWarnings("unchecked")
-    private HapiApiSpec validateDiverseState() {
+    private HapiSpec validateDiverseState() {
         return defaultHapiSpec("ValidateDiverseState")
                 .given(
                         withOpContext(

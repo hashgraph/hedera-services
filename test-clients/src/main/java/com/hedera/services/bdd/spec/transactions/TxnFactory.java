@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.TRUE;
+import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;

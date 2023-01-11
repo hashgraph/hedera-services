@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.queries.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -51,7 +51,7 @@ public class ExpectedTokenRel {
             String account,
             List<String> expectedAbsent,
             List<TokenRelationship> actualRels,
-            HapiApiSpec spec) {
+            HapiSpec spec) {
         for (String unexpectedToken : expectedAbsent) {
             for (TokenRelationship actualRel : actualRels) {
                 var unexpectedId = spec.registry().getTokenID(unexpectedToken);
@@ -71,7 +71,7 @@ public class ExpectedTokenRel {
             String account,
             List<ExpectedTokenRel> expectedRels,
             List<TokenRelationship> actualRels,
-            HapiApiSpec spec) {
+            HapiSpec spec) {
         for (ExpectedTokenRel rel : expectedRels) {
             boolean found = false;
             var expectedId = spec.registry().getTokenID(rel.getToken());
@@ -116,7 +116,7 @@ public class ExpectedTokenRel {
         return this;
     }
 
-    public boolean matches(final HapiApiSpec spec, final TokenRelationship rel) {
+    public boolean matches(final HapiSpec spec, final TokenRelationship rel) {
         final var registry = spec.registry();
         final var tokenId = registry.getTokenID(token);
         if (!tokenId.equals(rel.getTokenId())) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
@@ -65,7 +65,7 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemDelete---both file and contract present!");
         }
@@ -86,7 +86,7 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         if (file.isPresent()) {
             return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemDelete;
         } else {
@@ -95,7 +95,7 @@ public class HapiSysDelete extends HapiTxnOp<HapiSysDelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees().maxFeeTinyBars();
     }
 

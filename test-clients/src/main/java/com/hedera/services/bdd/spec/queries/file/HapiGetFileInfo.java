@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
@@ -123,7 +123,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getFileInfoQuery(spec, payment, false);
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
         if (verboseLoggingOn) {
@@ -136,7 +136,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getFileInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileInfo(query);
@@ -145,7 +145,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         var info = response.getFileGetInfo().getFileInfo();
 
         Assertions.assertEquals(TxnUtils.asFileId(file, spec), info.getFileID(), "Wrong file id!");
@@ -174,7 +174,7 @@ public class HapiGetFileInfo extends HapiQueryOp<HapiGetFileInfo> {
                 id -> Assertions.assertEquals(rationalize(id), info.getLedgerId()));
     }
 
-    private Query getFileInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getFileInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         file = fileSupplier.isPresent() ? fileSupplier.get().get() : file;
         var id = TxnUtils.asFileId(file, spec);
         fileId = id;

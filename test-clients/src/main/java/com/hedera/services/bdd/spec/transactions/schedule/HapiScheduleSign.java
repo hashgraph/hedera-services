@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -77,7 +77,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         ScheduleSignTransactionBody opBody =
                 spec.txns()
                         .<ScheduleSignTransactionBody, ScheduleSignTransactionBody.Builder>body(
@@ -97,12 +97,12 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::signSchedule;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -115,7 +115,7 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -126,13 +126,13 @@ public class HapiScheduleSign extends HapiTxnOp<HapiScheduleSign> {
                     .forActivityBasedOp(
                             HederaFunctionality.ScheduleSign, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final var signers = new ArrayList<Function<HapiSpec, Key>>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         for (String added : signatories) {
             signers.add(spec -> spec.registry().getKey(added));

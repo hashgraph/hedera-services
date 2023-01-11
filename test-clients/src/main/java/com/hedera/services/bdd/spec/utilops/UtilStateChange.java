@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,14 @@ package com.hedera.services.bdd.spec.utilops;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
-import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_RECEIVER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_RECEIVER_SOURCE_KEY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_RECEIVER_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -44,10 +44,9 @@ public class UtilStateChange {
 
     public static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
     private static final Map<String, Boolean> specToInitializedEthereumAccount = new HashMap<>();
-    private static final Map<String, Boolean> specToBeenExecuted = new HashMap<>();
 
     public static List<ContractStateChange> stateChangesToGrpc(
-            List<StateChange> stateChanges, HapiApiSpec spec) {
+            List<StateChange> stateChanges, HapiSpec spec) {
         final List<ContractStateChange> additions = new ArrayList<>();
 
         for (StateChange stateChange : stateChanges) {
@@ -75,7 +74,7 @@ public class UtilStateChange {
         return additions;
     }
 
-    public static void initializeEthereumAccountForSpec(final HapiApiSpec spec) {
+    public static void initializeEthereumAccountForSpec(final HapiSpec spec) {
         createEthereumAccount(
                 spec, SECP_256K1_SOURCE_KEY, DEFAULT_CONTRACT_SENDER, "senderCreation");
         createEthereumAccount(
@@ -87,7 +86,7 @@ public class UtilStateChange {
     }
 
     private static void createEthereumAccount(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final String secp256k1Key,
             final String accountName,
             final String txnName) {
@@ -117,11 +116,7 @@ public class UtilStateChange {
         }
     }
 
-    public static boolean isEthereumAccountCreatedForSpec(final HapiApiSpec spec) {
+    public static boolean isEthereumAccountCreatedForSpec(final HapiSpec spec) {
         return specToInitializedEthereumAccount.containsKey(spec.getSuitePrefix() + spec.getName());
-    }
-
-    public static void markSpecAsBeenExecuted(final HapiApiSpec spec) {
-        specToBeenExecuted.putIfAbsent(spec.getSuitePrefix() + spec.getName(), true);
     }
 }

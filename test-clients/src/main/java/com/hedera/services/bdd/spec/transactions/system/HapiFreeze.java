@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
@@ -124,7 +124,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var opBody =
                 spec.txns()
                         .<FreezeTransactionBody, FreezeTransactionBody.Builder>body(
@@ -161,12 +161,12 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getFreezeSvcStub(targetNodeFor(spec), useTls)::freeze;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) {
         return spec.fees().maxFeeTinyBars();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -28,11 +28,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoQueriesStressTests extends HapiApiSuite {
+public class CryptoQueriesStressTests extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoQueriesStressTests.class);
 
     private AtomicLong duration = new AtomicLong(30);
@@ -56,14 +56,14 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     getAccountInfoStress(), getAccountBalanceStress(),
                 });
     }
 
-    private HapiApiSpec getAccountBalanceStress() {
+    private HapiSpec getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -74,7 +74,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec getAccountInfoStress() {
+    private HapiSpec getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -85,7 +85,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec getAccountRecordsStress() {
+    private HapiSpec getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()
@@ -96,7 +96,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> getAccountRecordsFactory() {
+    private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -125,7 +125,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> getAccountBalanceFactory() {
+    private Function<HapiSpec, OpProvider> getAccountBalanceFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -140,7 +140,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> getAccountInfoFactory() {
+    private Function<HapiSpec, OpProvider> getAccountInfoFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -155,7 +155,7 @@ public class CryptoQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private void configureFromCi(HapiApiSpec spec) {
+    private void configureFromCi(HapiSpec spec) {
         HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
         configure("duration", duration::set, ciProps, ciProps::getLong);
         configure("unit", unit::set, ciProps, ciProps::getTimeUnit);

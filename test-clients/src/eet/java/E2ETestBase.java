@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 import com.hedera.services.bdd.junit.HederaContainer;
 import com.hedera.services.bdd.junit.TestBase;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import java.io.File;
 import java.time.Duration;
@@ -81,7 +81,7 @@ public abstract class E2ETestBase extends TestBase {
         }
 
         final var defaultProperties = JutilPropertySource.getDefaultInstance();
-        HapiApiSpec.runInCiMode(
+        HapiSpec.runInCiMode(
                 NODE_0.getFirstMappedPort()
                         + ":"
                         + NODE_1.getFirstMappedPort()

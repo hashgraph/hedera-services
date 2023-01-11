@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -41,7 +41,7 @@ public class Schedule {
     private SimpleXfer simpleXfer = UNSPECIFIED_SIMPLE_XFER;
     private List<String> signatories = Collections.emptyList();
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, asAdminKeyFor(name));
         }

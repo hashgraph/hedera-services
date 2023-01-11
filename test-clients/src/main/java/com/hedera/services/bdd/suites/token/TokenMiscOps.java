@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -25,13 +25,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenMiscOps extends HapiApiSuite {
+public class TokenMiscOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenMiscOps.class);
 
     public static void main(String... args) {
@@ -39,10 +39,10 @@ public class TokenMiscOps extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(
                 List.of(
-                        new HapiApiSpec[] {
+                        new HapiSpec[] {
                             //								wellKnownAccountsHaveTokens(),
                             //								someLowNumAccountsHaveTokens(),
                             //								someInfoQueries(),
@@ -50,7 +50,7 @@ public class TokenMiscOps extends HapiApiSuite {
                         }));
     }
 
-    public HapiApiSpec someLowNumAccountsHaveTokens() {
+    public HapiSpec someLowNumAccountsHaveTokens() {
         long aSupply = 666L, bSupply = 777L;
 
         return defaultHapiSpec("SomeLowNumAccountsHaveTokens")
@@ -64,11 +64,11 @@ public class TokenMiscOps extends HapiApiSuite {
                 .then(getAccountInfo(GENESIS).logged(), getAccountInfo("0.0.3").logged());
     }
 
-    public HapiApiSpec theCreation() {
+    public HapiSpec theCreation() {
         return defaultHapiSpec("TheCreation").given().when().then(cryptoCreate("adam"));
     }
 
-    public HapiApiSpec someInfoQueries() {
+    public HapiSpec someInfoQueries() {
         return defaultHapiSpec("SomeInfoQueries")
                 .given()
                 .when()
@@ -79,7 +79,7 @@ public class TokenMiscOps extends HapiApiSuite {
                         getTokenInfo("0.0.1003").logged());
     }
 
-    public HapiApiSpec wellKnownAccountsHaveTokens() {
+    public HapiSpec wellKnownAccountsHaveTokens() {
         return defaultHapiSpec("WellKnownAccountsHaveTokens")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),

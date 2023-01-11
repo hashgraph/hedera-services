@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -33,11 +33,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +50,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractQueriesStressTests extends HapiApiSuite {
+public class ContractQueriesStressTests extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractQueriesStressTests.class);
 
     private AtomicLong duration = new AtomicLong(30);
@@ -62,9 +62,9 @@ public class ContractQueriesStressTests extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     contractCallLocalStress(),
                     getContractRecordsStress(),
                     getContractBytecodeStress(),
@@ -72,7 +72,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec getContractInfoStress() {
+    private HapiSpec getContractInfoStress() {
         return defaultHapiSpec("GetContractInfoStress")
                 .given()
                 .when()
@@ -83,7 +83,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec getContractBytecodeStress() {
+    private HapiSpec getContractBytecodeStress() {
         return defaultHapiSpec("GetAccountRecordsStress")
                 .given()
                 .when()
@@ -94,7 +94,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec contractCallLocalStress() {
+    private HapiSpec contractCallLocalStress() {
         return defaultHapiSpec("ContractCallLocalStress")
                 .given()
                 .when()
@@ -105,7 +105,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec getContractRecordsStress() {
+    private HapiSpec getContractRecordsStress() {
         return defaultHapiSpec("GetContractRecordsStress")
                 .given()
                 .when()
@@ -116,7 +116,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> getContractRecordsFactory() {
+    private Function<HapiSpec, OpProvider> getContractRecordsFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -145,7 +145,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> getContractInfoFactory() {
+    private Function<HapiSpec, OpProvider> getContractInfoFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -161,7 +161,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> getContractBytecodeFactory() {
+    private Function<HapiSpec, OpProvider> getContractBytecodeFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -177,7 +177,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> contractCallLocalFactory() {
+    private Function<HapiSpec, OpProvider> contractCallLocalFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -209,7 +209,7 @@ public class ContractQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private void configureFromCi(HapiApiSpec spec) {
+    private void configureFromCi(HapiSpec spec) {
         HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
         configure("duration", duration::set, ciProps, ciProps::getLong);
         configure("unit", unit::set, ciProps, ciProps::getTimeUnit);

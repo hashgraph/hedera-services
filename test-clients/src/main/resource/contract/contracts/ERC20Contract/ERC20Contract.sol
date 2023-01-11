@@ -9,6 +9,12 @@ contract ERC20Contract {
         IERC20Metadata(token).name();
     }
 
+    function nameNTimes(address token, uint times) public view {
+        for (uint i = 0; i < times; i++) {
+            IERC20Metadata(token).name();
+        }
+    }
+
     function symbol(address token) public view {
         IERC20Metadata(token).symbol();
     }
@@ -29,6 +35,11 @@ contract ERC20Contract {
         IERC20(token).transfer(recipient, amount);
     }
 
+    function transferThenRevert(address token, address recipient, uint256 amount) public {
+        IERC20(token).transfer(recipient, amount);
+        revert();
+    }
+
     function delegateTransfer(address token, address recipient, uint256 amount) public {
         (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }
@@ -37,6 +48,11 @@ contract ERC20Contract {
 
     function transferFrom(address token, address sender, address recipient, uint256 amount) public {
         IERC20(token).transferFrom(sender, recipient, amount);
+    }
+
+    function transferFromThenRevert(address token, address sender, address recipient, uint256 amount) public {
+        IERC20(token).transferFrom(sender, recipient, amount);
+        revert();
     }
 
     function allowance(address token, address owner, address spender) public view {

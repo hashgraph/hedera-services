@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -112,7 +112,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Key lookupKey(final HapiApiSpec spec, final String name) {
+    protected Key lookupKey(final HapiSpec spec, final String name) {
         if (submitKey.isPresent() && (topic + "Submit").equals(name)) {
             return submitKey.get();
         } else {
@@ -131,7 +131,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         genKeysFor(spec);
         final ConsensusCreateTopicTransactionBody opBody =
                 spec.txns()
@@ -156,7 +156,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
         return b -> b.setConsensusCreateTopic(opBody);
     }
 
-    private void genKeysFor(final HapiApiSpec spec) {
+    private void genKeysFor(final HapiSpec spec) {
         if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
             adminKey = netOf(spec, adminKeyName, adminKeyShape, Optional.of(this::effectiveKeyGen));
         }
@@ -173,8 +173,8 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final List<Function<HapiApiSpec, Key>> signers =
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
         Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
         autoRenewAccountId.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
@@ -182,7 +182,7 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -212,12 +212,12 @@ public class HapiTopicCreate extends HapiTxnOp<HapiTopicCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::createTopic;
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(

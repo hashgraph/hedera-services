@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -23,8 +23,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
+public class ValidateDuplicateTransactionAfterReconnect extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(ValidateDuplicateTransactionAfterReconnect.class);
 
@@ -41,11 +41,11 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateDuplicateTransactionAfterReconnect());
     }
 
-    private HapiApiSpec validateDuplicateTransactionAfterReconnect() {
+    private HapiSpec validateDuplicateTransactionAfterReconnect() {
         final String transactionId = "specialTransactionId";
         return customHapiSpec("validateDuplicateTransactionAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))

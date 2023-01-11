@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ public class KeyShape extends SigControl {
 
     @SuppressWarnings("unchecked")
     public SigControl signedWith(Object control) {
-        if (this == SIMPLE) {
+        if (this == SIMPLE || this == ED25519 || this == SECP256K1) {
             if (!(control instanceof SigControl)) {
                 throw new IllegalArgumentException("Shape is simple but multiple controls given!");
             }

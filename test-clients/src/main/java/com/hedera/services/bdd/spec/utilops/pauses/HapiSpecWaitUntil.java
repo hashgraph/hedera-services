@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -59,7 +59,7 @@ public class HapiSpecWaitUntil extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
         final var now = Instant.now();
         if (startOfNextStakingPeriod) {

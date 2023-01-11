@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.getDeduction;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.readableTransferList;
 import static java.util.stream.Collectors.toSet;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.TinyBarTransfers;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -38,12 +38,12 @@ import org.junit.jupiter.api.Assertions;
 
 public class TransferListAsserts extends BaseErroringAssertsProvider<TransferList> {
     public static TransferListAsserts exactParticipants(
-            Function<HapiApiSpec, List<AccountID>> provider) {
+            Function<HapiSpec, List<AccountID>> provider) {
         return new ExactParticipantsAssert(provider);
     }
 
     @SafeVarargs
-    public static TransferListAsserts including(Function<HapiApiSpec, TransferList>... providers) {
+    public static TransferListAsserts including(Function<HapiSpec, TransferList>... providers) {
         return new ExplicitTransferAsserts(Arrays.asList(providers));
     }
 
@@ -64,17 +64,15 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
     }
 
     public static TransferListAsserts missingPayments(
-            Function<HapiApiSpec, Map.Entry<AccountID, Long>>... providers) {
+            Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
         return new MissingPaymentAsserts(providers);
     }
 
-    public static Function<HapiApiSpec, Map.Entry<AccountID, Long>> to(
-            String account, Long amount) {
+    public static Function<HapiSpec, Map.Entry<AccountID, Long>> to(String account, Long amount) {
         return spec -> new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), amount);
     }
 
-    public static Function<HapiApiSpec, Map.Entry<AccountID, Long>> from(
-            String account, Long amount) {
+    public static Function<HapiSpec, Map.Entry<AccountID, Long>> from(String account, Long amount) {
         return spec ->
                 new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), -1 * amount);
     }
@@ -88,7 +86,7 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
 }
 
 class MissingPaymentAsserts extends TransferListAsserts {
-    public MissingPaymentAsserts(Function<HapiApiSpec, Map.Entry<AccountID, Long>>... providers) {
+    public MissingPaymentAsserts(Function<HapiSpec, Map.Entry<AccountID, Long>>... providers) {
         registerProvider(
                 (spec, o) -> {
                     TransferList actual = (TransferList) o;
@@ -125,7 +123,7 @@ class MissingPaymentAsserts extends TransferListAsserts {
 }
 
 class ExactParticipantsAssert extends TransferListAsserts {
-    public ExactParticipantsAssert(Function<HapiApiSpec, List<AccountID>> provider) {
+    public ExactParticipantsAssert(Function<HapiSpec, List<AccountID>> provider) {
         registerProvider(
                 (spec, o) -> {
                     List<AccountID> expectedParticipants = provider.apply(spec);
@@ -144,7 +142,7 @@ class ExactParticipantsAssert extends TransferListAsserts {
 }
 
 class ExplicitTransferAsserts extends TransferListAsserts {
-    public ExplicitTransferAsserts(List<Function<HapiApiSpec, TransferList>> providers) {
+    public ExplicitTransferAsserts(List<Function<HapiSpec, TransferList>> providers) {
         providers.stream()
                 .forEach(
                         provider -> {

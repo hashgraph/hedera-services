@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -36,16 +36,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DefaultTokenStatusSuite extends HapiApiSuite {
+public class DefaultTokenStatusSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DefaultTokenStatusSuite.class);
     private static final String TOKEN_DEFAULT_KYC_FREEZE_STATUS_CONTRACT =
             "TokenDefaultKycAndFreezeStatus";
@@ -57,7 +57,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
     private static final String GET_TOKEN_DEFAULT_KYC = "getTokenDefaultKyc";
 
     public static void main(String... args) {
-        new DefaultTokenStatusSuite().runSuiteSync();
+        new DefaultTokenStatusSuite().runSuiteAsync();
     }
 
     @Override
@@ -66,11 +66,16 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(getTokenDefaultFreezeStatus(), getTokenDefaultKycStatus());
     }
 
-    private HapiApiSpec getTokenDefaultFreezeStatus() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    private HapiSpec getTokenDefaultFreezeStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultFreezeStatus")
@@ -125,7 +130,7 @@ public class DefaultTokenStatusSuite extends HapiApiSuite {
                                                                                 true)))));
     }
 
-    private HapiApiSpec getTokenDefaultKycStatus() {
+    private HapiSpec getTokenDefaultKycStatus() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("GetTokenDefaultKycStatus")

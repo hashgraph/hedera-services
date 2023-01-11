@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +56,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenTransfersLoadProvider extends HapiApiSuite {
+public class TokenTransfersLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenTransfersLoadProvider.class);
 
     private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
@@ -68,15 +68,15 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runTokenTransfers(),
                 });
     }
 
-    private HapiApiSpec runTokenTransfers() {
-        return HapiApiSpec.defaultHapiSpec("RunTokenTransfers")
+    private HapiSpec runTokenTransfers() {
+        return HapiSpec.defaultHapiSpec("RunTokenTransfers")
                 .given(
                         getAccountBalance(DEFAULT_PAYER).logged(),
                         stdMgmtOf(duration, unit, maxOpsPerSec),
@@ -108,7 +108,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
                         sleepFor(60_000));
     }
 
-    private Function<HapiApiSpec, OpProvider> tokenTransfersFactory() {
+    private Function<HapiSpec, OpProvider> tokenTransfersFactory() {
         var firstDir = new AtomicBoolean(Boolean.TRUE);
         var balanceInit = new AtomicLong();
         var tokensPerTxn = new AtomicInteger();

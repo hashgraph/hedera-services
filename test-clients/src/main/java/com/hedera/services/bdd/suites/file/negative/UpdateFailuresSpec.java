@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file.negative;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
@@ -29,11 +29,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.List;
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UpdateFailuresSpec extends HapiApiSuite {
+public class UpdateFailuresSpec extends HapiSuite {
 
     private static final long A_LOT = 1_234_567_890L;
     private static final Logger LOG = LogManager.getLogger(UpdateFailuresSpec.class);
@@ -57,7 +57,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 precheckAllowsMissing(),
                 precheckAllowsDeleted(),
@@ -68,7 +68,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                 confusedUpdateCantExtendExpiry());
     }
 
-    private HapiApiSpec confusedUpdateCantExtendExpiry() {
+    private HapiSpec confusedUpdateCantExtendExpiry() {
         var initialExpiry = new AtomicLong();
         var extension = 1_000L;
         return defaultHapiSpec("ConfusedUpdateCantExtendExpiry")
@@ -89,7 +89,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                 .then(QueryVerbs.getFileInfo(EXCHANGE_RATES).hasExpiry(initialExpiry::get));
     }
 
-    private HapiApiSpec precheckRejectsUnauthorized() {
+    private HapiSpec precheckRejectsUnauthorized() {
         return defaultHapiSpec("PrecheckRejectsUnauthAddressBookUpdate")
                 .given(cryptoCreate(CIVILIAN))
                 .when()
@@ -114,7 +114,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                                 .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
-    private HapiApiSpec precheckAllowsMissing() {
+    private HapiSpec precheckAllowsMissing() {
         return defaultHapiSpec("PrecheckAllowsMissing")
                 .given()
                 .when()
@@ -127,14 +127,14 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_FILE_ID));
     }
 
-    private HapiApiSpec precheckAllowsDeleted() {
+    private HapiSpec precheckAllowsDeleted() {
         return defaultHapiSpec("PrecheckAllowsDeleted")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))
                 .then(fileUpdate("tbd").hasPrecheck(OK).hasKnownStatus(FILE_DELETED));
     }
 
-    private HapiApiSpec precheckRejectsPrematureExpiry() {
+    private HapiSpec precheckRejectsPrematureExpiry() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("PrecheckRejectsPrematureExpiry")
                 .given(fileCreate("file"))
@@ -146,7 +146,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                                 .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec precheckAllowsBadEncoding() {
+    private HapiSpec precheckAllowsBadEncoding() {
         return defaultHapiSpec("PrecheckAllowsBadEncoding")
                 .given(fileCreate("file"))
                 .when()
@@ -160,7 +160,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec handleIgnoresEarlierExpiry() {
+    private HapiSpec handleIgnoresEarlierExpiry() {
         var initialExpiry = new AtomicLong();
 
         return defaultHapiSpec("HandleIgnoresEarlierExpiry")

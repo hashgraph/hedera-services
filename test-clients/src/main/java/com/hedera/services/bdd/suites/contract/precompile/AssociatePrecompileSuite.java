@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -54,12 +53,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,7 +68,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class AssociatePrecompileSuite extends HapiApiSuite {
+public class AssociatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -86,7 +84,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     private static final String FROZEN_TOKEN = "Frozen token";
     private static final String UNFROZEN_TOKEN = "Unfrozen token";
     private static final String KYC_TOKEN = "KYC token";
-    private static final String TOKEN = "Token";
     private static final String DELEGATE_KEY = "Delegate key";
     private static final String FREEZE_KEY = "Freeze key";
     private static final String KYC_KEY = "KYC key";
@@ -94,40 +91,37 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
 
     public static void main(String... args) {
-        new AssociatePrecompileSuite().runSuiteSync();
+        new AssociatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiApiSpec[] {
-                    functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-                    nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                    invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                    nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-                    invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-                    invalidSingleAbiCallConsumesAllProvidedGas()
-                });
+                functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+                nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+                invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
+                nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
+                invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+                invalidSingleAbiCallConsumesAllProvidedGas());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
                 nestedAssociateWorksAsExpected(),
-                multipleAssociatePrecompileWithSignatureWorksForFungible(),
-                associatePrecompileTokensPerAccountLimitExceeded());
+                multipleAssociatePrecompileWithSignatureWorksForFungible());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -145,7 +139,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -165,7 +159,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -182,7 +176,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    private HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -250,7 +244,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    private HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -328,7 +322,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
-    private HapiApiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
+    private HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
@@ -337,10 +331,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
                 .given(
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
@@ -438,7 +428,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nestedAssociateWorksAsExpected() {
+    private HapiSpec nestedAssociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -498,105 +488,8 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
-    /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
-
-        return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
-                .given(
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"),
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenCreate(TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
-                        uploadInitCode(THE_CONTRACT),
-                        contractCreate(THE_CONTRACT),
-                        UtilVerbs.overriding("tokens.maxPerAccount", "1"),
-                        UtilVerbs.overriding("entities.limitTokenAssociations", "true"),
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        THE_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("vanillaTokenAssociateTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                secondVanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("secondVanillaTokenAssociateFailsTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
-                        childRecordsCheck(
-                                "secondVanillaTokenAssociateFailsTxn",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)))),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"));
-    }
-
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+    private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -640,8 +533,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     @NotNull
-    public static String getNestedContractAddress(
-            final String outerContract, final HapiApiSpec spec) {
+    public static String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(
                 spec.registry().getContractId(outerContract));
     }

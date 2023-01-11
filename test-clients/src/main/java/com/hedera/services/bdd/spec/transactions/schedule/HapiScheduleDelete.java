@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -56,7 +56,7 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final ScheduleInfo info = ScheduleFeeUtils.lookupInfo(spec, schedule, loggingOff);
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -67,12 +67,12 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
                     .forActivityBasedOp(
                             HederaFunctionality.ScheduleDelete, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var sId = TxnUtils.asScheduleId(schedule, spec);
         ScheduleDeleteTransactionBody opBody =
                 spec.txns()
@@ -85,12 +85,12 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::deleteSchedule;
     }
 

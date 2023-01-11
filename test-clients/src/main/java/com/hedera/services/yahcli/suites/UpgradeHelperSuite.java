@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.telemetryUpgrade;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UpgradeHelperSuite extends HapiApiSuite {
+public class UpgradeHelperSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpgradeHelperSuite.class);
 
     private final byte[] upgradeFileHash;
@@ -68,11 +68,11 @@ public class UpgradeHelperSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {doStagingAction()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {doStagingAction()});
     }
 
-    private HapiApiSpec doStagingAction() {
+    private HapiSpec doStagingAction() {
         final HapiSpecOperation op;
 
         if (startTime == null) {
@@ -97,7 +97,7 @@ public class UpgradeHelperSuite extends HapiApiSuite {
                             .havingHash(upgradeFileHash);
         }
 
-        return HapiApiSpec.customHapiSpec("DoStagingAction")
+        return HapiSpec.customHapiSpec("DoStagingAction")
                 .withProperties(specConfig)
                 .given()
                 .when()

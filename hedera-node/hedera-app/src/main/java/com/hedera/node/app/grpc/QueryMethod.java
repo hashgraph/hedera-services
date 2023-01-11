@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,17 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
  * single instance of this class is used by all query threads in the node.
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
-@ThreadSafe
 final class QueryMethod extends MethodBase {
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
@@ -53,10 +54,10 @@ final class QueryMethod extends MethodBase {
      * @param workflow a non-null {@link QueryWorkflow}
      */
     QueryMethod(
-            @Nonnull final String serviceName,
-            @Nonnull final String methodName,
-            @Nonnull final QueryWorkflow workflow,
-            @Nonnull final Metrics metrics) {
+            @NonNull final String serviceName,
+            @NonNull final String methodName,
+            @NonNull final QueryWorkflow workflow,
+            @NonNull final Metrics metrics) {
         super(serviceName, methodName, metrics);
         this.workflow = Objects.requireNonNull(workflow);
 
@@ -68,9 +69,9 @@ final class QueryMethod extends MethodBase {
 
     @Override
     protected void handle(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer) {
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
         workflow.handleQuery(session, requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();

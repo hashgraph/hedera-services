@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static java.lang.System.arraycopy;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -69,12 +71,12 @@ public interface HapiPropertySource {
         }
     }
 
-    default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
+    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
+        return HapiSpec.CostSnapshotMode.valueOf(get(property));
     }
 
-    default HapiApiSpec.UTF8Mode getUTF8Mode(String property) {
-        return HapiApiSpec.UTF8Mode.valueOf(get(property));
+    default HapiSpec.UTF8Mode getUTF8Mode(String property) {
+        return HapiSpec.UTF8Mode.valueOf(get(property));
     }
 
     default FileID getFile(String property) {
@@ -157,8 +159,8 @@ public interface HapiPropertySource {
         return SigControl.KeyAlgo.valueOf(get(property));
     }
 
-    default HapiApiSpec.SpecStatus getSpecStatus(String property) {
-        return HapiApiSpec.SpecStatus.valueOf(get(property));
+    default HapiSpec.SpecStatus getSpecStatus(String property) {
+        return HapiSpec.SpecStatus.valueOf(get(property));
     }
 
     static HapiPropertySource[] asSources(Object... sources) {
@@ -289,6 +291,20 @@ public interface HapiPropertySource {
     static byte[] asSolidityAddress(final AccountID accountId) {
         return asSolidityAddress(
                 (int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+    }
+
+    static Address idAsHeadlongAddress(final AccountID accountId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) accountId.getShardNum(),
+                        accountId.getRealmNum(),
+                        accountId.getAccountNum()));
+    }
+
+    static Address idAsHeadlongAddress(final TokenID tokenId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
     }
 
     static String asHexedSolidityAddress(final AccountID accountId) {

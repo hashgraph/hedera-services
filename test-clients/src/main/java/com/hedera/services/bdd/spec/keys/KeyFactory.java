@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hederahashgraph.api.proto.java.Key;
@@ -176,7 +176,7 @@ public class KeyFactory implements Serializable {
     }
 
     public Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final List<Key> keys,
             final Map<Key, SigControl> overrides)
@@ -185,7 +185,7 @@ public class KeyFactory implements Serializable {
     }
 
     public Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final List<Key> keys,
             final Map<Key, SigControl> overrides,
@@ -214,7 +214,7 @@ public class KeyFactory implements Serializable {
     }
 
     private Transaction sign(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction.Builder txn,
             final SigMapGenerator sigMapGen,
             final List<Entry<Key, SigControl>> authors)
@@ -350,12 +350,12 @@ public class KeyFactory implements Serializable {
     }
 
     public synchronized Key generateSubjectTo(
-            final HapiApiSpec spec, final SigControl controller, final KeyGenerator keyGen) {
+            final HapiSpec spec, final SigControl controller, final KeyGenerator keyGen) {
         return new Generation(spec, controller, keyGen).outcome();
     }
 
     public synchronized Key generateSubjectTo(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final SigControl controller,
             final KeyGenerator keyGen,
             final KeyLabel labels) {
@@ -369,19 +369,19 @@ public class KeyFactory implements Serializable {
 
         private final KeyLabel labels;
         private final SigControl control;
-        private final HapiApiSpec spec;
+        private final HapiSpec spec;
         private final KeyGenerator keyGen;
         private final Map<String, Key> byLabel = new HashMap<>();
 
         private int nextUnspecifiedAlgo = 0;
 
         public Generation(
-                final HapiApiSpec spec, final SigControl control, final KeyGenerator keyGen) {
+                final HapiSpec spec, final SigControl control, final KeyGenerator keyGen) {
             this(spec, control, keyGen, KeyLabel.uniquelyLabeling(control));
         }
 
         public Generation(
-                final HapiApiSpec spec,
+                final HapiSpec spec,
                 final SigControl control,
                 final KeyGenerator keyGen,
                 final KeyLabel labels) {
@@ -479,11 +479,11 @@ public class KeyFactory implements Serializable {
         }
     }
 
-    public Key generate(final HapiApiSpec spec, final KeyType type) {
+    public Key generate(final HapiSpec spec, final KeyType type) {
         return generate(spec, type, DEFAULT_KEY_GEN);
     }
 
-    public Key generate(final HapiApiSpec spec, final KeyType type, final KeyGenerator keyGen) {
+    public Key generate(final HapiSpec spec, final KeyType type, final KeyGenerator keyGen) {
         switch (type) {
             case THRESHOLD:
                 return generateSubjectTo(

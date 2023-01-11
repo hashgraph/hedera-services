@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,35 +15,32 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenMintScenarios implements TxnHandlingScenario {
     MINT_WITH_SUPPLY_KEYED_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenMint()
-                                    .minting(KNOWN_TOKEN_WITH_SUPPLY)
-                                    .nonPayerKts(TOKEN_SUPPLY_KT)
-                                    .get()));
+                    newSignedTokenMint()
+                            .minting(KNOWN_TOKEN_WITH_SUPPLY)
+                            .nonPayerKts(TOKEN_SUPPLY_KT)
+                            .get());
         }
     },
     MINT_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedTokenMint().minting(MISSING_TOKEN).get()));
+            return PlatformTxnAccessor.from(newSignedTokenMint().minting(MISSING_TOKEN).get());
         }
     },
     MINT_FOR_TOKEN_WITHOUT_SUPPLY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get()));
+                    newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }
     },
 }

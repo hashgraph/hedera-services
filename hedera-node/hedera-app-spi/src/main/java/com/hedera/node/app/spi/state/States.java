@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A set of {@link State} used by a service. Any service may have one or more {@link State}s, and
@@ -28,12 +28,12 @@ public interface States {
      * bug.
      *
      * @param stateKey The key used for looking up state
-     * @return The State for that key. This will never be null.
      * @param <K> The key type in the State.
      * @param <V> The value type in the State.
+     * @return The State for that key. This will never be null.
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @Nonnull
-    <K, V> State<K, V> get(@Nonnull String stateKey);
+    @NonNull
+    <K, V> State<K, V> get(@NonNull String stateKey);
 }

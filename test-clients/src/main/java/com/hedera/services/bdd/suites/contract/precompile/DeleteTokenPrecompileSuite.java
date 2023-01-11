@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -46,8 +46,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DeleteTokenPrecompileSuite extends HapiApiSuite {
+public class DeleteTokenPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DeleteTokenPrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -67,7 +67,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
     final AtomicReference<AccountID> accountID = new AtomicReference<>();
 
     public static void main(String... args) {
-        new DeleteTokenPrecompileSuite().runSuiteSync();
+        new DeleteTokenPrecompileSuite().runSuiteAsync();
     }
 
     @Override
@@ -76,11 +76,11 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(deleteFungibleTokenWithNegativeCases(), deleteNftTokenWithNegativeCases());
     }
 
-    private HapiApiSpec deleteFungibleTokenWithNegativeCases() {
+    private HapiSpec deleteFungibleTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var tokenAlreadyDeletedTxn = "tokenAlreadyDeletedTxn";
 
@@ -149,7 +149,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    private HapiApiSpec deleteNftTokenWithNegativeCases() {
+    private HapiSpec deleteNftTokenWithNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var notAnAdminTxn = "notAnAdminTxn";
 

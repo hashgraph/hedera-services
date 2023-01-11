@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -25,14 +25,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.finishThroughputObs
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startThroughputObs;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferPerfSuite extends HapiApiSuite {
+public class CryptoTransferPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoTransferPerfSuite.class);
 
     public static void main(String... args) {
@@ -41,7 +41,7 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return Arrays.asList(cryptoTransferPerf());
     }
 
@@ -50,7 +50,7 @@ public class CryptoTransferPerfSuite extends HapiApiSuite {
         return false;
     }
 
-    private HapiApiSpec cryptoTransferPerf() {
+    private HapiSpec cryptoTransferPerf() {
         final int NUM_ACCOUNTS = 10;
         final int NUM_TRANSFERS = 10_000;
         final long INIT_BALANCE = 100_000_000_000L;

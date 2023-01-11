@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.accounts.MockMMapFactory.newAccounts;
@@ -43,22 +43,22 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.HederaFs;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.OverlappingKeyGenerator;
@@ -89,115 +89,133 @@ public interface TxnHandlingScenario {
 
     KeyFactory overlapFactory = new KeyFactory(OverlappingKeyGenerator.withDefaultOverlaps());
 
-    default MerkleMap<EntityNum, MerkleAccount> accounts() throws Exception {
-        return newAccounts()
-                .withAccount(
-                        FIRST_TOKEN_SENDER_ID,
-                        newAccount().balance(10_000L).accountKeys(FIRST_TOKEN_SENDER_KT).get())
-                .withAccount(
-                        SECOND_TOKEN_SENDER_ID,
-                        newAccount().balance(10_000L).accountKeys(SECOND_TOKEN_SENDER_KT).get())
-                .withAccount(TOKEN_RECEIVER_ID, newAccount().balance(0L).get())
-                .withAccount(
-                        DEFAULT_NODE_ID,
-                        newAccount().balance(0L).accountKeys(DEFAULT_PAYER_KT).get())
-                .withAccount(
-                        DEFAULT_PAYER_ID,
-                        newAccount()
-                                .balance(DEFAULT_PAYER_BALANCE)
-                                .accountKeys(DEFAULT_PAYER_KT)
-                                .get())
-                .withAccount(STAKING_FUND_ID, newAccount().balance(0).accountKeys(EMPTY_KEY).get())
-                .withAccount(
-                        MASTER_PAYER_ID,
-                        newAccount()
-                                .balance(DEFAULT_PAYER_BALANCE)
-                                .accountKeys(DEFAULT_PAYER_KT)
-                                .get())
-                .withAccount(
-                        TREASURY_PAYER_ID,
-                        newAccount()
-                                .balance(DEFAULT_PAYER_BALANCE)
-                                .accountKeys(DEFAULT_PAYER_KT)
-                                .get())
-                .withAccount(
-                        NO_RECEIVER_SIG_ID,
-                        newAccount()
-                                .receiverSigRequired(false)
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(NO_RECEIVER_SIG_KT)
-                                .get())
-                .withAccount(
-                        RECEIVER_SIG_ID,
-                        newAccount()
-                                .receiverSigRequired(true)
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(RECEIVER_SIG_KT)
-                                .get())
-                .withAccount(
-                        SYS_ACCOUNT_ID,
-                        newAccount().balance(DEFAULT_BALANCE).accountKeys(SYS_ACCOUNT_KT).get())
-                .withAccount(
-                        MISC_ACCOUNT_ID,
-                        newAccount().balance(DEFAULT_BALANCE).accountKeys(MISC_ACCOUNT_KT).get())
-                .withAccount(
-                        CUSTOM_PAYER_ACCOUNT_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(CUSTOM_PAYER_ACCOUNT_KT)
-                                .get())
-                .withAccount(
-                        OWNER_ACCOUNT_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .cryptoAllowances(cryptoAllowances)
-                                .fungibleTokenAllowances(fungibleTokenAllowances)
-                                .explicitNftAllowances(nftTokenAllowances)
-                                .accountKeys(OWNER_ACCOUNT_KT)
-                                .get())
-                .withAccount(
-                        DELEGATING_SPENDER_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .cryptoAllowances(cryptoAllowances)
-                                .fungibleTokenAllowances(fungibleTokenAllowances)
-                                .explicitNftAllowances(nftTokenAllowances)
-                                .accountKeys(DELEGATING_SPENDER_KT)
-                                .get())
-                .withAccount(
-                        COMPLEX_KEY_ACCOUNT_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
-                                .get())
-                .withAccount(
-                        TOKEN_TREASURY_ID,
-                        newAccount().balance(DEFAULT_BALANCE).accountKeys(TOKEN_TREASURY_KT).get())
-                .withAccount(
-                        DILIGENT_SIGNING_PAYER_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(DILIGENT_SIGNING_PAYER_KT)
-                                .get())
-                .withAccount(
-                        FROM_OVERLAP_PAYER_ID,
-                        newAccount()
-                                .balance(DEFAULT_BALANCE)
-                                .keyFactory(overlapFactory)
-                                .accountKeys(FROM_OVERLAP_PAYER_KT)
-                                .get())
-                .withContract(
-                        MISC_RECIEVER_SIG_CONTRACT_ID,
-                        newContract()
-                                .receiverSigRequired(true)
-                                .balance(DEFAULT_BALANCE)
-                                .accountKeys(DILIGENT_SIGNING_PAYER_KT)
-                                .get())
-                .withContract(IMMUTABLE_CONTRACT_ID, newContract().balance(DEFAULT_BALANCE).get())
-                .withContract(
-                        MISC_CONTRACT_ID,
-                        newContract().balance(DEFAULT_BALANCE).accountKeys(MISC_ADMIN_KT).get())
-                .get();
+    default MerkleMap<EntityNum, MerkleAccount> accounts() {
+        return wellKnownAccounts();
+    }
+
+    static MerkleMap<EntityNum, MerkleAccount> wellKnownAccounts() {
+        try {
+            return newAccounts()
+                    .withAccount(
+                            FIRST_TOKEN_SENDER_ID,
+                            newAccount().balance(10_000L).accountKeys(FIRST_TOKEN_SENDER_KT).get())
+                    .withAccount(
+                            SECOND_TOKEN_SENDER_ID,
+                            newAccount().balance(10_000L).accountKeys(SECOND_TOKEN_SENDER_KT).get())
+                    .withAccount(
+                            TOKEN_RECEIVER_ID,
+                            newAccount().accountKeys(TOKEN_WIPE_KT).balance(0L).get())
+                    .withAccount(
+                            DEFAULT_NODE_ID,
+                            newAccount().balance(0L).accountKeys(DEFAULT_PAYER_KT).get())
+                    .withAccount(
+                            DEFAULT_PAYER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_PAYER_BALANCE)
+                                    .accountKeys(DEFAULT_PAYER_KT)
+                                    .get())
+                    .withAccount(
+                            STAKING_FUND_ID, newAccount().balance(0).accountKeys(EMPTY_KEY).get())
+                    .withAccount(
+                            MASTER_PAYER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_PAYER_BALANCE)
+                                    .accountKeys(DEFAULT_PAYER_KT)
+                                    .get())
+                    .withAccount(
+                            TREASURY_PAYER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_PAYER_BALANCE)
+                                    .accountKeys(DEFAULT_PAYER_KT)
+                                    .get())
+                    .withAccount(
+                            NO_RECEIVER_SIG_ID,
+                            newAccount()
+                                    .receiverSigRequired(false)
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(NO_RECEIVER_SIG_KT)
+                                    .get())
+                    .withAccount(
+                            RECEIVER_SIG_ID,
+                            newAccount()
+                                    .receiverSigRequired(true)
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(RECEIVER_SIG_KT)
+                                    .get())
+                    .withAccount(
+                            SYS_ACCOUNT_ID,
+                            newAccount().balance(DEFAULT_BALANCE).accountKeys(SYS_ACCOUNT_KT).get())
+                    .withAccount(
+                            MISC_ACCOUNT_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(MISC_ACCOUNT_KT)
+                                    .get())
+                    .withAccount(
+                            CUSTOM_PAYER_ACCOUNT_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(CUSTOM_PAYER_ACCOUNT_KT)
+                                    .get())
+                    .withAccount(
+                            OWNER_ACCOUNT_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .cryptoAllowances(cryptoAllowances)
+                                    .fungibleTokenAllowances(fungibleTokenAllowances)
+                                    .explicitNftAllowances(nftTokenAllowances)
+                                    .accountKeys(OWNER_ACCOUNT_KT)
+                                    .get())
+                    .withAccount(
+                            DELEGATING_SPENDER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .cryptoAllowances(cryptoAllowances)
+                                    .fungibleTokenAllowances(fungibleTokenAllowances)
+                                    .explicitNftAllowances(nftTokenAllowances)
+                                    .accountKeys(DELEGATING_SPENDER_KT)
+                                    .get())
+                    .withAccount(
+                            COMPLEX_KEY_ACCOUNT_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(COMPLEX_KEY_ACCOUNT_KT)
+                                    .get())
+                    .withAccount(
+                            TOKEN_TREASURY_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(TOKEN_TREASURY_KT)
+                                    .get())
+                    .withAccount(
+                            DILIGENT_SIGNING_PAYER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(DILIGENT_SIGNING_PAYER_KT)
+                                    .get())
+                    .withAccount(
+                            FROM_OVERLAP_PAYER_ID,
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .keyFactory(overlapFactory)
+                                    .accountKeys(FROM_OVERLAP_PAYER_KT)
+                                    .get())
+                    .withContract(
+                            MISC_RECIEVER_SIG_CONTRACT_ID,
+                            newContract()
+                                    .receiverSigRequired(true)
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(DILIGENT_SIGNING_PAYER_KT)
+                                    .get())
+                    .withContract(
+                            IMMUTABLE_CONTRACT_ID, newContract().balance(DEFAULT_BALANCE).get())
+                    .withContract(
+                            MISC_CONTRACT_ID,
+                            newContract().balance(DEFAULT_BALANCE).accountKeys(MISC_ADMIN_KT).get())
+                    .get();
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     default HederaFs hfs() throws Exception {

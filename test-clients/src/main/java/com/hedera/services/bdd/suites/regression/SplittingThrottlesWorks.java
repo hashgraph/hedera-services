@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -28,11 +28,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +43,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SplittingThrottlesWorks extends HapiApiSuite {
+public class SplittingThrottlesWorks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SplittingThrottlesWorks.class);
 
     private static final int scheduleCreatesPerCryptoCreate = 12;
@@ -56,14 +56,14 @@ public class SplittingThrottlesWorks extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     setNewLimits(), tryCreations(),
                 });
     }
 
-    private HapiApiSpec setNewLimits() {
+    private HapiSpec setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -75,7 +75,7 @@ public class SplittingThrottlesWorks extends HapiApiSuite {
                                 .contents(artificialLimits.toByteArray()));
     }
 
-    private HapiApiSpec tryCreations() {
+    private HapiSpec tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(
@@ -95,7 +95,7 @@ public class SplittingThrottlesWorks extends HapiApiSuite {
                                 }));
     }
 
-    private Function<HapiApiSpec, OpProvider> cryptoCreateOps() {
+    private Function<HapiSpec, OpProvider> cryptoCreateOps() {
         var i = new AtomicInteger(0);
 
         return spec ->

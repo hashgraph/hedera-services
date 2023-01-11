@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -121,18 +121,18 @@ public class TxnUtils {
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 
     public static Key netOf(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Optional<String> keyName,
             final Optional<? extends SigControl> keyShape,
             final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
         return netOf(spec, keyName, keyShape, Optional.empty(), keyGenSupplier);
     }
 
-    public static List<Function<HapiApiSpec, Key>> defaultUpdateSigners(
+    public static List<Function<HapiSpec, Key>> defaultUpdateSigners(
             final String owningEntity,
             final Optional<String> newKeyName,
-            final Function<HapiApiSpec, String> effectivePayer) {
-        final List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+            final Function<HapiSpec, String> effectivePayer) {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer.apply(spec)));
         signers.add(spec -> spec.registry().getKey(owningEntity));
         if (newKeyName.isPresent()) {
@@ -142,7 +142,7 @@ public class TxnUtils {
     }
 
     public static Key netOf(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Optional<String> keyName,
             final Optional<? extends SigControl> keyShape,
             final Optional<KeyFactory.KeyType> keyType,
@@ -183,11 +183,11 @@ public class TxnUtils {
         return PORT_LITERAL_PATTERN.matcher(s).matches();
     }
 
-    public static AccountID asId(final String s, final HapiApiSpec lookupSpec) {
+    public static AccountID asId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
     }
 
-    public static AccountID asIdForKeyLookUp(final String s, final HapiApiSpec lookupSpec) {
+    public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s)
                 ? asAccount(s)
                 : (lookupSpec.registry().hasAccountId(s)
@@ -195,7 +195,7 @@ public class TxnUtils {
                         : lookUpAccount(lookupSpec, s));
     }
 
-    private static AccountID lookUpAccount(final HapiApiSpec spec, final String alias) {
+    private static AccountID lookUpAccount(final HapiSpec spec, final String alias) {
         final var key = spec.registry().getKey(alias);
         final var lookedUpKey = spec.registry().getKey(alias).toByteString().toStringUtf8();
         return spec.registry().hasAccountId(lookedUpKey)
@@ -207,23 +207,23 @@ public class TxnUtils {
         return asAccount(s);
     }
 
-    public static TokenID asTokenId(final String s, final HapiApiSpec lookupSpec) {
+    public static TokenID asTokenId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asToken(s) : lookupSpec.registry().getTokenID(s);
     }
 
-    public static ScheduleID asScheduleId(final String s, final HapiApiSpec lookupSpec) {
+    public static ScheduleID asScheduleId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asSchedule(s) : lookupSpec.registry().getScheduleId(s);
     }
 
-    public static TopicID asTopicId(final String s, final HapiApiSpec lookupSpec) {
+    public static TopicID asTopicId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asTopic(s) : lookupSpec.registry().getTopicID(s);
     }
 
-    public static FileID asFileId(final String s, final HapiApiSpec lookupSpec) {
+    public static FileID asFileId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asFile(s) : lookupSpec.registry().getFileId(s);
     }
 
-    public static ContractID asContractId(final String s, final HapiApiSpec lookupSpec) {
+    public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
         if (s.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
                     .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(s)))
@@ -294,8 +294,7 @@ public class TxnUtils {
                 .build();
     }
 
-    public static TransactionID asTransactionID(
-            final HapiApiSpec spec, final Optional<String> payer) {
+    public static TransactionID asTransactionID(final HapiSpec spec, final Optional<String> payer) {
         final var payerID =
                 spec.registry().getAccountID(payer.orElse(spec.setup().defaultPayerName()));
         final var validStart = getUniqueTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
@@ -350,8 +349,8 @@ public class TxnUtils {
                 .collect(joining(", "));
     }
 
-    public static Timestamp currExpiry(
-            final String file, final HapiApiSpec spec, final String payer) throws Throwable {
+    public static Timestamp currExpiry(final String file, final HapiSpec spec, final String payer)
+            throws Throwable {
         final HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
@@ -363,11 +362,11 @@ public class TxnUtils {
         return subOp.getResponse().getFileGetInfo().getFileInfo().getExpirationTime();
     }
 
-    public static Timestamp currExpiry(final String file, final HapiApiSpec spec) throws Throwable {
+    public static Timestamp currExpiry(final String file, final HapiSpec spec) throws Throwable {
         return currExpiry(file, spec, spec.setup().defaultPayerName());
     }
 
-    public static Timestamp currContractExpiry(final String contract, final HapiApiSpec spec)
+    public static Timestamp currContractExpiry(final String contract, final HapiSpec spec)
             throws Throwable {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
@@ -380,7 +379,7 @@ public class TxnUtils {
         return subOp.getResponse().getContractGetInfo().getContractInfo().getExpirationTime();
     }
 
-    public static int currentMaxAutoAssociationSlots(final String contract, final HapiApiSpec spec)
+    public static int currentMaxAutoAssociationSlots(final String contract, final HapiSpec spec)
             throws Throwable {
         final HapiGetContractInfo subOp = getContractInfo(contract).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);

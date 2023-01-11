@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,34 +13,62 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.gradle.enterprise").version("3.10.3")
+import me.champeau.gradle.igp.gitRepositories
+
+// Add local maven build directory to plugin repos
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+        }
+    }
 }
 
-include(":modules:hedera-admin-service")
-include(":modules:hedera-admin-service-impl")
-include(":modules:hedera-consensus-service")
-include(":modules:hedera-consensus-service-impl")
-include(":modules:hedera-file-service")
-include(":modules:hedera-file-service-impl")
-include(":modules:hedera-network-service")
-include(":modules:hedera-network-service-impl")
-include(":modules:hedera-schedule-service")
-include(":modules:hedera-schedule-service-impl")
-include(":modules:hedera-smart-contract-service")
-include(":modules:hedera-smart-contract-service-impl")
-include(":modules:hedera-token-service")
-include(":modules:hedera-token-service-impl")
-include(":modules:hedera-util-service")
-include(":modules:hedera-util-service-impl")
+plugins {
+    id("com.gradle.enterprise").version("3.11.4")
+    // Use GIT plugin to clone HAPI protobuf files
+    // See documentation https://melix.github.io/includegit-gradle-plugin/latest/index.html
+    id("me.champeau.includegit").version("0.1.5")
+}
 
-include(":hapi-utils")
-include(":hapi-fees")
+gitRepositories {
+    checkoutsDirectory.set(file(rootProject.projectDir.getAbsolutePath() + "/hedera-node/hapi/"))
+    include("hedera-protobufs") {
+        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+        // choose tag or branch of HAPI you would like to test with
+        tag.set("main")
+        // do not load project from repo
+        autoInclude.set(false)
+    }
+}
+
 include(":hedera-node")
+include(":hedera-node:hedera-admin-service")
+include(":hedera-node:hedera-admin-service-impl")
+include(":hedera-node:hedera-consensus-service")
+include(":hedera-node:hedera-consensus-service-impl")
+include(":hedera-node:hedera-file-service")
+include(":hedera-node:hedera-file-service-impl")
+include(":hedera-node:hedera-network-service")
+include(":hedera-node:hedera-network-service-impl")
+include(":hedera-node:hedera-schedule-service")
+include(":hedera-node:hedera-schedule-service-impl")
+include(":hedera-node:hedera-smart-contract-service")
+include(":hedera-node:hedera-smart-contract-service-impl")
+include(":hedera-node:hedera-token-service")
+include(":hedera-node:hedera-token-service-impl")
+include(":hedera-node:hedera-util-service")
+include(":hedera-node:hedera-util-service-impl")
+include(":hedera-node:hapi-utils")
+include(":hedera-node:hapi-fees")
+// include(":hedera-node:hapi")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
-include(":hedera-node:hedera-evm-api")
+include(":hedera-node:hedera-evm-impl")
 include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 
@@ -60,7 +88,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // Definition of version numbers for all libraries
-            version("besu-version", "22.10.0")
+            version("besu-version", "22.10.1")
             version("besu-native-version", "0.6.1")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
@@ -73,7 +101,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.0-SNAPSHOT")
+            version("hapi-version", "0.33.1-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
@@ -84,11 +112,12 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.33.0-alpha.3")
+            version("swirlds-version", "0.35.0-alpha.0")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
             version("spotbugs-version", "4.7.3")
+            version("helidon-grpc-version", "3.0.2")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -98,7 +127,7 @@ dependencyResolutionManagement {
             // Use when you need to make use of dependency injection.
             bundle("di", listOf("javax-inject", "dagger-api"))
             // Use when you need a grpc server
-            bundle("helidon", listOf("helidon-server", "helidon-grpc", "helidon-io-grpc"))
+            bundle("helidon", listOf("helidon-server", "helidon-grpc-server", "helidon-io-grpc"))
             // Use when you need logging
             bundle("logging", listOf("log4j-api", "log4j-core", "log4j-slf4j", "slf4j-api"))
             // Use when you need to depend upon netty
@@ -149,13 +178,14 @@ dependencyResolutionManagement {
             library("dagger-api", "com.google.dagger", "dagger").versionRef("dagger-version")
             library("dagger-compiler", "com.google.dagger", "dagger-compiler").versionRef("dagger-version")
             library("eddsa", "net.i2p.crypto", "eddsa").versionRef("eddsa-version")
+            library("grpc-stub", "io.grpc", "grpc-stub").versionRef("grpc-version")
             library("grpc-protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc-version")
             library("grpc-netty", "io.grpc", "grpc-netty").versionRef("grpc-version")
             library("guava", "com.google.guava", "guava").versionRef("guava-version")
             library("hapi", "com.hedera.hashgraph", "hedera-protobuf-java-api").versionRef("hapi-version")
             library("headlong", "com.esaulpaugh", "headlong").versionRef("headlong-version")
             library("helidon-server", "io.helidon.webserver", "helidon-webserver-http2").versionRef("helidon-version")
-            library("helidon-grpc", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
+            library("helidon-grpc-server", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
             library("helidon-io-grpc", "io.helidon.grpc", "io.grpc").versionRef("helidon-version")
             library("jackson", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson-version")
             library(
@@ -178,6 +208,7 @@ dependencyResolutionManagement {
             library("protobuf-java", "com.google.protobuf", "protobuf-java").versionRef("protobuf-java-version")
             library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
+            library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core").versionRef("swirlds-version")
             library("swirlds-fchashmap", "com.swirlds", "swirlds-fchashmap").versionRef("swirlds-version")
             library("swirlds-merkle", "com.swirlds", "swirlds-merkle").versionRef("swirlds-version")
@@ -206,12 +237,13 @@ dependencyResolutionManagement {
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
-            version("truth-java8-extension-version", "1.1.3")
             version("classgraph-version", "4.8.65")
+            version("assertj-version", "3.23.1")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
+
             bundle(
                 "testing",
                 listOf(
@@ -222,7 +254,7 @@ dependencyResolutionManagement {
                     "mockito-jupiter",
                     "hamcrest",
                     "awaitility",
-                    "truth-java8-extension"
+                    "assertj-core"
                 )
             )
 
@@ -241,16 +273,13 @@ dependencyResolutionManagement {
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
             library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+            library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
             library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
-            library(
-                "truth-java8-extension",
-                "com.google.truth.extensions",
-                "truth-java8-extension"
-            ).versionRef("truth-java8-extension-version")
             library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
+            library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
         }
     }
 }

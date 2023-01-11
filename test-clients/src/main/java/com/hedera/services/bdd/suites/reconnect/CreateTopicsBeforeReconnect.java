@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -26,9 +26,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateTopicsBeforeReconnect extends HapiApiSuite {
+public class CreateTopicsBeforeReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateTopicsBeforeReconnect.class);
 
     private static final int TOPIC_CREATION_LIMIT = 20_000;
@@ -49,7 +49,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
     private static final AtomicInteger topicNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCreateTopics());
     }
 
@@ -65,7 +65,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiApiSpec runCreateTopics() {
+    private HapiSpec runCreateTopics() {
         PerfTestLoadSettings settings =
                 new PerfTestLoadSettings(
                         TOPIC_CREATION_RECONNECT_TPS,

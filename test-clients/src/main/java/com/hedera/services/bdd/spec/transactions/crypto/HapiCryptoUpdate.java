@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,15 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import java.util.Optional;
@@ -159,7 +159,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS || skipNewKeyRegistryUpdate) {
             return;
         }
@@ -168,7 +168,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
     @Override
     @SuppressWarnings("java:S106")
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         try {
             updKey = updKeyName.map(spec.registry()::getKey);
         } catch (Exception missingKey) {
@@ -252,17 +252,17 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return defaultUpdateSigners(account, updKeyName, this::effectivePayer);
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::updateAccount;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec);
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -293,12 +293,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                     .forActivityBasedOp(
                             HederaFunctionality.CryptoUpdate, metricsCalc, txn, numPayerKeys);
         } catch (Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @SuppressWarnings("java:S112")
-    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec) throws Throwable {
+    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiSpec spec) throws Throwable {
         HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
         Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {

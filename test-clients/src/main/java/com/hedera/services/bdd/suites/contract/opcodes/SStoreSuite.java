@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,113 +15,60 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Assertions;
 
-public class SStoreSuite extends HapiApiSuite {
+/** - CONCURRENCY STATUS - . Can run concurrent without temporarySStoreRefundTest() */
+public class SStoreSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
-    AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
-        new SStoreSuite().runSuiteSync();
+        new SStoreSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    setupAppProperties(),
-                    multipleSStoreOpsSucceed(),
-                    benchmarkSingleSetter(),
-                    childStorage(),
-                    temporarySStoreRefundTest(),
-                    cleanupAppProperties()
-                });
+    public boolean canRunConcurrent() {
+        return true;
     }
 
-    private HapiApiSpec setupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Setup")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getFileContents(APP_PROPERTIES);
-                                    allRunFor(spec, lookup);
-                                    final var contents =
-                                            lookup.getResponse()
-                                                    .getFileGetContents()
-                                                    .getFileContents()
-                                                    .getContents();
-                                    legacyProps.set(contents);
-                                }),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "contracts.maxGasPerSec",
-                                                "" + MAX_CONTRACT_GAS,
-                                                "contracts.throttle.throttleByGas",
-                                                "false")))
-                .when()
-                .then();
-    }
-
-    private HapiApiSpec cleanupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Cleanup")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .contents(ignore -> legacyProps.get()))
-                .when()
-                .then();
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
-    HapiApiSpec multipleSStoreOpsSucceed() {
+    HapiSpec multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiApiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + GAS_TO_OFFER)),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+        return HapiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -163,17 +110,11 @@ public class SStoreSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec childStorage() {
+    HapiSpec childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + MAX_CONTRACT_GAS)),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -246,7 +187,7 @@ public class SStoreSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec benchmarkSingleSetter() {
+    private HapiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value =
@@ -276,49 +217,6 @@ public class SStoreSuite extends HapiApiSuite {
                                                                 new Object[] {
                                                                     BigInteger.valueOf(1L)
                                                                 }))));
-    }
-
-    HapiApiSpec temporarySStoreRefundTest() {
-        final var contract = "TemporarySStoreRefund";
-        return defaultHapiSpec("TemporarySStoreRefundTest")
-                .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        contractCall(contract, "holdTemporary", BigInteger.valueOf(10))
-                                .via("tempHoldTx"),
-                        contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
-                                .via("permHoldTx"))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var subop01 =
-                                            getTxnRecord("tempHoldTx")
-                                                    .saveTxnRecordToRegistry("tempHoldTxRec")
-                                                    .logged();
-                                    final var subop02 =
-                                            getTxnRecord("permHoldTx")
-                                                    .saveTxnRecordToRegistry("permHoldTxRec")
-                                                    .logged();
-
-                                    CustomSpecAssert.allRunFor(spec, subop01, subop02);
-
-                                    final var gasUsedForTemporaryHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("tempHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    final var gasUsedForPermanentHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("permHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-
-                                    Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
-                                    Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-                                }),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPassphrase;
 import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPemLoc;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
  * Given a network with a "re-keyed" treasury account, we want to use this the new treasury account
  * to freeze our network and generate a signed state.
  */
-public class FreezeRekeyedState extends HapiApiSuite {
+public class FreezeRekeyedState extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FreezeRekeyedState.class);
 
     public static void main(String... args) {
@@ -39,14 +39,14 @@ public class FreezeRekeyedState extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     freezeWithNewTreasuryKey(),
                 });
     }
 
-    private HapiApiSpec freezeWithNewTreasuryKey() {
+    private HapiSpec freezeWithNewTreasuryKey() {
         return customHapiSpec("FreezeWithNewTreasuryKey")
                 .withProperties(
                         Map.of(

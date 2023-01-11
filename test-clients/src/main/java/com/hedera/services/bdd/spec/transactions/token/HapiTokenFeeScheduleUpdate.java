@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,14 @@ import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -58,7 +58,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
 
     private final String token;
 
-    private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
     @Override
     public HederaFunctionality type() {
@@ -69,7 +69,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
         this.token = token;
     }
 
-    public HapiTokenFeeScheduleUpdate withCustom(final Function<HapiApiSpec, CustomFee> supplier) {
+    public HapiTokenFeeScheduleUpdate withCustom(final Function<HapiSpec, CustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }
@@ -80,7 +80,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         try {
             final TokenInfo info = lookupInfo(spec, token, log, loggingOff);
@@ -89,12 +89,12 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
             return spec.fees()
                     .forActivityBasedOp(TokenFeeScheduleUpdate, metricsCalc, txn, numPayerKeys);
         } catch (final Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var id = TxnUtils.asTokenId(token, spec);
         final var opBody =
                 spec.txns()
@@ -114,8 +114,8 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(
                 spec -> {
@@ -128,12 +128,12 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateTokenFeeSchedule;
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         /* No-op */
     }
 
@@ -159,7 +159,7 @@ public class HapiTokenFeeScheduleUpdate extends HapiTxnOp<HapiTokenFeeScheduleUp
     }
 
     static TokenInfo lookupInfo(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final String token,
             final Logger scopedLog,
             final boolean loggingOff)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfUtilOps;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedOpsTransactionsSuite extends HapiApiSuite {
+public class MixedOpsTransactionsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedOpsTransactionsSuite.class);
 
     public static void main(String... args) {
@@ -47,24 +47,24 @@ public class MixedOpsTransactionsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {createStateWithMixedOps()
+                new HapiSpec[] {createStateWithMixedOps()
                     //						triggerSavedScheduleTxn(),
                 });
     }
 
-    private HapiApiSpec triggerSavedScheduleTxn() {
-        return HapiApiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
+    private HapiSpec triggerSavedScheduleTxn() {
+        return HapiSpec.defaultHapiSpec("triggerSavedScheduleTxn")
                 .given(getAccountBalance("0.0.1002").hasTinyBars(0L))
                 .when(scheduleSign("0.0.1016").logged().alsoSigningWith(GENESIS))
                 .then(getAccountBalance("0.0.1002").hasTinyBars(1L));
     }
     // Used to generate state with mixed operations
-    private HapiApiSpec createStateWithMixedOps() {
+    private HapiSpec createStateWithMixedOps() {
         long ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
         int numScheduledTxns = 10;
-        return HapiApiSpec.defaultHapiSpec("createStateWithMixedOps")
+        return HapiSpec.defaultHapiSpec("createStateWithMixedOps")
                 .given(
                         PerfUtilOps.scheduleOpsEnablement(),
                         tokenOpsEnablement(),

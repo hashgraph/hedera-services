@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -31,13 +31,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ScheduleDeleteSpecs extends HapiApiSuite {
+public class ScheduleDeleteSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
 
     public static void main(String... args) {
@@ -50,7 +50,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->
                         List.of(
@@ -61,7 +61,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 deletingExecutedIsPointless()));
     }
 
-    private HapiApiSpec deleteWithNoAdminKeyFails() {
+    private HapiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
                         cryptoCreate("sender"),
@@ -73,7 +73,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .then(scheduleDelete("validScheduledTxn").hasKnownStatus(SCHEDULE_IS_IMMUTABLE));
     }
 
-    private HapiApiSpec unauthorizedDeletionFails() {
+    private HapiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
                         newKeyNamed("admin"),
@@ -91,7 +91,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec deletingAlreadyDeletedIsObvious() {
+    private HapiSpec deletingAlreadyDeletedIsObvious() {
         return defaultHapiSpec("DeletingAlreadyDeletedIsObvious")
                 .given(
                         cryptoCreate("sender"),
@@ -110,7 +110,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 .hasKnownStatus(SCHEDULE_ALREADY_DELETED));
     }
 
-    private HapiApiSpec deletingNonExistingFails() {
+    private HapiSpec deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
                 .given()
                 .when()
@@ -119,7 +119,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                         scheduleDelete("0.0.0").fee(ONE_HBAR).hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    private HapiApiSpec deletingExecutedIsPointless() {
+    private HapiSpec deletingExecutedIsPointless() {
         return defaultHapiSpec("DeletingExecutedIsPointless")
                 .given(
                         createTopic("ofGreatInterest"),

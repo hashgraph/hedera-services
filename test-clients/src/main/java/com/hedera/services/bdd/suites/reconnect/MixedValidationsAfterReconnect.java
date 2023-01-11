@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,21 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedValidationsAfterReconnect extends HapiApiSuite {
+public class MixedValidationsAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedValidationsAfterReconnect.class);
 
     public static void main(String... args) {
@@ -37,14 +37,14 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(getAccountBalanceFromAllNodes(), validateTopicInfo(), validateFileInfo());
     }
 
-    private HapiApiSpec getAccountBalanceFromAllNodes() {
+    private HapiSpec getAccountBalanceFromAllNodes() {
         String sender = "0.0.1002";
         String receiver = "0.0.1003";
-        String lastlyCreatedAccount = "0.0.21013";
+        String lastlyCreatedAccount = "0.0.21063";
         return defaultHapiSpec("GetAccountBalanceFromAllNodes")
                 .given()
                 .when()
@@ -84,11 +84,11 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
 
-    private HapiApiSpec validateTopicInfo() {
-        String firstlyCreatedTopic = "0.0.21014";
-        String lastlyCreatedTopic = "0.0.41013";
-        String invalidTopicId = "0.0.41014";
-        String topicIdWithMessagesSubmittedTo = "0.0.30000";
+    private HapiSpec validateTopicInfo() {
+        String firstlyCreatedTopic = "0.0.21064";
+        String lastlyCreatedTopic = "0.0.41063";
+        String invalidTopicId = "0.0.41064";
+        String topicIdWithMessagesSubmittedTo = "0.0.30050";
         byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
                 .given(getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash())
@@ -110,10 +110,10 @@ public class MixedValidationsAfterReconnect extends HapiApiSuite {
                                 .hasRunningHash(topicIdWithMessagesSubmittedTo));
     }
 
-    private HapiApiSpec validateFileInfo() {
-        String firstlyCreatedFile = "0.0.41014";
-        String lastlyCreatedFile = "0.0.42013";
-        String invalidFileId = "0.0.42014";
+    private HapiSpec validateFileInfo() {
+        String firstlyCreatedFile = "0.0.41064";
+        String lastlyCreatedFile = "0.0.42063";
+        String invalidFileId = "0.0.42064";
         return defaultHapiSpec("ValidateFileInfo")
                 .given()
                 .when()

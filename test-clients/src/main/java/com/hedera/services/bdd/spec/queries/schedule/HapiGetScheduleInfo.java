@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCre
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.getRelativeExpiry;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -148,7 +148,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) {
+    protected void assertExpectationsGiven(HapiSpec spec) {
         var actualInfo = response.getScheduleGetInfo().getScheduleInfo();
 
         expectedScheduledTxnId.ifPresent(
@@ -245,7 +245,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     }
 
     private void assertTimestampMatches(
-            String txn, int nanoOffset, Timestamp actual, String errMsg, HapiApiSpec spec) {
+            String txn, int nanoOffset, Timestamp actual, String errMsg, HapiSpec spec) {
         var subOp = getTxnRecord(txn);
         allRunFor(spec, subOp);
         var consensusTime = subOp.getResponseRecord().getConsensusTimestamp();
@@ -270,7 +270,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getScheduleInfoQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -285,7 +285,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getScheduleInfoQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -294,7 +294,7 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
         return costFrom(response);
     }
 
-    private Query getScheduleInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getScheduleInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asScheduleId(schedule, spec);
         ScheduleGetInfoQuery getScheduleQuery =
                 ScheduleGetInfoQuery.newBuilder()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
@@ -38,13 +38,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DuplicateManagementTest extends HapiApiSuite {
+public class DuplicateManagementTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DuplicateManagementTest.class);
 
     public static void main(String... args) {
@@ -52,16 +52,16 @@ public class DuplicateManagementTest extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     usesUnclassifiableIfNoClassifiableAvailable(),
                     hasExpectedDuplicates(),
                     classifiableTakesPriorityOverUnclassifiable(),
                 });
     }
 
-    private HapiApiSpec hasExpectedDuplicates() {
+    private HapiSpec hasExpectedDuplicates() {
         return defaultHapiSpec("HasExpectedDuplicates")
                 .given(
                         cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
@@ -127,7 +127,7 @@ public class DuplicateManagementTest extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec usesUnclassifiableIfNoClassifiableAvailable() {
+    private HapiSpec usesUnclassifiableIfNoClassifiableAvailable() {
         return defaultHapiSpec("UsesUnclassifiableIfNoClassifiableAvailable")
                 .given(
                         newKeyNamed("wrongKey"),
@@ -153,7 +153,7 @@ public class DuplicateManagementTest extends HapiApiSuite {
                                                                 "node payment", "0.0.3"))));
     }
 
-    private HapiApiSpec classifiableTakesPriorityOverUnclassifiable() {
+    private HapiSpec classifiableTakesPriorityOverUnclassifiable() {
         return defaultHapiSpec("ClassifiableTakesPriorityOverUnclassifiable")
                 .given(
                         cryptoCreate("civilian").balance(100 * 100_000_000L),

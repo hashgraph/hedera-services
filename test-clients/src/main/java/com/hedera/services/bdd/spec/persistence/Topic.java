@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.persistence.SpecKey.submitKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
@@ -35,7 +35,7 @@ public class Topic {
     private SpecKey adminKey = UNUSED_KEY;
     private SpecKey submitKey = UNUSED_KEY;
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (adminKey != UNUSED_KEY) {
             adminKey.registerWith(spec, under(adminKeyFor(name)));
         }

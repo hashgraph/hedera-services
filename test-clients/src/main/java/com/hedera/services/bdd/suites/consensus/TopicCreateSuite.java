@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -29,13 +29,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TopicCreateSuite extends HapiApiSuite {
+public class TopicCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
     public static void main(String... args) {
@@ -43,7 +43,7 @@ public class TopicCreateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 signingRequirementsEnforced(),
                 autoRenewPeriodIsValidated(),
@@ -61,7 +61,7 @@ public class TopicCreateSuite extends HapiApiSuite {
         return true;
     }
 
-    private HapiApiSpec adminKeyIsValidated() {
+    private HapiSpec adminKeyIsValidated() {
         return defaultHapiSpec("AdminKeyIsValidated")
                 .given()
                 .when()
@@ -72,7 +72,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasPrecheck(BAD_ENCODING));
     }
 
-    private HapiApiSpec submitKeyIsValidated() {
+    private HapiSpec submitKeyIsValidated() {
         return defaultHapiSpec("SubmitKeyIsValidated")
                 .given()
                 .when()
@@ -83,7 +83,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasKnownStatus(BAD_ENCODING));
     }
 
-    private HapiApiSpec autoRenewAccountIsValidated() {
+    private HapiSpec autoRenewAccountIsValidated() {
         return defaultHapiSpec("AutoRenewAccountIsValidated")
                 .given()
                 .when()
@@ -94,7 +94,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
     }
 
-    private HapiApiSpec autoRenewAccountIdNeedsAdminKeyToo() {
+    private HapiSpec autoRenewAccountIdNeedsAdminKeyToo() {
         return defaultHapiSpec("autoRenewAccountIdNeedsAdminKeyToo")
                 .given(cryptoCreate("payer"), cryptoCreate("autoRenewAccount"))
                 .when()
@@ -107,7 +107,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED));
     }
 
-    private HapiApiSpec autoRenewPeriodIsValidated() {
+    private HapiSpec autoRenewPeriodIsValidated() {
         return defaultHapiSpec("autoRenewPeriodIsValidated")
                 .given()
                 .when()
@@ -120,7 +120,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec noAutoRenewPeriod() {
+    private HapiSpec noAutoRenewPeriod() {
         return defaultHapiSpec("noAutoRenewPeriod")
                 .given()
                 .when()
@@ -130,7 +130,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
-    private HapiApiSpec signingRequirementsEnforced() {
+    private HapiSpec signingRequirementsEnforced() {
         long PAYER_BALANCE = 1_999_999_999L;
 
         return defaultHapiSpec("SigningRequirementsEnforced")
@@ -191,7 +191,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec allFieldsSetHappyCase() {
+    private HapiSpec allFieldsSetHappyCase() {
         return defaultHapiSpec("AllFieldsSetHappyCase")
                 .given(
                         newKeyNamed("adminKey"),
@@ -206,7 +206,7 @@ public class TopicCreateSuite extends HapiApiSuite {
                                 .autoRenewAccountId("autoRenewAccount"));
     }
 
-    private HapiApiSpec feeAsExpected() {
+    private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         newKeyNamed("adminKey"),

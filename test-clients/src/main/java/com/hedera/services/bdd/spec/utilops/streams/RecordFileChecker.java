@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -59,13 +59,13 @@ public class RecordFileChecker extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         lookForFile(spec);
         return false;
     }
 
     @SuppressWarnings("java:S5960")
-    private void lookForFile(HapiApiSpec spec) throws IOException {
+    private void lookForFile(HapiSpec spec) throws IOException {
         var addressBook = downloadBook(spec);
 
         for (var address : addressBook.getNodeAddressList()) {
@@ -125,7 +125,7 @@ public class RecordFileChecker extends UtilOp {
         }
     }
 
-    private NodeAddressBook downloadBook(HapiApiSpec spec) throws InvalidProtocolBufferException {
+    private NodeAddressBook downloadBook(HapiSpec spec) throws InvalidProtocolBufferException {
         String addressBook = spec.setup().nodeDetailsName();
         HapiGetFileContents op = getFileContents(addressBook);
         allRunFor(spec, op);

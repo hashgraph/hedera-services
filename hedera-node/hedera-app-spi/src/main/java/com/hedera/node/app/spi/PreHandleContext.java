@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
@@ -27,13 +27,17 @@ import javax.annotation.Nonnull;
  * construct its own {@link SigWaivers} to check for signature waivers using the information
  * provided in this class.
  *
- * @param accountNumbers provides information about signature waiver special cases for some
- *     transactions
+ * @param accountNumbers provides information about system account numbers
+ * @param fileNumbers provides information about system file numbers
+ * @param keyLookup provides access to look up account keys
  */
 public record PreHandleContext(
-        @Nonnull HederaAccountNumbers accountNumbers, @Nonnull HederaFileNumbers fileNumbers) {
+        @NonNull HederaAccountNumbers accountNumbers,
+        @NonNull HederaFileNumbers fileNumbers,
+        @NonNull AccountKeyLookup keyLookup) {
     public PreHandleContext {
         Objects.requireNonNull(accountNumbers);
         Objects.requireNonNull(fileNumbers);
+        Objects.requireNonNull(keyLookup);
     }
 }

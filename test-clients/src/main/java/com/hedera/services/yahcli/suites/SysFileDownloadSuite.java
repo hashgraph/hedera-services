@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import java.io.File;
 import java.util.Arrays;
@@ -31,7 +31,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SysFileDownloadSuite extends HapiApiSuite {
+public class SysFileDownloadSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SysFileDownloadSuite.class);
 
     private final String destDir;
@@ -46,17 +46,17 @@ public class SysFileDownloadSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     downloadSysFiles(),
                 });
     }
 
-    private HapiApiSpec downloadSysFiles() {
+    private HapiSpec downloadSysFiles() {
         long[] targets = Utils.rationalized(sysFilesToDownload);
 
-        return HapiApiSpec.customHapiSpec("downloadSysFiles")
+        return HapiSpec.customHapiSpec("downloadSysFiles")
                 .withProperties(specConfig)
                 .given()
                 .when()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -32,15 +32,15 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AllBaseOpFeesSuite extends HapiApiSuite {
+public class AllBaseOpFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AllBaseOpFeesSuite.class);
 
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
@@ -73,7 +73,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(
                 List.of(
                         baseNftFreezeUnfreezeChargedAsExpected(),
@@ -83,7 +83,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                         baseNftBurnOperationIsChargedExpectedFee()));
     }
 
-    private HapiApiSpec baseNftMintOperationIsChargedExpectedFee() {
+    private HapiSpec baseNftMintOperationIsChargedExpectedFee() {
         final var standard100ByteMetadata =
                 ByteString.copyFromUtf8(
                         "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
@@ -110,7 +110,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                                 ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
-    private HapiApiSpec baseNftWipeOperationIsChargedExpectedFee() {
+    private HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueWipeOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -138,7 +138,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_WIPE_PRICE_USD, 0.01));
     }
 
-    private HapiApiSpec baseNftBurnOperationIsChargedExpectedFee() {
+    private HapiSpec baseNftBurnOperationIsChargedExpectedFee() {
         return defaultHapiSpec("BaseUniqueBurnOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -159,7 +159,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
     }
 
-    private HapiApiSpec baseNftFreezeUnfreezeChargedAsExpected() {
+    private HapiSpec baseNftFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseNftFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),
@@ -200,7 +200,7 @@ public class AllBaseOpFeesSuite extends HapiApiSuite {
                                 ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
-    private HapiApiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
+    private HapiSpec baseCommonFreezeUnfreezeChargedAsExpected() {
         return defaultHapiSpec("baseCommonFreezeUnfreezeChargedAsExpected")
                 .given(
                         newKeyNamed(TREASURE_KEY),

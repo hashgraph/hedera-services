@@ -103,7 +103,6 @@ hedera-node/data/onboard/GenesisPub32Key.txt
 hedera-node/data/recordstreams/
 hedera-node/data/saved/
 hedera-node/data/jdb/
-hedera-node/database/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs
@@ -157,3 +156,13 @@ build
 .scannerwork
 
 .project
+
+/hedera-node/hapi/hedera-protobufs/
+/hedera-node/hapi/checkouts.bin
+
+# Docker setup
+!docker/*.sh
+/docker/.env
+.env
+Dockerfile
+.dockerignore

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
@@ -39,8 +39,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_HA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +52,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UpgradeSuite extends HapiApiSuite {
+public class UpgradeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpgradeSuite.class);
 
     public static final String pragmatism = "Think of the children!";
@@ -92,9 +92,9 @@ public class UpgradeSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     precheckRejectsUnknownFreezeType(),
                     freezeOnlyPrecheckRejectsInvalid(),
                     freezeUpgradeValidationRejectsInvalid(),
@@ -106,14 +106,14 @@ public class UpgradeSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec precheckRejectsUnknownFreezeType() {
+    private HapiSpec precheckRejectsUnknownFreezeType() {
         return defaultHapiSpec("PrejeckRejectsUnknownFreezeType")
                 .given()
                 .when()
                 .then(freeze().hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    private HapiApiSpec freezeOnlyPrecheckRejectsInvalid() {
+    private HapiSpec freezeOnlyPrecheckRejectsInvalid() {
         return defaultHapiSpec("freezeOnlyPrecheckRejectsInvalid")
                 .given()
                 .when()
@@ -136,7 +136,7 @@ public class UpgradeSuite extends HapiApiSuite {
                                 .hasPrecheck(FREEZE_START_TIME_MUST_BE_FUTURE));
     }
 
-    private HapiApiSpec freezeUpgradeValidationRejectsInvalid() {
+    private HapiSpec freezeUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("freezeUpgradeValidationRejectsInvalid")
                 .given()
                 .when()
@@ -175,14 +175,14 @@ public class UpgradeSuite extends HapiApiSuite {
                                 .hasPrecheck(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
-    private HapiApiSpec freezeAbortIsIdempotent() {
+    private HapiSpec freezeAbortIsIdempotent() {
         return defaultHapiSpec("FreezeAbortIsIdempotent")
                 .given()
                 .when()
                 .then(freezeAbort().hasKnownStatus(SUCCESS), freezeAbort().hasKnownStatus(SUCCESS));
     }
 
-    private HapiApiSpec prepareUpgradeValidationRejectsInvalid() {
+    private HapiSpec prepareUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("PrepareUpgradeValidationRejectsInvalid")
                 .given(
                         fileUpdate(standardUpdateFile)
@@ -249,7 +249,7 @@ public class UpgradeSuite extends HapiApiSuite {
                         freezeAbort());
     }
 
-    private HapiApiSpec telemetryUpgradeValidationRejectsInvalid() {
+    private HapiSpec telemetryUpgradeValidationRejectsInvalid() {
         return defaultHapiSpec("TelemetryUpgradeValidationRejectsInvalid")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -285,7 +285,7 @@ public class UpgradeSuite extends HapiApiSuite {
                                 .hasKnownStatus(FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH));
     }
 
-    private HapiApiSpec canFreezeUpgradeWithPreparedUpgrade() {
+    private HapiSpec canFreezeUpgradeWithPreparedUpgrade() {
         return defaultHapiSpec("CanFreezeUpgradeWithPreparedUpgrade")
                 .given(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)),
@@ -318,7 +318,7 @@ public class UpgradeSuite extends HapiApiSuite {
                         freezeAbort());
     }
 
-    private HapiApiSpec canTelemetryUpgradeWithValid() {
+    private HapiSpec canTelemetryUpgradeWithValid() {
         return defaultHapiSpec("CanTelemetryUpgradeWithValid")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, FREEZE_ADMIN, ONE_HUNDRED_HBARS)))
                 .when(

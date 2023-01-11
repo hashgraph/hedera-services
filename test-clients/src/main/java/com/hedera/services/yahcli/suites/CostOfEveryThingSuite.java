@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -71,8 +71,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -83,10 +83,10 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CostOfEveryThingSuite extends HapiApiSuite {
+public class CostOfEveryThingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEveryThingSuite.class);
 
-    HapiApiSpec.CostSnapshotMode costSnapshotMode = TAKE;
+    HapiSpec.CostSnapshotMode costSnapshotMode = TAKE;
     private final Map<String, String> specConfig;
     private final EnumSet<Utils.ServiceType> ServiceTypes;
     private StringBuilder feeTableBuilder;
@@ -110,7 +110,7 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return Stream.of(
                         ofNullable(
                                 ServiceTypes.contains(Utils.ServiceType.CRYPTO)
@@ -140,8 +140,8 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                 .collect(toList());
     }
 
-    HapiApiSpec canonicalContractOps() {
-        return HapiApiSpec.customHapiSpec(String.format("canonicalContractOps"))
+    HapiSpec canonicalContractOps() {
+        return HapiSpec.customHapiSpec(String.format("canonicalContractOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -208,12 +208,12 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                                 "canonicalContractDelete", feeTableBuilder, "contractDelete"));
     }
 
-    HapiApiSpec canonicalFileOps() {
+    HapiSpec canonicalFileOps() {
         int fileSize = 1000;
         final byte[] first = randomUtf8Bytes(fileSize);
         final byte[] next = randomUtf8Bytes(fileSize);
 
-        return HapiApiSpec.customHapiSpec(String.format("canonicalFileOps"))
+        return HapiSpec.customHapiSpec(String.format("canonicalFileOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -261,8 +261,8 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                         getTransactionFee("canonicalFileDelete", feeTableBuilder, "fileDelete"));
     }
 
-    HapiApiSpec canonicalTopicOps() {
-        return HapiApiSpec.customHapiSpec(String.format("canonicalTopicOps"))
+    HapiSpec canonicalTopicOps() {
+        return HapiSpec.customHapiSpec(String.format("canonicalTopicOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -305,8 +305,8 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                                 "canonicalTopicDelete", feeTableBuilder, "consensusDeleteTopic"));
     }
 
-    HapiApiSpec canonicalTokenOps() {
-        return HapiApiSpec.customHapiSpec(String.format("canonicalTokenOps"))
+    HapiSpec canonicalTokenOps() {
+        return HapiSpec.customHapiSpec(String.format("canonicalTokenOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -424,9 +424,9 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                         getTransactionFee("canonicalTokenDelete", feeTableBuilder, "tokenDelete"));
     }
 
-    HapiApiSpec canonicalCryptoOps() {
+    HapiSpec canonicalCryptoOps() {
 
-        return HapiApiSpec.customHapiSpec(String.format("canonicalCryptoOps"))
+        return HapiSpec.customHapiSpec(String.format("canonicalCryptoOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -477,8 +477,8 @@ public class CostOfEveryThingSuite extends HapiApiSuite {
                                 "canonicalCryptoDeletion", feeTableBuilder, "cryptoDelete"));
     }
 
-    HapiApiSpec canonicalScheduleOps() {
-        return HapiApiSpec.customHapiSpec(String.format("canonicalScheduleOps"))
+    HapiSpec canonicalScheduleOps() {
+        return HapiSpec.customHapiSpec(String.format("canonicalScheduleOps"))
                 .withProperties(
                         specConfig, Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(

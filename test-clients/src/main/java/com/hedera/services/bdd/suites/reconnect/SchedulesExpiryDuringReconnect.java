@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -36,8 +36,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * disconnected from the network. Once the node is reconnected the state of the schedules are
  * verified on reconnected node
  */
-public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
+public class SchedulesExpiryDuringReconnect extends HapiSuite {
     private static final String SCHEDULE_EXPIRY_TIME_SECS = "10";
 
     private static final Logger log = LogManager.getLogger(SchedulesExpiryDuringReconnect.class);
@@ -60,12 +60,12 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 runTransfersBeforeReconnect(), suiteSetup(), expireSchedulesDuringReconnect());
     }
 
-    private HapiApiSpec expireSchedulesDuringReconnect() {
+    private HapiSpec expireSchedulesDuringReconnect() {
         String soonToBeExpiredSchedule = "schedule-1";
         String longLastingSchedule = "schedule-2";
         String oneOtherSchedule = "schedule-3";
@@ -169,7 +169,7 @@ public class SchedulesExpiryDuringReconnect extends HapiApiSuite {
                                 .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    private HapiApiSpec suiteSetup() {
+    private HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -65,6 +65,9 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     static final Logger log = LogManager.getLogger(HapiTokenCreate.class);
 
+    public static final long WELL_KNOWN_INITIAL_SUPPLY = 123L * Integer.MAX_VALUE;
+    public static final String WELL_KNOWN_NFT_SUPPLY_KEY = "wellKnownNftSupplyKey";
+
     private String token;
 
     private boolean advertiseCreation = false;
@@ -90,9 +93,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<Boolean> freezeDefault = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Consumer<String>> createdIdObs = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> symbolFn = Optional.empty();
-    private Optional<Function<HapiApiSpec, String>> nameFn = Optional.empty();
-    private final List<Function<HapiApiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
+    private Optional<Function<HapiSpec, String>> symbolFn = Optional.empty();
+    private Optional<Function<HapiSpec, String>> nameFn = Optional.empty();
+    private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
 
     @Override
     public HederaFunctionality type() {
@@ -107,7 +110,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         token = prefix + token;
     }
 
-    public HapiTokenCreate withCustom(final Function<HapiApiSpec, CustomFee> supplier) {
+    public HapiTokenCreate withCustom(final Function<HapiSpec, CustomFee> supplier) {
         feeScheduleSuppliers.add(supplier);
         return this;
     }
@@ -202,7 +205,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
-    public HapiTokenCreate symbol(final Function<HapiApiSpec, String> symbolFn) {
+    public HapiTokenCreate symbol(final Function<HapiSpec, String> symbolFn) {
         this.symbolFn = Optional.of(symbolFn);
         return this;
     }
@@ -212,7 +215,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         return this;
     }
 
-    public HapiTokenCreate name(final Function<HapiApiSpec, String> nameFn) {
+    public HapiTokenCreate name(final Function<HapiSpec, String> nameFn) {
         this.nameFn = Optional.of(nameFn);
         return this;
     }
@@ -243,7 +246,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
         return spec.fees()
@@ -282,7 +285,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         if (symbolFn.isPresent()) {
             symbol = Optional.of(symbolFn.get().apply(spec));
         }
@@ -349,8 +352,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final List<Function<HapiApiSpec, Key>> signers =
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(
                         List.of(
                                 spec -> spec.registry().getKey(effectivePayer(spec)),
@@ -366,12 +369,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createToken;
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

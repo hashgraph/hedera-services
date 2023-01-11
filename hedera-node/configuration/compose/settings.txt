@@ -8,8 +8,8 @@ reconnect.active,                              1
 reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showInternalStats,                             1
-state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
 virtualMap.preferredFlushQueueSize,            10000
+state.mainClassNameOverride,                   com.hedera.services.ServicesMain

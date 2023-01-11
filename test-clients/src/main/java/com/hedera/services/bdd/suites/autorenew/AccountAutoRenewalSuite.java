@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.autorenew;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -37,12 +37,12 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.pr
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
@@ -51,7 +51,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class AccountAutoRenewalSuite extends HapiApiSuite {
+public class AccountAutoRenewalSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(AccountAutoRenewalSuite.class);
     public static final String TRIGGERING_TRANSACTION = "triggeringTransaction";
@@ -62,9 +62,9 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     accountAutoRemoval(),
                     accountAutoRenewal(),
                     maxNumberOfEntitiesToRenewOrDeleteWorks(),
@@ -75,7 +75,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec accountAutoRemoval() {
+    private HapiSpec accountAutoRemoval() {
         String autoRemovedAccount = "autoRemovedAccount";
         return defaultHapiSpec("AccountAutoRemoval")
                 .given(
@@ -96,7 +96,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec accountAutoRenewal() {
+    private HapiSpec accountAutoRenewal() {
         final var briefAutoRenew = 3L;
         final var autoRenewedAccount = "autoRenewedAccount";
 
@@ -139,7 +139,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
      * periods, this test is just a minimal sanity check.
      */
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
+    private HapiSpec maxNumberOfEntitiesToRenewOrDeleteWorks() {
         final var briefAutoRenew = 3L;
         final var firstTouchable = "a";
         final var secondTouchable = "b";
@@ -208,7 +208,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
      * <p>If run against a network that has existing funded accounts with very low auto-renew
      * periods, this test is just a minimal sanity check.
      */
-    private HapiApiSpec numberOfEntitiesToScanWorks() {
+    private HapiSpec numberOfEntitiesToScanWorks() {
         final var briefAutoRenew = 3L;
         final int abbrevMaxToScan = 10;
         final IntFunction<String> accountName = i -> "fastExpiring" + i;
@@ -273,7 +273,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec autoDeleteAfterGracePeriod() {
+    private HapiSpec autoDeleteAfterGracePeriod() {
         final var briefAutoRenew = 3L;
         String autoDeleteAccount = "autoDeleteAccount";
         return defaultHapiSpec("AutoDeleteAfterGracePeriod")
@@ -295,7 +295,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec accountAutoRenewalSuiteCleanup() {
+    private HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
@@ -305,7 +305,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
                                 .overridingProps(disablingAutoRenewWithDefaults()));
     }
 
-    private HapiApiSpec freezeAtTheEnd() {
+    private HapiSpec freezeAtTheEnd() {
         return defaultHapiSpec("freezeAtTheEnd")
                 .given()
                 .when(freezeOnly().startingIn(30).seconds().payingWith(GENESIS))

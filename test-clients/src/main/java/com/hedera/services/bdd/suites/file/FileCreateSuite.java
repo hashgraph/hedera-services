@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -23,26 +24,33 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FileCreateSuite extends HapiApiSuite {
+public class FileCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileCreateSuite.class);
 
     private static final long defaultMaxLifetime =
@@ -58,17 +66,32 @@ public class FileCreateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    createWithMemoWorks(),
-                    createFailsWithMissingSigs(),
-                    createFailsWithPayerAccountNotFound(),
-                    createFailsWithExcessiveLifetime(),
-                });
+                createWithMemoWorks(),
+                createFailsWithMissingSigs(),
+                createFailsWithPayerAccountNotFound(),
+                createFailsWithExcessiveLifetime(),
+                exchangeRateControlAccountIsntCharged());
     }
 
-    private HapiApiSpec createFailsWithExcessiveLifetime() {
+    private HapiSpec exchangeRateControlAccountIsntCharged() {
+        return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
+                .given(
+                        cryptoTransfer(
+                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
+                        balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
+                        getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"))
+                .when(
+                        fileUpdate(EXCHANGE_RATES)
+                                .payingWith(EXCHANGE_RATE_CONTROL)
+                                .path(Path.of("./", "exchangeRates.bin").toString()))
+                .then(
+                        getAccountBalance(EXCHANGE_RATE_CONTROL)
+                                .hasTinyBars(changeFromSnapshot("pre", 0)));
+    }
+
+    private HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
@@ -78,7 +101,7 @@ public class FileCreateSuite extends HapiApiSuite {
                                 .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec createWithMemoWorks() {
+    private HapiSpec createWithMemoWorks() {
         String memo = "Really quite something!";
 
         return defaultHapiSpec("createWithMemoWorks")
@@ -91,7 +114,7 @@ public class FileCreateSuite extends HapiApiSuite {
                 .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
     }
 
-    private HapiApiSpec createFailsWithMissingSigs() {
+    private HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -113,7 +136,7 @@ public class FileCreateSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
-    private HapiApiSpec createFailsWithPayerAccountNotFound() {
+    private HapiSpec createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,18 @@
  */
 package com.hedera.services.bdd.suites.file.negative;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DeleteFailuresSpec extends HapiApiSuite {
+public class DeleteFailuresSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DeleteFailuresSpec.class);
 
     public static void main(String... args) {
@@ -34,15 +34,15 @@ public class DeleteFailuresSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						handleRejectsMissingFile(),
                     handleRejectsDeletedFile(),
                 });
     }
 
-    private HapiApiSpec handleRejectsMissingFile() {
+    private HapiSpec handleRejectsMissingFile() {
         return defaultHapiSpec("handleRejectsMissingFile")
                 .given()
                 .when()
@@ -52,7 +52,7 @@ public class DeleteFailuresSpec extends HapiApiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.INVALID_FILE_ID));
     }
 
-    private HapiApiSpec handleRejectsDeletedFile() {
+    private HapiSpec handleRejectsDeletedFile() {
         return defaultHapiSpec("handleRejectsDeletedFile")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))

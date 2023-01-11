@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -23,22 +23,22 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SelfDestructSuite extends HapiApiSuite {
+public class SelfDestructSuite extends HapiSuite {
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
     public static void main(String... args) {
-        new SelfDestructSuite().runSuiteSync();
+        new SelfDestructSuite().runSuiteAsync();
     }
 
     @Override
@@ -47,15 +47,17 @@ public class SelfDestructSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    HSCS_EVM_008_SelfDestructInConstructorWorks(),
-                    HSCS_EVM_008_SelfDestructWhenCalling()
-                });
+                hscsEvm008SelfDestructInConstructorWorks(), hscsEvm008SelfDestructWhenCalling());
     }
 
-    private HapiApiSpec HSCS_EVM_008_SelfDestructInConstructorWorks() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
 
@@ -72,17 +74,14 @@ public class SelfDestructSuite extends HapiApiSuite {
                                     final var registry = spec.registry();
                                     final var destroyedNum =
                                             registry.getContractId(contract).getContractNum();
-                                    final var nextNum =
-                                            registry.getAccountID(nextAccount).getAccountNum();
-                                    assertEquals(
-                                            destroyedNum + 2,
-                                            nextNum,
-                                            "Two ID numbers should be consumed by the"
-                                                    + " self-destroying contract");
+                                    final var childInfoQuery =
+                                            getContractInfo("0.0." + (destroyedNum + 1))
+                                                    .has(contractWith().isNotDeleted());
+                                    allRunFor(spec, childInfoQuery);
                                 }));
     }
 
-    private HapiApiSpec HSCS_EVM_008_SelfDestructWhenCalling() {
+    private HapiSpec hscsEvm008SelfDestructWhenCalling() {
         final var contract = "SelfDestructCallable";
         return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
                 .given(cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS), uploadInitCode(contract))

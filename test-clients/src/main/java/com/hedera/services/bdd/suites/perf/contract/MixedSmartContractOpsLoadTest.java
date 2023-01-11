@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -29,11 +29,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -55,11 +56,11 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(RunMixedSmartContractOps());
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(runMixedSmartContractOps());
     }
 
-    protected HapiApiSpec RunMixedSmartContractOps() {
+    protected HapiSpec runMixedSmartContractOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
         final String SOME_BYTE_CODE = "contractByteCode";
@@ -68,7 +69,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
         final String PAYABLE_CONTRACT = "PayReceivable";
         final String LOOKUP_CONTRACT = "BalanceLookup";
         final String CIVILIAN_ACCOUNT = "civilian";
-        final int depositAmount = 1;
+        final BigInteger depositAmount = BigInteger.ONE;
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
                 () ->
@@ -91,13 +92,15 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                                             "lookup",
                                             spec ->
                                                     new Object[] {
-                                                        spec.registry()
-                                                                .getAccountID(CIVILIAN_ACCOUNT)
-                                                                .getAccountNum()
+                                                        BigInteger.valueOf(
+                                                                spec.registry()
+                                                                        .getAccountID(
+                                                                                CIVILIAN_ACCOUNT)
+                                                                        .getAccountNum())
                                                     })
                                     .payingWith(GENESIS),
                             contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
-                                    .sending(depositAmount)
+                                    .sending(depositAmount.longValueExact())
                                     .suppressStats(true)
                                     .deferStatusResolution()
                         };

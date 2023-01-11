@@ -20,7 +20,7 @@ plugins {
 
 spotless {
     java({
-        targetExclude("build/generated/sources/**/*.java")
+        targetExclude("build/generated/**/*.java")
         // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
         addStep(RepairDashedCommentsFormatterStep.create())
         // Remove the old license headers as the spotless licenseHeader formatter
@@ -54,6 +54,6 @@ spotless {
             * limitations under the License.
             */
         """.trimIndent(), "(package|import)"
-        )
+        ).updateYearWithLatest(true)
     })
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
@@ -52,17 +52,13 @@ public class SpecKeyFromMnemonic extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         createAndLinkFromMnemonic(spec, mnemonic, name, linkedId, log);
         return false;
     }
 
     static void createAndLinkFromMnemonic(
-            HapiApiSpec spec,
-            String mnemonic,
-            String name,
-            Optional<String> linkedId,
-            Logger logToUse)
+            HapiSpec spec, String mnemonic, String name, Optional<String> linkedId, Logger logToUse)
             throws ShortBufferException, NoSuchAlgorithmException, InvalidKeyException {
         byte[] seed = Bip0032.seedFrom(mnemonic);
         byte[] privateKey = Bip0032.privateKeyFrom(seed);
@@ -70,7 +66,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
     }
 
     static void createAndLinkSimpleKey(
-            HapiApiSpec spec,
+            HapiSpec spec,
             byte[] privateKey,
             String name,
             Optional<String> linkedId,

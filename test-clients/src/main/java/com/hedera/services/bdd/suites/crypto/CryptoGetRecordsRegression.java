@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -33,14 +33,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AssertUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoGetRecordsRegression extends HapiApiSuite {
+public class CryptoGetRecordsRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
 
     public static void main(String... args) {
@@ -53,9 +53,9 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						failsForDeletedAccount(),
                     //						failsForMissingAccount(),
                     //						failsForMissingPayment(),
@@ -67,7 +67,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec succeedsNormally() {
+    private HapiSpec succeedsNormally() {
         String memo = "Dim galleries, dusky corridors got past...";
 
         return defaultHapiSpec("SucceedsNormally")
@@ -93,7 +93,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                                         .payer("lowThreshPayer"))));
     }
 
-    private HapiApiSpec failsForMissingAccount() {
+    private HapiSpec failsForMissingAccount() {
         return defaultHapiSpec("FailsForMissingAccount")
                 .given()
                 .when()
@@ -104,7 +104,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec failsForMalformedPayment() {
+    private HapiSpec failsForMalformedPayment() {
         return defaultHapiSpec("FailsForMalformedPayment")
                 .given(newKeyNamed("wrong").shape(SIMPLE))
                 .when()
@@ -114,7 +114,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec failsForUnfundablePayment() {
+    private HapiSpec failsForUnfundablePayment() {
         long everything = 1_234L;
         return defaultHapiSpec("FailsForUnfundablePayment")
                 .given(cryptoCreate("brokePayer").balance(everything))
@@ -126,7 +126,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    private HapiApiSpec failsForInsufficientPayment() {
+    private HapiSpec failsForInsufficientPayment() {
         return defaultHapiSpec("FailsForInsufficientPayment")
                 .given()
                 .when()
@@ -136,7 +136,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    private HapiApiSpec failsForMissingPayment() {
+    private HapiSpec failsForMissingPayment() {
         return defaultHapiSpec("FailsForMissingPayment")
                 .given()
                 .when()
@@ -146,7 +146,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiApiSpec failsForDeletedAccount() {
+    private HapiSpec failsForDeletedAccount() {
         return defaultHapiSpec("FailsForDeletedAccount")
                 .given(cryptoCreate("toBeDeleted"))
                 .when(cryptoDelete("toBeDeleted").transfer(GENESIS))
@@ -157,7 +157,7 @@ public class CryptoGetRecordsRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec getAccountRecords_testForDuplicates() {
+    private HapiSpec getAccountRecords_testForDuplicates() {
         return defaultHapiSpec("testForDuplicateAccountRecords")
                 .given(
                         cryptoCreate("account1").balance(5000000000000L).sendThreshold(1L),

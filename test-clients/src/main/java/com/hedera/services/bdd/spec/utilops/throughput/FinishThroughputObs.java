@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.utilops.throughput;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -62,7 +62,7 @@ public class FinishThroughputObs extends UtilOp {
 
     @Override
     @SuppressWarnings("java:S3516")
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         ThroughputObs baseObs = spec.registry().getThroughputObs(name);
 
         if (gateSupplier.isEmpty()) {

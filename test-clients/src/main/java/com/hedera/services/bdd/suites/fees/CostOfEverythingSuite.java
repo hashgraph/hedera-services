@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -45,9 +45,9 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
@@ -57,7 +57,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CostOfEverythingSuite extends HapiApiSuite {
+public class CostOfEverythingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEverythingSuite.class);
 
     CostSnapshotMode costSnapshotMode = TAKE;
@@ -68,7 +68,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return Stream.of(
                         //				cryptoCreatePaths(),
                         //				cryptoTransferPaths(),
@@ -83,13 +83,13 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .collect(toList());
     }
 
-    HapiApiSpec[] transactionGetRecordPaths() {
-        return new HapiApiSpec[] {
+    HapiSpec[] transactionGetRecordPaths() {
+        return new HapiSpec[] {
             txnGetCreateRecord(), txnGetSmallTransferRecord(), txnGetLargeTransferRecord(),
         };
     }
 
-    HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+    HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
         return customHapiSpec("CanonicalScheduleOps")
                 .withProperties(
                         Map.of(
@@ -133,7 +133,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                         validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0));
     }
 
-    HapiApiSpec miscContractCreatesAndCalls() {
+    HapiSpec miscContractCreatesAndCalls() {
         Object[] donationArgs = new Object[] {2, "Hey, Ma!"};
         final var multipurposeContract = "Multipurpose";
         final var lookupContract = "BalanceLookup";
@@ -177,7 +177,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    HapiApiSpec txnGetCreateRecord() {
+    HapiSpec txnGetCreateRecord() {
         return customHapiSpec("TxnGetCreateRecord")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").balance(99_999_999_999L).sendThreshold(1L))
@@ -185,7 +185,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(getTxnRecord("txn").logged());
     }
 
-    HapiApiSpec txnGetSmallTransferRecord() {
+    HapiSpec txnGetSmallTransferRecord() {
         return customHapiSpec("TxnGetSmalTransferRecord")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
@@ -196,7 +196,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(getTxnRecord("txn").logged());
     }
 
-    HapiApiSpec txnGetLargeTransferRecord() {
+    HapiSpec txnGetLargeTransferRecord() {
         return customHapiSpec("TxnGetLargeTransferRecord")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(
@@ -220,22 +220,22 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(getTxnRecord("txn").logged());
     }
 
-    private AccountAmount aa(HapiApiSpec spec, String id, long amount) {
+    private AccountAmount aa(HapiSpec spec, String id, long amount) {
         return AccountAmount.newBuilder()
                 .setAmount(amount)
                 .setAccountID(spec.registry().getAccountID(id))
                 .build();
     }
 
-    HapiApiSpec[] cryptoGetAccountRecordsPaths() {
-        return new HapiApiSpec[] {
+    HapiSpec[] cryptoGetAccountRecordsPaths() {
+        return new HapiSpec[] {
             cryptoGetRecordsHappyPathS(),
             cryptoGetRecordsHappyPathM(),
             cryptoGetRecordsHappyPathL(),
         };
     }
 
-    HapiApiSpec cryptoGetRecordsHappyPathS() {
+    HapiSpec cryptoGetRecordsHappyPathS() {
         return customHapiSpec("CryptoGetRecordsHappyPathS")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
@@ -245,7 +245,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(getAccountRecords("hairTriggerPayer").has(inOrder(recordWith())));
     }
 
-    HapiApiSpec cryptoGetRecordsHappyPathM() {
+    HapiSpec cryptoGetRecordsHappyPathM() {
         return customHapiSpec("CryptoGetRecordsHappyPathM")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
@@ -259,7 +259,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                                 .has(inOrder(recordWith(), recordWith())));
     }
 
-    HapiApiSpec cryptoGetRecordsHappyPathL() {
+    HapiSpec cryptoGetRecordsHappyPathL() {
         return customHapiSpec("CryptoGetRecordsHappyPathL")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").sendThreshold(1L))
@@ -285,11 +285,11 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                                                 recordWith())));
     }
 
-    HapiApiSpec[] cryptoGetAccountInfoPaths() {
-        return new HapiApiSpec[] {cryptoGetAccountInfoHappyPath()};
+    HapiSpec[] cryptoGetAccountInfoPaths() {
+        return new HapiSpec[] {cryptoGetAccountInfoHappyPath()};
     }
 
-    HapiApiSpec cryptoGetAccountInfoHappyPath() {
+    HapiSpec cryptoGetAccountInfoHappyPath() {
         KeyShape smallKey = threshOf(1, 3);
         KeyShape midsizeKey = listOf(SIMPLE, listOf(2), threshOf(1, 2));
         KeyShape hugeKey = threshOf(4, SIMPLE, SIMPLE, listOf(4), listOf(3), listOf(2));
@@ -307,13 +307,13 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(getAccountInfo("small"), getAccountInfo("midsize"), getAccountInfo("huge"));
     }
 
-    HapiApiSpec[] cryptoCreatePaths() {
-        return new HapiApiSpec[] {
+    HapiSpec[] cryptoCreatePaths() {
+        return new HapiSpec[] {
             cryptoCreateSimpleKey(),
         };
     }
 
-    HapiApiSpec cryptoCreateSimpleKey() {
+    HapiSpec cryptoCreateSimpleKey() {
         KeyShape shape = SIMPLE;
 
         return customHapiSpec("SuccessfulCryptoCreate")
@@ -323,13 +323,13 @@ public class CostOfEverythingSuite extends HapiApiSuite {
                 .then(cryptoCreate("a").key("key"));
     }
 
-    HapiApiSpec[] cryptoTransferPaths() {
-        return new HapiApiSpec[] {
+    HapiSpec[] cryptoTransferPaths() {
+        return new HapiSpec[] {
             cryptoTransferGenesisToFunding(),
         };
     }
 
-    HapiApiSpec cryptoTransferGenesisToFunding() {
+    HapiSpec cryptoTransferGenesisToFunding() {
         return customHapiSpec("CryptoTransferGenesisToFunding")
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given()

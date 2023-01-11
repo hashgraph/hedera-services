@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -46,18 +46,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ScheduleLongTermSignSpecs extends HapiApiSuite {
+public class ScheduleLongTermSignSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleLongTermSignSpecs.class);
 
     private static final String suiteWhitelist =
@@ -71,7 +71,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 ScheduleLongTermExecutionSpecs.enableLongTermScheduledTransactions(),
                 suiteSetup(),
@@ -95,7 +95,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                 ScheduleLongTermExecutionSpecs.setLongTermScheduledTransactionsToDefault());
     }
 
-    private HapiApiSpec suiteCleanup() {
+    private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -105,7 +105,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                                 .overridingProps(Map.of("scheduling.whitelist", defaultWhitelist)));
     }
 
-    private HapiApiSpec suiteSetup() {
+    private HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -115,7 +115,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                                 .overridingProps(Map.of("scheduling.whitelist", suiteWhitelist)));
     }
 
-    private HapiApiSpec changeInNestedSigningReqsRespected() {
+    private HapiSpec changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -184,7 +184,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
         return mutation;
     }
 
-    private HapiApiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
+    private HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -243,7 +243,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
+    private HapiSpec reductionInSigningReqsAllowsTxnToGoThroughAtExpiryWithNoWaitForExpiry() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -312,7 +312,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
         return mutation;
     }
 
-    private HapiApiSpec nestedSigningReqsWorkAsExpected() {
+    private HapiSpec nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -356,7 +356,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredNotConfusedByOrder() {
+    private HapiSpec receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         String sender = "X", receiver = "Y", schedule = "Z", senderKey = "sKey";
@@ -394,7 +394,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec extraSigsDontMatterAtExpiry() {
+    private HapiSpec extraSigsDontMatterAtExpiry() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -486,7 +486,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
+    private HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -530,7 +530,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredUpdateIsRecognized() {
+    private HapiSpec receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -577,7 +577,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    private HapiApiSpec basicSignatureCollectionWorks() {
+    private HapiSpec basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorksWithExpiryAndWait")
@@ -591,7 +591,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                 .then(getScheduleInfo("basicXfer").hasSignatories("receiver"));
     }
 
-    private HapiApiSpec signalsIrrelevantSig() {
+    private HapiSpec signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
         return defaultHapiSpec("SignalsIrrelevantSigWithExpiryAndWait")
@@ -610,7 +610,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                                         NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    private HapiApiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    private HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken("tokenA", 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdateWithExpiryAndWait")
@@ -639,7 +639,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         overriding("scheduling.whitelist", suiteWhitelist));
     }
 
-    public HapiApiSpec triggersUponFinishingPayerSig() {
+    public HapiSpec triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSigAtExpiry")
                 .given(
                         cryptoCreate("payer").balance(ONE_HBAR),
@@ -672,7 +672,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    public HapiApiSpec triggersUponAdditionalNeededSig() {
+    public HapiSpec triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSigAtExpiry")
                 .given(
                         cryptoCreate("sender").balance(1L).via("senderTxn"),
@@ -703,7 +703,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    public HapiApiSpec sharedKeyWorksAsExpected() {
+    public HapiSpec sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxnsAtExpiry")
                 .given(
                         newKeyNamed("sharedKey"),
@@ -740,7 +740,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                         getTxnRecord("creation").scheduled());
     }
 
-    public HapiApiSpec overlappingKeysTreatedAsExpected() {
+    public HapiSpec overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpectedAtExpiry")
@@ -797,7 +797,7 @@ public class ScheduleLongTermSignSpecs extends HapiApiSuite {
                                 .hasTinyBars(changeFromSnapshot("before", +2)));
     }
 
-    public HapiApiSpec retestsActivationOnSignWithEmptySigMap() {
+    public HapiSpec retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMapAtExpiry")
                 .given(
                         newKeyNamed("a"),

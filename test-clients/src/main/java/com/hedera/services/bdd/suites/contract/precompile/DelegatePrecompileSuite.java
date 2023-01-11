@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -47,10 +47,10 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -61,7 +61,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class DelegatePrecompileSuite extends HapiApiSuite {
+public class DelegatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DelegatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -79,28 +79,20 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
     private static final String SUPPLY_KEY = "supplyKey";
 
     public static void main(String... args) {
-        new DelegatePrecompileSuite().runSuiteSync();
+        new DelegatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiApiSpec> negativeSpecs() {
-        return List.of();
-    }
-
-    List<HapiApiSpec> positiveSpecs() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 
-    private HapiApiSpec delegateCallForTransfer() {
+    private HapiSpec delegateCallForTransfer() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -179,7 +171,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
-    private HapiApiSpec delegateCallForBurn() {
+    private HapiSpec delegateCallForBurn() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForBurn")
@@ -246,7 +238,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
-    private HapiApiSpec delegateCallForMint() {
+    private HapiSpec delegateCallForMint() {
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
         return defaultHapiSpec("delegateCallForMint")
@@ -316,7 +308,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+    private String getNestedContractAddress(final String outerContract, final HapiSpec spec) {
         return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
     }
 

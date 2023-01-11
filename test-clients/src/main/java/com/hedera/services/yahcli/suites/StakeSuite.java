@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.yahcli.config.ConfigUtils.uncheckedKeyFileFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.yahcli.config.ConfigManager;
 import com.hedera.services.yahcli.config.ConfigUtils;
 import java.util.List;
@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class StakeSuite extends HapiApiSuite {
+public class StakeSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StakeSuite.class);
     private static final String STAKER_KEY_IF_NEEDED = "STAKER_KEY";
 
@@ -66,7 +66,7 @@ public class StakeSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(doStake());
     }
 
@@ -88,7 +88,7 @@ public class StakeSuite extends HapiApiSuite {
         return Long.parseLong(id.substring(id.lastIndexOf(".") + 1));
     }
 
-    private HapiApiSpec doStake() {
+    private HapiSpec doStake() {
         final var toUpdate = stakingAccount == null ? DEFAULT_PAYER : stakingAccount;
         return customHapiSpec("DoStake")
                 .withProperties(specConfig)

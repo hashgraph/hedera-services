@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
@@ -29,10 +29,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.function.IntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class NWayDistNoHotspots extends HapiApiSuite {
+public class NWayDistNoHotspots extends HapiSuite {
     private static final Logger log = LogManager.getLogger(NWayDistNoHotspots.class);
 
     private static final int XFER_DURATION = 600;
@@ -74,14 +74,14 @@ public class NWayDistNoHotspots extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runDistributions(),
                 });
     }
 
-    private HapiApiSpec runDistributions() {
+    private HapiSpec runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
                 .given(
@@ -101,7 +101,7 @@ public class NWayDistNoHotspots extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> creationsFactory() {
+    private Function<HapiSpec, OpProvider> creationsFactory() {
         final var nextAccount = new AtomicInteger();
         final var payer = "metaPayer";
 
@@ -125,7 +125,7 @@ public class NWayDistNoHotspots extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> distributionsFactory() {
+    private Function<HapiSpec, OpProvider> distributionsFactory() {
         final var nextSender = new AtomicInteger();
         final var n = NUM_ACCOUNTS / 100 * 99;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.suites.file.FetchSystemFiles.unchecked;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidateNewAddressBook extends HapiApiSuite {
+public class ValidateNewAddressBook extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateNewAddressBook.class);
 
     public static void main(String... args) {
@@ -38,11 +38,11 @@ public class ValidateNewAddressBook extends HapiApiSuite {
     final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
-    private HapiApiSpec fetchFiles() {
+    private HapiSpec fetchFiles() {
         return defaultHapiSpec("ValidateNewAddressBook")
                 .given()
                 .when()

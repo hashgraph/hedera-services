@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public class File {
     private String data = UNSPECIFIED_CONTENTS_LOC;
     private SpecKeyList wacl = UNUSED_KEY_LIST;
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (wacl != UNUSED_KEY_LIST) {
             for (int i = 0, n = wacl.getListOf().size(); i < n; i++) {
                 wacl.getListOf().get(i).registerWith(spec, under(name + i));

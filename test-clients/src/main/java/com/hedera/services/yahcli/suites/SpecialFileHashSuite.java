@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SpecialFileHashSuite extends HapiApiSuite {
+public class SpecialFileHashSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SpecialFileHashSuite.class);
 
     private final String specialFile;
@@ -39,14 +39,14 @@ public class SpecialFileHashSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(getSpecialFileHash());
     }
 
-    private HapiApiSpec getSpecialFileHash() {
+    private HapiSpec getSpecialFileHash() {
         long target = Utils.rationalized(specialFile);
 
-        return HapiApiSpec.customHapiSpec("GetSpecialFileHash")
+        return HapiSpec.customHapiSpec("GetSpecialFileHash")
                 .withProperties(specConfig)
                 .given()
                 .when()

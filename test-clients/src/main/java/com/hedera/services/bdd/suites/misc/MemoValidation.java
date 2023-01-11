@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -35,17 +35,17 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class MemoValidation extends HapiApiSuite {
+public final class MemoValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MemoValidation.class);
 
     private static final char SINGLE_BYTE_CHAR = 'a';
@@ -68,7 +68,7 @@ public final class MemoValidation extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         setUpByteArrays();
         return List.of(
                 //				cryptoOps(),
@@ -78,7 +78,7 @@ public final class MemoValidation extends HapiApiSuite {
                 contractOps());
     }
 
-    private HapiApiSpec contractOps() {
+    private HapiSpec contractOps() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("MemoValidationsOnContractOps")
                 .given(uploadInitCode(contract), contractCreate(contract).omitAdminKey())
@@ -116,7 +116,7 @@ public final class MemoValidation extends HapiApiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    private HapiApiSpec tokenOps() {
+    private HapiSpec tokenOps() {
         return defaultHapiSpec("MemoValidationsOnTokenOps")
                 .given(
                         cryptoCreate("firstUser"),
@@ -161,7 +161,7 @@ public final class MemoValidation extends HapiApiSuite {
                                 .hasPrecheck(MEMO_TOO_LONG));
     }
 
-    private HapiApiSpec scheduleOps() {
+    private HapiSpec scheduleOps() {
         final String defaultWhitelist =
                 HapiSpecSetup.getDefaultNodeProps().get("scheduling.whitelist");
         final var toScheduleOp1 = cryptoCreate("test");
@@ -218,7 +218,7 @@ public final class MemoValidation extends HapiApiSuite {
                         overriding("scheduling.whitelist", defaultWhitelist));
     }
 
-    private HapiApiSpec topicOps() {
+    private HapiSpec topicOps() {
         return defaultHapiSpec("MemoValidationsOnTopicOps")
                 .given(
                         newKeyNamed("adminKey"),
@@ -266,7 +266,7 @@ public final class MemoValidation extends HapiApiSuite {
                                 .hasKnownStatus(MEMO_TOO_LONG));
     }
 
-    private HapiApiSpec cryptoOps() {
+    private HapiSpec cryptoOps() {
         return defaultHapiSpec("MemoValidationsOnCryptoOps")
                 .given(cryptoCreate(primary).blankMemo())
                 .when(

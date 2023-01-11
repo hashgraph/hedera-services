@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -43,7 +43,7 @@ public class SomeFungibleTransfers implements ErroringAssertsProvider<List<Token
     }
 
     @Override
-    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiApiSpec spec) {
+    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
         final List<Throwable> wrongFungibleChanges = new ArrayList<>();
 
         final Map<TokenID, String> tokenNameLookup = new HashMap<>();

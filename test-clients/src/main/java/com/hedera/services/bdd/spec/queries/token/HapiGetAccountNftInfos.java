@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.queries.token;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -63,7 +63,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         var actualInfo = response.getTokenGetAccountNftInfos().getNftsList();
         var expectedInfo = new ArrayList<TokenNftInfo>();
         expectedNfts.ifPresent(
@@ -100,7 +100,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getAccountNftInfosQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -116,7 +116,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountNftInfosQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -125,7 +125,7 @@ public class HapiGetAccountNftInfos extends HapiQueryOp<HapiGetAccountNftInfos> 
         return costFrom(response);
     }
 
-    private Query getAccountNftInfosQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getAccountNftInfosQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asId(account, spec);
         TokenGetAccountNftInfosQuery getAccountNftInfosQuery =
                 TokenGetAccountNftInfosQuery.newBuilder()

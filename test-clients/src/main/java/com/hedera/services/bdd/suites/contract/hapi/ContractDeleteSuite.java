@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
@@ -29,12 +29,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.math.BigInteger;
 import java.util.List;
@@ -43,7 +43,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractDeleteSuite extends HapiApiSuite {
+public class ContractDeleteSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
     private static final String CONTRACT = "Multipurpose";
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
@@ -58,23 +58,21 @@ public class ContractDeleteSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    rejectsWithoutProperSig(),
-                    systemCannotDeleteOrUndeleteContracts(),
-                    deleteWorksWithMutableContract(),
-                    deleteFailsWithImmutableContract(),
-                    deleteTransfersToAccount(),
-                    deleteTransfersToContract(),
-                    cannotDeleteOrSelfDestructTokenTreasury(),
-                    cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                    cannotSendValueToTokenAccount(),
-                    cannotUseMoreThanChildContractLimit()
-                });
+                rejectsWithoutProperSig(),
+                systemCannotDeleteOrUndeleteContracts(),
+                deleteWorksWithMutableContract(),
+                deleteFailsWithImmutableContract(),
+                deleteTransfersToAccount(),
+                deleteTransfersToContract(),
+                cannotDeleteOrSelfDestructTokenTreasury(),
+                cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
+                cannotSendValueToTokenAccount(),
+                cannotUseMoreThanChildContractLimit());
     }
 
-    private HapiApiSpec cannotUseMoreThanChildContractLimit() {
+    private HapiSpec cannotUseMoreThanChildContractLimit() {
         final var illegalNumChildren =
                 HapiSpecSetup.getDefaultNodeProps()
                                 .getInteger("consensus.handle.maxFollowingRecords")
@@ -137,7 +135,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                 .hasChildRecords());
     }
 
-    private HapiApiSpec cannotSendValueToTokenAccount() {
+    private HapiSpec cannotSendValueToTokenAccount() {
         final var multiKey = "multiKey";
         final var nonFungibleToken = "NFT";
         final var contract = "ManyChildren";
@@ -188,7 +186,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                 .hasPriority(recordWith().feeGreaterThan(0L)));
     }
 
-    HapiApiSpec cannotDeleteOrSelfDestructTokenTreasury() {
+    HapiSpec cannotDeleteOrSelfDestructTokenTreasury() {
         final var someToken = "someToken";
         final var selfDestructCallable = "SelfDestructCallable";
         final var multiKey = "multi";
@@ -221,7 +219,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                 .then(contractCall(selfDestructCallable + "2", "destroy"));
     }
 
-    HapiApiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
+    HapiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
         final var someToken = "someToken";
         final var multiKey = "multi";
         final var selfDestructableContract = "SelfDestructCallable";
@@ -254,14 +252,14 @@ public class ContractDeleteSuite extends HapiApiSuite {
                                 .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
-    HapiApiSpec rejectsWithoutProperSig() {
+    HapiSpec rejectsWithoutProperSig() {
         return defaultHapiSpec("ScDelete")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
                 .then(contractDelete(CONTRACT).signedBy(GENESIS).hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec systemCannotDeleteOrUndeleteContracts() {
+    private HapiSpec systemCannotDeleteOrUndeleteContracts() {
         return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
@@ -275,7 +273,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                         getContractInfo(CONTRACT).hasAnswerOnlyPrecheck(OK));
     }
 
-    private HapiApiSpec deleteWorksWithMutableContract() {
+    private HapiSpec deleteWorksWithMutableContract() {
         final var tbdFile = "FTBD";
         final var tbdContract = "CTBD";
         return defaultHapiSpec("DeleteWorksWithMutableContract")
@@ -291,14 +289,14 @@ public class ContractDeleteSuite extends HapiApiSuite {
                         getContractInfo(CONTRACT).has(contractWith().isDeleted()));
     }
 
-    private HapiApiSpec deleteFailsWithImmutableContract() {
+    private HapiSpec deleteFailsWithImmutableContract() {
         return defaultHapiSpec("DeleteFailsWithImmutableContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).omitAdminKey())
                 .when()
                 .then(contractDelete(CONTRACT).hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT));
     }
 
-    private HapiApiSpec deleteTransfersToAccount() {
+    private HapiSpec deleteTransfersToAccount() {
         return defaultHapiSpec("DeleteTransfersToAccount")
                 .given(
                         cryptoCreate("receiver").balance(0L),
@@ -308,7 +306,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
                 .then(getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    private HapiApiSpec deleteTransfersToContract() {
+    private HapiSpec deleteTransfersToContract() {
         final var suffix = "Receiver";
 
         return defaultHapiSpec("DeleteTransfersToContract")

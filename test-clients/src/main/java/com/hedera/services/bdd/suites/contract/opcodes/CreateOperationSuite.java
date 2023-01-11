@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -38,11 +38,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,33 +54,36 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
-public class CreateOperationSuite extends HapiApiSuite {
+public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
     private static final String CONTRACT = "FactoryContract";
 
     public static void main(String... args) {
-        new CreateOperationSuite().runSuiteSync();
+        new CreateOperationSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    simpleFactoryWorks(),
-                    stackedFactoryWorks(),
-                    resetOnFactoryFailureWorks(),
-                    resetOnFactoryFailureAfterDeploymentWorks(),
-                    resetOnStackedFactoryFailureWorks(),
-                    inheritanceOfNestedCreatedContracts(),
-                    //				factoryAndSelfDestructInConstructorContract(),
-                    //				factoryQuickSelfDestructContract(),
-                    contractCreateWithNewOpInConstructor(),
-                    childContractStorageWorks()
-                });
+                simpleFactoryWorks(),
+                stackedFactoryWorks(),
+                resetOnFactoryFailureWorks(),
+                resetOnFactoryFailureAfterDeploymentWorks(),
+                resetOnStackedFactoryFailureWorks(),
+                inheritanceOfNestedCreatedContracts(),
+                factoryAndSelfDestructInConstructorContract(),
+                factoryQuickSelfDestructContract(),
+                contractCreateWithNewOpInConstructor(),
+                childContractStorageWorks());
     }
 
-    private HapiApiSpec factoryAndSelfDestructInConstructorContract() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
@@ -89,7 +92,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
-    private HapiApiSpec factoryQuickSelfDestructContract() {
+    private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
 
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
@@ -120,7 +123,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                                                                                         "ChildDeleted()"))))))));
     }
 
-    private HapiApiSpec inheritanceOfNestedCreatedContracts() {
+    private HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
@@ -137,7 +140,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 "ctorChildCreateResult", 3, "parentInfo"));
     }
 
-    HapiApiSpec simpleFactoryWorks() {
+    HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("ContractFactoryWorksHappyPath")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -153,10 +156,6 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .saveToRegistry("contractInfo");
                                     allRunFor(spec, successTxn, parentContract);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContractIDs =
                                             successTxn
                                                     .getResponseRecord()
@@ -164,13 +163,10 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getCreatedContractIDsList();
 
                                     Assertions.assertEquals(createdContractIDs.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(0).getContractNum() - 1);
                                 }));
     }
 
-    HapiApiSpec stackedFactoryWorks() {
+    HapiSpec stackedFactoryWorks() {
         return defaultHapiSpec("StackedFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -187,10 +183,6 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .saveToRegistry("contractInfo");
                                     allRunFor(spec, successTxn, parentContract);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContractIDs =
                                             successTxn
                                                     .getResponseRecord()
@@ -198,16 +190,10 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getCreatedContractIDsList();
 
                                     Assertions.assertEquals(createdContractIDs.size(), 2);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(0).getContractNum() - 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(1).getContractNum() - 2);
                                 }));
     }
 
-    HapiApiSpec resetOnFactoryFailureWorks() {
+    HapiSpec resetOnFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -230,10 +216,6 @@ public class CreateOperationSuite extends HapiApiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()
@@ -247,13 +229,10 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 
-    HapiApiSpec resetOnFactoryFailureAfterDeploymentWorks() {
+    HapiSpec resetOnFactoryFailureAfterDeploymentWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -276,10 +255,6 @@ public class CreateOperationSuite extends HapiApiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()
@@ -293,13 +268,10 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 
-    HapiApiSpec resetOnStackedFactoryFailureWorks() {
+    HapiSpec resetOnStackedFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -323,10 +295,6 @@ public class CreateOperationSuite extends HapiApiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()
@@ -340,13 +308,10 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 
-    private HapiApiSpec contractCreateWithNewOpInConstructor() {
+    private HapiSpec contractCreateWithNewOpInConstructor() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
                 .given(
@@ -364,7 +329,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
     }
 
-    HapiApiSpec childContractStorageWorks() {
+    HapiSpec childContractStorageWorks() {
         final var contract = "CreateTrivial";
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 

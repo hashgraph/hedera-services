@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,19 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue2143Spec extends HapiApiSuite {
+public class Issue2143Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2143Spec.class);
 
     public static void main(String... args) {
@@ -35,15 +35,15 @@ public class Issue2143Spec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     account55ControlCanUpdatePropertiesAndPermissions(),
                     account57ControlCanUpdatePropertiesAndPermissions(),
                 });
     }
 
-    private HapiApiSpec account55ControlCanUpdatePropertiesAndPermissions() {
+    private HapiSpec account55ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
                 .given(
                         cryptoTransfer(
@@ -64,7 +64,7 @@ public class Issue2143Spec extends HapiApiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    private HapiApiSpec account57ControlCanUpdatePropertiesAndPermissions() {
+    private HapiSpec account57ControlCanUpdatePropertiesAndPermissions() {
         return defaultHapiSpec("Account57ControlCanUpdatePropertiesAndPermissions")
                 .given(
                         cryptoTransfer(

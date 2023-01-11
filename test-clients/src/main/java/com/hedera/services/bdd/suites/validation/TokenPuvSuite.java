@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureDissociated;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.serializeEntity;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.yaml;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.persistence.Token;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenPuvSuite extends HapiApiSuite {
+public class TokenPuvSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
 
     private final MiscConfig miscConfig;
@@ -56,15 +56,15 @@ public class TokenPuvSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     cleanupIfNecessary(), initialAssociation(), initialFunding(),
                 });
     }
 
-    private HapiApiSpec initialFunding() {
-        return HapiApiSpec.customHapiSpec("InitialFunding")
+    private HapiSpec initialFunding() {
+        return HapiSpec.customHapiSpec("InitialFunding")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
                         cryptoTransfer(
@@ -99,8 +99,8 @@ public class TokenPuvSuite extends HapiApiSuite {
                                                 .balance(Amounts.BESTOWED_CAT_TOKENS)));
     }
 
-    private HapiApiSpec initialAssociation() {
-        return HapiApiSpec.customHapiSpec("InitialAssociation")
+    private HapiSpec initialAssociation() {
+        return HapiSpec.customHapiSpec("InitialAssociation")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given(
                         tokenAssociate(Names.CAT_BENEFICIARY, Names.CAT_TOKEN),
@@ -119,8 +119,8 @@ public class TokenPuvSuite extends HapiApiSuite {
                                                 .kyc(TokenKycStatus.KycNotApplicable)));
     }
 
-    private HapiApiSpec cleanupIfNecessary() {
-        return HapiApiSpec.customHapiSpec("CleanupIfNecessary")
+    private HapiSpec cleanupIfNecessary() {
+        return HapiSpec.customHapiSpec("CleanupIfNecessary")
                 .withProperties(targetInfo.toCustomProperties(miscConfig))
                 .given()
                 .when()

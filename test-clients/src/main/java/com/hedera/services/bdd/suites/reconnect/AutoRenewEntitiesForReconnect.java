@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -26,10 +26,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
+public class AutoRenewEntitiesForReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoRenewEntitiesForReconnect.class);
 
     public static void main(String... args) {
@@ -46,14 +46,14 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 runTransfersBeforeReconnect(),
                 autoRenewAccountGetsDeletedOnReconnectingNodeAsWell(),
                 accountAutoRenewalSuiteCleanup());
     }
 
-    private HapiApiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
+    private HapiSpec autoRenewAccountGetsDeletedOnReconnectingNodeAsWell() {
         String autoDeleteAccount = "autoDeleteAccount";
         int autoRenewSecs = 1;
         return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
@@ -88,7 +88,7 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheckFrom(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec accountAutoRenewalSuiteCleanup() {
+    private HapiSpec accountAutoRenewalSuiteCleanup() {
         return defaultHapiSpec("accountAutoRenewalSuiteCleanup")
                 .given()
                 .when()
@@ -107,9 +107,9 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
      * Since reconnect is not supported when node starts from genesis, run some transactions before
      * running correctness tests so that a state is saved before reconnect.
      *
-     * @return a {@link HapiApiSpec} to do some crypto transfer transactions before reconnect
+     * @return a {@link HapiSpec} to do some crypto transfer transactions before reconnect
      */
-    public static HapiApiSpec runTransfersBeforeReconnect() {
+    public static HapiSpec runTransfersBeforeReconnect() {
         return defaultHapiSpec("runTransfersBeforeReconnect")
                 .given()
                 .when()

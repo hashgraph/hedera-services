@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -32,11 +32,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AssortedHcsOps extends HapiApiSuite {
+public class AssortedHcsOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssortedHcsOps.class);
 
     public static void main(String... args) {
@@ -54,9 +54,9 @@ public class AssortedHcsOps extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						runMisc(),
                     testRechargingPayer(),
                     //						infoLookup(),
@@ -65,7 +65,7 @@ public class AssortedHcsOps extends HapiApiSuite {
 
     final String TARGET_DIR = "./dev-system-files";
 
-    private HapiApiSpec testRechargingPayer() {
+    private HapiSpec testRechargingPayer() {
         long startingBalance = 1_000_000L;
 
         return defaultHapiSpec("testRechargingPayer")
@@ -82,14 +82,14 @@ public class AssortedHcsOps extends HapiApiSuite {
                                 .toArray(HapiSpecOperation[]::new));
     }
 
-    private HapiApiSpec infoLookup() {
+    private HapiSpec infoLookup() {
         return defaultHapiSpec("infoLookup")
                 .given()
                 .when()
                 .then(QueryVerbs.getTopicInfo("0.0.1161").logged());
     }
 
-    private HapiApiSpec runMisc() {
+    private HapiSpec runMisc() {
         final int SUBMIT_BURST_SIZE = 10;
 
         AtomicReference<String> vanillaTopic = new AtomicReference<>();

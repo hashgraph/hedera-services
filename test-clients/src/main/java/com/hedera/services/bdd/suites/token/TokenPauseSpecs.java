@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,13 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -43,18 +40,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -64,34 +54,24 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class TokenPauseSpecs extends HapiApiSuite {
-
+public final class TokenPauseSpecs extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
-
-    private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
-    private static final String DEFAULT_ASSOCIATIONS_LIMIT =
-            HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
-    private static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
+    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
             "ledger.autoRenewPeriod.minDuration";
-    private static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
+    public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
             HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
 
     private static final String PAUSE_KEY = "pauseKey";
@@ -110,7 +90,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
     private static final String NON_FUNGIBLE_UNIQUE_PRIMARY = "non-fungible-unique-primary";
 
     public static void main(String... args) {
-        new TokenPauseSpecs().runSuiteSync();
+        new TokenPauseSpecs().runSuiteAsync();
     }
 
     @Override
@@ -119,7 +99,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 cannotPauseWithInvalidPauseKey(),
                 cannotChangePauseStatusIfMissingPauseKey(),
@@ -128,76 +108,15 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                 unpauseWorks(),
                 basePauseAndUnpauseHaveExpectedPrices(),
                 pausedTokenInCustomFeeCaseStudy(),
-                cannotAddPauseKeyViaTokenUpdate(),
-                canDissociateFromMultipleExpiredTokens(),
-                cannotAssociateMoreThanTheLimit());
+                cannotAddPauseKeyViaTokenUpdate());
     }
 
-    private HapiApiSpec cannotAssociateMoreThanTheLimit() {
-        final String treasury1 = "treasury1";
-        final String treasury2 = "treasury2";
-        final String user1 = "user1";
-        final String user2 = "user2";
-        final String key = "key";
-        final String token1 = "token1";
-        final String token2 = "token2";
-        final String token3 = "token3";
-        return defaultHapiSpec("CannotAssociateMoreThanTheLimit")
-                .given(
-                        newKeyNamed(key),
-                        cryptoCreate(treasury1),
-                        cryptoCreate(treasury2),
-                        tokenCreate(token1)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(treasury1)
-                                .maxSupply(500)
-                                .kycKey(key)
-                                .initialSupply(100),
-                        tokenCreate(token2)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(treasury2)
-                                .maxSupply(500)
-                                .kycKey(key)
-                                .initialSupply(100),
-                        overridingTwo(
-                                ASSOCIATIONS_LIMIT_PROPERTY, "true", "tokens.maxPerAccount", "0"))
-                .when(
-                        tokenCreate(token3)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(treasury2)
-                                .maxSupply(500)
-                                .kycKey(key)
-                                .initialSupply(100)
-                                .hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-                        cryptoCreate(user1)
-                                .maxAutomaticTokenAssociations(1)
-                                .hasPrecheck(
-                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        cryptoCreate(user1),
-                        tokenAssociate(user1, token1)
-                                .hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-                        tokenAssociate(treasury1, token2)
-                                .hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED))
-                .then(
-                        overriding(ASSOCIATIONS_LIMIT_PROPERTY, DEFAULT_ASSOCIATIONS_LIMIT),
-                        tokenCreate(token3)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(treasury2)
-                                .maxSupply(500)
-                                .kycKey(key)
-                                .initialSupply(100),
-                        cryptoCreate(user2).maxAutomaticTokenAssociations(4999),
-                        tokenAssociate(user1, token1),
-                        tokenAssociate(treasury1, token2),
-                        // Restore default
-                        overriding("tokens.maxPerAccount", "1000"));
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
-    private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
+    private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
@@ -208,7 +127,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    private HapiApiSpec cannotPauseWithInvalidPauseKey() {
+    private HapiSpec cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -218,7 +137,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec pausedTokenInCustomFeeCaseStudy() {
+    private HapiSpec pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -263,7 +182,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
-    private HapiApiSpec unpauseWorks() {
+    private HapiSpec unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -297,7 +216,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
-    private HapiApiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -386,7 +305,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
-    private HapiApiSpec pausedFungibleTokenCannotBeUsed() {
+    private HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -465,7 +384,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
-    private HapiApiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -498,7 +417,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    private HapiApiSpec basePauseAndUnpauseHaveExpectedPrices() {
+    private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";
@@ -530,64 +449,6 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                         validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
     }
 
-    public HapiApiSpec canDissociateFromMultipleExpiredTokens() {
-        final var civilian = "civilian";
-        final long initialSupply = 100L;
-        final long nonZeroXfer = 10L;
-        final var dissociateTxn = "dissociateTxn";
-        final var numTokens = 10;
-        final IntFunction<String> tokenNameFn = i -> "fungible" + i;
-        final String[] assocOrder = new String[numTokens];
-        Arrays.setAll(assocOrder, tokenNameFn);
-        final String[] dissocOrder = new String[numTokens];
-        Arrays.setAll(dissocOrder, i -> tokenNameFn.apply(numTokens - 1 - i));
-
-        return defaultHapiSpec("CanDissociateFromMultipleExpiredTokens")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, "1")),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(civilian).balance(0L),
-                        blockingOrder(
-                                IntStream.range(0, numTokens)
-                                        .mapToObj(
-                                                i ->
-                                                        tokenCreate(tokenNameFn.apply(i))
-                                                                .autoRenewAccount(DEFAULT_PAYER)
-                                                                .autoRenewPeriod(1L)
-                                                                .initialSupply(initialSupply)
-                                                                .treasury(TOKEN_TREASURY))
-                                        .toArray(HapiSpecOperation[]::new)),
-                        tokenAssociate(civilian, List.of(assocOrder)),
-                        blockingOrder(
-                                IntStream.range(0, numTokens)
-                                        .mapToObj(
-                                                i ->
-                                                        cryptoTransfer(
-                                                                moving(
-                                                                                nonZeroXfer,
-                                                                                tokenNameFn.apply(
-                                                                                        i))
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                civilian)))
-                                        .toArray(HapiSpecOperation[]::new)))
-                .when(sleepFor(1_000L), tokenDissociate(civilian, dissocOrder).via(dissociateTxn))
-                .then(
-                        getTxnRecord(dissociateTxn)
-                                .hasPriority(
-                                        recordWith()
-                                                .tokenTransfers(withOrderedTokenIds(assocOrder))),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        Map.of(
-                                                LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION,
-                                                DEFAULT_MIN_AUTO_RENEW_PERIOD)));
-    }
-
     public static class TokenIdOrderingAsserts
             extends BaseErroringAssertsProvider<List<TokenTransferList>> {
         private final String[] expectedTokenIds;
@@ -602,7 +463,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 
         @Override
         @SuppressWarnings("java:S5960")
-        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiApiSpec spec) {
+        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiSpec spec) {
             return tokenTransfers -> {
                 final var registry = spec.registry();
                 try {

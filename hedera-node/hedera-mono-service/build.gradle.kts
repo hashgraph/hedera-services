@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,33 +26,41 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
+
+    exclude("org.hamcrest", "hamcrest-core")
 }
 
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
-    api(project(":hedera-node:hedera-evm-api"))
+    api(project(":hedera-node:hedera-evm"))
     api(project(":hedera-node:hedera-app-spi"))
-    api(project(":modules:hedera-admin-service"))
-    api(project(":modules:hedera-consensus-service"))
-    api(project(":modules:hedera-file-service"))
-    api(project(":modules:hedera-network-service"))
-    api(project(":modules:hedera-schedule-service"))
-    api(project(":modules:hedera-smart-contract-service"))
-    api(project(":modules:hedera-token-service"))
-    api(project(":modules:hedera-util-service"))
+    api(project(":hedera-node:hedera-admin-service"))
+    api(project(":hedera-node:hedera-consensus-service"))
+    api(project(":hedera-node:hedera-file-service"))
+    api(project(":hedera-node:hedera-network-service"))
+    api(project(":hedera-node:hedera-schedule-service"))
+    api(project(":hedera-node:hedera-smart-contract-service"))
+    api(project(":hedera-node:hedera-token-service"))
+    api(project(":hedera-node:hedera-util-service"))
 
-    implementation(project(":hapi-fees"))
-    implementation(project(":hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
 
     implementation(libs.bundles.besu) {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }
     implementation(libs.bundles.di)
+    implementation(libs.grpc.stub)
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
-    implementation(libs.hapi)
+    implementation(libs.helidon.io.grpc)
     implementation(libs.headlong)
     implementation(
         variantOf(libs.netty.transport.native.epoll) {
@@ -63,13 +71,13 @@ dependencies {
     implementation(libs.commons.io)
     implementation(libs.commons.collections4)
     implementation(libs.eclipse.collections)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
     testCompileOnly(libs.spotbugs.annotations)
 
-    testFixturesApi(project(":hapi-utils"))
+    testFixturesApi(project(":hedera-node:hedera-app-spi"))
+    testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)
     testFixturesApi(libs.hapi)
@@ -101,7 +109,7 @@ tasks.jar {
         tasks.jar.configure {
             manifest {
                 attributes(
-                    "Main-Class" to "com.hedera.services.ServicesMain",
+                    "Main-Class" to "com.hedera.node.app.service.mono.ServicesMain",
                     "Class-Path" to configurations.getByName("runtimeClasspath")
                         .joinToString(separator = " ") { "../../data/lib/" + it.name }
 

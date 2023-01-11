@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static com.hedera.test.serde.SerializedForms.assertSameBufferSerializatio
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBuffer;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.state.virtual.annotations.StateSetter;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.virtualmap.VirtualValue;
 import java.lang.reflect.InvocationTargetException;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -61,11 +61,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +79,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
+public class ScheduleLongTermExecutionSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ScheduleLongTermExecutionSpecs.class);
 
@@ -94,7 +94,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     private static final String PAYING_ACCOUNT = "payingAccount";
     private static final String RECEIVER = "receiver";
     private static final String SENDER = "sender";
-    private static final String SENDER_TXN = "senderTxn";
+    public static final String SENDER_TXN = "senderTxn";
     private static final String BASIC_XFER = "basicXfer";
     private static final String CREATE_TX = "createTx";
     private static final String SIGN_TX = "signTx";
@@ -134,7 +134,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 enableLongTermScheduledTransactions(),
                 executionWithDefaultPayerWorks(),
@@ -168,7 +168,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec executionWithCustomPayerWorks() {
+    private HapiSpec executionWithCustomPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -285,7 +285,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec executionWithCustomPayerAndAdminKeyWorks() {
+    private HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerAndAdminKeyWorks")
                 .given(
                         newKeyNamed("adminKey"),
@@ -404,7 +404,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    private HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
                         cryptoCreate(PAYING_ACCOUNT),
@@ -522,7 +522,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithDefaultPayerWorks() {
+    public HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionAtExpiryWithDefaultPayerWorks")
                 .given(
@@ -637,7 +637,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithContractCallWorksAtExpiry() {
+    public HapiSpec executionWithContractCallWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCallWorksAtExpiry")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "ContractCall"),
@@ -700,7 +700,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithContractCreateWorksAtExpiry() {
+    public HapiSpec executionWithContractCreateWorksAtExpiry() {
         return defaultHapiSpec("ExecutionWithContractCreateWorksAtExpiry")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "ContractCreate"),
@@ -770,7 +770,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithDefaultPayerButNoFundsFails() {
+    public HapiSpec executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -831,7 +831,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCustomPayerThatNeverSignsFails() {
+    public HapiSpec executionWithCustomPayerThatNeverSignsFails() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerThatNeverSignsFails")
                 .given(
@@ -868,7 +868,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
-    public HapiApiSpec executionWithCustomPayerButNoFundsFails() {
+    public HapiSpec executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionAtExpiryWithCustomPayerButNoFundsFails")
@@ -917,7 +917,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithDefaultPayerButAccountDeletedFails() {
+    public HapiSpec executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -958,7 +958,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         getTxnRecord(CREATE_TX).scheduled().hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
-    public HapiApiSpec executionWithCustomPayerButAccountDeletedFails() {
+    public HapiSpec executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1014,7 +1014,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithInvalidAccountAmountsFails() {
+    public HapiSpec executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -1068,7 +1068,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCryptoInsufficientAccountBalanceFails() {
+    public HapiSpec executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1121,7 +1121,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCryptoSenderDeletedFails() {
+    public HapiSpec executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1175,7 +1175,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionTriggersWithWeirdlyRepeatedKey() {
+    public HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
         return defaultHapiSpec("ExecutionAtExpiryTriggersWithWeirdlyRepeatedKey")
@@ -1217,7 +1217,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .hasPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    private HapiApiSpec scheduledFreezeWorksAsExpected() {
+    private HapiSpec scheduledFreezeWorksAsExpected() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1276,7 +1276,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledFreezeWithUnauthorizedPayerFails() {
+    private HapiSpec scheduledFreezeWithUnauthorizedPayerFails() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -1311,7 +1311,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
     }
 
-    private HapiApiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
+    private HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpectedAtExpiry")
                 .given(
@@ -1361,7 +1361,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+    private HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1412,7 +1412,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledSystemDeleteWorksAsExpected() {
+    private HapiSpec scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpectedAtExpiry")
                 .given(
@@ -1464,7 +1464,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledSystemDeleteUnauthorizedPayerFails() {
+    private HapiSpec scheduledSystemDeleteUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledSystemDeleteUnauthorizedPayerFailsAtExpiry")
                 .given(
@@ -1490,7 +1490,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)));
     }
 
-    public HapiApiSpec waitForExpiryIgnoredWhenLongTermDisabled() {
+    public HapiSpec waitForExpiryIgnoredWhenLongTermDisabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabled")
                 .given(
@@ -1515,7 +1515,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .isExecuted());
     }
 
-    public HapiApiSpec expiryIgnoredWhenLongTermDisabled() {
+    public HapiSpec expiryIgnoredWhenLongTermDisabled() {
 
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabled")
                 .given(
@@ -1543,7 +1543,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(0L));
     }
 
-    public HapiApiSpec waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
+    public HapiSpec waitForExpiryIgnoredWhenLongTermDisabledThenEnabled() {
 
         return defaultHapiSpec("WaitForExpiryIgnoredWhenLongTermDisabledThenEnabled")
                 .given(
@@ -1570,7 +1570,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         overriding(SCHEDULING_LONG_TERM_ENABLED, FALSE));
     }
 
-    public HapiApiSpec expiryIgnoredWhenLongTermDisabledThenEnabled() {
+    public HapiSpec expiryIgnoredWhenLongTermDisabledThenEnabled() {
 
         return defaultHapiSpec("ExpiryIgnoredWhenLongTermDisabledThenEnabled")
                 .given(
@@ -1600,7 +1600,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(0L));
     }
 
-    private HapiApiSpec futureThrottlesAreRespected() {
+    private HapiSpec futureThrottlesAreRespected() {
         var artificialLimits =
                 protoDefsFromResource("testSystemFiles/artificial-limits-schedule.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
@@ -1664,7 +1664,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
         return LOG;
     }
 
-    public static HapiApiSpec enableLongTermScheduledTransactions() {
+    public static HapiSpec enableLongTermScheduledTransactions() {
         return defaultHapiSpec("EnableLongTermScheduledTransactions")
                 .given()
                 .when()
@@ -1674,7 +1674,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, "true")));
     }
 
-    public static HapiApiSpec disableLongTermScheduledTransactions() {
+    public static HapiSpec disableLongTermScheduledTransactions() {
         return defaultHapiSpec("DisableLongTermScheduledTransactions")
                 .given()
                 .when()
@@ -1684,7 +1684,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                 .overridingProps(Map.of(SCHEDULING_LONG_TERM_ENABLED, FALSE)));
     }
 
-    public static HapiApiSpec setLongTermScheduledTransactionsToDefault() {
+    public static HapiSpec setLongTermScheduledTransactionsToDefault() {
         return defaultHapiSpec("SetLongTermScheduledTransactionsToDefault")
                 .given()
                 .when()
@@ -1697,9 +1697,8 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                                                 DEFAULT_LONG_TERM_ENABLED)));
     }
 
-    public static List<HapiApiSpec> withAndWithoutLongTermEnabled(
-            Supplier<List<HapiApiSpec>> getSpecs) {
-        List<HapiApiSpec> list = new ArrayList<>();
+    public static List<HapiSpec> withAndWithoutLongTermEnabled(Supplier<List<HapiSpec>> getSpecs) {
+        List<HapiSpec> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.get());
         list.add(enableLongTermScheduledTransactions());
@@ -1710,9 +1709,9 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
         return list;
     }
 
-    public static List<HapiApiSpec> withAndWithoutLongTermEnabled(
-            Function<Boolean, List<HapiApiSpec>> getSpecs) {
-        List<HapiApiSpec> list = new ArrayList<>();
+    public static List<HapiSpec> withAndWithoutLongTermEnabled(
+            Function<Boolean, List<HapiSpec>> getSpecs) {
+        List<HapiSpec> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.apply(false));
         list.add(enableLongTermScheduledTransactions());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -36,16 +36,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractCallLocalSuite extends HapiApiSuite {
+public class ContractCallLocalSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallLocalSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String TOKEN = "TestToken";
@@ -62,9 +62,9 @@ public class ContractCallLocalSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     deletedContract(),
                     invalidContractID(),
                     impureCallFails(),
@@ -75,7 +75,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec vanillaSuccess() {
+    private HapiSpec vanillaSuccess() {
         return defaultHapiSpec("VanillaSuccess")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when(contractCall(CONTRACT, "create").gas(785_000))
@@ -93,7 +93,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                                                 }))));
     }
 
-    private HapiApiSpec impureCallFails() {
+    private HapiSpec impureCallFails() {
         return defaultHapiSpec("ImpureCallFails")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT).adminKey(THRESHOLD))
                 .when()
@@ -105,7 +105,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                         ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION));
     }
 
-    private HapiApiSpec deletedContract() {
+    private HapiSpec deletedContract() {
         return defaultHapiSpec("InvalidDeletedContract")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractDelete(CONTRACT))
@@ -115,7 +115,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(CONTRACT_DELETED));
     }
 
-    private HapiApiSpec invalidContractID() {
+    private HapiSpec invalidContractID() {
         final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
         final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
         return defaultHapiSpec("InvalidContractID")
@@ -130,7 +130,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID));
     }
 
-    private HapiApiSpec insufficientFeeFails() {
+    private HapiSpec insufficientFeeFails() {
         final long adequateQueryPayment = 500_000L;
 
         return defaultHapiSpec("InsufficientFee")
@@ -145,7 +145,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    private HapiApiSpec lowBalanceFails() {
+    private HapiSpec lowBalanceFails() {
         final long adequateQueryPayment = 500_000_000L;
 
         return defaultHapiSpec("LowBalanceFails")
@@ -167,7 +167,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
                         getAccountBalance("payer").logged());
     }
 
-    private HapiApiSpec erc20Query() {
+    private HapiSpec erc20Query() {
         final var decimalsABI =
                 "{\"constant\": true,\"inputs\": [],\"name\": \"decimals\","
                         + "\"outputs\": [{\"name\": \"\",\"type\": \"uint8\"}],\"payable\": false,"

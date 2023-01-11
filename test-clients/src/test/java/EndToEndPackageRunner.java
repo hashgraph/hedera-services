@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,7 +161,6 @@ import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessagePerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.createTopicLoadTest;
-import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
@@ -629,7 +628,6 @@ class EndToEndPackageRunner extends TestBase {
     @TestFactory
     Collection<DynamicContainer> records() {
         return List.of(
-                extractSpecsFromSuite(CharacterizationSuite::new),
                 extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(DuplicateManagementTest::new),

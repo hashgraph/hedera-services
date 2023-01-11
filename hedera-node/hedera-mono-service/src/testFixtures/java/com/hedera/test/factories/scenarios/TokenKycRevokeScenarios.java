@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,43 +15,39 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenRevokeKycFactory.newSignedTokenRevokeKyc;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
     VALID_REVOKE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenRevokeKyc()
-                                    .revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get()));
+                    newSignedTokenRevokeKyc()
+                            .revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
     REVOKE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenRevokeKyc()
-                                    .revoking(MISSING_TOKEN, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get()));
+                    newSignedTokenRevokeKyc()
+                            .revoking(MISSING_TOKEN, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
     REVOKE_FOR_TOKEN_WITHOUT_KYC {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenRevokeKyc()
-                                    .revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get()));
+                    newSignedTokenRevokeKyc()
+                            .revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
 }

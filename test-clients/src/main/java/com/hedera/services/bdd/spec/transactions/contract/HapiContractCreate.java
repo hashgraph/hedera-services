@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -99,7 +99,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected Key lookupKey(HapiApiSpec spec, String name) {
+    protected Key lookupKey(HapiSpec spec, String name) {
         return name.equals(contract) ? adminKey : spec.registry().getKey(name);
     }
 
@@ -210,11 +210,11 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         if (omitAdminKey || useDeprecatedAdminKey) {
             return super.defaultSigners();
         }
-        List<Function<HapiApiSpec, Key>> signers =
+        List<Function<HapiSpec, Key>> signers =
                 new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
         Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
         autoRenewAccount.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
@@ -222,7 +222,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             if (gasObserver.isPresent()) {
                 doGasLookup(
@@ -277,7 +277,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (!omitAdminKey && !useDeprecatedAdminKey) {
             generateAdminKey(spec);
         }
@@ -351,7 +351,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.ContractCreate,
@@ -361,7 +361,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 

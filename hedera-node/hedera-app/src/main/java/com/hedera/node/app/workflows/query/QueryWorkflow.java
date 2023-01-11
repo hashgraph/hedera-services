@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /** A workflow for processing queries. */
 public interface QueryWorkflow {
     void handleQuery(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer);
+            @NonNull SessionContext session,
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull ByteBuffer responseBuffer);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.util;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
@@ -25,49 +25,35 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UtilPrngSuite extends HapiApiSuite {
+public class UtilPrngSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
-    private static final String BOB = "bob";
+    public static final String BOB = "bob";
 
     public static void main(String... args) {
         new UtilPrngSuite().runSuiteSync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return List.of(
                 happyPathWorksForRangeAndBitString(),
                 failsInPreCheckForNegativeRange(),
-                usdFeeAsExpected(),
-                featureFlagWorks());
+                usdFeeAsExpected());
     }
 
-    private HapiApiSpec featureFlagWorks() {
-        return defaultHapiSpec("featureFlagWorks")
-                .given(
-                        overridingAllOf(Map.of(PRNG_IS_ENABLED, "false")),
-                        cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng().payingWith(BOB).via("baseTxn").blankMemo().logged(),
-                        getTxnRecord("baseTxn").hasNoPseudoRandomData().logged())
-                .when(
-                        hapiPrng(10).payingWith(BOB).via("plusRangeTxn").blankMemo().logged(),
-                        getTxnRecord("plusRangeTxn").hasNoPseudoRandomData().logged())
-                .then();
-    }
-
-    private HapiApiSpec usdFeeAsExpected() {
+    private HapiSpec usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -88,7 +74,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec failsInPreCheckForNegativeRange() {
+    private HapiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -103,7 +89,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec happyPathWorksForRangeAndBitString() {
+    private HapiSpec happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;
@@ -243,7 +243,7 @@ public class HapiSpecSetup {
         return props.get("default.memo");
     }
 
-    public HapiApiSpec.UTF8Mode isMemoUTF8() {
+    public HapiSpec.UTF8Mode isMemoUTF8() {
         return props.getUTF8Mode("default.useMemoUTF8");
     }
 
@@ -375,7 +375,7 @@ public class HapiSpecSetup {
         return props.get("exchange.rates.controlAccount.name");
     }
 
-    public HapiApiSpec.SpecStatus expectedFinalStatus() {
+    public HapiSpec.SpecStatus expectedFinalStatus() {
         return props.getSpecStatus("expected.final.status");
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -41,8 +41,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -50,7 +50,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
+public class Hip17UnhappyAccountsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Hip17UnhappyAccountsSuite.class);
 
     final String supplyKey = "supplyKey";
@@ -67,9 +67,9 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     /* Dissociated Account */
                     uniqueTokenOperationsFailForDissociatedAccount(),
                     /* Frozen Account */
@@ -85,7 +85,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
+    private HapiSpec uniqueTokenOperationsFailForAutoRemovedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForAutoRemovedAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -133,7 +133,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForDeletedAccount() {
+    private HapiSpec uniqueTokenOperationsFailForDeletedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
                 .given(
                         newKeyNamed(supplyKey),
@@ -171,7 +171,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForExpiredAccount() {
+    private HapiSpec uniqueTokenOperationsFailForExpiredAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForExpiredAccount")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -229,7 +229,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
+    private HapiSpec uniqueTokenOperationsFailForKycRevokedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
                 .given(
                         newKeyNamed(supplyKey),
@@ -272,7 +272,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForFrozenAccount() {
+    private HapiSpec uniqueTokenOperationsFailForFrozenAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
                 .given(
                         newKeyNamed(supplyKey),
@@ -315,7 +315,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
-    private HapiApiSpec uniqueTokenOperationsFailForDissociatedAccount() {
+    private HapiSpec uniqueTokenOperationsFailForDissociatedAccount() {
         return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
                 .given(
                         newKeyNamed(supplyKey),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -49,11 +50,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -79,7 +80,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
-public class TokenInfoHTSSuite extends HapiApiSuite {
+public class TokenInfoHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);
 
@@ -143,7 +144,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
     public static void main(final String... args) {
-        new TokenInfoHTSSuite().runSuiteSync();
+        new TokenInfoHTSSuite().runSuiteAsync();
     }
 
     @Override
@@ -152,11 +153,11 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
                 getInfoOnDeletedFungibleTokenWorks(),
                 getInfoOnInvalidFungibleTokenFails(),
@@ -164,7 +165,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 getInfoOnInvalidNonFungibleTokenFails());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
                 happyPathGetTokenInfo(),
                 happyPathUpdateTokenInfoAndGetLatestInfo(),
@@ -177,7 +178,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 happyPathUpdateTokenKeysAndReadLatestInformation());
     }
 
-    private HapiApiSpec happyPathGetTokenInfo() {
+    private HapiSpec happyPathGetTokenInfo() {
         return defaultHapiSpec("HappyPathGetTokenInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -287,12 +288,15 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
+    private HapiSpec happyPathUpdateTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         return defaultHapiSpec("HappyPathUpdateTokenInfoAndGetLatestInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(3),
+                        cryptoCreate(UPDATED_TREASURY)
+                                .keyShape(ED25519_ON)
+                                .balance(0L)
+                                .maxAutomaticTokenAssociations(3),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(HTS_COLLECTOR),
                         cryptoCreate(ACCOUNT),
@@ -354,7 +358,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -405,7 +410,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec happyPathGetFungibleTokenInfo() {
+    private HapiSpec happyPathGetFungibleTokenInfo() {
         final int decimals = 1;
         return defaultHapiSpec("HappyPathGetFungibleTokenInfo")
                 .given(
@@ -518,7 +523,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
+    private HapiSpec happyPathUpdateFungibleTokenInfoAndGetLatestInfo() {
         final int decimals = 1;
         return defaultHapiSpec("HappyPathUpdateFungibleTokenInfoAndGetLatestInfo")
                 .given(
@@ -585,7 +590,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -636,7 +642,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec happyPathGetNonFungibleTokenInfo() {
+    private HapiSpec happyPathGetNonFungibleTokenInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
@@ -777,13 +783,16 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
+    private HapiSpec happyPathUpdateNonFungibleTokenInfoAndGetLatestInfo() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
-        return defaultHapiSpec("HappyPathGetNonFungibleTokenInfo")
+        return defaultHapiSpec("HappyPathUpdateNonFungibleTokenInfoAndGetLatestInfo")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(UPDATED_TREASURY).balance(0L).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(UPDATED_TREASURY)
+                                .balance(0L)
+                                .keyShape(ED25519_ON)
+                                .maxAutomaticTokenAssociations(2),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(NFT_OWNER),
                         cryptoCreate(NFT_SPENDER),
@@ -865,7 +874,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .via(
                                                                 UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -921,7 +931,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec getInfoOnDeletedFungibleTokenWorks() {
+    private HapiSpec getInfoOnDeletedFungibleTokenWorks() {
         return defaultHapiSpec("GetInfoOnDeletedFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -975,7 +985,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                         getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
-    private HapiApiSpec getInfoOnInvalidFungibleTokenFails() {
+    private HapiSpec getInfoOnInvalidFungibleTokenFails() {
         return defaultHapiSpec("GetInfoOnInvalidFungibleTokenFails")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -1026,7 +1036,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                         getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
-    private HapiApiSpec getInfoOnDeletedNonFungibleTokenFails() {
+    private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("GetInfoOnDeletedNonFungibleTokenFails")
                 .given(
@@ -1072,7 +1082,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                 .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged());
     }
 
-    private HapiApiSpec getInfoOnInvalidNonFungibleTokenFails() {
+    private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("GetInfoOnDeletedNonFungibleTokenFails")
                 .given(
@@ -1134,7 +1144,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec happyPathGetTokenCustomFees() {
+    private HapiSpec happyPathGetTokenCustomFees() {
         return defaultHapiSpec("HappyPathGetTokenCustomFees")
                 .given(
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -1208,7 +1218,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                                 spec))))))));
     }
 
-    private HapiApiSpec happyPathGetNonFungibleTokenCustomFees() {
+    private HapiSpec happyPathGetNonFungibleTokenCustomFees() {
         final int maxSupply = 10;
         final ByteString meta = ByteString.copyFrom(META.getBytes(StandardCharsets.UTF_8));
         return defaultHapiSpec("HappyPathGetNonFungibleTokenCustomFees")
@@ -1307,7 +1317,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                                                 spec))))))));
     }
 
-    private HapiApiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
+    private HapiSpec happyPathUpdateTokenKeysAndReadLatestInformation() {
         final String TOKEN_INFO_AS_KEY = "TOKEN_INFO_CONTRACT_KEY";
         return defaultHapiSpec("UpdateTokenKeysAndReadLatestInformation")
                 .given(
@@ -1481,9 +1491,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     private TokenNftInfo getTokenNftInfoForCheck(
-            final HapiApiSpec spec,
-            final HapiGetTokenInfo getTokenInfoQuery,
-            final ByteString meta) {
+            final HapiSpec spec, final HapiGetTokenInfo getTokenInfoQuery, final ByteString meta) {
         final var tokenId =
                 getTokenInfoQuery.getResponse().getTokenGetInfo().getTokenInfo().getTokenId();
 
@@ -1506,7 +1514,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     private TokenInfo getTokenInfoStructForFungibleToken(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final String tokenName,
             final String symbol,
             final String memo,
@@ -1541,7 +1549,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private ArrayList<CustomFee> getCustomFees(final HapiApiSpec spec) {
+    private ArrayList<CustomFee> getCustomFees(final HapiSpec spec) {
         final var fixedFee = FixedFee.newBuilder().setAmount(500L).build();
         final var customFixedFee =
                 CustomFee.newBuilder()
@@ -1570,7 +1578,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     private TokenInfo getTokenInfoStructForNonFungibleToken(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final String tokenName,
             final String symbol,
             final String memo,
@@ -1603,7 +1611,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private ArrayList<CustomFee> getCustomFeeForNFT(final HapiApiSpec spec) {
+    private ArrayList<CustomFee> getCustomFeeForNFT(final HapiSpec spec) {
         final var fraction =
                 Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
         final var fallbackFee =
@@ -1629,7 +1637,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
         return customFees;
     }
 
-    private Key getTokenKeyFromSpec(final HapiApiSpec spec, final TokenKeyType type) {
+    private Key getTokenKeyFromSpec(final HapiSpec spec, final TokenKeyType type) {
         final var key = spec.registry().getKey(type.name());
 
         final var keyBuilder = Key.newBuilder();

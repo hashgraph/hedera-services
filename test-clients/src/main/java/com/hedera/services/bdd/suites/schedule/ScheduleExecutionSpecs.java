@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -106,12 +106,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -132,7 +132,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class ScheduleExecutionSpecs extends HapiApiSuite {
+public class ScheduleExecutionSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
     private static final String A_TOKEN = "token";
     public static byte[] ORIG_FILE = "SOMETHING".getBytes();
@@ -169,7 +169,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 isLongTermEnabled ->
                         List.of(
@@ -224,7 +224,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 congestionPricingAffectsImmediateScheduleExecution()));
     }
 
-    private HapiApiSpec scheduledBurnFailsWithInvalidTxBody() {
+    private HapiSpec scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
                 .given(
                         cryptoCreate("treasury"),
@@ -248,7 +248,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasPriority(recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
-    private HapiApiSpec scheduledMintFailsWithInvalidTxBody() {
+    private HapiSpec scheduledMintFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledMintFailsWithInvalidTxBody")
                 .given(
                         cryptoCreate("treasury"),
@@ -278,7 +278,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    private HapiApiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
+    private HapiSpec scheduledMintWithInvalidTokenThrowsUnresolvableSigners() {
         return defaultHapiSpec("ScheduledMintWithInvalidTokenThrowsUnresolvableSigners")
                 .given(cryptoCreate("schedulePayer"))
                 .when(
@@ -293,7 +293,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec scheduledUniqueBurnFailsWithInvalidBatchSize() {
+    private HapiSpec scheduledUniqueBurnFailsWithInvalidBatchSize() {
         String failingTxn = "failingTxn";
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidBatchSize")
                 .given(
@@ -327,7 +327,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(1));
     }
 
-    private HapiApiSpec scheduledUniqueBurnExecutesProperly() {
+    private HapiSpec scheduledUniqueBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueBurnExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -404,7 +404,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    private HapiApiSpec scheduledUniqueMintFailsWithInvalidMetadata() {
+    private HapiSpec scheduledUniqueMintFailsWithInvalidMetadata() {
         String failingTxn = "failingTxn";
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidMetadata")
                 .given(
@@ -434,7 +434,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    private HapiApiSpec scheduledUniqueBurnFailsWithInvalidNftId() {
+    private HapiSpec scheduledUniqueBurnFailsWithInvalidNftId() {
         String failingTxn = "failingTxn";
         return defaultHapiSpec("ScheduledUniqueBurnFailsWithInvalidNftId")
                 .given(
@@ -459,7 +459,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasPriority(recordWith().status(INVALID_NFT_ID)));
     }
 
-    private HapiApiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
+    private HapiSpec scheduledBurnForUniqueSucceedsWithExistingAmount() {
         return defaultHapiSpec("scheduledBurnForUniqueSucceedsWithExistingAmount")
                 .given(
                         cryptoCreate("treasury"),
@@ -484,7 +484,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    private HapiApiSpec scheduledBurnForUniqueFailsWithInvalidAmount() {
+    private HapiSpec scheduledBurnForUniqueFailsWithInvalidAmount() {
         String failingTxn = "failingTxn";
         return defaultHapiSpec("ScheduledBurnForUniqueFailsWithInvalidAmount")
                 .given(
@@ -520,7 +520,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         return contents;
     }
 
-    private HapiApiSpec scheduledUniqueMintFailsWithInvalidBatchSize() {
+    private HapiSpec scheduledUniqueMintFailsWithInvalidBatchSize() {
         String failingTxn = "failingTxn";
         return defaultHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
                 .given(
@@ -558,7 +558,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         overriding("tokens.nfts.maxBatchSizeMint", defaultMaxBatchSizeMint));
     }
 
-    private HapiApiSpec scheduledMintFailsWithInvalidAmount() {
+    private HapiSpec scheduledMintFailsWithInvalidAmount() {
         final var zeroAmountTxn = "zeroAmountTxn";
         return defaultHapiSpec("ScheduledMintFailsWithInvalidAmount")
                 .given(
@@ -586,7 +586,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(101));
     }
 
-    private HapiApiSpec scheduledUniqueMintExecutesProperly() {
+    private HapiSpec scheduledUniqueMintExecutesProperly() {
         return defaultHapiSpec("ScheduledUniqueMintExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -667,7 +667,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(2));
     }
 
-    private HapiApiSpec scheduledMintExecutesProperly() {
+    private HapiSpec scheduledMintExecutesProperly() {
         return defaultHapiSpec("ScheduledMintExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -741,7 +741,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(111));
     }
 
-    private HapiApiSpec scheduledBurnExecutesProperly() {
+    private HapiSpec scheduledBurnExecutesProperly() {
         return defaultHapiSpec("ScheduledBurnExecutesProperly")
                 .given(
                         cryptoCreate("treasury"),
@@ -816,7 +816,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTokenInfo(A_TOKEN).hasTotalSupply(91));
     }
 
-    private HapiApiSpec scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithDeletedAccountPaysServiceFeeButNoImpact() {
         final String xToken = "XXX";
         final String validSchedule = "withLiveAccount";
         final String invalidSchedule = "withDeletedAccount";
@@ -873,7 +873,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithDeletedTokenPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withLiveToken";
         String invalidSchedule = "withDeletedToken";
@@ -934,7 +934,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithFrozenAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withUnfrozenAccount";
         String invalidSchedule = "withFrozenAccount";
@@ -998,7 +998,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithNonKycedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withKycedToken";
         String invalidSchedule = "withNonKycedToken";
@@ -1058,7 +1058,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec
+    private HapiSpec
             scheduledXferFailingWithUnassociatedAccountTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withAssociatedToken";
@@ -1115,7 +1115,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithNonNetZeroTokenTransferPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String validSchedule = "withZeroNetTokenChange";
         String invalidSchedule = "withNonZeroNetTokenChange";
@@ -1170,7 +1170,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
+    private HapiSpec scheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact() {
         String xToken = "XXX";
         String yToken = "YYY";
         String validSchedule = "withNoRepeats";
@@ -1234,7 +1234,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec
+    private HapiSpec
             scheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact() {
         String xToken = "XXX", yToken = "YYY";
         String validSchedule = "withNonEmptyTransfers";
@@ -1304,8 +1304,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec
-            scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
+    private HapiSpec scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidSize";
         String invalidSchedule = "withInvalidSize";
@@ -1352,8 +1351,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiApiSpec
-            scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
+    private HapiSpec scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkTxnId";
         String invalidSchedule = "withInvalidChunkTxnId";
@@ -1424,7 +1422,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get())));
     }
 
-    private HapiApiSpec
+    private HapiSpec
             scheduledSubmitFailedWithInvalidChunkNumberStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkNumber";
@@ -1484,7 +1482,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                 successFeesObs.get(), failureFeesObs.get())));
     }
 
-    private HapiApiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
+    private HapiSpec scheduledSubmitThatWouldFailWithInvalidTopicIdCannotBeScheduled() {
         String civilianPayer = PAYER;
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
@@ -1522,7 +1520,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         }
     }
 
-    private HapiApiSpec scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
+    private HapiSpec scheduledSubmitThatWouldFailWithTopicDeletedCannotBeSigned() {
         String adminKey = "admin";
         String mutableTopic = "XXX";
         String postDeleteSchedule = "deferredTooLongSubmitMsg";
@@ -1547,7 +1545,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
-    public HapiApiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
+    public HapiSpec executionTriggersOnceTopicHasSatisfiedSubmitKey() {
         String adminKey = "admin", submitKey = "submit";
         String mutableTopic = "XXX";
         String schedule = "deferredSubmitMsg";
@@ -1583,7 +1581,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTopicInfo(mutableTopic).hasSeqNo(1L));
     }
 
-    public HapiApiSpec executionTriggersWithWeirdlyRepeatedKey() {
+    public HapiSpec executionTriggersWithWeirdlyRepeatedKey() {
         String schedule = "dupKeyXfer";
 
         return defaultHapiSpec("ExecutionTriggersWithWeirdlyRepeatedKey")
@@ -1615,7 +1613,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getTxnRecord("repeatedSigning").logged());
     }
 
-    public HapiApiSpec executionWithDefaultPayerWorks() {
+    public HapiSpec executionWithDefaultPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithDefaultPayerWorks")
                 .given(
@@ -1694,7 +1692,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithDefaultPayerButNoFundsFails() {
+    public HapiSpec executionWithDefaultPayerButNoFundsFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1743,7 +1741,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
+    public HapiSpec executionWithCustomPayerWorksWithLastSigBeingCustomPayer() {
         long noBalance = 0L;
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorksWithLastSigBeingCustomPayer")
@@ -1788,7 +1786,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getAccountBalance("receiver").hasTinyBars(transferAmount));
     }
 
-    public HapiApiSpec executionWithCustomPayerButNoFundsFails() {
+    public HapiSpec executionWithCustomPayerButNoFundsFails() {
         long balance = 0L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1828,7 +1826,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithDefaultPayerButAccountDeletedFails() {
+    public HapiSpec executionWithDefaultPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1L;
@@ -1858,7 +1856,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
-    public HapiApiSpec executionWithCustomPayerButAccountDeletedFails() {
+    public HapiSpec executionWithCustomPayerButAccountDeletedFails() {
         long balance = 10_000_000L;
         long noBalance = 0L;
         long transferAmount = 1;
@@ -1901,7 +1899,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCryptoInsufficientAccountBalanceFails() {
+    public HapiSpec executionWithCryptoInsufficientAccountBalanceFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1942,7 +1940,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCryptoSenderDeletedFails() {
+    public HapiSpec executionWithCryptoSenderDeletedFails() {
         long noBalance = 0L;
         long senderBalance = 100L;
         long transferAmount = 101L;
@@ -1984,7 +1982,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithTokenInsufficientAccountBalanceFails() {
+    public HapiSpec executionWithTokenInsufficientAccountBalanceFails() {
         String xToken = "XXX";
         String invalidSchedule = "withInsufficientTokenTransfer";
         String schedulePayer = PAYER;
@@ -2019,7 +2017,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 
-    public HapiApiSpec executionWithInvalidAccountAmountsFails() {
+    public HapiSpec executionWithInvalidAccountAmountsFails() {
         long transferAmount = 100;
         long senderBalance = 1000L;
         long payingAccountBalance = 1_000_000L;
@@ -2060,7 +2058,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCustomPayerWorks() {
+    public HapiSpec executionWithCustomPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWorks")
                 .given(
@@ -2151,7 +2149,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCustomPayerAndAdminKeyWorks() {
+    public HapiSpec executionWithCustomPayerAndAdminKeyWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerAndAdminKeyWorks")
                 .given(
@@ -2244,7 +2242,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    public HapiApiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
+    public HapiSpec executionWithCustomPayerWhoSignsAtCreationAsPayerWorks() {
         long transferAmount = 1;
         return defaultHapiSpec("ExecutionWithCustomPayerWhoSignsAtCreationAsPayerWorks")
                 .given(
@@ -2365,7 +2363,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         return amountHasBeenTransferred && payerHasPaid;
     }
 
-    private HapiApiSpec scheduledFreezeWorksAsExpected() {
+    private HapiSpec scheduledFreezeWorksAsExpected() {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -2413,7 +2411,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
+    private HapiSpec scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
 
         final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
 
@@ -2494,7 +2492,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
+    private HapiSpec scheduledPermissionedFileUpdateWorksAsExpected() {
         return defaultHapiSpec("ScheduledPermissionedFileUpdateWorksAsExpected")
                 .given(
                         cryptoCreate("payingAccount"),
@@ -2530,7 +2528,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
+    private HapiSpec scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
 
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFails")
                 .given(
@@ -2568,7 +2566,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledSystemDeleteWorksAsExpected() {
+    private HapiSpec scheduledSystemDeleteWorksAsExpected() {
 
         return defaultHapiSpec("ScheduledSystemDeleteWorksAsExpected")
                 .given(
@@ -2609,7 +2607,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
+    private HapiSpec scheduledSystemDeleteUnauthorizedPayerFails(boolean isLongTermEnabled) {
 
         if (isLongTermEnabled) {
 
@@ -2677,7 +2675,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec congestionPricingAffectsImmediateScheduleExecution() {
+    private HapiSpec congestionPricingAffectsImmediateScheduleExecution() {
         var artificialLimits =
                 protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");

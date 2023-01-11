@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -38,9 +38,9 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * network. Once the node is reconnected the state of tokens is verified on reconnected node and
  * other node
  */
-public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
+public class ValidateTokensStateAfterReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidateTokensStateAfterReconnect.class);
     public static final String reconnectingNode = "0.0.8";
     public static final String nonReconnectingNode = "0.0.3";
@@ -65,11 +65,11 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runTransfersBeforeReconnect(), validateTokensAfterReconnect());
     }
 
-    private HapiApiSpec validateTokensAfterReconnect() {
+    private HapiSpec validateTokensAfterReconnect() {
         String tokenToBeQueried = "token-1";
         String anotherToken = "token-2";
         String anotherAccount = "account";

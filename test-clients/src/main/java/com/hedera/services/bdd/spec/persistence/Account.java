@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.persistence.SpecKey.RegistryForms.und
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -40,7 +40,7 @@ public class Account {
     private boolean receiverSigRequired = false;
     private boolean recharging = false;
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (key == UNUSED_KEY) {
             throw new IllegalStateException(String.format("Account '%s' has no given key!", name));
         }
@@ -92,7 +92,7 @@ public class Account {
         this.balance = balance;
     }
 
-    private long effBalance(HapiApiSpec spec) {
+    private long effBalance(HapiSpec spec) {
         return (balance == null) ? spec.setup().defaultBalance() : balance;
     }
 

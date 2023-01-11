@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -34,16 +34,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PrivilegedOpsSuite extends HapiApiSuite {
+public class PrivilegedOpsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrivilegedOpsSuite.class);
 
     private static final byte[] totalLimits =
@@ -56,9 +56,9 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     superusersAreNeverThrottledOnTransfers(),
                     superusersAreNeverThrottledOnMiscTxns(),
                     superusersAreNeverThrottledOnHcsTxns(),
@@ -113,7 +113,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                             .mapToObj(i -> getTopicInfo("misc").nodePayment(100L).payingWith(payer))
                             .toArray(n -> new HapiSpecOperation[n]);
 
-    private HapiApiSpec freezeAdminPrivilegesAsExpected() {
+    private HapiSpec freezeAdminPrivilegesAsExpected() {
         return defaultHapiSpec("FreezeAdminPrivilegesAsExpected")
                 .given(
                         cryptoCreate("civilian"),
@@ -159,7 +159,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                 .content(new byte[0]));
     }
 
-    private HapiApiSpec systemAccountUpdatePrivilegesAsExpected() {
+    private HapiSpec systemAccountUpdatePrivilegesAsExpected() {
         final var tmpTreasury = "tmpTreasury";
         return defaultHapiSpec("SystemAccountUpdatePrivilegesAsExpected")
                 .given(newKeyNamed(tmpTreasury), newKeyNamed("new88"), cryptoCreate("civilian"))
@@ -213,7 +213,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                 .signedBy(SYSTEM_ADMIN, GENESIS));
     }
 
-    private HapiApiSpec superusersAreNeverThrottledOnTransfers() {
+    private HapiSpec superusersAreNeverThrottledOnTransfers() {
         return defaultHapiSpec("SuperusersAreNeverThrottledOnTransfers")
                 .given(
                         cryptoTransfer(
@@ -237,7 +237,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                         .contents(defaultThrottles)));
     }
 
-    private HapiApiSpec superusersAreNeverThrottledOnMiscTxns() {
+    private HapiSpec superusersAreNeverThrottledOnMiscTxns() {
         return defaultHapiSpec("MasterIsNeverThrottledOnMiscTxns")
                 .given(
                         cryptoTransfer(
@@ -261,7 +261,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                         .contents(defaultThrottles)));
     }
 
-    private HapiApiSpec superusersAreNeverThrottledOnHcsTxns() {
+    private HapiSpec superusersAreNeverThrottledOnHcsTxns() {
         return defaultHapiSpec("MasterIsNeverThrottledOnHcsTxns")
                 .given(
                         cryptoTransfer(
@@ -281,7 +281,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                         .contents(defaultThrottles)));
     }
 
-    private HapiApiSpec superusersAreNeverThrottledOnMiscQueries() {
+    private HapiSpec superusersAreNeverThrottledOnMiscQueries() {
         return defaultHapiSpec("MasterIsNeverThrottledOnMiscQueries")
                 .given(
                         cryptoTransfer(
@@ -301,7 +301,7 @@ public class PrivilegedOpsSuite extends HapiApiSuite {
                                         .contents(defaultThrottles)));
     }
 
-    private HapiApiSpec superusersAreNeverThrottledOnHcsQueries() {
+    private HapiSpec superusersAreNeverThrottledOnHcsQueries() {
         return defaultHapiSpec("MasterIsNeverThrottledOnHcsQueries")
                 .given(
                         cryptoTransfer(

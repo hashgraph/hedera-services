@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.topic;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -25,15 +25,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.finishThroughputObs
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.startThroughputObs;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateTopicPerfSuite extends HapiApiSuite {
+public class CreateTopicPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateTopicPerfSuite.class);
 
     public static void main(String... args) {
@@ -42,7 +42,7 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return Arrays.asList(createTopicPerf());
     }
 
@@ -51,7 +51,7 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
         return false;
     }
 
-    private HapiApiSpec createTopicPerf() {
+    private HapiSpec createTopicPerf() {
         final int NUM_TOPICS = 100000;
 
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));

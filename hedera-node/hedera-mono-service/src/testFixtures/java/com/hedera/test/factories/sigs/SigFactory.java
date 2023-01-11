@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.test.factories.sigs;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBodyBytes;
 import static com.hedera.node.app.hapi.utils.SignatureGenerator.signBytes;
-import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
+import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;

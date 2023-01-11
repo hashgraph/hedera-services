@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.autorenew;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -52,15 +52,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractAutoExpirySpecs extends HapiApiSuite {
+public class ContractAutoExpirySpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
 
     public static void main(String... args) {
@@ -68,9 +68,9 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     renewsUsingContractFundsIfNoAutoRenewAccount(),
                     renewalFeeDistributedToStakingAccounts(),
                     renewsUsingAutoRenewAccountIfSet(),
@@ -79,7 +79,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec renewalFeeDistributedToStakingAccounts() {
+    private HapiSpec renewalFeeDistributedToStakingAccounts() {
         final var initcode = "initcode";
         final var contractToRenew = "InstantStorageHog";
         final var initBalance = ONE_HBAR;
@@ -175,7 +175,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                 "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
-    private HapiApiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
+    private HapiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
         final var initcode = "initcode";
         final var contractToRenew = "InstantStorageHog";
         final var initBalance = ONE_HBAR;
@@ -262,7 +262,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                 "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
-    private HapiApiSpec renewsUsingAutoRenewAccountIfSet() {
+    private HapiSpec renewsUsingAutoRenewAccountIfSet() {
         final var initcode = "initcode";
         final var contractToRenew = "InstantStorageHog";
         final var initBalance = ONE_HBAR;
@@ -348,7 +348,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                                 "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
-    private HapiApiSpec storageExpiryWorksAtTheExpectedInterval() {
+    private HapiSpec storageExpiryWorksAtTheExpectedInterval() {
         final var initcode = "initcode";
         final var contractToRemove = "InstantStorageHog";
         final var minimalLifetime = 4;
@@ -418,7 +418,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
 
-    private HapiApiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
+    private HapiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
         final var initcode = "initcode";
         final var contractToRenew = "InstantStorageHog";
         final var initBalance = ONE_HBAR;

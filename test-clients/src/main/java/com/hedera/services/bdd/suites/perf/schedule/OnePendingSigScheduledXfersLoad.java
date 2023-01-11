@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_ALLOWED_STATUSES;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
@@ -34,10 +34,10 @@ import static com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXf
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +53,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
+public class OnePendingSigScheduledXfersLoad extends HapiSuite {
     private static final Logger log = LogManager.getLogger(OnePendingSigScheduledXfersLoad.class);
 
     private AtomicDouble probOfSignOp = new AtomicDouble(0.0);
@@ -73,14 +73,14 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runOnePendingSigXfers(),
                 });
     }
 
-    private HapiApiSpec runOnePendingSigXfers() {
+    private HapiSpec runOnePendingSigXfers() {
         return defaultHapiSpec("RunOnePendingSigXfers")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when(
@@ -106,7 +106,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiApiSuite {
                                 }));
     }
 
-    private Function<HapiApiSpec, OpProvider> pendingSigsFactory() {
+    private Function<HapiSpec, OpProvider> pendingSigsFactory() {
         return spec ->
                 new OpProvider() {
                     @Override

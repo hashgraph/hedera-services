@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
 public class ScheduleFeeUtils {
     static final Logger log = LogManager.getLogger(ScheduleFeeUtils.class);
 
-    static ScheduleInfo lookupInfo(HapiApiSpec spec, String schedule, boolean loggingOff)
+    static ScheduleInfo lookupInfo(HapiSpec spec, String schedule, boolean loggingOff)
             throws Throwable {
         var subOp = getScheduleInfo(schedule).noLogging();
         Optional<Throwable> error = subOp.execFor(spec);

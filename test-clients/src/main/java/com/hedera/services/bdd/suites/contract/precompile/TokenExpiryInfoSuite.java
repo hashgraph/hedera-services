@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -45,10 +45,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenExpiryInfoSuite extends HapiApiSuite {
+public class TokenExpiryInfoSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenExpiryInfoSuite.class);
     private static final String TOKEN_EXPIRY_CONTRACT = "TokenExpiryContract";
@@ -75,7 +76,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
             "updateExpiryInfoForTokenAndReadLatestInfo";
 
     public static void main(String... args) {
-        new TokenExpiryInfoSuite().runSuiteSync();
+        new TokenExpiryInfoSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
@@ -84,14 +90,14 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 getExpiryInfoForToken(),
                 updateExpiryInfoForToken(),
                 updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
-    private HapiApiSpec getExpiryInfoForToken() {
+    private HapiSpec getExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -185,7 +191,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec updateExpiryInfoForToken() {
+    private HapiSpec updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -196,6 +202,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
                                 .balance(0L)
+                                .keyShape(SigControl.ED25519_ON)
                                 .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(TOKEN_EXPIRY_CONTRACT),
@@ -225,7 +232,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidTokenTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -260,7 +269,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidExpiryTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -275,7 +286,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                 DEFAULT_MAX_LIFETIME - 12_345L,
                                                                 asHeadlongAddress(INVALID_ADDRESS),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidAutoRenewAccountTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -293,7 +306,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 1L)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("invalidAutoRenewPeriodTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS)
@@ -311,7 +326,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("updateExpiryTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))
@@ -369,7 +386,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+    private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -379,6 +396,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
+                                .keyShape(SigControl.ED25519_ON)
                                 .balance(0L)
                                 .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
                         newKeyNamed(ADMIN_KEY),
@@ -412,7 +430,9 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                                                 updatedAutoRenewAccountID
                                                                                         .get())),
                                                                 MONTH_IN_SECONDS)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY,
+                                                                UPDATED_AUTO_RENEW_ACCOUNT)
                                                         .via("updateExpiryAndReadLatestInfoTxn")
                                                         .gas(GAS_TO_OFFER)
                                                         .payingWith(GENESIS))))

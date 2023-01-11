@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asDuration;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTimestamp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -112,7 +112,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != ResponseCodeEnum.SUCCESS) {
             return;
         }
@@ -141,7 +141,7 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         newAdminKeyName.ifPresent(name -> newAdminKey = Optional.of(spec.registry().getKey(name)));
         newSubmitKeyName.ifPresent(
                 name -> newSubmitKey = Optional.of(spec.registry().getKey(name)));
@@ -168,8 +168,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final List<Function<HapiApiSpec, Key>> signers = new ArrayList<>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         signers.add(
                 spec -> {
@@ -193,12 +193,12 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::updateTopic;
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         if (!spec.registry().hasTopicMeta(topic)) {
             return spec.fees().maxFeeTinyBars();

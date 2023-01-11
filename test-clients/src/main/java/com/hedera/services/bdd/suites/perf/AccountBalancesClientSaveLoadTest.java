@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
@@ -50,8 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
@@ -116,11 +116,11 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runAccountBalancesClientSaveLoadTest());
     }
 
-    private HapiApiSpec runAccountBalancesClientSaveLoadTest() {
+    private HapiSpec runAccountBalancesClientSaveLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         var throttlesForJRS =
                 protoDefsFromResource("testSystemFiles/throttles-for-acct-balances-tests.json");
@@ -247,7 +247,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         freezeOnly().payingWith(GENESIS).startingIn(10).seconds());
     }
 
-    private Function<HapiApiSpec, OpProvider> accountsCreate(PerfTestLoadSettings settings) {
+    private Function<HapiSpec, OpProvider> accountsCreate(PerfTestLoadSettings settings) {
         totalTestTokens =
                 settings.getTotalTokens() > 10 ? settings.getTotalTokens() : TOTAL_TEST_TOKENS;
         totalAccounts =
@@ -295,7 +295,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> tokensCreate() {
+    private Function<HapiSpec, OpProvider> tokensCreate() {
         AtomicInteger createdSofar = new AtomicInteger(0);
 
         return spec ->
@@ -336,7 +336,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> randomTokenAssociate() {
+    private Function<HapiSpec, OpProvider> randomTokenAssociate() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -373,7 +373,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> randomTransfer() {
+    private Function<HapiSpec, OpProvider> randomTransfer() {
         return spec ->
                 new OpProvider() {
                     @Override

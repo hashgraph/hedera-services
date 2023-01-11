@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,16 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -65,8 +67,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
@@ -107,7 +109,7 @@ import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
@@ -136,8 +138,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,6 +154,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ObjIntConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -296,7 +301,7 @@ public class UtilVerbs {
     }
 
     public static BalanceSnapshot balanceSnapshot(
-            Function<HapiApiSpec, String> nameFn, String forAccount) {
+            Function<HapiSpec, String> nameFn, String forAccount) {
         return new BalanceSnapshot(forAccount, nameFn);
     }
 
@@ -344,11 +349,11 @@ public class UtilVerbs {
         return new LogMessage(msg);
     }
 
-    public static LogMessage logIt(Function<HapiApiSpec, String> messageFn) {
+    public static LogMessage logIt(Function<HapiSpec, String> messageFn) {
         return new LogMessage(messageFn);
     }
 
-    public static ProviderRun runWithProvider(Function<HapiApiSpec, OpProvider> provider) {
+    public static ProviderRun runWithProvider(Function<HapiSpec, OpProvider> provider) {
         return new ProviderRun(provider);
     }
 
@@ -364,17 +369,41 @@ public class UtilVerbs {
                 .overridingProps(explicit);
     }
 
+    public static HapiSpecOperation overridingAllOfDeferred(
+            Supplier<Map<String, String>> explicit) {
+        return fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(explicit.get());
+    }
+
     public static HapiSpecOperation resetToDefault(String... properties) {
         var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
         final Map<String, String> defaultValues = new HashMap<>();
         for (final var prop : properties) {
             final var defaultValue = defaultNodeProps.get(prop);
-            log.info("Resetting {} to default value {}", prop, defaultValue);
             defaultValues.put(prop, defaultValue);
         }
         return fileUpdate(APP_PROPERTIES)
                 .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(defaultValues);
+                .overridingProps(defaultValues)
+                .alertingPost(
+                        status -> {
+                            if (status == SUCCESS) {
+                                log.info("Reset {} default values", defaultValues);
+                            }
+                        });
+    }
+
+    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
+        return blockingOrder(
+                overridingAllOf(FeatureFlags.FEATURE_FLAGS.allEnabled()),
+                overridingThree(
+                        "contracts.throttle.throttleByGas",
+                        FALSE_VALUE,
+                        "contracts.enforceCreationThrottle",
+                        FALSE_VALUE,
+                        SIDECARS_PROP,
+                        "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     public static HapiSpecOperation overridingTwo(
@@ -404,6 +433,29 @@ public class UtilVerbs {
                                 aProperty, aValue,
                                 bProperty, bValue,
                                 cProperty, cValue));
+    }
+
+    public static HapiSpecOperation remembering(
+            final Map<String, String> props, final String... ofInterest) {
+        return remembering(props, Arrays.asList(ofInterest));
+    }
+
+    public static HapiSpecOperation remembering(
+            final Map<String, String> props, final List<String> ofInterest) {
+        final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+        final Predicate<String> filter = new HashSet<>(ofInterest)::contains;
+        return blockingOrder(
+                getFileContents(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .nodePayment(ONE_HBAR)
+                        .fee(ONE_HBAR)
+                        .addingFilteredConfigListTo(props, filter),
+                sourcing(
+                        () -> {
+                            ofInterest.forEach(
+                                    prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
+                            return logIt("Remembered props: " + props);
+                        }));
     }
 
     public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
@@ -445,8 +497,7 @@ public class UtilVerbs {
                     if (!asId(account, spec).equals(asId(GENESIS, spec))) {
                         HapiCryptoTransfer subOp =
                                 cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                GENESIS, account, HapiApiSuite.ADEQUATE_FUNDS));
+                                        tinyBarsFromTo(GENESIS, account, HapiSuite.ADEQUATE_FUNDS));
                         CustomSpecAssert.allRunFor(spec, subOp);
                     }
                 });
@@ -618,6 +669,15 @@ public class UtilVerbs {
             long tinyBarMaxNodeFee,
             long tinyBarMaxNetworkFee,
             long tinyBarMaxServiceFee) {
+        return reduceFeeFor(
+                List.of(function), tinyBarMaxNodeFee, tinyBarMaxNetworkFee, tinyBarMaxServiceFee);
+    }
+
+    public static HapiSpecOperation reduceFeeFor(
+            List<HederaFunctionality> functions,
+            long tinyBarMaxNodeFee,
+            long tinyBarMaxNetworkFee,
+            long tinyBarMaxServiceFee) {
         return withOpContext(
                 (spec, opLog) -> {
                     if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
@@ -629,7 +689,7 @@ public class UtilVerbs {
                             "Sleeping so not to spoil/fail the fee initializations on other"
                                     + " clients...");
                     Thread.sleep(10000);
-                    opLog.info("Reducing fee for {}...", function);
+                    opLog.info("Reducing fee for {}...", functions);
                     var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
                     allRunFor(spec, query);
                     byte[] rawSchedules =
@@ -649,18 +709,20 @@ public class UtilVerbs {
 
                     var perturbedSchedules =
                             CurrentAndNextFeeSchedule.parseFrom(rawSchedules).toBuilder();
-                    reduceFeeComponentsFor(
-                            perturbedSchedules.getCurrentFeeScheduleBuilder(),
-                            function,
-                            maxNodeFee,
-                            maxNetworkFee,
-                            maxServiceFee);
-                    reduceFeeComponentsFor(
-                            perturbedSchedules.getNextFeeScheduleBuilder(),
-                            function,
-                            maxNodeFee,
-                            maxNetworkFee,
-                            maxServiceFee);
+                    for (final var function : functions) {
+                        reduceFeeComponentsFor(
+                                perturbedSchedules.getCurrentFeeScheduleBuilder(),
+                                function,
+                                maxNodeFee,
+                                maxNetworkFee,
+                                maxServiceFee);
+                        reduceFeeComponentsFor(
+                                perturbedSchedules.getNextFeeScheduleBuilder(),
+                                function,
+                                maxNodeFee,
+                                maxNetworkFee,
+                                maxServiceFee);
+                    }
                     var rawPerturbedSchedules = perturbedSchedules.build().toByteString();
                     allRunFor(spec, updateLargeFile(GENESIS, FEE_SCHEDULE, rawPerturbedSchedules));
                 });
@@ -857,7 +919,7 @@ public class UtilVerbs {
             final int numBursts,
             final String fileName,
             final String payer,
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final UploadProgress uploadProgress,
             final int appendsSkipped,
             final Logger opLog)
@@ -1121,7 +1183,7 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
-        return HapiApiSuite.flattened(
+        return HapiSuite.flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L))
                         .noLogging(),
                 Stream.of(entities)
@@ -1354,12 +1416,42 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
 
+    public static Tuple accountAmountAlias(final byte[] alias, final Long amount) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
+    }
+
+    public static Tuple accountAmountAlias(
+            final byte[] alias, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
+
         return Tuple.of(
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
                 serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender, final byte[] alias, final Long serialNumber) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender,
+            final byte[] alias,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber,
+                isApproval);
     }
 
     public static Tuple nftTransfer(
@@ -1387,7 +1479,7 @@ public class UtilVerbs {
         return convertedOps;
     }
 
-    public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
+    public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
         var key = spec.registry().getKey(privateKeyRef);
         final var privateKey =
                 spec.keys()

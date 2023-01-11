@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
-import static com.hedera.services.bdd.suites.HapiApiSuite.CHAIN_ID;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_HASH_KEY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SENDER_ADDRESS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
-import static com.hedera.services.bdd.suites.HapiApiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -97,7 +97,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     @Override
-    protected Key lookupKey(HapiApiSpec spec, String name) {
+    protected Key lookupKey(HapiSpec spec, String name) {
         return spec.registry().getKey(name);
     }
 
@@ -174,7 +174,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         bytecodeFileFn.ifPresent(
                 stringSupplier -> bytecodeFile = Optional.of(stringSupplier.get()));
         if (bytecodeFile.isEmpty()) {
@@ -244,7 +244,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.EthereumTransaction,
@@ -254,7 +254,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 }

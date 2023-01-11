@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -100,7 +100,7 @@ public class NewSpecKey extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         if (exportEd25519Mnemonic) {
             if (!immediateExportLoc.isPresent() || !immediateExportPass.isPresent()) {
                 throw new IllegalStateException("Must have an export location for the key info");
@@ -159,7 +159,7 @@ public class NewSpecKey extends UtilOp {
         return false;
     }
 
-    static void exportWithPass(HapiApiSpec spec, String name, String exportLoc, String exportPass)
+    static void exportWithPass(HapiSpec spec, String name, String exportLoc, String exportPass)
             throws IOException {
         spec.keys().exportSimpleKey(exportLoc, name, exportPass);
         final var passLoc = exportLoc.replace(".pem", ".pass");

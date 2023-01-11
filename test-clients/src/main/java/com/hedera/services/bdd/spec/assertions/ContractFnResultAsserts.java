@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -50,7 +50,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     }
 
     public ContractFnResultAsserts resultThruAbi(
-            String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+            String abi, Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
         registerProvider(
                 (spec, o) -> {
                     Object[] actualObjs =
@@ -74,7 +74,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     public ContractFnResultAsserts resultViaFunctionName(
             final String functionName,
             final String contractName,
-            final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+            final Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
         final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
         registerProvider(
                 (spec, o) -> {
@@ -239,7 +239,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     }
 
     /* Helpers to create the provider for #resultThruAbi. */
-    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
             ContractInfoAsserts theExpectedInfo) {
         return spec ->
                 actualObjs -> {
@@ -265,12 +265,12 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 };
     }
 
-    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(
             Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, actualObjs);
     }
 
-    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(
             Set<Object> values) {
         return ignore ->
                 actualObjs -> {
@@ -286,13 +286,13 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 };
     }
 
-    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(
             Object[] objs) {
         return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
     }
 
-    public static Function<HapiApiSpec, Function<Object[], Optional<Throwable>>>
-            isLiteralArrayResult(Object[] objs) {
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(
+            Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
     }
 

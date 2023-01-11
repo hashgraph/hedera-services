@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -58,11 +58,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -74,7 +74,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class UniqueTokenManagementSpecs extends HapiApiSuite {
+public class UniqueTokenManagementSpecs extends HapiSuite {
     private static final org.apache.logging.log4j.Logger log =
             LogManager.getLogger(UniqueTokenManagementSpecs.class);
     private static final String A_TOKEN = "TokenA";
@@ -89,9 +89,9 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     mintFailsWithLargeBatchSize(),
                     mintFailsWithTooLongMetadata(),
                     mintFailsWithInvalidMetadataFromBatch(),
@@ -124,7 +124,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec populatingMetadataForFungibleDoesNotWork() {
+    private HapiSpec populatingMetadataForFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingMetadataForFungibleDoesNotWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -157,7 +157,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec populatingAmountForNonFungibleDoesNotWork() {
+    private HapiSpec populatingAmountForNonFungibleDoesNotWork() {
         return defaultHapiSpec("PopulatingAmountForNonFungibleDoesNotWork")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -185,7 +185,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec finiteNftReachesMaxSupplyProperly() {
+    private HapiSpec finiteNftReachesMaxSupplyProperly() {
         return defaultHapiSpec("FiniteNftReachesMaxSupplyProperly")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -220,7 +220,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec serialNumbersOnlyOnFungibleBurnFails() {
+    private HapiSpec serialNumbersOnlyOnFungibleBurnFails() {
         return defaultHapiSpec("SerialNumbersOnlyOnFungibleBurnFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -250,7 +250,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec amountOnlyOnNonFungibleBurnFails() {
+    private HapiSpec amountOnlyOnNonFungibleBurnFails() {
         return defaultHapiSpec("AmountOnlyOnNonFungibleBurnFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -285,7 +285,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec burnWorksWhenAccountsAreFrozenByDefault() {
+    private HapiSpec burnWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("BurnWorksWhenAccountsAreFrozenByDefault")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -304,7 +304,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    private HapiApiSpec burnFailsOnInvalidSerialNumber() {
+    private HapiSpec burnFailsOnInvalidSerialNumber() {
         return defaultHapiSpec("BurnFailsOnInvalidSerialNumber")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -324,7 +324,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
-    private HapiApiSpec burnRespectsBurnBatchConstraints() {
+    private HapiSpec burnRespectsBurnBatchConstraints() {
         return defaultHapiSpec("BurnRespectsBurnBatchConstraints")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -347,7 +347,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
-    private HapiApiSpec burnHappyPath() {
+    private HapiSpec burnHappyPath() {
         return defaultHapiSpec("BurnHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -369,7 +369,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasOwnedNfts(0));
     }
 
-    private HapiApiSpec canOnlyBurnFromTreasury() {
+    private HapiSpec canOnlyBurnFromTreasury() {
         final var nonTreasury = "anybodyElse";
 
         return defaultHapiSpec("CanOnlyBurnFromTreasury")
@@ -400,7 +400,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
-    private HapiApiSpec treasuryBalanceCorrectAfterBurn() {
+    private HapiSpec treasuryBalanceCorrectAfterBurn() {
         return defaultHapiSpec("TreasuryBalanceCorrectAfterBurn")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -431,7 +431,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
-    private HapiApiSpec mintDistinguishesFeeSubTypes() {
+    private HapiSpec mintDistinguishesFeeSubTypes() {
         return defaultHapiSpec("MintDistinguishesFeeSubTypes")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -475,7 +475,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec mintFailsWithTooLongMetadata() {
+    private HapiSpec mintFailsWithTooLongMetadata() {
         return defaultHapiSpec("MintFailsWithTooLongMetadata")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -492,7 +492,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
-    private HapiApiSpec mintFailsWithInvalidMetadataFromBatch() {
+    private HapiSpec mintFailsWithInvalidMetadataFromBatch() {
         return defaultHapiSpec("MintFailsWithInvalidMetadataFromBatch")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -509,7 +509,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(ResponseCodeEnum.METADATA_TOO_LONG));
     }
 
-    private HapiApiSpec mintFailsWithLargeBatchSize() {
+    private HapiSpec mintFailsWithLargeBatchSize() {
         return defaultHapiSpec("MintFailsWithLargeBatchSize")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -526,7 +526,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
-    private HapiApiSpec mintUniqueTokenHappyPath() {
+    private HapiSpec mintUniqueTokenHappyPath() {
         return defaultHapiSpec("MintUniqueTokenHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -561,7 +561,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasOwnedNfts(2));
     }
 
-    private HapiApiSpec mintTokenWorksWhenAccountsAreFrozenByDefault() {
+    private HapiSpec mintTokenWorksWhenAccountsAreFrozenByDefault() {
         return defaultHapiSpec("MintTokenWorksWhenAccountsAreFrozenByDefault")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -584,7 +584,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(1));
     }
 
-    private HapiApiSpec mintFailsWithDeletedToken() {
+    private HapiSpec mintFailsWithDeletedToken() {
         return defaultHapiSpec("MintFailsWithDeletedToken")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -603,7 +603,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getTokenInfo(NFT).isDeleted());
     }
 
-    private HapiApiSpec getTokenNftInfoFailsWithNoNft() {
+    private HapiSpec getTokenNftInfoFailsWithNoNft() {
         return defaultHapiSpec("GetTokenNftInfoFailsWithNoNft")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -622,7 +622,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getTokenNftInfo(NFT, 2).hasCostAnswerPrecheck(INVALID_NFT_ID));
     }
 
-    private HapiApiSpec getTokenNftInfoWorks() {
+    private HapiSpec getTokenNftInfoWorks() {
         return defaultHapiSpec("GetTokenNftInfoWorks")
                 .given(newKeyNamed(SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -647,7 +647,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasValidCreationTime());
     }
 
-    private HapiApiSpec mintUniqueTokenWorksWithRepeatedMetadata() {
+    private HapiSpec mintUniqueTokenWorksWithRepeatedMetadata() {
         return defaultHapiSpec("MintUniqueTokenWorksWithRepeatedMetadata")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -675,7 +675,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
-    private HapiApiSpec wipeHappyPath() {
+    private HapiSpec wipeHappyPath() {
         return defaultHapiSpec("WipeHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -709,7 +709,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));
     }
 
-    private HapiApiSpec wipeRespectsConstraints() {
+    private HapiSpec wipeRespectsConstraints() {
         return defaultHapiSpec("WipeRespectsConstraints")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -737,7 +737,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
-    private HapiApiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
+    private HapiSpec commonWipeFailsWhenInvokedOnUniqueToken() {
         return defaultHapiSpec("CommonWipeFailsWhenInvokedOnUniqueToken")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -768,7 +768,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountBalance("account").hasTokenBalance(NFT, 1));
     }
 
-    private HapiApiSpec
+    private HapiSpec
             uniqueWipeFailsWhenInvokedOnFungibleToken() { // invokes unique wipe on fungible tokens
         return defaultHapiSpec("UniqueWipeFailsWhenInvokedOnFungibleToken")
                 .given(
@@ -797,7 +797,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountBalance("account").hasTokenBalance(A_TOKEN, 5));
     }
 
-    private HapiApiSpec wipeFailsWithInvalidSerialNumber() {
+    private HapiSpec wipeFailsWithInvalidSerialNumber() {
         return defaultHapiSpec("WipeFailsWithInvalidSerialNumber")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -819,7 +819,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                                 .hasPrecheck(INVALID_NFT_ID));
     }
 
-    private HapiApiSpec mintUniqueTokenReceiptCheck() {
+    private HapiSpec mintUniqueTokenReceiptCheck() {
         return defaultHapiSpec("mintUniqueTokenReceiptCheck")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -874,7 +874,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getReceipt("mintTransferTxn").logged());
     }
 
-    private HapiApiSpec tokenDissociateHappyPath() {
+    private HapiSpec tokenDissociateHappyPath() {
         return defaultHapiSpec("tokenDissociateHappyPath")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -892,7 +892,7 @@ public class UniqueTokenManagementSpecs extends HapiApiSuite {
                         getAccountInfo("acc").hasNoTokenRelationship(NFT));
     }
 
-    private HapiApiSpec tokenDissociateFailsIfAccountOwnsUniqueTokens() {
+    private HapiSpec tokenDissociateFailsIfAccountOwnsUniqueTokens() {
         return defaultHapiSpec("tokenDissociateFailsIfAccountOwnsUniqueTokens")
                 .given(
                         newKeyNamed(SUPPLY_KEY),

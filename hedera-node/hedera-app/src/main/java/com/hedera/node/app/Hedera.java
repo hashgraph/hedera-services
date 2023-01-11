@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,9 @@ public final class Hedera {
     public static void main(String[] args) throws InterruptedException {
         final var shutdownLatch = new CountDownLatch(1);
 
-        final var ingestWorkflow = new IngestWorkflowImpl();
+        // TODO: These need to be replaced with appropriate setup code
+        final var ingestWorkflow =
+                new IngestWorkflowImpl(null, null, null, null, null, null, null, null, null);
         final var queryWorkflow = new QueryWorkflowImpl();
 
         final var metrics = createMetrics();

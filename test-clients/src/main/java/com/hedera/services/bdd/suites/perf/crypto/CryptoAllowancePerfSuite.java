@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -40,11 +40,11 @@ public class CryptoAllowancePerfSuite extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCryptoCreatesAndTokenCreates(), runCryptoAllowances());
     }
 
-    private HapiApiSpec runCryptoCreatesAndTokenCreates() {
+    private HapiSpec runCryptoCreatesAndTokenCreates() {
         final int NUM_CREATES = 5000;
         return defaultHapiSpec("runCryptoCreatesAndTokenCreates")
                 .given()
@@ -102,7 +102,7 @@ public class CryptoAllowancePerfSuite extends LoadTest {
                                                                 .deferStatusResolution())));
     }
 
-    private HapiApiSpec runCryptoAllowances() {
+    private HapiSpec runCryptoAllowances() {
         final int NUM_ALLOWANCES = 5000;
         return defaultHapiSpec("runCryptoAllowances")
                 .given()

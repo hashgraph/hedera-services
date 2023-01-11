@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 package com.hedera.services.bdd.spec.utilops;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LogMessage extends UtilOp {
     static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
-    private final Function<HapiApiSpec, String> messageFn;
+    private final Function<HapiSpec, String> messageFn;
 
-    public LogMessage(Function<HapiApiSpec, String> messageFn) {
+    public LogMessage(Function<HapiSpec, String> messageFn) {
         this.messageFn = messageFn;
     }
 
@@ -33,7 +33,7 @@ public class LogMessage extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         log.info(messageFn.apply(spec));
         return false;
     }

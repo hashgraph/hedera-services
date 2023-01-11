@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isRandomResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -30,12 +30,11 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,7 +42,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PrngSeedOperationSuite extends HapiApiSuite {
+public class PrngSeedOperationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrngSeedOperationSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String THE_PRNG_CONTRACT = "PrngSeedOperationContract";
@@ -66,22 +65,22 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of();
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
                 prngPrecompileHappyPathWorks(),
                 multipleCallsHaveIndependentResults(),
-                prngPrecompileDisabledInV_0_30());
+                prngPrecompileDisabledInV030());
     }
 
-    private HapiApiSpec multipleCallsHaveIndependentResults() {
+    private HapiSpec multipleCallsHaveIndependentResults() {
         final var prng = THE_PRNG_CONTRACT;
         final var gasToOffer = 400_000;
         final var numCalls = 5;
@@ -90,7 +89,7 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                 .given(
                         uploadInitCode(prng),
                         contractCreate(prng),
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
                 .when(
                         withOpContext(
@@ -135,12 +134,12 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                         contractCallLocal(prng, GET_SEED).gas(gasToOffer));
     }
 
-    private HapiApiSpec prngPrecompileHappyPathWorks() {
+    private HapiSpec prngPrecompileHappyPathWorks() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
@@ -169,12 +168,12 @@ public class PrngSeedOperationSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec prngPrecompileDisabledInV_0_30() {
+    private HapiSpec prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),

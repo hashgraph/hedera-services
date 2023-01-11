@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -43,11 +43,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
+public class MixedHTSPrecompileTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MixedHTSPrecompileTestsSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -69,7 +69,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
     private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
 
     public static void main(String... args) {
-        new MixedHTSPrecompileTestsSuite().runSuiteSync();
+        new MixedHTSPrecompileTestsSuite().runSuiteAsync();
     }
 
     @Override
@@ -78,13 +78,13 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile(),
+                hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile(),
                 createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
-    private HapiApiSpec HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile() {
+    private HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
         final var theAccount = "anybody";
         final var token = "Token";
         final var outerContract = "AssociateTryCatch";
@@ -149,7 +149,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    private HapiApiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+    private HapiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var CONTRACT_ADMIN_KEY = "contractAdminKey";
         final var FEE_COLLECTOR = "feeCollector";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -41,10 +41,10 @@ import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
@@ -68,7 +68,7 @@ import java.util.function.IntFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FibonacciPlusLoadProvider extends HapiApiSuite {
+public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(FibonacciPlusLoadProvider.class);
 
@@ -155,11 +155,11 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(justDoOne(), addFibNums());
     }
 
-    private HapiApiSpec addFibNums() {
+    private HapiSpec addFibNums() {
         return defaultHapiSpec("AddFibNums")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, SUITE_PROPS_PREFIX),
@@ -239,7 +239,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S3776")
-    private Function<HapiApiSpec, OpProvider> contractOpsFactory() {
+    private Function<HapiSpec, OpProvider> contractOpsFactory() {
         final String civilian = "civilian";
         final SplittableRandom random = new SplittableRandom(1_234_567L);
         final IntFunction<String> contractNameFn = i -> "contract" + i;
@@ -393,7 +393,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
         gasUsed.addAndGet(gas);
     }
 
-    private HapiApiSpec justDoOne() {
+    private HapiSpec justDoOne() {
         final var civilian = "civilian";
         final int[] firstTargets = {19, 24};
         final int[] secondTargets = {30, 31};

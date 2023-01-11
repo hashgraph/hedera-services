@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
@@ -70,7 +70,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (unsafeExecUnit != null) {
             final var maxDuration = Duration.of(unsafeExecDuration, unsafeExecUnit);
             final var nanosUsed = timesResponse.getExecutionTimesList();
@@ -87,7 +87,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getExecTimesQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -142,7 +142,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getExecTimesQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -151,7 +151,7 @@ public class HapiGetExecTime extends HapiQueryOp<HapiGetExecTime> {
         return costFrom(response);
     }
 
-    private Query getExecTimesQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getExecTimesQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (txnIdsOfInterest == null) {
             txnIdsOfInterest =
                     txnsOfInterest.stream()

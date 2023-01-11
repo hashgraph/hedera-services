@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
@@ -89,7 +89,7 @@ public class SpecKeyFromPem extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         pemLoc = pemLocFn.map(Supplier::get).orElse(pemLoc);
 
         incorporatePem(spec, control, pemLoc, passphrase, actualName(), linkedId, linkSupplier);
@@ -98,7 +98,7 @@ public class SpecKeyFromPem extends UtilOp {
     }
 
     static void incorporatePem(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final SigControl control,
             final String pemLoc,
             final String passphrase,

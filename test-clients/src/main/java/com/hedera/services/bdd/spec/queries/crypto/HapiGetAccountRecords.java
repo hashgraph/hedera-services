@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.queries.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.ensureDir;
+import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -27,7 +27,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -93,7 +93,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expectation.isPresent()) {
             List<TransactionRecord> actualRecords =
                     response.getCryptoGetAccountRecords().getRecordsList();
@@ -106,7 +106,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getRecordsQuery(spec, payment, false);
         response =
                 spec.clients()
@@ -128,7 +128,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         }
     }
 
-    private void checkExpectations(HapiApiSpec spec, List<TransactionRecord> records) {
+    private void checkExpectations(HapiSpec spec, List<TransactionRecord> records) {
         String specExpectationsDir = specScopedDir(spec, expectationsDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + account;
@@ -148,11 +148,11 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         }
     }
 
-    private String specScopedDir(HapiApiSpec spec, Optional<String> prefix) {
+    private String specScopedDir(HapiSpec spec, Optional<String> prefix) {
         return prefix.map(d -> d + "/" + spec.getName()).get();
     }
 
-    private void saveSnapshots(HapiApiSpec spec, List<TransactionRecord> records) {
+    private void saveSnapshots(HapiSpec spec, List<TransactionRecord> records) {
         String specSnapshotDir = specScopedDir(spec, snapshotDirPath);
         ensureDir(specSnapshotDir);
         String snapshotDir = specSnapshotDir + "/" + account;
@@ -177,7 +177,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getRecordsQuery(spec, payment, true);
         Response response =
                 spec.clients()
@@ -186,7 +186,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
         return costFrom(response);
     }
 
-    private Query getRecordsQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getRecordsQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asId(account, spec);
         CryptoGetAccountRecordsQuery query =
                 CryptoGetAccountRecordsQuery.newBuilder()
@@ -197,7 +197,7 @@ public class HapiGetAccountRecords extends HapiQueryOp<HapiGetAccountRecords> {
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return spec.fees()
                 .forOp(
                         HederaFunctionality.CryptoGetAccountRecords,

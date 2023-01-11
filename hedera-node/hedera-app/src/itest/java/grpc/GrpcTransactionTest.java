@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -33,7 +34,6 @@ import io.helidon.grpc.client.GrpcServiceClient;
 import io.helidon.grpc.server.GrpcRouting;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,12 +80,12 @@ class GrpcTransactionTest extends GrpcTestBase {
         final var iw =
                 new IngestWorkflow() {
                     @Override
-                    public void handleTransaction(
-                            @Nonnull SessionContext session,
-                            @Nonnull ByteBuffer requestBuffer,
-                            @Nonnull ByteBuffer responseBuffer) {
+                    public void submitTransaction(
+                            @NonNull SessionContext session,
+                            @NonNull ByteBuffer requestBuffer,
+                            @NonNull ByteBuffer responseBuffer) {
                         if (ingestWorkflow != null) {
-                            ingestWorkflow.handleTransaction(
+                            ingestWorkflow.submitTransaction(
                                     session, requestBuffer, responseBuffer);
                         }
                     }
@@ -95,9 +95,9 @@ class GrpcTransactionTest extends GrpcTestBase {
                 new QueryWorkflow() {
                     @Override
                     public void handleQuery(
-                            @Nonnull SessionContext session,
-                            @Nonnull ByteBuffer requestBuffer,
-                            @Nonnull ByteBuffer responseBuffer) {
+                            @NonNull SessionContext session,
+                            @NonNull ByteBuffer requestBuffer,
+                            @NonNull ByteBuffer responseBuffer) {
                         if (queryWorkflow != null) {
                             queryWorkflow.handleQuery(session, requestBuffer, responseBuffer);
                         }

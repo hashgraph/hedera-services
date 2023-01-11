@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import java.util.stream.Stream;
 public interface PropertySource {
     String get(String property);
 
-    default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
+    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
+        return HapiSpec.CostSnapshotMode.valueOf(get(property));
     }
 
     default FileID getFile(String property) {

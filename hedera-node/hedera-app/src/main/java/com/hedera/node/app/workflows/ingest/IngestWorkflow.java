@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.ingest;
 import com.hedera.node.app.SessionContext;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /**
  * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
@@ -38,8 +38,8 @@ public interface IngestWorkflow {
      * @param requestBuffer The raw protobuf transaction bytes. Must be a transaction object.
      * @param responseBuffer The raw protobuf response bytes.
      */
-    void handleTransaction(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer);
+    void submitTransaction(
+            @NonNull SessionContext session,
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull ByteBuffer responseBuffer);
 }

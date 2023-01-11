@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.suites.utils.validation.domain;
 
 public class ContractScenario {
-    public static String NOVEL_CONTRACT_NAME = "novelContract";
-    public static String PERSISTENT_CONTRACT_NAME = "persistentContract";
+    public static String NOVEL_CONTRACT_NAME = "Multipurpose";
+    public static String PERSISTENT_CONTRACT_NAME = "Multipurpose";
     public static String DEFAULT_CONTRACT_RESOURCE =
             "contract/contracts/Multipurpose/Multipurpose.sol";
     public static String DEFAULT_BYTECODE_RESOURCE =

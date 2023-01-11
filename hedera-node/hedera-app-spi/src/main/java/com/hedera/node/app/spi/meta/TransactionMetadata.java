@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
@@ -37,11 +38,9 @@ public interface TransactionMetadata {
     }
 
     /**
-     * Returns the status {@link ResponseCodeEnum}, which gives the failureReason if there is a
-     * failure. If there is no failure in "pre-handle" the status returned will be {@code
-     * ResponseCodeEnum.OK}.
+     * Returns the status of the transaction.
      *
-     * @return response code of the failure
+     * @return the status of the transaction.
      */
     ResponseCodeEnum status();
 
@@ -50,7 +49,7 @@ public interface TransactionMetadata {
      *
      * @return transaction that is being pre-handled
      */
-    TransactionBody getTxn();
+    TransactionBody txnBody();
 
     /**
      * All the keys required for validation signing requirements in pre-handle. This list includes
@@ -58,22 +57,19 @@ public interface TransactionMetadata {
      *
      * @return keys needed for validating signing requirements
      */
-    List<HederaKey> getReqKeys();
+    List<HederaKey> requiredNonPayerKeys();
 
     /**
-     * Sets status on the metadata
+     * Payer for the transaction
      *
-     * @param status given status
+     * @return payer for the transaction
      */
-    void setStatus(final ResponseCodeEnum status);
+    AccountID payer();
 
     /**
-     * Adds a given HederaKey to the list of required keys for signature verification. Throws
-     * NullPointerException if the key is null.
+     * Transaction payer's key
      *
-     * @param key given key to add for required keys
+     * @return payer key to sign the transaction
      */
-    default void addToReqKeys(final HederaKey key) {
-        getReqKeys().add(key);
-    }
+    HederaKey payerKey();
 }

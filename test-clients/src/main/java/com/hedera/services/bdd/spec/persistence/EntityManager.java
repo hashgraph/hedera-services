@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.persistence;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -42,9 +42,9 @@ import org.yaml.snakeyaml.constructor.Constructor;
 public class EntityManager {
     static final Logger log = LogManager.getLogger(EntityManager.class);
 
-    private final HapiApiSpec spec;
+    private final HapiSpec spec;
 
-    public EntityManager(HapiApiSpec spec) {
+    public EntityManager(HapiSpec spec) {
         this.spec = spec;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.exactParticipants;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -47,9 +47,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ScheduleRecordSpecs extends HapiApiSuite {
+public class ScheduleRecordSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
 
     public static void main(String... args) {
@@ -68,7 +68,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->
                         List.of(
@@ -82,7 +82,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                                 noFeesChargedIfTriggeredPayerIsUnwilling()));
     }
 
-    HapiApiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+    HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding("scheduling.whitelist", "CryptoTransfer,ContractCall"),
@@ -140,7 +140,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                         validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
     }
 
-    public HapiApiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
+    public HapiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate("unwillingPayer"))
                 .when(
@@ -164,7 +164,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                                                 .status(INSUFFICIENT_TX_FEE)));
     }
 
-    public HapiApiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
+    public HapiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate("insolventPayer").balance(0L))
                 .when(
@@ -188,7 +188,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                                                 .status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
-    public HapiApiSpec canScheduleChunkedMessages() {
+    public HapiSpec canScheduleChunkedMessages() {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
 
@@ -304,7 +304,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
         return txnId.toBuilder().setScheduled(true).build();
     }
 
-    public HapiApiSpec schedulingTxnIdFieldsNotAllowed() {
+    public HapiSpec schedulingTxnIdFieldsNotAllowed() {
         return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
                 .given(usableTxnIdNamed("withScheduled").settingScheduledInappropriately())
                 .when()
@@ -314,7 +314,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                                 .hasPrecheck(TRANSACTION_ID_FIELD_NOT_ALLOWED));
     }
 
-    public HapiApiSpec executionTimeIsAvailable() {
+    public HapiSpec executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
                         cryptoCreate("payer"),
@@ -331,7 +331,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                 .then(getScheduleInfo("tb").logged().wasExecutedBy("trigger"));
     }
 
-    public HapiApiSpec deletionTimeIsAvailable() {
+    public HapiSpec deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
                         newKeyNamed("admin"),
@@ -349,7 +349,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
                 .then(getScheduleInfo("ntb").wasDeletedAtConsensusTimeOf("deletion"));
     }
 
-    public HapiApiSpec allRecordsAreQueryable() {
+    public HapiSpec allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
                         cryptoCreate("payer"),

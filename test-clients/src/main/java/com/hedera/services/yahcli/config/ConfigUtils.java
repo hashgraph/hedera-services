@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.services.yahcli.config;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.readFirstKpFromPem;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
@@ -175,7 +175,7 @@ public class ConfigUtils {
                         HapiQueryOp.class,
                         HapiTxnOp.class,
                         HapiGetFileContents.class,
-                        HapiApiSpec.class,
+                        HapiSpec.class,
                         VersionInfoSpec.class,
                         SendSuite.class,
                         CreateSuite.class,

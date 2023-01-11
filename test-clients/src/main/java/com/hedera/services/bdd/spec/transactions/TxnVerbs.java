@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,16 @@
  */
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
@@ -28,7 +34,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
@@ -77,6 +83,7 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
@@ -84,9 +91,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class TxnVerbs {
     /* CRYPTO */
@@ -104,18 +113,17 @@ public class TxnVerbs {
 
     @SafeVarargs
     public static HapiCryptoTransfer sortedCryptoTransfer(
-            Function<HapiApiSpec, TransferList>... providers) {
+            Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(true, providers);
     }
 
     @SafeVarargs
-    public static HapiCryptoTransfer cryptoTransfer(
-            Function<HapiApiSpec, TransferList>... providers) {
+    public static HapiCryptoTransfer cryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(providers);
     }
 
     public static HapiCryptoTransfer cryptoTransfer(
-            BiConsumer<HapiApiSpec, CryptoTransferTransactionBody.Builder> def) {
+            BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> def) {
         return new HapiCryptoTransfer(def);
     }
 
@@ -148,7 +156,7 @@ public class TxnVerbs {
         return new HapiTopicDelete(topic);
     }
 
-    public static HapiTopicDelete deleteTopic(Function<HapiApiSpec, TopicID> topicFn) {
+    public static HapiTopicDelete deleteTopic(Function<HapiSpec, TopicID> topicFn) {
         return new HapiTopicDelete(topicFn);
     }
 
@@ -160,7 +168,7 @@ public class TxnVerbs {
         return new HapiMessageSubmit(topic);
     }
 
-    public static HapiMessageSubmit submitMessageTo(Function<HapiApiSpec, TopicID> topicFn) {
+    public static HapiMessageSubmit submitMessageTo(Function<HapiSpec, TopicID> topicFn) {
         return new HapiMessageSubmit(topicFn);
     }
 
@@ -200,6 +208,56 @@ public class TxnVerbs {
 
     public static HapiTokenCreate tokenCreate(String token) {
         return new HapiTokenCreate(token).name(token);
+    }
+
+    public static HapiSpecOperation wellKnownTokenEntities() {
+        return blockingOrder(newKeyNamed(WELL_KNOWN_NFT_SUPPLY_KEY), cryptoCreate(TOKEN_TREASURY));
+    }
+
+    public static HapiSpecOperation createWellKnownNonFungibleToken(
+            final String token,
+            final int initialMint,
+            final Consumer<HapiTokenCreate> tokenCustomizer) {
+        if (initialMint > 10) {
+            throw new IllegalArgumentException("Cannot mint more than 10 NFTs at a time");
+        }
+        return blockingOrder(
+                sourcing(
+                        () -> {
+                            final var creation =
+                                    new HapiTokenCreate(token)
+                                            .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                            .initialSupply(0L)
+                                            .treasury(TOKEN_TREASURY)
+                                            .supplyKey(WELL_KNOWN_NFT_SUPPLY_KEY)
+                                            .name(token);
+                            tokenCustomizer.accept(creation);
+                            return creation;
+                        }),
+                mintToken(
+                        token,
+                        IntStream.range(0, initialMint)
+                                .mapToObj(
+                                        i ->
+                                                ByteString.copyFromUtf8(
+                                                        TxnUtils.randomUppercase(i + 1)))
+                                .toList()));
+    }
+
+    public static HapiSpecOperation createWellKnownFungibleToken(
+            final String token, final Consumer<HapiTokenCreate> tokenCustomizer) {
+        return blockingOrder(
+                sourcing(
+                        () -> {
+                            final var creation =
+                                    new HapiTokenCreate(token)
+                                            .tokenType(TokenType.FUNGIBLE_COMMON)
+                                            .initialSupply(WELL_KNOWN_INITIAL_SUPPLY)
+                                            .treasury(TOKEN_TREASURY)
+                                            .name(token);
+                            tokenCustomizer.accept(creation);
+                            return creation;
+                        }));
     }
 
     public static HapiTokenUpdate tokenUpdate(String token) {
@@ -373,6 +431,10 @@ public class TxnVerbs {
         return new HapiEthereumCall(account, amount);
     }
 
+    public static HapiEthereumCall ethereumCryptoTransferToAlias(ByteString alias, long amount) {
+        return new HapiEthereumCall(alias, amount);
+    }
+
     /**
      * This method provides for the proper execution of specs, which execute contract calls with a
      * function ABI instead of function name
@@ -387,8 +449,13 @@ public class TxnVerbs {
     }
 
     public static HapiContractCall contractCall(
-            String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
+            String contract, String abi, Function<HapiSpec, Object[]> fn) {
         return new HapiContractCall(abi, contract, fn);
+    }
+
+    public static HapiContractCall contractCallWithTuple(
+            String contract, String abi, Function<HapiSpec, Tuple> fn) {
+        return new HapiContractCall(abi, fn, contract);
     }
 
     public static HapiContractCall explicitContractCall(

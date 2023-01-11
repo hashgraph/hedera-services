@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.autorenew;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -36,13 +36,13 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.di
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoRemovalCasesSuite extends HapiApiSuite {
+public class AutoRemovalCasesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoRemovalCasesSuite.class);
 
     public static void main(String... args) {
@@ -51,9 +51,9 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     ignoresExpiredDeletedContracts(),
                     displacesTokenUnitsAsExpected(),
                     immediatelyRemovesDeletedAccountOnExpiry(),
@@ -61,7 +61,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec ignoresExpiredDeletedContracts() {
+    private HapiSpec ignoresExpiredDeletedContracts() {
         final var adminKey = "tac";
         final var tbd = "dead";
 
@@ -77,7 +77,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                 .then(getContractInfo(tbd).hasCostAnswerPrecheck(INVALID_CONTRACT_ID));
     }
 
-    private HapiApiSpec immediatelyRemovesDeletedAccountOnExpiry() {
+    private HapiSpec immediatelyRemovesDeletedAccountOnExpiry() {
         final var tbd = "dead";
         final var onlyDetached = "gone";
 
@@ -95,7 +95,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                         getAccountInfo(tbd).hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec displacesTokenUnitsAsExpected() {
+    private HapiSpec displacesTokenUnitsAsExpected() {
         final long startSupply = 10;
         final long displacedSupply = 1;
         final var adminKey = "tak";
@@ -140,7 +140,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
                                 .hasTokenBalance(anotherLiveToken, startSupply));
     }
 
-    private HapiApiSpec autoRemovalCasesSuiteCleanup() {
+    private HapiSpec autoRemovalCasesSuiteCleanup() {
         return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
                 .given()
                 .when()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.file.FileAppendMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -106,7 +106,7 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         if (contentsSupplier.isPresent()) {
             contents = Optional.of(contentsSupplier.get().get());
         } else if (path.isPresent()) {
@@ -127,12 +127,12 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::appendContent;
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         final var expiry =
                 payer.isPresent()
@@ -145,14 +145,14 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(file));
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(final HapiSpec spec) throws Throwable {
         postAppendCb.ifPresent(cb -> cb.accept(actualStatus));
         if (actualStatus == SUCCESS && uploadProgress != null) {
             uploadProgress.markFinished(appendNum);
@@ -169,11 +169,11 @@ public class HapiFileAppend extends HapiTxnOp<HapiFileAppend> {
         return super.toStringHelper().add("fileName", file);
     }
 
-    private String payerToUse(final String designated, final HapiApiSpec spec) {
+    private String payerToUse(final String designated, final HapiSpec spec) {
         return isPrivileged(designated, spec) ? spec.setup().genesisAccountName() : designated;
     }
 
-    private boolean isPrivileged(final String account, final HapiApiSpec spec) {
+    private boolean isPrivileged(final String account, final HapiSpec spec) {
         return account.equals(spec.setup().addressBookControlName())
                 || account.equals(spec.setup().exchangeRatesControlName())
                 || account.equals(spec.setup().feeScheduleControlName())

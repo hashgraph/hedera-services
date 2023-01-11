@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -58,12 +58,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.List;
@@ -71,7 +71,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class R5BugChecks extends HapiApiSuite {
+public class R5BugChecks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(R5BugChecks.class);
 
     public static void main(String... args) {
@@ -79,9 +79,9 @@ public class R5BugChecks extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						genesisUpdatesFeesForFree(),
                     //						canGetDeletedFileInfo(),
                     enforcesSigRequirements(),
@@ -95,7 +95,7 @@ public class R5BugChecks extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec cannotUseThresholdWithM0() {
+    private HapiSpec cannotUseThresholdWithM0() {
         KeyShape invalid = listOf(SIMPLE, SIMPLE, threshOf(0, 3));
 
         return defaultHapiSpec("CannotUseThresholdWithM0")
@@ -104,7 +104,7 @@ public class R5BugChecks extends HapiApiSuite {
                 .then(cryptoCreate("sketchy").keyShape(invalid).hasPrecheck(BAD_ENCODING));
     }
 
-    private HapiApiSpec cannotTransferEntirePayerBalance() {
+    private HapiSpec cannotTransferEntirePayerBalance() {
         var balance = 1_234_567L;
         return defaultHapiSpec("CannotTransferEntirePayerBalance")
                 .given(cryptoCreate("sketchy").balance(balance))
@@ -115,21 +115,21 @@ public class R5BugChecks extends HapiApiSuite {
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
-    private HapiApiSpec canGetDeletedFileInfo() {
+    private HapiSpec canGetDeletedFileInfo() {
         return defaultHapiSpec("CanGetDeletedFileInfo")
                 .given(fileCreate("tbd"))
                 .when(fileDelete("tbd"))
                 .then(getFileInfo("tbd").hasCostAnswerPrecheck(OK).hasAnswerOnlyPrecheck(OK));
     }
 
-    private HapiApiSpec costAnswerGetAccountInfoRejectsInvalidId() {
+    private HapiSpec costAnswerGetAccountInfoRejectsInvalidId() {
         return defaultHapiSpec("CostAnswerGetAccountInfoRejectsInvalidId")
                 .given()
                 .when()
                 .then(getAccountInfo("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec contractCannotTransferToReceiverSigRequired() {
+    private HapiSpec contractCannotTransferToReceiverSigRequired() {
         return defaultHapiSpec("ContractCannotTransferToReceiverSigRequired")
                 .given(uploadInitCode("Multipurpose"), contractCreate("Multipurpose").balance(1))
                 .when(cryptoCreate("sr").receiverSigRequired(true))
@@ -148,7 +148,7 @@ public class R5BugChecks extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec enforcesSigRequirements() {
+    private HapiSpec enforcesSigRequirements() {
         final var contract = "LastTrackingSender";
         KeyShape complexSrShape = listOf(SIMPLE, threshOf(1, 3));
         SigControl activeSig = complexSrShape.signedWith(sigs(ON, sigs(OFF, OFF, ON)));
@@ -236,7 +236,7 @@ public class R5BugChecks extends HapiApiSuite {
                         getAccountBalance("noSr").hasTinyBars(1L));
     }
 
-    private HapiApiSpec cannotTransferToDeleted() {
+    private HapiSpec cannotTransferToDeleted() {
         final var contract = "LastTrackingSender";
         return defaultHapiSpec("CannotTransferToDeleted")
                 .given(
@@ -271,7 +271,7 @@ public class R5BugChecks extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS));
     }
 
-    private HapiApiSpec genesisUpdatesFeesForFree() {
+    private HapiSpec genesisUpdatesFeesForFree() {
         AtomicReference<ByteString> schedulePart1 = new AtomicReference<>();
         AtomicReference<ByteString> schedulePart2 = new AtomicReference<>();
 
@@ -306,7 +306,7 @@ public class R5BugChecks extends HapiApiSuite {
     }
 
     /* Run from clean local environment to test need for state migration vis-a-vis JContractFunctionResult. */
-    private HapiApiSpec genRecordWithCreations() {
+    private HapiSpec genRecordWithCreations() {
         final var contract = "Fuse";
         return defaultHapiSpec("CreateRecordViaExpensiveSubmit")
                 .given(uploadInitCode(contract), contractCreate(contract))

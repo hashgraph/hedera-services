@@ -7,7 +7,7 @@ reconnect.active,                              1
 reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showInternalStats,                             1
-state.roundsExpired,                           500
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+state.mainClassNameOverride,                   com.hedera.services.ServicesMain

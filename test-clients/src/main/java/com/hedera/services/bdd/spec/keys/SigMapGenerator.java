@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.keys;
 
 import static java.util.Map.Entry;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import java.util.List;
 
@@ -29,5 +29,5 @@ public interface SigMapGenerator {
         UNIQUE_WITH_SOME_FULL_PREFIXES,
     }
 
-    SignatureMap forPrimitiveSigs(HapiApiSpec spec, List<Entry<byte[], byte[]>> keySigs);
+    SignatureMap forPrimitiveSigs(HapiSpec spec, List<Entry<byte[], byte[]>> keySigs);
 }

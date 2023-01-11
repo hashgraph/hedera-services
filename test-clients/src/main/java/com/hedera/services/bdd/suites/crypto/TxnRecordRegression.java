@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -32,14 +32,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
-public class TxnRecordRegression extends HapiApiSuite {
+public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 
     public static void main(String... args) {
@@ -52,9 +52,9 @@ public class TxnRecordRegression extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     returnsInvalidForUnspecifiedTxnId(),
                     recordNotFoundIfNotInPayerState(),
                     recordUnavailableIfRejectedInPrecheck(),
@@ -64,7 +64,7 @@ public class TxnRecordRegression extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec recordAvailableInPayerState() {
+    private HapiSpec recordAvailableInPayerState() {
         return defaultHapiSpec("RecordAvailableInPayerState")
                 .given(
                         cryptoCreate("stingyPayer").sendThreshold(1L),
@@ -77,7 +77,7 @@ public class TxnRecordRegression extends HapiApiSuite {
                         getTxnRecord("recordTxn").hasPriority(recordWith().status(SUCCESS)));
     }
 
-    private HapiApiSpec deletedAccountRecordsUnavailableAfterTtl() {
+    private HapiSpec deletedAccountRecordsUnavailableAfterTtl() {
         return defaultHapiSpec("DeletedAccountRecordsUnavailableAfterTtl")
                 .given(
                         cryptoCreate("lowThreshPayer").sendThreshold(1L),
@@ -90,14 +90,14 @@ public class TxnRecordRegression extends HapiApiSuite {
                 .then(getTxnRecord("recordTxn").hasCostAnswerPrecheck(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec returnsInvalidForUnspecifiedTxnId() {
+    private HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
                 .then(getTxnRecord("").useDefaultTxnId().hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec recordNotFoundIfNotInPayerState() {
+    private HapiSpec recordNotFoundIfNotInPayerState() {
         return defaultHapiSpec("RecordNotFoundIfNotInPayerState")
                 .given(
                         cryptoCreate("misc").via("success"),
@@ -106,7 +106,7 @@ public class TxnRecordRegression extends HapiApiSuite {
                 .then(getTxnRecord("rightAccountWrongId").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
     }
 
-    private HapiApiSpec recordUnavailableBeforeConsensus() {
+    private HapiSpec recordUnavailableBeforeConsensus() {
         return defaultHapiSpec("RecordUnavailableBeforeConsensus")
                 .given()
                 .when()
@@ -115,7 +115,7 @@ public class TxnRecordRegression extends HapiApiSuite {
                         getTxnRecord("success").hasCostAnswerPrecheck(RECORD_NOT_FOUND));
     }
 
-    private HapiApiSpec recordUnavailableIfRejectedInPrecheck() {
+    private HapiSpec recordUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("RecordUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
                 .when(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,21 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+tasks.jar {
+    manifest {
+        attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient")
+    }
+}
+
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
     // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
     // (https://github.com/hashgraph/hedera-services/issues/3412).
     exclude("**/*")
+}
+
+configurations {
+    evaluationDependsOn(":hedera-node:hapi-fees")
 }
 
 sourceSets {
@@ -39,8 +49,8 @@ sourceSets {
 }
 
 dependencies {
-    implementation(project(":hapi-utils"))
-    implementation(project(":hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
     implementation(libs.bundles.besu) {
         exclude("javax.annotation", "javax.annotation-api")
     }
@@ -52,6 +62,11 @@ dependencies {
     implementation(libs.hapi) {
         exclude("javax.annotation", "javax.annotation-api")
     }
+
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.netty)
+
     implementation(libs.headlong)
     implementation(libs.log4j.core)
     implementation(testLibs.json)
@@ -66,46 +81,46 @@ dependencies {
     itestImplementation(project(":hedera-node:hedera-app"))
     itestImplementation(project(":hedera-node:hedera-app-spi"))
     itestImplementation(project(":hedera-node:hedera-evm"))
-    itestImplementation(project(":hedera-node:hedera-evm-api"))
+    itestImplementation(project(":hedera-node:hedera-evm-impl"))
     itestImplementation(project(":hedera-node:hedera-mono-service"))
-    itestImplementation(project(":modules:hedera-admin-service"))
-    itestImplementation(project(":modules:hedera-admin-service-impl"))
-    itestImplementation(project(":modules:hedera-consensus-service"))
-    itestImplementation(project(":modules:hedera-consensus-service-impl"))
-    itestImplementation(project(":modules:hedera-file-service"))
-    itestImplementation(project(":modules:hedera-file-service-impl"))
-    itestImplementation(project(":modules:hedera-network-service"))
-    itestImplementation(project(":modules:hedera-network-service-impl"))
-    itestImplementation(project(":modules:hedera-schedule-service"))
-    itestImplementation(project(":modules:hedera-schedule-service-impl"))
-    itestImplementation(project(":modules:hedera-smart-contract-service"))
-    itestImplementation(project(":modules:hedera-smart-contract-service-impl"))
-    itestImplementation(project(":modules:hedera-token-service"))
-    itestImplementation(project(":modules:hedera-token-service-impl"))
-    itestImplementation(project(":modules:hedera-util-service"))
-    itestImplementation(project(":modules:hedera-util-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-admin-service"))
+    itestImplementation(project(":hedera-node:hedera-admin-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-consensus-service"))
+    itestImplementation(project(":hedera-node:hedera-consensus-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-file-service"))
+    itestImplementation(project(":hedera-node:hedera-file-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-network-service"))
+    itestImplementation(project(":hedera-node:hedera-network-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-schedule-service"))
+    itestImplementation(project(":hedera-node:hedera-schedule-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-smart-contract-service"))
+    itestImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-token-service"))
+    itestImplementation(project(":hedera-node:hedera-token-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-util-service"))
+    itestImplementation(project(":hedera-node:hedera-util-service-impl"))
     eetImplementation(testLibs.bundles.testcontainers)
     eetImplementation(project(":hedera-node:hedera-app"))
     eetImplementation(project(":hedera-node:hedera-app-spi"))
     eetImplementation(project(":hedera-node:hedera-evm"))
-    eetImplementation(project(":hedera-node:hedera-evm-api"))
+    eetImplementation(project(":hedera-node:hedera-evm-impl"))
     eetImplementation(project(":hedera-node:hedera-mono-service"))
-    eetImplementation(project(":modules:hedera-admin-service"))
-    eetImplementation(project(":modules:hedera-admin-service-impl"))
-    eetImplementation(project(":modules:hedera-consensus-service"))
-    eetImplementation(project(":modules:hedera-consensus-service-impl"))
-    eetImplementation(project(":modules:hedera-file-service"))
-    eetImplementation(project(":modules:hedera-file-service-impl"))
-    eetImplementation(project(":modules:hedera-network-service"))
-    eetImplementation(project(":modules:hedera-network-service-impl"))
-    eetImplementation(project(":modules:hedera-schedule-service"))
-    eetImplementation(project(":modules:hedera-schedule-service-impl"))
-    eetImplementation(project(":modules:hedera-smart-contract-service"))
-    eetImplementation(project(":modules:hedera-smart-contract-service-impl"))
-    eetImplementation(project(":modules:hedera-token-service"))
-    eetImplementation(project(":modules:hedera-token-service-impl"))
-    eetImplementation(project(":modules:hedera-util-service"))
-    eetImplementation(project(":modules:hedera-util-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-admin-service"))
+    eetImplementation(project(":hedera-node:hedera-admin-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-consensus-service"))
+    eetImplementation(project(":hedera-node:hedera-consensus-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-file-service"))
+    eetImplementation(project(":hedera-node:hedera-file-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-network-service"))
+    eetImplementation(project(":hedera-node:hedera-network-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-schedule-service"))
+    eetImplementation(project(":hedera-node:hedera-schedule-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-smart-contract-service"))
+    eetImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-token-service"))
+    eetImplementation(project(":hedera-node:hedera-token-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-util-service"))
+    eetImplementation(project(":hedera-node:hedera-util-service-impl"))
 }
 
 tasks.itest {
@@ -120,6 +135,10 @@ tasks.eet {
 }
 
 tasks.shadowJar {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
+    mergeServiceFiles()
+
     archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
@@ -135,9 +154,12 @@ tasks.shadowJar {
 }
 
 val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
     group = "shadow"
     from(sourceSets.main.get().output)
     configurations = listOf(project.configurations["runtimeClasspath"])
+    mergeServiceFiles()
 
     exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 
@@ -150,6 +172,30 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
     manifest {
         attributes(
             "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+            "Multi-Release" to "true"
+        )
+    }
+}
+
+val validationJar = tasks.register<ShadowJar>("validationJar") {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    configurations = listOf(project.configurations["runtimeClasspath"])
+    mergeServiceFiles()
+
+    exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+
+    archiveFileName.set("ValidationScenarios.jar")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
             "Multi-Release" to "true"
         )
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -31,25 +31,26 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FetchSystemFiles extends HapiApiSuite {
+public class FetchSystemFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FetchSystemFiles.class);
 
     public static void main(String... args) {
         new FetchSystemFiles().runSuiteSync();
     }
 
-    final String TARGET_DIR = "./remote-system-files";
+    private static final String TARGET_DIR = "./remote-system-files";
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
-    private HapiApiSpec fetchFiles() {
+    /** Fetches the system files from a running network and saves them to the local file system. */
+    private HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(
                         Map.of(
-                                "fees.useFixedOffer", "false",
+                                "fees.useFixedOffer", "true",
                                 "fees.fixedOffer", "100000000"))
                 .given()
                 .when()

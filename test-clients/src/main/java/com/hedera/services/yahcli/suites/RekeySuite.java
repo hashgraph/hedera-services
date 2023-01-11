@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,17 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.yahcli.suites.Utils.extractAccount;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RekeySuite extends HapiApiSuite {
+public class RekeySuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RekeySuite.class);
 
     private final String account;
@@ -54,17 +54,17 @@ public class RekeySuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(rekey());
     }
 
-    private HapiApiSpec rekey() {
+    private HapiSpec rekey() {
         final var replKey = "replKey";
         final var newKeyLoc =
                 replTarget.endsWith(".pem") ? replTarget : replTarget.replace(".pem", ".words");
         final var newKeyPass = TxnUtils.randomAlphaNumeric(12);
 
-        return HapiApiSpec.customHapiSpec("rekey" + account)
+        return HapiSpec.customHapiSpec("rekey" + account)
                 .withProperties(specConfig)
                 .given(
                         genNewKey

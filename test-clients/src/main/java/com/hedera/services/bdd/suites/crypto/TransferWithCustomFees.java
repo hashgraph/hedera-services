@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -26,15 +26,15 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TransferWithCustomFees extends HapiApiSuite {
+public class TransferWithCustomFees extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransferWithCustomFees.class);
     private final long hbarFee = 1_000L;
     private final long htsFee = 100L;
@@ -58,16 +58,16 @@ public class TransferWithCustomFees extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     transferWithFixedCustomFeeSchedule(),
                     transferWithFractinalCustomFeeSchedule(),
                     transferWithInsufficientCustomFees()
                 });
     }
 
-    public HapiApiSpec transferWithFixedCustomFeeSchedule() {
+    public HapiSpec transferWithFixedCustomFeeSchedule() {
         return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
                 .given(
                         cryptoCreate(htsCollector),
@@ -96,7 +96,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 
-    public HapiApiSpec transferWithFractinalCustomFeeSchedule() {
+    public HapiSpec transferWithFractinalCustomFeeSchedule() {
         return defaultHapiSpec("transferWithCustomFeeScheduleHappyPath")
                 .given(
                         cryptoCreate(htsCollector).balance(ONE_HUNDRED_HBARS),
@@ -133,7 +133,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
                         getAccountBalance(hbarCollector).hasTinyBars(hbarFee));
     }
 
-    public HapiApiSpec transferWithInsufficientCustomFees() {
+    public HapiSpec transferWithInsufficientCustomFees() {
         return defaultHapiSpec("transferWithFixedCustomFeeSchedule")
                 .given(
                         cryptoCreate(htsCollector),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package com.hedera.services.bdd.suites;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.NodeSelection.FIXED;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.TlsConfig.OFF;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome;
+import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.suites.autorenew.AccountAutoRenewalSuite;
@@ -121,13 +121,7 @@ import com.hedera.services.bdd.suites.perf.contract.ContractPerformanceSuite;
 import com.hedera.services.bdd.suites.perf.contract.FibonacciPlusLoadProvider;
 import com.hedera.services.bdd.suites.perf.contract.MixedSmartContractOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.contract.opcodes.SStoreOperationLoadTest;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoCreatePerfSuite;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithAutoAccounts;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithInvalidAccounts;
-import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
-import com.hedera.services.bdd.suites.perf.crypto.NWayDistNoHotspots;
-import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
+import com.hedera.services.bdd.suites.perf.crypto.*;
 import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
 import com.hedera.services.bdd.suites.perf.mixedops.MixedOpsLoadTest;
@@ -155,13 +149,13 @@ import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.SchedulesExpiryDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
 import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.UpdatePermissionsDuringReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
+import com.hedera.services.bdd.suites.reconnect.ValidatePermissionStateAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconnect;
 import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
@@ -221,7 +215,7 @@ public class SuiteRunner {
     private static final Random RANDOM = new Random();
 
     private static final Logger log = LogManager.getLogger(SuiteRunner.class);
-    private static final int SUITE_NAME_WIDTH = 32;
+    public static final int SUITE_NAME_WIDTH = 32;
 
     private static final HapiSpecSetup.TlsConfig DEFAULT_TLS_CONFIG = OFF;
     private static final HapiSpecSetup.TxnProtoStructure DEFAULT_TXN_CONFIG =
@@ -230,10 +224,10 @@ public class SuiteRunner {
     private static final int EXPECTED_CI_NETWORK_SIZE = 4;
     private static final String DEFAULT_PAYER_ID = "0.0.2";
 
-    private static final List<HapiApiSuite> SUITES_TO_DETAIL = new ArrayList<>();
+    private static final List<HapiSuite> SUITES_TO_DETAIL = new ArrayList<>();
 
     @SuppressWarnings({"java:S1171", "java:S3599", "java:S125"})
-    private static final Map<String, Supplier<HapiApiSuite[]>> CATEGORY_MAP =
+    private static final Map<String, Supplier<HapiSuite[]>> CATEGORY_MAP =
             new HashMap<>() {
                 {
                     /* Convenience entries, uncomment locally to run CI jobs */
@@ -320,6 +314,9 @@ public class SuiteRunner {
                     put("SubmitMessageLoadTest", aof(SubmitMessageLoadTest::new));
                     put("CryptoTransferLoadTest", aof(CryptoTransferLoadTest::new));
                     put(
+                            "CryptoTransferLoadTestWithStakedAccounts",
+                            aof(CryptoTransferLoadTestWithStakedAccounts::new));
+                    put(
                             "CryptoTransferLoadTestWithAutoAccounts",
                             aof(CryptoTransferLoadTestWithAutoAccounts::new));
                     put(
@@ -349,13 +346,13 @@ public class SuiteRunner {
                     put("MixedValidationsAfterReconnect", aof(MixedValidationsAfterReconnect::new));
                     put(
                             "UpdateApiPermissionsDuringReconnect",
-                            aof(UpdateApiPermissionsDuringReconnect::new));
+                            aof(UpdatePermissionsDuringReconnect::new));
                     put(
                             "ValidateDuplicateTransactionAfterReconnect",
                             aof(ValidateDuplicateTransactionAfterReconnect::new));
                     put(
                             "ValidateApiPermissionStateAfterReconnect",
-                            aof(ValidateApiPermissionStateAfterReconnect::new));
+                            aof(ValidatePermissionStateAfterReconnect::new));
                     put(
                             "ValidateAppPropertiesStateAfterReconnect",
                             aof(ValidateAppPropertiesStateAfterReconnect::new));
@@ -579,7 +576,7 @@ public class SuiteRunner {
 
             createPayerAccount(System.getenv("NODES"), args[1]);
 
-            HapiApiSpec.runInCiMode(
+            HapiSpec.runInCiMode(
                     System.getenv("NODES"),
                     payerId,
                     args[1],
@@ -690,11 +687,11 @@ public class SuiteRunner {
                     log.info("============== {} run results ==============", key);
                     for (CategoryResult result : results) {
                         log.info(result.summary);
-                        for (HapiApiSuite failed : result.failedSuites) {
+                        for (HapiSuite failed : result.failedSuites) {
                             String specList =
                                     failed.getFinalSpecs().stream()
-                                            .filter(HapiApiSpec::notOk)
-                                            .map(HapiApiSpec::toString)
+                                            .filter(HapiSpec::notOk)
+                                            .map(HapiSpec::toString)
                                             .collect(joining(", "));
                             log.info("  --> Problems in suite '{}' :: {}", failed.name(), specList);
                         }
@@ -704,10 +701,10 @@ public class SuiteRunner {
         log.info("============== SuiteRunner finished ==============");
 
         /* Print detail summaries for analysis by HapiClientValidator */
-        SUITES_TO_DETAIL.forEach(HapiApiSuite::summarizeDeferredResults);
+        SUITES_TO_DETAIL.forEach(HapiSuite::summarizeDeferredResults);
     }
 
-    private static boolean categoryLeaksState(HapiApiSuite[] suites) {
+    private static boolean categoryLeaksState(HapiSuite[] suites) {
         return Stream.of(suites).anyMatch(suite -> !suite.canRunConcurrent());
     }
 
@@ -745,9 +742,9 @@ public class SuiteRunner {
                         .toList();
     }
 
-    private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {
-        List<FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteAsync);
-        List<HapiApiSuite> failed =
+    private static CategoryResult runSuitesAsync(String category, HapiSuite[] suites) {
+        List<FinalOutcome> outcomes = accumulateAsync(suites, HapiSuite::runSuiteAsync);
+        List<HapiSuite> failed =
                 IntStream.range(0, suites.length)
                         .filter(i -> outcomes.get(i) != FinalOutcome.SUITE_PASSED)
                         .mapToObj(i -> suites[i])
@@ -755,8 +752,8 @@ public class SuiteRunner {
         return summaryOf(category, suites, failed);
     }
 
-    private static CategoryResult runSuitesSync(String category, HapiApiSuite[] suites) {
-        List<HapiApiSuite> failed =
+    private static CategoryResult runSuitesSync(String category, HapiSuite[] suites) {
+        List<HapiSuite> failed =
                 Stream.of(suites)
                         .filter(suite -> suite.runSuiteSync() != FinalOutcome.SUITE_PASSED)
                         .toList();
@@ -764,7 +761,7 @@ public class SuiteRunner {
     }
 
     private static CategoryResult summaryOf(
-            String category, HapiApiSuite[] suites, List<HapiApiSuite> failed) {
+            String category, HapiSuite[] suites, List<HapiSuite> failed) {
         int numPassed = suites.length - failed.size();
         String summary = category + " :: " + numPassed + "/" + suites.length + " suites ran ok";
         return new CategoryResult(summary, failed);
@@ -782,7 +779,7 @@ public class SuiteRunner {
                                         i ->
                                                 runAsync(
                                                         () -> outputs.set(i, f.apply(inputs[i])),
-                                                        HapiApiSpec.getCommonThreadPool()))
+                                                        HapiSpec.getCommonThreadPool()))
                                 .toArray(CompletableFuture[]::new));
         future.join();
         return outputs;
@@ -790,9 +787,9 @@ public class SuiteRunner {
 
     static class CategoryResult {
         final String summary;
-        final List<HapiApiSuite> failedSuites;
+        final List<HapiSuite> failedSuites;
 
-        CategoryResult(String summary, List<HapiApiSuite> failedSuites) {
+        CategoryResult(String summary, List<HapiSuite> failedSuites) {
             this.summary = summary;
             this.failedSuites = failedSuites;
         }
@@ -800,15 +797,15 @@ public class SuiteRunner {
 
     static class CategorySuites {
         final String category;
-        final HapiApiSuite[] suites;
+        final HapiSuite[] suites;
 
-        CategorySuites(String category, HapiApiSuite[] suites) {
+        CategorySuites(String category, HapiSuite[] suites) {
             this.category = category;
             this.suites = suites;
         }
     }
 
-    private static String rightPadded(String s, int width) {
+    public static String rightPadded(String s, int width) {
         if (s.length() == width) {
             return s;
         } else if (s.length() > width) {
@@ -823,9 +820,9 @@ public class SuiteRunner {
     }
 
     @SafeVarargs
-    public static Supplier<HapiApiSuite[]> aof(Supplier<HapiApiSuite>... items) {
+    public static Supplier<HapiSuite[]> aof(Supplier<HapiSuite>... items) {
         return () -> {
-            HapiApiSuite[] suites = new HapiApiSuite[items.length];
+            HapiSuite[] suites = new HapiSuite[items.length];
             for (int i = 0; i < items.length; i++) {
                 suites[i] = items[i].get();
             }

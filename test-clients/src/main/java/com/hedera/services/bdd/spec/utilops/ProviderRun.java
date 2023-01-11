@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -50,7 +50,7 @@ public class ProviderRun extends UtilOp {
     private static final TimeUnit DEFAULT_UNIT = TimeUnit.SECONDS;
     private static final int DEFAULT_TOTAL_OPS_TO_SUBMIT = -1;
 
-    private final Function<HapiApiSpec, OpProvider> providerFn;
+    private final Function<HapiSpec, OpProvider> providerFn;
     private IntSupplier maxOpsPerSecSupplier = () -> DEFAULT_MAX_OPS_PER_SEC;
     private IntSupplier maxPendingOpsSupplier = () -> DEFAULT_MAX_PENDING_OPS;
     private IntSupplier backoffSleepSecsSupplier = () -> DEFAULT_BACKLOG_SLEEPOFF_SECS;
@@ -60,7 +60,7 @@ public class ProviderRun extends UtilOp {
 
     private Map<HederaFunctionality, AtomicInteger> counts = new HashMap<>();
 
-    public ProviderRun(Function<HapiApiSpec, OpProvider> providerFn) {
+    public ProviderRun(Function<HapiSpec, OpProvider> providerFn) {
         this.providerFn = providerFn;
         Stream.of(HederaFunctionality.class.getEnumConstants())
                 .forEach(type -> counts.put(type, new AtomicInteger()));
@@ -93,7 +93,7 @@ public class ProviderRun extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         int MAX_N = Runtime.getRuntime().availableProcessors();
         int MAX_OPS_PER_SEC = maxOpsPerSecSupplier.getAsInt();
         int MAX_PENDING_OPS = maxPendingOpsSupplier.getAsInt();
