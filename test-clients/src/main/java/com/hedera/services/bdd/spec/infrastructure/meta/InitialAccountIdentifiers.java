@@ -29,10 +29,12 @@ import java.util.SplittableRandom;
 import java.util.function.Function;
 
 /**
- * Represents a set of initial account identifiers that can be used to customize a {@link
- * CryptoCreateTransactionBody}. Initializes a list of factories that, given an ECDSA key, will
- * return one of the 18 possible combinations of customizations. (The key can only be present or
- * not; while the "secondary" alias and address identifiers may be absent; present and congruent
+ * Represents a choice of the three account identifiers (key, alias, address) that can be
+ * used to customize a {@link CryptoCreateTransactionBody}.
+ *
+ * <p>Helps the user by initializing a list of factories that, given an ECDSA key, will
+ * return one of the 18 possible combinations of identifiers. (The key can only be present or
+ * not; but the "secondary" alias and address identifiers may be absent; present and congruent
  * with the key; or present and incongruent with the key.)
  *
  * @param key the ECDSA key to give as initial identifier (null if none)
