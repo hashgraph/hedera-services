@@ -15,7 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
-    id("com.hedera.pbj.pbj-compiler").version("0.3.0")
+    alias(libs.plugins.pbj)
 }
 
 description = "Hedera API"
@@ -25,7 +25,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation("com.hedera.pbj:pbj-runtime:0.3.0")
+    implementation(libs.pbj.runtime)
     implementation(libs.bundles.di)
     testImplementation(testLibs.bundles.testing)
     // we depend on the protoc compiled hapi during test as we test our pbj generated code against it to make sure it is compatible
@@ -46,11 +46,17 @@ sourceSets {
 tasks.withType<Test> {
     // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each class run in parallel.
     systemProperties["junit.jupiter.execution.parallel.enabled"] = true
-    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "same_thread"
-    systemProperties["junit.jupiter.execution.parallel.mode.classes.default"] = "concurrent"
-    // limit amount of threads to half available cores, so we do not use too much ram on GitHub actions.
-    systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.5"
+    systemProperties["junit.jupiter.execution.parallel.mode.default"] = "concurrent"
+    // limit amount of threads, so we do not use all CPU
+    systemProperties["junit.jupiter.execution.parallel.config.dynamic.factor"] = "0.9"
+    // us parallel GC to keep up with high temporary garbage creation, and allow GC to use 40% of CPU if needed
+    jvmArgs("-XX:+UseParallelGC", "-XX:GCTimeRatio=90")
     // Some also need more memory
     minHeapSize = "512m"
     maxHeapSize = "4096m"
+}
+
+// Add "hedera-protobufs" repository to clean task
+tasks.named("clean") {
+    delete(projectDir.absolutePath + "hedera-protobufs")
 }
