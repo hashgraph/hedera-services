@@ -153,8 +153,7 @@ class TokenGetCustomFeesPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
     }

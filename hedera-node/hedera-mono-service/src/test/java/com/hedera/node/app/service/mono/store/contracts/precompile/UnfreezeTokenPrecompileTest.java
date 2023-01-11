@@ -170,8 +170,7 @@ class UnfreezeTokenPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
         unfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
     }
 

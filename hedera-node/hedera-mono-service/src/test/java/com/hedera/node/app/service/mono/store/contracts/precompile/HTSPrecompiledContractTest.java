@@ -273,8 +273,7 @@ class HTSPrecompiledContractTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
         associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);

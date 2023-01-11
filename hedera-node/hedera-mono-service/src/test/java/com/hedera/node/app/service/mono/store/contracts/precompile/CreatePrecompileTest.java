@@ -278,8 +278,7 @@ class CreatePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         tokenCreatePrecompile = Mockito.mockStatic(TokenCreatePrecompile.class);
     }

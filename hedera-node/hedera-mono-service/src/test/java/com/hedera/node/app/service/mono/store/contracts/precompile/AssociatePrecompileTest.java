@@ -194,8 +194,7 @@ class AssociatePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         associatePrecompile = Mockito.mockStatic(AssociatePrecompile.class);
         multiAssociatePrecompile = Mockito.mockStatic(MultiAssociatePrecompile.class);

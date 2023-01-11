@@ -200,8 +200,7 @@ class BurnPrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         burnPrecompile = Mockito.mockStatic(BurnPrecompile.class);
     }

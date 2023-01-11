@@ -27,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -160,7 +159,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private WorldLedgers ledgers;
     private Address senderAddress;
     private HederaStackedWorldStateUpdater updater;
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Inject
     public HTSPrecompiledContract(
@@ -175,8 +173,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
+            final InfrastructureFactory infrastructureFactory) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.evmEncoder = evmEncoder;
@@ -189,7 +186,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
-        this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -201,11 +197,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
-                return evmHTSPrecompiledContract.computeCosted(
-                        input,
-                        frame,
-                        precompilePricingUtils::computeViewFunctionGas,
-                        currentView.getNetworkInfo().ledgerId());
+                if (isTokenProxyRedirect(input)) {
+                    final var executor =
+                            infrastructureFactory.newRedirectExecutor(
+                                    input, frame, precompilePricingUtils::computeViewFunctionGas);
+                    return executor.computeCosted();
+                } else if (isViewFunction(input)) {
+                    final var executor =
+                            infrastructureFactory.newViewExecutor(
+                                    input,
+                                    frame,
+                                    precompilePricingUtils::computeViewFunctionGas,
+                                    currentView.getNetworkInfo().ledgerId());
+                    return executor.computeCosted();
+                }
             }
         }
         final var result = computePrecompile(input, frame);

@@ -225,8 +225,7 @@ class MintPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         mintPrecompile = Mockito.mockStatic(MintPrecompile.class);
     }

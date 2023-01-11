@@ -190,8 +190,7 @@ class WipeNonFungiblePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         wipeNonFungiblePrecompile = Mockito.mockStatic(WipeNonFungiblePrecompile.class);
     }

@@ -130,8 +130,7 @@ class TokenPrecompileReadOperationsTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
         merkleToken =
                 new MerkleToken(
                         Long.MAX_VALUE,

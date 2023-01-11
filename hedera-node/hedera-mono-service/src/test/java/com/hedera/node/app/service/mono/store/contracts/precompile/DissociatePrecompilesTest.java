@@ -196,8 +196,7 @@ class DissociatePrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         dissociatePrecompile = Mockito.mockStatic(DissociatePrecompile.class);
         multiDissociatePrecompile = Mockito.mockStatic(MultiDissociatePrecompile.class);

@@ -100,25 +100,29 @@ public class RedirectViewExecutor {
             final var symbol = tokenAccessor.symbolOf(token);
             return evmEncoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
-            final var wrapper =
-                EvmAllowancePrecompile.decodeTokenAllowance(input);
+            final var wrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
             final var allowance =
-                tokenAccessor.staticAllowanceOf(Address.wrap(Bytes.wrap(wrapper.owner())), Address.wrap(Bytes.wrap(wrapper.spender())), Address.wrap(Bytes.wrap(wrapper.token())));
+                    tokenAccessor.staticAllowanceOf(
+                            Address.wrap(Bytes.wrap(wrapper.owner())),
+                            Address.wrap(Bytes.wrap(wrapper.spender())),
+                            Address.wrap(Bytes.wrap(wrapper.token())));
             return evmEncoder.encodeAllowance(allowance);
         } else if (selector == ABI_ID_ERC_GET_APPROVED) {
             final var wrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             final var spender =
-                tokenAccessor.staticApprovedSpenderOf(Address.wrap(Bytes.wrap(wrapper.token())), wrapper.serialNo());
+                    tokenAccessor.staticApprovedSpenderOf(
+                            Address.wrap(Bytes.wrap(wrapper.token())), wrapper.serialNo());
             final var priorityAddress = tokenAccessor.canonicalAddress(spender);
             return evmEncoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
-            final var wrapper =
-                EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
+            final var wrapper = EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
             final var isOperator =
-                tokenAccessor.staticIsOperator(Address.wrap(Bytes.wrap(wrapper.owner())), Address.wrap(Bytes.wrap(wrapper.operator())), Address.wrap(Bytes.wrap(wrapper.token())));
+                    tokenAccessor.staticIsOperator(
+                            Address.wrap(Bytes.wrap(wrapper.owner())),
+                            Address.wrap(Bytes.wrap(wrapper.operator())),
+                            Address.wrap(Bytes.wrap(wrapper.token())));
             return evmEncoder.encodeIsApprovedForAll(isOperator);
-        }
-        else if (selector == ABI_ID_ERC_DECIMALS) {
+        } else if (selector == ABI_ID_ERC_DECIMALS) {
             validateTrue(isFungibleToken, INVALID_TOKEN_ID);
             final var decimals = tokenAccessor.decimalsOf(token);
             return evmEncoder.encodeDecimals(decimals);
@@ -126,9 +130,9 @@ public class RedirectViewExecutor {
             final var totalSupply = tokenAccessor.totalSupplyOf(token);
             return evmEncoder.encodeTotalSupply(totalSupply);
         } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
-            final var wrapper =
-                EvmBalanceOfPrecompile.decodeBalanceOf(input.slice(24));
-            final var balance = tokenAccessor.balanceOf(Address.wrap(Bytes.wrap(wrapper.account())), token);
+            final var wrapper = EvmBalanceOfPrecompile.decodeBalanceOf(input.slice(24));
+            final var balance =
+                    tokenAccessor.balanceOf(Address.wrap(Bytes.wrap(wrapper.account())), token);
             return evmEncoder.encodeBalance(balance);
         } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);

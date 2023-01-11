@@ -137,8 +137,7 @@ class GetTokenKeyPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
         getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
     }
 
@@ -360,7 +359,7 @@ class GetTokenKeyPrecompileTest {
                 .when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT))
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
         assertEquals(1L, decodedInput.keyType());
         assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
     }

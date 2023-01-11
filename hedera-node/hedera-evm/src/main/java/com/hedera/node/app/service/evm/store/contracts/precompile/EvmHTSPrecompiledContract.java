@@ -28,17 +28,17 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class EvmHTSPrecompiledContract {
 
     private final EvmInfrastructureFactory infrastructureFactory;
+    private final ByteString networkId;
 
     @Inject
-    public EvmHTSPrecompiledContract(EvmInfrastructureFactory infrastructureFactory) {
+    public EvmHTSPrecompiledContract(
+            EvmInfrastructureFactory infrastructureFactory, ByteString networkId) {
         this.infrastructureFactory = infrastructureFactory;
+        this.networkId = networkId;
     }
 
     public Pair<Long, Bytes> computeCosted(
-            final Bytes input,
-            final MessageFrame frame,
-            ViewGasCalculator viewGasCalculator,
-            ByteString ledgerId) {
+            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator) {
         if (isTokenProxyRedirect(input)) {
             final var executor =
                     infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator);
@@ -46,7 +46,7 @@ public class EvmHTSPrecompiledContract {
         } else if (isViewFunction(input)) {
             final var executor =
                     infrastructureFactory.newViewExecutor(
-                            input, frame, viewGasCalculator, ledgerId);
+                            input, frame, viewGasCalculator, networkId);
             return executor.computeCosted();
         }
 

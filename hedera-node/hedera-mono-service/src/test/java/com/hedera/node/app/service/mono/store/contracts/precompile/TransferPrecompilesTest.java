@@ -299,8 +299,7 @@ class TransferPrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory,
-                        evmHTSPrecompiledContract);
+                        infrastructureFactory);
 
         transferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }
