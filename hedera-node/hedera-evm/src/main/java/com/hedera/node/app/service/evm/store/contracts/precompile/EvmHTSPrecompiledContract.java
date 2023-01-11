@@ -35,14 +35,18 @@ public class EvmHTSPrecompiledContract {
     }
 
     public Pair<Long, Bytes> computeCosted(
-            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator, ByteString ledgerId) {
+            final Bytes input,
+            final MessageFrame frame,
+            ViewGasCalculator viewGasCalculator,
+            ByteString ledgerId) {
         if (isTokenProxyRedirect(input)) {
             final var executor =
                     infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator);
             return executor.computeCosted();
         } else if (isViewFunction(input)) {
             final var executor =
-                    infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator,ledgerId);
+                    infrastructureFactory.newViewExecutor(
+                            input, frame, viewGasCalculator, ledgerId);
             return executor.computeCosted();
         }
 

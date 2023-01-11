@@ -15,30 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsFrozenPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenGetCustomFeesPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
-import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import java.util.Objects;
-
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
@@ -58,6 +34,29 @@ import static com.hedera.node.app.service.evm.utils.EntityIdUtil.asTypedEvmAddre
 import static com.hedera.node.app.service.evm.utils.EntityIdUtil.tokenIdFromEvmAddress;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsFrozenPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenGetCustomFeesPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Objects;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ViewExecutor {
 
@@ -107,8 +106,8 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
                 final var tokenInfo =
-                        tokenAccessor.evmInfoForToken(
-                                        addressFromBytes(wrapper.token()), ledgerId)
+                        tokenAccessor
+                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -116,10 +115,11 @@ public class ViewExecutor {
                 return evmEncoder.encodeGetTokenInfo(tokenInfo);
             }
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
-                final var wrapper = EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+                final var wrapper =
+                        EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
                 final var tokenInfo =
-                        tokenAccessor.evmInfoForToken(
-                                        addressFromBytes(wrapper.token()), ledgerId)
+                        tokenAccessor
+                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -130,8 +130,8 @@ public class ViewExecutor {
                 final var wrapper =
                         EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        tokenAccessor.evmInfoForToken(
-                                        addressFromBytes(wrapper.token()), ledgerId)
+                        tokenAccessor
+                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -143,8 +143,7 @@ public class ViewExecutor {
                 final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
                 final var nftSerialNo = nftID.getSerialNumber();
                 final var nonFungibleTokenInfo =
-                        tokenAccessor.evmNftInfo(nftAddress,nftSerialNo, ledgerId)
-                                .orElse(null);
+                        tokenAccessor.evmNftInfo(nftAddress, nftSerialNo, ledgerId).orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
                         ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -158,8 +157,10 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var isFrozen = tokenAccessor.isFrozen(addressFromBytes(wrapper.account()),
-                        addressFromBytes(wrapper.token()));
+                final var isFrozen =
+                        tokenAccessor.isFrozen(
+                                addressFromBytes(wrapper.account()),
+                                addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeIsFrozen(isFrozen);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
@@ -170,7 +171,8 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultFreezeStatus = tokenAccessor.defaultFreezeStatus(addressFromBytes(wrapper.token()));
+                final var defaultFreezeStatus =
+                        tokenAccessor.defaultFreezeStatus(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
@@ -180,25 +182,30 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultKycStatus = tokenAccessor.defaultKycStatus(addressFromBytes(wrapper.token()));
+                final var defaultKycStatus =
+                        tokenAccessor.defaultKycStatus(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
-                //TODO
+                // TODO
                 final var wrapper = EvmIsKycPrecompile.decodeIsKyc(input);
 
                 validateTrueOrRevert(
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var isKyc = tokenAccessor.isKyc(addressFromBytes(wrapper.account()),
-                        addressFromBytes(wrapper.token()));
+                final var isKyc =
+                        tokenAccessor.isKyc(
+                                addressFromBytes(wrapper.account()),
+                                addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeIsKyc(isKyc);
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
                 final var customFees =
-                        tokenAccessor.infoForTokenCustomFees(addressFromBytes(wrapper.token())).orElse(null);
+                        tokenAccessor
+                                .infoForTokenCustomFees(addressFromBytes(wrapper.token()))
+                                .orElse(null);
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -228,16 +235,17 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
-                        tokenAccessor.infoForToken(addressFromBytes(wrapper.token()), ledgerId)
+                        tokenAccessor
+                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
                 Objects.requireNonNull(tokenInfo);
                 final var expiryInfo =
                         new TokenExpiryInfo(
-                                tokenInfo.getExpiry().getSeconds(),
-                                asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
-                                tokenInfo.getAutoRenewPeriod().getSeconds());
+                                tokenInfo.getExpiry(),
+                                tokenInfo.getAutoRenewAccount(),
+                                tokenInfo.getAutoRenewPeriod());
 
                 return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
@@ -248,10 +256,12 @@ public class ViewExecutor {
                         tokenAccessor.isTokenAddress(addressFromBytes(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var evmKey = tokenAccessor.keyOf(addressFromBytes(wrapper.token()), wrapper.tokenKeyType());
+                final var evmKey =
+                        tokenAccessor.keyOf(
+                                addressFromBytes(wrapper.token()), wrapper.tokenKeyType());
                 return evmEncoder.encodeGetTokenKey(evmKey);
             }
-            // Only view functions can be used inside a ContractCallLocal
+                // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
     }

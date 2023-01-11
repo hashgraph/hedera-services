@@ -15,6 +15,26 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -52,26 +72,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_GET_APPROVED;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_OWNER_OF_NFT;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RedirectViewExecutorTest {
