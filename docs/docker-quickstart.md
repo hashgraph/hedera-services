@@ -1,19 +1,13 @@
 # Docker quickstart
 
+To execute the integration and end-to-end tests of this repo a local hedera node need to be started.
+
 We first discuss how to run a Hedera Services network on
 your local machine with Docker Compose. This consists of [sourcing](#sourcing-the-image)
 the image either from GCR or a local build, and then `docker-compose up`.
 
 Next, we look in more detail at the `services-node` Docker image, covering
 its usage and limitations.
-
-## Sourcing the image
-
-The `services-node` image can be [built locally](#building-locally)
-from the top-level directory in this repository, or [pulled](#from-gcr) from
-Google Container Registry (GCR).
-
-Prefer the latter until you want to test a change you have made to the source code.
 
 ### From GCR
 
@@ -39,34 +33,23 @@ Second, choose a tag for your build. The tag will be added
 to the image as the contents of the file
 `/opt/hedera/services/.VERSION`. A reasonable tag is the output of
 `git describe --tags --always --dirty`; for example,
-`"oa-release-r5-rc6-13-gf18d2ff77-dirty"`. Ensure the
-Docker Compose [.env file](../.env) has an empty registry prefix
-and your tag:
+`"oa-release-r5-rc6-13-gf18d2ff77-dirty"`. 
+Ensure the Docker Compose .env file `(../docker/.env)` has an empty registry prefix and your tag:
 
 ```
 TAG=oa-release-r5-rc6-13-gf18d2ff77-dirty
 REGISTRY_PREFIX=
 ```
 
-Third, build the image with an empty registry prefix and the `TAG` from your `.env` file:
+The file can be created by calling the `updateDockerEnv` gradle tasks (execute `./gradlew updateDockerEnv` from the root folder of the repo).
 
-```
-docker build -t services-node:oa-release-r5-rc6-13-gf18d2ff77-dirty .
-```
+Third, build the image with an empty registry prefix and the `TAG` from your `.env` file by calling the `createDockerImage` gradle tasks (execute `./gradlew createDockerImage` from the root folder of the repo).
 
-This is a multi-stage build that could take **several minutes**,
-depending on your environment. If you wish to use the `git describe`
-output as your tag, you might consider a script such as the
-[compose-build.sh](../compose-build.sh) in this repository to
-combine the second and third steps here.
+This is a multi-stage build that could take **several minutes**, depending on your environment.
 
 ## Starting the Compose network
 
-Run:
-
-```
-docker-compose up
-```
+The network can be started by calling the `startDockerContainers` gradle tasks (execute `./gradlew startDockerContainers` from the root folder of the repo).
 
 The aggregated logs should end with lines such as:
 
@@ -93,13 +76,7 @@ Public: 0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92
 Private: 91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
 ```
 
-You can now run operations against your local network using any HAPI client. For example:
-
-```
-./mvnw install -DskipTests
-cd test-clients
-../mvnw exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.compose.LocalNetworkCheck -Dexec.cleanupDaemonThreads=false
-```
+You can now run the integration and end-to-end tests. In general you can run any operation against your local network by using any HAPI client.
 
 (This client uses account `0.0.2` as the default payer, and is aware of the above
 keypair via its configuration in [_spec-default.properties_](../test-clients/src/main/resource/spec-default.properties)
@@ -111,9 +88,9 @@ As you run operations against the local network, each node will periodically sav
 a combination of PostgreSQL tables under _compose-network/pgdata/_ and state files under, for example,
 _compose-network/node0/saved/com.hedera.node.app.service.mono.ServicesMain/0/hedera/_.
 
-To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
+To stop the network, call the `stopDockerContainers` gradle tasks (execute `./gradlew stopDockerContainers` from the root folder of the repo).
 
-Given a clean shutdown of the containers, when you restart with `docker-compose start`,
+Given a clean shutdown of the containers, when you restart with the `startDockerContainers` gradle task,
 the network will load from its last saved state. In general, for this to work correctly,
 you should precede shutting down the network by submitting a `Freeze` transaction; e.g. via the
 [`FreezeDockerNetwork`](../test-clients/src/main/java/com/hedera/services/bdd/suites/freeze/FreezeDockerNetwork.java)
