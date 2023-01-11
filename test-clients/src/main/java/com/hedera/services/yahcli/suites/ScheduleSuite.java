@@ -40,7 +40,6 @@ public class ScheduleSuite extends HapiSuite {
     }
 
     private HapiSpec doSchedule() {
-        // 0.0 is the default payer
         var schedule = new HapiScheduleSign(DEFAULT_SHARD + scheduleId);
         return HapiSpec.customHapiSpec("DoSchedule")
                 .withProperties(specConfig)
