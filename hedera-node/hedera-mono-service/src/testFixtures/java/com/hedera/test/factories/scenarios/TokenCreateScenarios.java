@@ -183,7 +183,6 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
@@ -200,7 +199,6 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-
     TOKEN_CREATE_WITH_MISSING_COLLECTOR {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);

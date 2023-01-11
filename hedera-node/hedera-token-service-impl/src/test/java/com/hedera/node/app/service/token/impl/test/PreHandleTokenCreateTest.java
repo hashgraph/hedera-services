@@ -206,9 +206,8 @@ class PreHandleTokenCreateTest {
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -322,9 +321,8 @@ class PreHandleTokenCreateTest {
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test

@@ -62,8 +62,6 @@ public class TokenCreateHandler implements TransactionHandler {
         final var customFees = tokenCreateTxnBody.getCustomFeesList();
         final var treasuryId = tokenCreateTxnBody.getTreasury();
         final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
-        final var hasSigRecKey = accountStore.getKeyIfReceiverSigRequired(payer);
-
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
 
@@ -77,7 +75,7 @@ public class TokenCreateHandler implements TransactionHandler {
             adminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
 
-        addCustomFeeKey(meta, customFees, hasSigRecKey);
+        addCustomFeeKey(meta, customFees, accountStore);
         return meta.build();
     }
 
@@ -97,7 +95,7 @@ public class TokenCreateHandler implements TransactionHandler {
     /* --------------- Helper methods --------------- */
 
     /**
-     * Validates the collector key from the custom fees and signs the metadata.
+     * Validates the collector key from the custom fees.
      *
      * @param meta given transaction metadata
      * @param customFeesList list with the custom fees
@@ -105,10 +103,12 @@ public class TokenCreateHandler implements TransactionHandler {
     private void addCustomFeeKey(
             SigTransactionMetadataBuilder meta,
             final List<CustomFee> customFeesList,
-            final KeyOrLookupFailureReason hasSigRequired) {
-        final var failureStatus = INVALID_CUSTOM_FEE_COLLECTOR;
+            final AccountKeyLookup accountStore) {
+
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
+            final var sigRequiredLookup = accountStore.getKeyIfReceiverSigRequired(collector);
+
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
             since these are automatically associated to the newly created token. */
@@ -117,12 +117,9 @@ public class TokenCreateHandler implements TransactionHandler {
                 final var alwaysAdd =
                         fixedFee.hasDenominatingTokenId()
                                 && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                if (alwaysAdd
-                        || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
-                    meta.addNonPayerKey(collector, failureStatus);
-                }
+                addAccount(meta, collector, alwaysAdd, sigRequiredLookup);
             } else if (customFee.hasFractionalFee()) {
-                meta.addNonPayerKey(collector, failureStatus);
+                meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
                 final var royaltyFee = customFee.getRoyaltyFee();
                 var alwaysAdd = false;
@@ -132,11 +129,31 @@ public class TokenCreateHandler implements TransactionHandler {
                             fFee.hasDenominatingTokenId()
                                     && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
-                if (alwaysAdd
-                        || hasSigRequired == KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED) {
-                    meta.addNonPayerKey(collector, failureStatus);
-                }
+                addAccount(meta, collector, alwaysAdd, sigRequiredLookup);
             }
+        }
+    }
+
+    /**
+     * Signs the metadata or adds failure status.
+     *
+     * @param meta given transaction metadata
+     * @param collector the ID of the collector
+     * @param alwaysAdd if true, will always add the key
+     * @param sigRequiredLookup lookup for signature required on the collector ID
+     */
+    private void addAccount(
+            final SigTransactionMetadataBuilder meta,
+            final AccountID collector,
+            final boolean alwaysAdd,
+            final KeyOrLookupFailureReason sigRequiredLookup) {
+
+        if (alwaysAdd) {
+            meta.addNonPayerKey(collector);
+        } else if (!sigRequiredLookup.failed()) {
+            meta.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
+        } else {
+            meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
         }
     }
 }
