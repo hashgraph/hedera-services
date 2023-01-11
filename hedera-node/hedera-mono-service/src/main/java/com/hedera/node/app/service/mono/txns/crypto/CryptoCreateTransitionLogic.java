@@ -210,7 +210,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             customizer.key(key);
         } else if (onlyEvmAddressProvided(op)) {
             customizer.alias(op.getEvmAddress());
-            customizer.key(EMPTY_KEY);
+//            customizer.key(EMPTY_KEY);
         } else if (onlyAliasProvided(op)) {
             populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
         } else if (keyAndAliasProvided(op)) {

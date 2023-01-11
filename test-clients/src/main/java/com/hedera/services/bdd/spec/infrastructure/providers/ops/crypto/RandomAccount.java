@@ -23,11 +23,12 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,15 +39,25 @@ public class RandomAccount implements OpProvider {
 
     private int ceilingNum = DEFAULT_CEILING_NUM;
 
+    private final boolean fuzzIdentifiers;
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_ACCOUNT_ID);
 
     public RandomAccount(
-            EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
+            EntityNameProvider<Key> keys,
+            RegistrySourcedNameProvider<AccountID> accounts) {
+        this(keys, accounts, false);
+    }
+
+    public RandomAccount(
+            EntityNameProvider<Key> keys,
+            RegistrySourcedNameProvider<AccountID> accounts,
+            final boolean fuzzIdentifiers) {
         this.keys = keys;
         this.accounts = accounts;
+        this.fuzzIdentifiers = fuzzIdentifiers;
     }
 
     public RandomAccount ceiling(int n) {
@@ -71,14 +82,15 @@ public class RandomAccount implements OpProvider {
         }
 
         int id = opNo.getAndIncrement();
-        HapiCryptoCreate op =
-                cryptoCreate(my("account" + id))
-                        .key(key.get())
-                        .memo("randomlycreated" + id)
-                        .balance(INITIAL_BALANCE)
-                        .sendThreshold(SEND_THRESHOLD)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
-                        .hasKnownStatusFrom(permissibleOutcomes);
+        final var name = my("account" + id);
+        final var op = cryptoCreate(name)
+                .key(key.get())
+                .fuzzingIdentifiers(fuzzIdentifiers)
+                .memo("randomlycreated" + id)
+                .balance(INITIAL_BALANCE)
+                .sendThreshold(SEND_THRESHOLD)
+                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }
 

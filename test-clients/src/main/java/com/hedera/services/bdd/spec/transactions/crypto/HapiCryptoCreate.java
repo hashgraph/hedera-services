@@ -32,6 +32,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,6 +91,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<ByteString> alias = Optional.empty();
     private Optional<ByteString> evmAddress = Optional.empty();
     private Consumer<Address> addressObserver;
+    private boolean fuzzingIdentifiers = false;
 
     @Override
     public HederaFunctionality type() {
@@ -98,6 +101,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     @Override
     protected Key lookupKey(final HapiSpec spec, final String name) {
         return name.equals(account) ? key : spec.registry().getKey(name);
+    }
+
+    public HapiCryptoCreate fuzzingIdentifiers(final boolean flag) {
+        fuzzingIdentifiers = flag;
+        return this;
     }
 
     public HapiCryptoCreate exposingCreatedIdTo(final Consumer<AccountID> newAccountIdObserver) {
@@ -263,12 +271,16 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (alias.isPresent() || evmAddress.isPresent()) {
-                                        keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
-                                        alias.ifPresent(b::setAlias);
-                                        evmAddress.ifPresent(b::setEvmAddress);
+                                    if (fuzzingIdentifiers) {
+                                        InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
                                     } else {
-                                        b.setKey(key);
+                                        if (alias.isPresent() || evmAddress.isPresent()) {
+                                            keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                            alias.ifPresent(b::setAlias);
+                                            evmAddress.ifPresent(b::setEvmAddress);
+                                        } else {
+                                            b.setKey(key);
+                                        }
                                     }
                                     if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
                                         b.setUnknownFields(nonEmptyUnknownFields());
