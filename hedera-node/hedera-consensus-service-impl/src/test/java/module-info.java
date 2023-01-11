@@ -9,8 +9,6 @@ module com.hedera.node.app.service.consensus.impl.test {
     requires org.assertj.core;
     requires com.google.protobuf;
 
-    opens com.hedera.node.app.service.consensus.impl.test to
-            org.junit.platform.commons;
-    opens com.hedera.node.app.service.consensus.impl.handlers.test to
-            org.junit.platform.commons;
+    opens com.hedera.node.app.service.consensus.impl.test;
+    opens com.hedera.node.app.service.consensus.impl.handlers.test;
 }
