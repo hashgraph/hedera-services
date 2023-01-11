@@ -1,4 +1,21 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.spec.infrastructure.meta;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -6,21 +23,17 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-
 /**
- * Represents a set of initial account identifiers that can be used to customize
- * a {@link CryptoCreateTransactionBody}. Initializes a list of factories that,
- * given an ECDSA key, will return one of the 18 possible combinations of
- * customizations. (The key can only be present or not; while the "secondary"
- * alias and address identifiers may be absent; present and congruent with
- * the key; or present and incongruent with the key.)
+ * Represents a set of initial account identifiers that can be used to customize a {@link
+ * CryptoCreateTransactionBody}. Initializes a list of factories that, given an ECDSA key, will
+ * return one of the 18 possible combinations of customizations. (The key can only be present or
+ * not; while the "secondary" alias and address identifiers may be absent; present and congruent
+ * with the key; or present and incongruent with the key.)
  *
  * @param key the ECDSA key to give as initial identifier (null if none)
  * @param alias the alias to give as initial identifier (null if none)
@@ -28,32 +41,71 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes
  */
 @SuppressWarnings({"java:S6218", "java:S3358"})
 public record InitialAccountIdentifiers(
-        @Nullable Key key,
-        @Nullable byte[] alias,
-        @Nullable byte[] address) {
+        @Nullable Key key, @Nullable byte[] alias, @Nullable byte[] address) {
 
-    private enum KeyStatus {ABSENT, PRESENT}
-    private enum SecondaryIdStatus {ABSENT, CONGRUENT_WITH_KEY, INCONGRUENT_WITH_KEY}
-    private static final byte[] INCONGRUENT_ALIAS = Key.newBuilder()
-            .setECDSASecp256K1(ByteString.copyFrom(randomCompressedKey()))
-            .build()
-            .toByteArray();
+    private enum KeyStatus {
+        ABSENT,
+        PRESENT
+    }
+
+    private enum SecondaryIdStatus {
+        ABSENT,
+        CONGRUENT_WITH_KEY,
+        INCONGRUENT_WITH_KEY
+    }
+
+    private static final byte[] INCONGRUENT_ALIAS =
+            Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.copyFrom(randomCompressedKey()))
+                    .build()
+                    .toByteArray();
     private static final byte[] INCONGRUENT_ADDRESS = randomUtf8Bytes(20);
 
     private static final List<Function<Key, InitialAccountIdentifiers>> ALL_COMBINATIONS =
             Arrays.stream(KeyStatus.values())
-                    .flatMap(keyStatus -> Arrays.stream(SecondaryIdStatus.values())
-                            .flatMap(aliasStatus -> Arrays.stream(SecondaryIdStatus.values())
-                                    .<Function<Key, InitialAccountIdentifiers>>map(addressStatus -> key ->
-                                            new InitialAccountIdentifiers(
-                                                    keyStatus == KeyStatus.ABSENT ? null : key,
-                                                    aliasStatus == SecondaryIdStatus.ABSENT ? null :
-                                                            (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY ?
-                                                                    key.toByteArray() : INCONGRUENT_ALIAS),
-                                                    addressStatus == SecondaryIdStatus.ABSENT ? null :
-                                                            (addressStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY ?
-                                                                    EthSigsUtils.recoverAddressFromPubKey(key.toByteArray())
-                                                                    : INCONGRUENT_ADDRESS))))).toList();
+                    .flatMap(
+                            keyStatus ->
+                                    Arrays.stream(SecondaryIdStatus.values())
+                                            .flatMap(
+                                                    aliasStatus ->
+                                                            Arrays.stream(
+                                                                            SecondaryIdStatus
+                                                                                    .values())
+                                                                    .<Function<
+                                                                                    Key,
+                                                                                    InitialAccountIdentifiers>>
+                                                                            map(
+                                                                                    addressStatus ->
+                                                                                            key ->
+                                                                                                    new InitialAccountIdentifiers(
+                                                                                                            keyStatus
+                                                                                                                            == KeyStatus
+                                                                                                                                    .ABSENT
+                                                                                                                    ? null
+                                                                                                                    : key,
+                                                                                                            aliasStatus
+                                                                                                                            == SecondaryIdStatus
+                                                                                                                                    .ABSENT
+                                                                                                                    ? null
+                                                                                                                    : (aliasStatus
+                                                                                                                                    == SecondaryIdStatus
+                                                                                                                                            .CONGRUENT_WITH_KEY
+                                                                                                                            ? key
+                                                                                                                                    .toByteArray()
+                                                                                                                            : INCONGRUENT_ALIAS),
+                                                                                                            addressStatus
+                                                                                                                            == SecondaryIdStatus
+                                                                                                                                    .ABSENT
+                                                                                                                    ? null
+                                                                                                                    : (addressStatus
+                                                                                                                                    == SecondaryIdStatus
+                                                                                                                                            .CONGRUENT_WITH_KEY
+                                                                                                                            ? EthSigsUtils
+                                                                                                                                    .recoverAddressFromPubKey(
+                                                                                                                                            key
+                                                                                                                                                    .toByteArray())
+                                                                                                                            : INCONGRUENT_ADDRESS)))))
+                    .toList();
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 

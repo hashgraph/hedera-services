@@ -32,7 +32,6 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
-import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;

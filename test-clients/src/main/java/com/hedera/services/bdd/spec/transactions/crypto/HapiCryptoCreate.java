@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,7 +102,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return name.equals(account) ? key : spec.registry().getKey(name);
     }
 
-    public HapiCryptoCreate fuzzingIdentifiers(final boolean flag) {
+    public HapiCryptoCreate fuzzingIdentifiersIfEcdsaKey(final boolean flag) {
         fuzzingIdentifiers = flag;
         return this;
     }
@@ -271,11 +270,12 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (fuzzingIdentifiers) {
+                                    if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
                                         InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
                                     } else {
                                         if (alias.isPresent() || evmAddress.isPresent()) {
-                                            keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                            keyName.ifPresent(
+                                                    s -> b.setKey(spec.registry().getKey(s)));
                                             alias.ifPresent(b::setAlias);
                                             evmAddress.ifPresent(b::setEvmAddress);
                                         } else {
