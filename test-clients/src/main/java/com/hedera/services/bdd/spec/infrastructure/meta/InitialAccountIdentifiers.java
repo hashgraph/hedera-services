@@ -29,13 +29,13 @@ import java.util.SplittableRandom;
 import java.util.function.Function;
 
 /**
- * Represents a choice of the three account identifiers (key, alias, address) that can be
- * used to customize a {@link CryptoCreateTransactionBody}.
+ * Represents a choice of the three account identifiers (key, alias, address) that can be used to
+ * customize a {@link CryptoCreateTransactionBody}.
  *
- * <p>Helps the user by initializing a list of factories that, given an ECDSA key, will
- * return one of the 18 possible combinations of identifiers. (The key can only be present or
- * not; but the "secondary" alias and address identifiers may be absent; present and congruent
- * with the key; or present and incongruent with the key.)
+ * <p>Helps the user by initializing a list of factories that, given an ECDSA key, will return one
+ * of the 18 possible combinations of identifiers. (The key can only be present or not; but the
+ * "secondary" alias and address identifiers may be absent; present and congruent with the key; or
+ * present and incongruent with the key.)
  *
  * @param key the ECDSA key to give as initial identifier (null if none)
  * @param alias the alias to give as initial identifier (null if none)
@@ -73,40 +73,12 @@ public record InitialAccountIdentifiers(
                                                             Arrays.stream(
                                                                             SecondaryIdStatus
                                                                                     .values())
-                                                                    .<Function<
-                                                                                    Key,
-                                                                                    InitialAccountIdentifiers>>
-                                                                            map(
-                                                                                    addressStatus ->
-                                                                                            key ->
-                                                                                                    new InitialAccountIdentifiers(
-                                                                                                            keyStatus
-                                                                                                                            == KeyStatus
-                                                                                                                                    .ABSENT
-                                                                                                                    ? null
-                                                                                                                    : key,
-                                                                                                            aliasStatus
-                                                                                                                            == SecondaryIdStatus
-                                                                                                                                    .ABSENT
-                                                                                                                    ? null
-                                                                                                                    : (aliasStatus
-                                                                                                                                    == SecondaryIdStatus
-                                                                                                                                            .CONGRUENT_WITH_KEY
-                                                                                                                            ? key
-                                                                                                                                    .toByteArray()
-                                                                                                                            : INCONGRUENT_ALIAS),
-                                                                                                            addressStatus
-                                                                                                                            == SecondaryIdStatus
-                                                                                                                                    .ABSENT
-                                                                                                                    ? null
-                                                                                                                    : (addressStatus
-                                                                                                                                    == SecondaryIdStatus
-                                                                                                                                            .CONGRUENT_WITH_KEY
-                                                                                                                            ? EthSigsUtils
-                                                                                                                                    .recoverAddressFromPubKey(
-                                                                                                                                            key
-                                                                                                                                                    .toByteArray())
-                                                                                                                            : INCONGRUENT_ADDRESS)))))
+                                                                    .map(
+                                                                            addressStatus ->
+                                                                                    fuzzerFor(
+                                                                                            keyStatus,
+                                                                                            aliasStatus,
+                                                                                            addressStatus))))
                     .toList();
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
@@ -128,6 +100,25 @@ public record InitialAccountIdentifiers(
         if (address != null) {
             op.setEvmAddress(ByteStringUtils.wrapUnsafely(address));
         }
+    }
+
+    private static Function<Key, InitialAccountIdentifiers> fuzzerFor(
+            final KeyStatus keyStatus,
+            final SecondaryIdStatus aliasStatus,
+            final SecondaryIdStatus addressStatus) {
+        return key ->
+                new InitialAccountIdentifiers(
+                        keyStatus == KeyStatus.ABSENT ? null : key,
+                        aliasStatus == SecondaryIdStatus.ABSENT
+                                ? null
+                                : (aliasStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
+                                        ? key.toByteArray()
+                                        : INCONGRUENT_ALIAS),
+                        addressStatus == SecondaryIdStatus.ABSENT
+                                ? null
+                                : (addressStatus == SecondaryIdStatus.CONGRUENT_WITH_KEY
+                                        ? EthSigsUtils.recoverAddressFromPubKey(key.toByteArray())
+                                        : INCONGRUENT_ADDRESS));
     }
 
     private static void throwIfNotEcdsa(final Key key) {
