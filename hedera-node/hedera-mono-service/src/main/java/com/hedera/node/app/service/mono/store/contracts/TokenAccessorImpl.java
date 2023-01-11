@@ -32,7 +32,6 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -95,11 +94,6 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public TokenType typeOf(Address token) {
         return trackingLedgers.typeOf(tokenIdFromEvmAddress(token));
-    }
-
-    @Override
-    public Optional<TokenInfo> infoForToken(Address token, ByteString ledgerId) {
-        return trackingLedgers.infoForToken(tokenIdFromEvmAddress(token), ledgerId);
     }
 
     @Override

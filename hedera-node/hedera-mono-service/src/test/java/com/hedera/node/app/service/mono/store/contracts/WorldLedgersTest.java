@@ -387,7 +387,7 @@ class WorldLedgersTest {
         given(tokenInfo.getDecimals()).willReturn(1);
         given(tokenInfo.getCustomFeesList()).willReturn(grpcCustomFees);
 
-        final var tokenInfo = tokenAccessor.infoForToken(fungibleTokenAddress, ledgerId).get();
+        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId).get();
 
         assertEquals(Paused, tokenInfo.getPauseStatus());
         assertEquals(token.memo(), tokenInfo.getMemo());

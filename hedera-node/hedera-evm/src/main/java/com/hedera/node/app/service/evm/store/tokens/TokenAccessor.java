@@ -21,7 +21,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -44,8 +43,6 @@ public interface TokenAccessor {
     Optional<List<CustomFee>> infoForTokenCustomFees(final Address token);
 
     TokenType typeOf(final Address token);
-
-    Optional<TokenInfo> infoForToken(final Address token, final ByteString ledgerId);
 
     EvmKey keyOf(final Address tokenId, final TokenKeyType keyType);
 
