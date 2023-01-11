@@ -50,6 +50,11 @@ contract ERC20Contract {
         IERC20(token).transferFrom(sender, recipient, amount);
     }
 
+    function transferFromThenRevert(address token, address sender, address recipient, uint256 amount) public {
+        IERC20(token).transferFrom(sender, recipient, amount);
+        revert();
+    }
+
     function allowance(address token, address owner, address spender) public view {
         IERC20(token).allowance(owner, spender);
     }

@@ -11,6 +11,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.hyperledger.besu.datatypes;
     requires org.assertj.core;
+    requires org.hamcrest;
     requires com.hedera.node.app.service.evm;
 
     opens com.hedera.node.app.service.token.impl.test to
@@ -18,5 +19,7 @@ module com.hedera.node.app.service.token.impl.test {
     opens com.hedera.node.app.service.token.impl.test.entity to
             org.junit.platform.commons;
     opens com.hedera.node.app.service.token.impl.test.util to
+            org.junit.platform.commons;
+    opens com.hedera.node.app.service.token.impl.test.handlers to
             org.junit.platform.commons;
 }

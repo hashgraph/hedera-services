@@ -182,6 +182,12 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+                tokenID,
+                tokenName,
+                tokenSymbol,
+                tokenTreasury.getAccountNum() == 0 ? null : tokenTreasury,
+                tokenMemo,
+                tokenKeys,
+                tokenExpiry);
     }
 }

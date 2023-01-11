@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1420,6 +1420,11 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
     }
 
+    public static Tuple accountAmountAlias(
+            final byte[] alias, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
 
@@ -1435,6 +1440,18 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender,
+            final byte[] alias,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber,
+                isApproval);
     }
 
     public static Tuple nftTransfer(

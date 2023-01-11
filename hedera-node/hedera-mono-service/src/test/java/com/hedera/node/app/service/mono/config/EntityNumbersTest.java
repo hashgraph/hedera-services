@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class EntityNumbersTest {
-    FileNumbers fileNumbers;
+    HederaFileNumbers fileNumbers;
     HederaNumbers hederaNumbers;
-    AccountNumbers accountNumbers;
+    HederaAccountNumbers accountNumbers;
 
     EntityNumbers subject;
 

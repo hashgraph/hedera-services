@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
@@ -96,6 +97,7 @@ import javax.inject.Singleton;
             KeysModule.class,
             SigsModule.class,
             GrpcModule.class,
+            ConfigModule.class,
             StatsModule.class,
             StateModule.class,
             FilesModule.class,

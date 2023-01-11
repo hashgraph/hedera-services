@@ -23,7 +23,7 @@ plugins {
 
 extraJavaModuleInfo {
     failOnMissingModuleInfo.set(true)
-    
+
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
@@ -31,13 +31,12 @@ extraJavaModuleInfo {
 
     automaticModule("io.grpc:grpc-api", "io.grpc.api")
     automaticModule("io.grpc:grpc-core", "io.grpc.core")
-    automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-netty", "grpc.netty")
     automaticModule("io.grpc:grpc-context", "io.grpc.context")
     automaticModule("io.grpc:grpc-stub", "grpc.stub")
     automaticModule("io.grpc:grpc-protobuf", "grpc.protobuf")
     automaticModule("io.grpc:grpc-services", "grpc.services")
-    automaticModule("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
-    automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
     automaticModule("io.grpc:grpc-testing", "io.grpc.testing")
 
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
