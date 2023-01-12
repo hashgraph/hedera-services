@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -91,6 +92,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
@@ -99,6 +101,7 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -154,6 +157,7 @@ public class ContractCallSuite extends HapiSuite {
     public static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
     public static final String TRANSFER_TO_CALLER = "transferToCaller";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
+    private static final String TEST_APPROVER = "TestApprover";
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
             "contracts.maxRefundPercentOfGasLimit";
     private static final String FAIL_INSUFFICIENT_GAS = "failInsufficientGas";
@@ -196,6 +200,7 @@ public class ContractCallSuite extends HapiSuite {
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
+                testApprover(),
                 multipleDepositSuccess(),
                 payTestSelfDestructCall(),
                 multipleSelfDestructsAreSafe(),
@@ -1423,6 +1428,39 @@ public class ContractCallSuite extends HapiSuite {
                 .then(
                         contractDelete(PAY_RECEIVABLE_CONTRACT).transferAccount(BENEFICIARY),
                         getAccountBalance(BENEFICIARY).hasTinyBars(initBalance + DEPOSIT_AMOUNT));
+    }
+
+    HapiSpec testApprover() {
+        final var token = "TOKEN";
+        final var spender = "SPENDER";
+        final var doomedCreation = "doomedCreation";
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final AtomicReference<Address> spenderAddress = new AtomicReference<>();
+        return onlyDefaultHapiSpec("TestApprover")
+                .given(
+                        cryptoCreate(spender)
+                                .balance(123 * ONE_HUNDRED_HBARS)
+                                .keyShape(SigControl.SECP256K1_ON)
+                                .exposingEvmAddressTo(spenderAddress::set),
+                        tokenCreate(token)
+                                .initialSupply(1000)
+                                .treasury(spender)
+                                .exposingAddressTo(tokenAddress::set))
+                .when(
+                        uploadInitCode(TEST_APPROVER),
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                        TEST_APPROVER,
+                                                        tokenAddress.get(),
+                                                        spenderAddress.get())
+                                                .gas(5_000_000)
+                                                .payingWith(spender)
+                                                .via(doomedCreation)
+                                                // TODO - Noooo...should succeed, see
+                                                // https://github.com/hashgraph/hedera-services/issues/4616
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(getTxnRecord(doomedCreation).andAllChildRecords().logged());
     }
 
     HapiSpec payableSuccess() {
