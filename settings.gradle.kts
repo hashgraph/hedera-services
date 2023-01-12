@@ -38,7 +38,7 @@ gitRepositories {
     checkoutsDirectory.set(file(rootProject.projectDir.getAbsolutePath() + "/hedera-node/hapi/"))
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-        // choose tag or branch of HAPI you would like to test with
+        // choose tag or branch of HAPI you would like to test with; must match proto version
         tag.set("v0.34.0")
         // do not load project from repo
         autoInclude.set(false)
