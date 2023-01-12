@@ -40,7 +40,7 @@ public class ScheduleSuite extends HapiSuite {
     }
 
     private HapiSpec doSchedule() {
-        var schedule = new HapiScheduleSign(DEFAULT_SHARD + scheduleId);
+        var schedule = new HapiScheduleSign(DEFAULT_SHARD_REALM + scheduleId);
         return HapiSpec.customHapiSpec("DoSchedule")
                 .withProperties(specConfig)
                 .given()

@@ -71,6 +71,10 @@ public class UpdateCommand implements Callable<Integer> {
 
         final var effectivePublicKeys = unHexListOfKeys(readPublicKeyFromFile(keysPath));
 
+        if (!accountsCommand.getYahcli().isScheduled()) {
+            throw new CommandLine.PicocliException("you have to schedule the update command");
+        }
+
         final var delegate =
                 new UpdateSuite(
                         config.asSpecConfig(),

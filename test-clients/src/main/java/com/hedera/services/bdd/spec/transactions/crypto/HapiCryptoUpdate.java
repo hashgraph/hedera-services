@@ -57,7 +57,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     private String aliasKeySource = null;
     private OptionalLong sendThreshold = OptionalLong.empty();
     private Optional<Key> updKey = Optional.empty();
-    private Optional<Key> proboKey = Optional.empty();
+    private Optional<Key> protoKey = Optional.empty();
     private OptionalLong newExpiry = OptionalLong.empty();
     private OptionalLong newAutoRenewPeriod = OptionalLong.empty();
     private Optional<String> newProxy = Optional.empty();
@@ -124,8 +124,8 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
         return this;
     }
 
-    public HapiCryptoUpdate proboKey(Key key) {
-        proboKey = Optional.of(key);
+    public HapiCryptoUpdate protoKey(Key key) {
+        protoKey = Optional.of(key);
         return this;
     }
 
@@ -214,7 +214,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                         updKey.ifPresent(builder::setKey);
                                     }
 
-                                    proboKey.ifPresent(builder::setKey);
+                                    protoKey.ifPresent(builder::setKey);
 
                                     newAutoRenewPeriod.ifPresent(
                                             p ->

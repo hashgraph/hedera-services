@@ -57,9 +57,9 @@ public class UpdateSuite extends HapiSuite {
     private HapiSpec doUpdate() {
         Key newList = Key.newBuilder().setKeyList(KeyList.newBuilder().addAllKeys(keys)).build();
         HapiTxnOp<?> update =
-                new HapiCryptoUpdate(DEFAULT_SHARD + targetAccount)
+                new HapiCryptoUpdate(DEFAULT_SHARD_REALM + targetAccount)
                         .signedBy(DEFAULT_PAYER)
-                        .proboKey(newList)
+                        .protoKey(newList)
                         .blankMemo()
                         .entityMemo(memo);
 

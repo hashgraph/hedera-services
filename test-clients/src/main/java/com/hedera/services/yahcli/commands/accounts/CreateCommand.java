@@ -20,6 +20,7 @@ import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hedera.services.yahcli.suites.CreateSuite.NOVELTY;
 
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.yahcli.suites.CreateSuite;
 import java.io.File;
 import java.util.concurrent.Callable;
@@ -61,7 +62,7 @@ public class CreateCommand implements Callable<Integer> {
     @CommandLine.Option(
             names = {"-S", "--receiverSigRequired"},
             paramLabel = "receiverSigRequired",
-            description = "If require receiver signature")
+            description = "If receiver signature is required")
     boolean receiverSigRequired;
 
     @Override
@@ -87,8 +88,9 @@ public class CreateCommand implements Callable<Integer> {
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
             COMMON_MESSAGES.info(
-                    "SUCCESS - account 0.0."
-                            + delegate.getCreatedNo().get()
+                    "SUCCESS - account "
+                            + HapiSuite.DEFAULT_SHARD_REALM
+                            + +delegate.getCreatedNo().get()
                             + " has been created with balance "
                             + amount
                             + " tinybars "
