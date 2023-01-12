@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
  */
+/*@NotThreadSafe*/
 public final class GrpcServiceBuilder {
     /** Logger */
     private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceBuilder.class);

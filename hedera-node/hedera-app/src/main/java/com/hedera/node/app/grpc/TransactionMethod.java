@@ -29,6 +29,7 @@ import java.util.Objects;
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
  */
+/*@ThreadSafe*/
 final class TransactionMethod extends MethodBase {
     /** The pipeline contains all the steps needed for handling the ingestion of a transaction. */
     private final IngestWorkflow workflow;
