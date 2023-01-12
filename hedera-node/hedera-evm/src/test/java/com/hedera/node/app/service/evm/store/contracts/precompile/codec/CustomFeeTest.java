@@ -46,6 +46,8 @@ class CustomFeeTest {
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
         CustomFee customFee = new CustomFee();
 
+        assertEquals(customFee, customFee);
+        assertNotEquals(customFee, new Object());
         assertNotNull(royaltyFee);
         assertNotNull(fixedFeeInHbar);
         assertNotNull(fractionalFee);
@@ -98,6 +100,7 @@ class CustomFeeTest {
                         15, 100, 10, 50, true, "0x00000000000000000000000000000000000005cd"));
         assertNotEquals(customFeesWithFixed(), customFeesWithRoyaltyAndFixed());
         assertNotEquals(customFeeWithFractionalAndFixed(), customFeesWithRoyaltyAndFixed());
+        assertNotEquals(customFeesWithRoyaltyAndFixed(), customFeesWithFixed());
         assertNotEquals(customFeesWithFixed(), customFeeWithFractional());
         assertEquals(customfee, customfee2);
         assertEquals(customfee.hashCode(), customfee2.hashCode());
