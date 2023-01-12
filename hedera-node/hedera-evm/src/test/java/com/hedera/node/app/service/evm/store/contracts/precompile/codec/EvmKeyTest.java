@@ -35,6 +35,8 @@ class EvmKeyTest {
                         new byte[0],
                         null);
 
+        EvmKey evmKey2 = new EvmKey();
+
         assertEquals(Address.ZERO, evmKey.getContractId());
         assertEquals(Address.ZERO, evmKey.getDelegatableContractId());
     }

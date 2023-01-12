@@ -15,20 +15,20 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.addressTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.bigIntegerTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.booleanTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.decimalsType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getFungibleTokenInfoType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getNonFungibleTokenInfoType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenCustomFeesType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenExpiryInfoType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenKeyType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BIG_INTEGER_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.DECIMALS_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_FUNGIBLE_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_CUSTOM_FEES_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_EXPIRY_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_KEY_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.notSpecifiedType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.stringTuple;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -257,24 +257,24 @@ public class EvmEncodingFacade {
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
-                        case ERC_DECIMALS -> decimalsType;
+                        case ERC_DECIMALS -> DECIMALS_TYPE;
                         case HAPI_GET_TOKEN_TYPE -> intPairTuple;
-                        case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> bigIntegerTuple;
-                        case ERC_IS_APPROVED_FOR_ALL -> booleanTuple;
+                        case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> BIG_INTEGER_TUPLE;
+                        case ERC_IS_APPROVED_FOR_ALL -> BOOLEAN_TUPLE;
                         case HAPI_IS_FROZEN,
                                 GET_TOKEN_DEFAULT_FREEZE_STATUS,
                                 GET_TOKEN_DEFAULT_KYC_STATUS,
                                 HAPI_IS_KYC,
-                                HAPI_IS_TOKEN -> intBoolTuple;
-                        case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> stringTuple;
-                        case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
-                        case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
-                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getFungibleTokenInfoType;
-                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getNonFungibleTokenInfoType;
-                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTokenCustomFeesType;
-                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTokenExpiryInfoType;
-                        case HAPI_GET_TOKEN_KEY -> getTokenKeyType;
-                        default -> notSpecifiedType;
+                                HAPI_IS_TOKEN -> INT_BOOL_TUPLE;
+                        case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> STRING_TUPLE;
+                        case ERC_OWNER, ERC_GET_APPROVED -> ADDRESS_TUPLE;
+                        case HAPI_GET_TOKEN_INFO -> GET_TOKEN_INFO_TYPE;
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> GET_FUNGIBLE_TOKEN_INFO_TYPE;
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> GET_TOKEN_CUSTOM_FEES_TYPE;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> GET_TOKEN_EXPIRY_INFO_TYPE;
+                        case HAPI_GET_TOKEN_KEY -> GET_TOKEN_KEY_TYPE;
+                        default -> NOT_SPECIFIED_TYPE;
                     };
             this.functionType = functionType;
             return this;

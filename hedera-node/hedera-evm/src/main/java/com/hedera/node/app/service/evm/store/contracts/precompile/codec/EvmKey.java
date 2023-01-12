@@ -19,13 +19,18 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class EvmKey {
 
-    private final Address contractId;
+    private Address contractId;
 
-    private final byte[] ed25519;
+    private byte[] ed25519;
 
-    private final byte[] ecdsaSecp256K1;
+    private byte[] ecdsaSecp256K1;
 
-    private final Address delegatableContractId;
+    private Address delegatableContractId;
+
+    public EvmKey() {
+        this.ed25519 = new byte[0];
+        this.ecdsaSecp256K1 = new byte[0];
+    }
 
     public EvmKey(
             Address contractId,

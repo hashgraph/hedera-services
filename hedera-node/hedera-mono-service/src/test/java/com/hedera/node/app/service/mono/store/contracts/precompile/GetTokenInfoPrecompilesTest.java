@@ -50,6 +50,8 @@ import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -197,6 +199,9 @@ class GetTokenInfoPrecompilesTest {
     private TokenInfo.Builder tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
 
+    private EvmTokenInfo evmTokenInfo;
+    private EvmNftInfo evmNftInfo;
+
     @BeforeEach
     void setUp() {
         final PrecompilePricingUtils precompilePricingUtils =
@@ -227,6 +232,28 @@ class GetTokenInfoPrecompilesTest {
 
         tokenKeys.add(tokenKey);
         tokenInfo = createTokenInfoWithSingleKey(1, false);
+        evmTokenInfo =
+                new EvmTokenInfo(
+                        fromString("0x03").toByteArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
+
+        evmNftInfo =
+                new EvmNftInfo(
+                        serialNumber,
+                        EntityIdUtils.asTypedEvmAddress(payer),
+                        creationTime,
+                        metadata.toByteArray(),
+                        EntityIdUtils.asTypedEvmAddress(sender));
         nonFungibleTokenInfo =
                 TokenNftInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))
@@ -291,9 +318,9 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -336,8 +363,8 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
         entityIdUtils
                 .when(
@@ -346,7 +373,7 @@ class GetTokenInfoPrecompilesTest {
                                         parentContractAddressConvertedToContractId))
                 .thenReturn(parentContractAddress);
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -383,10 +410,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithAllKeys();
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -422,9 +449,9 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmEncoder.encodeGetFungibleTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -462,17 +489,17 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(
-                        wrappedLedgers.infoForNft(
+                        wrappedLedgers.evmNftInfo(
                                 NftID.newBuilder()
                                         .setSerialNumber(serialNumber)
                                         .setTokenID(tokenMerkleId)
                                         .build(),
                                 networkInfo.ledgerId()))
-                .willReturn(Optional.of(nonFungibleTokenInfo));
-        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
+                .willReturn(Optional.of(evmNftInfo));
+        given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -511,10 +538,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fixedFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -552,10 +579,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fixedFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -593,10 +620,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fractionalFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -636,18 +663,18 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(
-                        wrappedLedgers.infoForNft(
+                        wrappedLedgers.evmNftInfo(
                                 NftID.newBuilder()
                                         .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
                                         .build(),
                                 networkInfo.ledgerId()))
-                .willReturn(Optional.of(nonFungibleTokenInfo));
+                .willReturn(Optional.of(evmNftInfo));
 
-        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
+        given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -688,18 +715,18 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(
-                        wrappedLedgers.infoForNft(
+                        wrappedLedgers.evmNftInfo(
                                 NftID.newBuilder()
                                         .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
                                         .build(),
                                 networkInfo.ledgerId()))
-                .willReturn(Optional.of(nonFungibleTokenInfo));
+                .willReturn(Optional.of(evmNftInfo));
 
-        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
+        given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -737,8 +764,6 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -773,8 +798,6 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -810,9 +833,9 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
-        given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
@@ -850,10 +873,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -890,10 +913,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
+        given(evmEncoder.encodeGetFungibleTokenInfo(evmTokenInfo)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -932,12 +955,12 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo.build()));
-        given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
-                .willReturn(Optional.of(nonFungibleTokenInfo));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(wrappedLedgers.evmNftInfo(nftID, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmNftInfo));
 
-        given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
+        given(evmEncoder.encodeGetNonFungibleTokenInfo(evmTokenInfo, evmNftInfo))
                 .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);

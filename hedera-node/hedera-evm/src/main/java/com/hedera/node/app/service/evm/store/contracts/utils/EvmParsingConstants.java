@@ -75,10 +75,10 @@ public class EvmParsingConstants {
     public static final String NON_FUNGIBLE_TOKEN_INFO =
             "(" + TOKEN_INFO + ",int64,address,int64,bytes,address" + ")";
 
-    public static final TupleType getNonFungibleTokenInfoType =
+    public static final TupleType GET_NON_FUNGIBLE_TOKEN_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + NON_FUNGIBLE_TOKEN_INFO + ")");
 
-    public static final TupleType getTokenCustomFeesType =
+    public static final TupleType GET_TOKEN_CUSTOM_FEES_TYPE =
             TupleType.parse(
                     RESPONSE_STATUS_AT_BEGINNING
                             + FIXED_FEE
@@ -92,22 +92,22 @@ public class EvmParsingConstants {
                             + ")");
     public static final String FUNGIBLE_TOKEN_INFO = "(" + TOKEN_INFO + ",int32" + ")";
 
-    public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
-    public static final TupleType decimalsType = TupleType.parse(UINT8);
-    public static final TupleType booleanTuple = TupleType.parse(BOOL);
-    public static final TupleType intBoolTuple = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
-    public static final TupleType stringTuple = TupleType.parse(STRING);
-    public static final TupleType addressTuple = TupleType.parse(ADDRESS);
-    public static final TupleType notSpecifiedType = TupleType.parse(INT32);
-    public static final TupleType getTokenInfoType =
+    public static final TupleType BIG_INTEGER_TUPLE = TupleType.parse(UINT256);
+    public static final TupleType DECIMALS_TYPE = TupleType.parse(UINT8);
+    public static final TupleType BOOLEAN_TUPLE = TupleType.parse(BOOL);
+    public static final TupleType INT_BOOL_TUPLE = TupleType.parse(INT_BOOL_PAIR_RETURN_TYPE);
+    public static final TupleType STRING_TUPLE = TupleType.parse(STRING);
+    public static final TupleType ADDRESS_TUPLE = TupleType.parse(ADDRESS);
+    public static final TupleType NOT_SPECIFIED_TYPE = TupleType.parse(INT32);
+    public static final TupleType GET_TOKEN_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
-    public static final TupleType getFungibleTokenInfoType =
+    public static final TupleType GET_FUNGIBLE_TOKEN_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + FUNGIBLE_TOKEN_INFO + ")");
 
-    public static final TupleType getTokenExpiryInfoType =
+    public static final TupleType GET_TOKEN_EXPIRY_INFO_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + EXPIRY + ")");
 
-    public static final TupleType getTokenKeyType =
+    public static final TupleType GET_TOKEN_KEY_TYPE =
             TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + KEY_VALUE + ")");
 
     public enum FunctionType {

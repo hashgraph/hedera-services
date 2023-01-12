@@ -155,11 +155,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -180,11 +178,9 @@ class GetTokenKeyPrecompileTest {
         givenJKeyContractAndDelegateContext();
         wrapper = new GetTokenKeyWrapper(fungible, 16L);
         given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -204,11 +200,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 4L);
         given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -228,11 +222,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 8L);
         given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -252,11 +244,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 64L);
         given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -276,11 +266,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 32L);
         given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -300,11 +288,9 @@ class GetTokenKeyPrecompileTest {
         givenMinimalContextForCall();
         wrapper = new GetTokenKeyWrapper(fungible, 2L);
         given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(evmEncoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
@@ -382,9 +368,5 @@ class GetTokenKeyPrecompileTest {
         given(key.hasContractID()).willReturn(true);
         given(key.getContractIDKey()).willReturn(jContractIDKey);
         given(jContractIDKey.getContractID()).willReturn(ContractID.getDefaultInstance());
-        given(key.hasDelegatableContractId()).willReturn(true);
-        given(key.getDelegatableContractIdKey()).willReturn(jDelegatableContractIDKey);
-        given(jDelegatableContractIDKey.getContractID())
-                .willReturn(ContractID.getDefaultInstance());
     }
 }
