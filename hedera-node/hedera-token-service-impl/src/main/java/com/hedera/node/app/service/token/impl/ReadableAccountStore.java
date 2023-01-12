@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 
 /**
@@ -73,7 +74,8 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
     /** {@inheritDoc} */
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
+            @NonNull final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
             return withFailureReason(INVALID_ACCOUNT_ID);
@@ -95,7 +97,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
         final var contract = optContract.get();
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
+        if (contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
         return validateKey(contract.getAccountKey(), true);
@@ -103,23 +105,23 @@ public class ReadableAccountStore implements AccountKeyLookup {
 
     /** {@inheritDoc} */
     @Override
-    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias) {
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
+            @NonNull final ContractID idOrAlias) {
         final var optContract = getAccountLeaf(asAccount(idOrAlias));
         if (optContract.isEmpty()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
 
         final var contract = optContract.get();
-        if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
+        if (contract.isDeleted() || !contract.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
 
         final var responseIgnoringSigReq = validateKey(contract.getAccountKey(), true);
         if (responseIgnoringSigReq.failed() || contract.isReceiverSigRequired()) {
             return responseIgnoringSigReq;
-        } else {
-            return PRESENT_BUT_NOT_REQUIRED;
         }
+        return PRESENT_BUT_NOT_REQUIRED;
     }
 
     /**
@@ -169,16 +171,18 @@ public class ReadableAccountStore implements AccountKeyLookup {
         return id.getAccountNum();
     }
 
-    private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {
-        if (key == null) {
-            throw new IllegalArgumentException("Provided Key is null");
-        }
-        if (key.isEmpty()) {
+    private KeyOrLookupFailureReason validateKey(
+            @Nullable final JKey key, final boolean isContractKey) {
+        if (key == null || key.isEmpty()) {
+            if (isContractKey) {
+                return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
+            }
             return withFailureReason(ACCOUNT_IS_IMMUTABLE);
-        } else if(isContractKey && key instanceof JContractIDKey){
+        } else if (isContractKey && key instanceof JContractIDKey) {
             return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
+        } else {
+            return withKey(key);
         }
-        return withKey(key);
     }
 
     private Account mapAccount(final AccountID idOrAlias, final HederaAccount account) {

@@ -16,15 +16,14 @@
 package com.hedera.test.utils;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -32,6 +31,7 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class TestFixturesKeyLookup implements AccountKeyLookup {
@@ -47,7 +47,7 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
         return accounts.get(accountNumOf(idOrAlias))
                 .map(HederaAccount::getAccountKey)
-                .map(this::validateKey)
+                .map(this::validateAccountKey)
                 .orElse(withFailureReason(INVALID_ACCOUNT_ID));
     }
 
@@ -58,20 +58,54 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
             return withFailureReason(INVALID_ACCOUNT_ID);
         } else {
             return account.map(HederaAccount::getAccountKey)
-                    .map(this::validateKey)
+                    .map(this::validateAccountKey)
                     .filter(reason -> reason.failed() || account.get().isReceiverSigRequired())
                     .orElse(PRESENT_BUT_NOT_REQUIRED);
         }
     }
 
-    private KeyOrLookupFailureReason validateKey(final JKey key) {
-        if (key == null) {
-            throw new IllegalArgumentException("Provided Key is null");
+    @Override
+    public KeyOrLookupFailureReason getKey(ContractID idOrAlias) {
+        return accounts.get(accountNumOf(asAccount(idOrAlias)))
+                .map(HederaAccount::getAccountKey)
+                .map(this::validateContractKey)
+                .orElse(withFailureReason(INVALID_CONTRACT_ID));
+    }
+
+    @Override
+    public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(ContractID idOrAlias) {
+        final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
+        if (account.isEmpty()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        } else if (account.get().isDeleted() || !account.get().isSmartContract()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        } else {
+            return account.map(HederaAccount::getAccountKey)
+                    .map(this::validateContractKey)
+                    .filter(reason -> reason.failed() || account.get().isReceiverSigRequired())
+                    .orElse(PRESENT_BUT_NOT_REQUIRED);
         }
-        if (key.isEmpty()) {
+    }
+
+    private KeyOrLookupFailureReason validateContractKey(final JKey key) {
+        return validateKey(key, true);
+    }
+
+    private KeyOrLookupFailureReason validateAccountKey(final JKey key) {
+        return validateKey(key, false);
+    }
+
+    private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {
+        if (key == null || key.isEmpty()) {
+            if (isContractKey) {
+                return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
+            }
             return withFailureReason(ACCOUNT_IS_IMMUTABLE);
+        } else if (isContractKey && key instanceof JContractIDKey) {
+            return withFailureReason(MODIFYING_IMMUTABLE_CONTRACT);
+        } else {
+            return withKey(key);
         }
-        return withKey(key);
     }
 
     private Long accountNumOf(final AccountID id) {

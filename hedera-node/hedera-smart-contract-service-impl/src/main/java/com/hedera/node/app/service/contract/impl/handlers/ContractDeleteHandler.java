@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -22,10 +24,6 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -54,15 +52,15 @@ public class ContractDeleteHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull AccountKeyLookup keyLookup) {
         final var op = txBody.getContractDeleteInstance();
-        final var meta = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txBody)
-                .payerKeyFor(payer);
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
 
         meta.addNonPayerKey(op.getContractID());
 
-        if(op.hasTransferAccountID()){
-           meta.addNonPayerKeyIfReceiverSigRequired(op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-        } else if (op.hasTransferContractID()){
+        if (op.hasTransferAccountID()) {
+            meta.addNonPayerKeyIfReceiverSigRequired(
+                    op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+        } else if (op.hasTransferContractID()) {
             meta.addNonPayerKeyIfReceiverSigRequired(op.getTransferContractID());
         }
         return meta.build();

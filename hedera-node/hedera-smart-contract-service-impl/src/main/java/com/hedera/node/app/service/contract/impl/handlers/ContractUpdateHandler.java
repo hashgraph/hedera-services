@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -23,9 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -54,19 +54,18 @@ public class ContractUpdateHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup keyLookup) {
         final var op = txBody.getContractUpdateInstance();
-        final var meta = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txBody)
-                .payerKeyFor(payer);
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
 
-        if(isAdminSigRequired(op)){
+        if (isAdminSigRequired(op)) {
             meta.addNonPayerKey(op.getContractID());
         }
-        if(hasNonDeprecatedAdminKey(op)){
+        if (hasNonDeprecatedAdminKey(op)) {
             final var key = asHederaKey(op.getAdminKey());
             key.ifPresent(meta::addToReqNonPayerKeys);
         }
-        if(op.hasAutoRenewAccountId() &&
-                !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())){
+        if (op.hasAutoRenewAccountId()
+                && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
             meta.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
         return meta.build();

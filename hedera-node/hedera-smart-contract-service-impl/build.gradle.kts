@@ -31,7 +31,8 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-smart-contract-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
-    implementation(project(mapOf("path" to ":hedera-node:hedera-token-service-impl")))
-    implementation(project(mapOf("path" to ":hedera-node:hedera-token-service-impl")))
-    implementation(project(mapOf("path" to ":hedera-node:hedera-token-service-impl")))
+
+    testImplementation(testLibs.bundles.testing)
+    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testLibs.mockito.inline)
 }
