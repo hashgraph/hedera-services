@@ -39,7 +39,7 @@ gitRepositories {
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // choose tag or branch of HAPI you would like to test with
-        tag.set("main")
+        tag.set("v0.34.0")
         // do not load project from repo
         autoInclude.set(false)
     }
@@ -101,7 +101,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.1-SNAPSHOT")
+            version("hapi-version", "0.34.0")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
@@ -112,7 +112,7 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.34.0")
+            version("swirlds-version", "0.34.2")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
