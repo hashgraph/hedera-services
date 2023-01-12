@@ -67,7 +67,7 @@ public class HapiParserUtil {
     }
 
     public static Address evmAddressFromSecp256k1Key(final Key key) {
-        if (key.getECDSASecp256K1().isEmpty()) {
+        if (key.hasECDSASecp256K1()) {
             return asHeadlongAddress(
                     EthSigsUtils.recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray()));
         } else {

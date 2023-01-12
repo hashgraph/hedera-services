@@ -154,7 +154,6 @@ dependencyResolutionManagement {
 
             // Define the individual libraries
             library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
-            library("pbj-compiler", "com.hedera.pbj", "pbj-compiler").versionRef("pbj-version")
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
             library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
