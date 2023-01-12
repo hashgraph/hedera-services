@@ -10,5 +10,6 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.workflows;
 
     opens com.hedera.node.app.spi to
-            com.hedera.node.app.spi.test;
+            com.hedera.node.app.spi.test,
+            com.hedera.node.app.service.mono.testFixtures;
 }

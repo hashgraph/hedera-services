@@ -178,6 +178,7 @@ public class ConfigUtils {
                         HapiSpec.class,
                         VersionInfoSpec.class,
                         SendSuite.class,
+                        ScheduleSuite.class,
                         CreateSuite.class,
                         SpecialFileHashSuite.class,
                         StakeSuite.class,

@@ -25,7 +25,7 @@ import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -53,7 +53,7 @@ class ScheduleHandlerTestBase {
     @Mock protected AccountKeyLookup keyLookup;
     @Mock protected HederaKey schedulerKey;
     @Mock protected PreHandleDispatcher dispatcher;
-    @Mock protected States states;
+    @Mock protected ReadableStates states;
 
     protected void basicMetaAssertions(
             final TransactionMetadata meta,

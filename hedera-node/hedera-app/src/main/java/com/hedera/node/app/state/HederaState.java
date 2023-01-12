@@ -15,10 +15,35 @@
  */
 package com.hedera.node.app.state;
 
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-// Placeholder until the state-implementation is added
+/**
+ * The full state used by Hedera. The primary implementation is based on a merkle tree, and the data
+ * structures provided by the hashgraph platform. But most of our code doesn't need to know that
+ * detail, and are happy with just the API provided by this interface.
+ */
 public interface HederaState {
+    /**
+     * Creates a {@link ReadableStates} for the given named service. If such a service doesn't
+     * exist, an empty {@link ReadableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link ReadableKVState} instances belonging to the service.
+     */
+    @NonNull
+    ReadableStates createReadableStates(@NonNull String serviceName);
 
-    States createReadableStates(String serviceName);
+    /**
+     * Creates a {@link WritableStates} for the given named service. If such a service doesn't
+     * exist, an empty {@link WritableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link WritableKVState} instance belonging to the service.
+     */
+    @NonNull
+    WritableStates createWritableStates(@NonNull String serviceName);
 }
