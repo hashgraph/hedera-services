@@ -6,7 +6,7 @@ services:
     environment:
       - NODE_ID=0
     volumes:
-      - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
+      - "./../hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node0/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node0/output:/opt/hedera/services/output"
     ports:
@@ -17,7 +17,7 @@ services:
     environment:
       - NODE_ID=1
     volumes:
-      - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
+      - "./../hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node1/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node1/output:/opt/hedera/services/output"
     ports:
@@ -28,7 +28,7 @@ services:
     environment:
       - NODE_ID=2
     volumes:
-      - "./hedera-node/configuration/compose:/opt/hedera/services/config-mount"
+      - "./../hedera-node/configuration/compose:/opt/hedera/services/config-mount"
       - "./compose-network/node2/saved:/opt/hedera/services/data/saved"
       - "./compose-network/node2/output:/opt/hedera/services/output"
     ports:

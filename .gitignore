@@ -159,3 +159,10 @@ build
 
 /hedera-node/hapi/hedera-protobufs/
 /hedera-node/hapi/checkouts.bin
+
+# Docker setup
+!docker/*.sh
+/docker/.env
+.env
+Dockerfile
+.dockerignore
