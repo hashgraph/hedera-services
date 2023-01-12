@@ -21,7 +21,9 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +60,10 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     public void start(final MessageFrame frame, final OperationTracer operationTracer) {
         final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
         if (hederaPrecompile != null) {
+            if (hederaPrecompile instanceof EvmHTSPrecompiledContract) {
+                var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+                executeHederaPrecompile(hederaPrecompile, frame, operationTracer, updater.tokenAccessor());
+            }
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
             // Non-precompile execution flow
@@ -80,17 +86,30 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     }
 
     protected void executeHederaPrecompile(
+        final PrecompiledContract contract,
+        final MessageFrame frame,
+        final OperationTracer operationTracer,
+        final TokenAccessor tokenAccessor) {
+        if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
+            final var costedResult =
+                htsPrecompile.computeCosted(
+                    frame.getInputData(),
+                    frame,
+                    (now, minimumTinybarCost) -> minimumTinybarCost,
+                    tokenAccessor);
+            output = costedResult.getValue();
+            gasRequirement = costedResult.getKey();
+        }
+        executeHederaPrecompile(contract, frame, operationTracer);
+    }
+
+    protected void executeHederaPrecompile(
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            final var costedResult =
-                    htsPrecompile.computeCosted(
-                            frame.getInputData(),
-                            frame,
-                            (now, minimumTinybarCost) -> minimumTinybarCost);
-            output = costedResult.getValue();
-            gasRequirement = costedResult.getKey();
+        if (!"HTS".equals(contract.getName())) {
+            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
+            gasRequirement = contract.gasRequirement(frame.getInputData());
         }
 
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);

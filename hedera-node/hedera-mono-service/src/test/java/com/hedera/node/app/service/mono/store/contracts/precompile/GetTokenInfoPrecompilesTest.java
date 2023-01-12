@@ -285,7 +285,8 @@ class GetTokenInfoPrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                    evmHTSPrecompiledContract);
 
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         fungibleTokenInfoPrecompile = Mockito.mockStatic(FungibleTokenInfoPrecompile.class);

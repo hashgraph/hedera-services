@@ -171,7 +171,8 @@ class RevokeKycPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                    evmHTSPrecompiledContract);
         revokeKycPrecompile = Mockito.mockStatic(RevokeKycPrecompile.class);
     }
 

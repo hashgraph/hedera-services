@@ -547,8 +547,7 @@ class ViewExecutorTest {
                         frame,
                         evmEncodingFacade,
                         viewGasCalculator,
-                        tokenAccessor,
-                        stateView.getNetworkInfo().ledgerId());
+                        tokenAccessor);
         return input;
     }
 
@@ -573,8 +572,7 @@ class ViewExecutorTest {
                         frame,
                         evmEncodingFacade,
                         viewGasCalculator,
-                        tokenAccessor,
-                        stateView.getNetworkInfo().ledgerId());
+                        tokenAccessor);
         return input;
     }
 

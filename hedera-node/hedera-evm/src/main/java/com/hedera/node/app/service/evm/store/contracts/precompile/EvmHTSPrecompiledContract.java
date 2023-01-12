@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -28,25 +29,25 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class EvmHTSPrecompiledContract {
 
     private final EvmInfrastructureFactory infrastructureFactory;
-    private final ByteString networkId;
+//    private final ByteString networkId;
 
     @Inject
     public EvmHTSPrecompiledContract(
-            EvmInfrastructureFactory infrastructureFactory, ByteString networkId) {
+            EvmInfrastructureFactory infrastructureFactory) {
         this.infrastructureFactory = infrastructureFactory;
-        this.networkId = networkId;
     }
 
     public Pair<Long, Bytes> computeCosted(
-            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator) {
+            final Bytes input, final MessageFrame frame, ViewGasCalculator viewGasCalculator, final
+        TokenAccessor tokenAccessor) {
         if (isTokenProxyRedirect(input)) {
             final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator);
+                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
             return executor.computeCosted();
         } else if (isViewFunction(input)) {
             final var executor =
                     infrastructureFactory.newViewExecutor(
-                            input, frame, viewGasCalculator, networkId);
+                            input, frame, viewGasCalculator, tokenAccessor);
             return executor.computeCosted();
         }
 

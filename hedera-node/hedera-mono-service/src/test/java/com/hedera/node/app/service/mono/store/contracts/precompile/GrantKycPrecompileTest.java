@@ -171,7 +171,8 @@ class GrantKycPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                    evmHTSPrecompiledContract);
         grantKycPrecompile = Mockito.mockStatic(GrantKycPrecompile.class);
     }
 

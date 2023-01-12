@@ -67,20 +67,17 @@ public class ViewExecutor {
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
     private final TokenAccessor tokenAccessor;
-    private final ByteString ledgerId;
-
+// TODO: add ledgerId
     public ViewExecutor(
             final Bytes input,
             final MessageFrame frame,
             final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator,
-            final TokenAccessor tokenAccessor,
-            final ByteString ledgerId) {
+            final TokenAccessor tokenAccessor) {
         this.input = input;
         this.frame = frame;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
-        this.ledgerId = ledgerId;
         this.tokenAccessor = tokenAccessor;
     }
 
@@ -103,53 +100,53 @@ public class ViewExecutor {
 
     private Bytes answerGiven(final int selector) {
         switch (selector) {
-            case ABI_ID_GET_TOKEN_INFO -> {
-                final var wrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-                                .orElse(null);
-
-                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-
-                return evmEncoder.encodeGetTokenInfo(tokenInfo);
-            }
-            case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
-                final var wrapper =
-                        EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-                                .orElse(null);
-
-                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-
-                return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
-            }
-            case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
-                final var wrapper =
-                        EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-                                .orElse(null);
-
-                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var nftID =
-                        NftID.newBuilder()
-                                .setTokenID(tokenIdFromEvmAddress(wrapper.token()))
-                                .setSerialNumber(wrapper.serialNumber())
-                                .build();
-                final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
-                final var nftSerialNo = nftID.getSerialNumber();
-                final var nonFungibleTokenInfo =
-                        tokenAccessor.evmNftInfo(nftAddress, nftSerialNo, ledgerId).orElse(null);
-                validateTrueOrRevert(
-                        nonFungibleTokenInfo != null,
-                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
-
-                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
-            }
+//            case ABI_ID_GET_TOKEN_INFO -> {
+//                final var wrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
+//                final var tokenInfo =
+//                        tokenAccessor
+//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+//                                .orElse(null);
+//
+//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+//
+//                return evmEncoder.encodeGetTokenInfo(tokenInfo);
+//            }
+//            case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
+//                final var wrapper =
+//                        EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+//                final var tokenInfo =
+//                        tokenAccessor
+//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+//                                .orElse(null);
+//
+//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+//
+//                return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
+//            }
+//            case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
+//                final var wrapper =
+//                        EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+//                final var tokenInfo =
+//                        tokenAccessor
+//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+//                                .orElse(null);
+//
+//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+//                final var nftID =
+//                        NftID.newBuilder()
+//                                .setTokenID(tokenIdFromEvmAddress(wrapper.token()))
+//                                .setSerialNumber(wrapper.serialNumber())
+//                                .build();
+//                final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
+//                final var nftSerialNo = nftID.getSerialNumber();
+//                final var nonFungibleTokenInfo =
+//                        tokenAccessor.evmNftInfo(nftAddress, nftSerialNo, ledgerId).orElse(null);
+//                validateTrueOrRevert(
+//                        nonFungibleTokenInfo != null,
+//                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+//
+//                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+//            }
             case ABI_ID_IS_FROZEN -> {
                 final var wrapper = EvmIsFrozenPrecompile.decodeIsFrozen(input);
 
@@ -232,23 +229,23 @@ public class ViewExecutor {
                 final var tokenType = tokenAccessor.typeOf(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenType(tokenType.ordinal());
             }
-            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
-                final var wrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
-                final var tokenInfo =
-                        tokenAccessor
-                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-                                .orElse(null);
-
-                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-                Objects.requireNonNull(tokenInfo);
-                final var expiryInfo =
-                        new TokenExpiryInfo(
-                                tokenInfo.getExpiry(),
-                                tokenInfo.getAutoRenewAccount(),
-                                tokenInfo.getAutoRenewPeriod());
-
-                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
-            }
+//            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
+//                final var wrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+//                final var tokenInfo =
+//                        tokenAccessor
+//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+//                                .orElse(null);
+//
+//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+//                Objects.requireNonNull(tokenInfo);
+//                final var expiryInfo =
+//                        new TokenExpiryInfo(
+//                                tokenInfo.getExpiry(),
+//                                tokenInfo.getAutoRenewAccount(),
+//                                tokenInfo.getAutoRenewPeriod());
+//
+//                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
+//            }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = EvmGetTokenKeyPrecompile.decodeGetTokenKey(input);
 

@@ -180,7 +180,8 @@ class PausePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                    evmHTSPrecompiledContract);
 
         pausePrecompile = Mockito.mockStatic(PausePrecompile.class);
     }

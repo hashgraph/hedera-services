@@ -144,7 +144,8 @@ class IsKycPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                    evmHTSPrecompiledContract);
         isKycPrecompile = Mockito.mockStatic(IsKycPrecompile.class);
     }
 

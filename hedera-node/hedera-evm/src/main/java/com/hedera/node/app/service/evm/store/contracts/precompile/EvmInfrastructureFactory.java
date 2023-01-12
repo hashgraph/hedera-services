@@ -28,20 +28,15 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class EvmInfrastructureFactory {
 
     private final EvmEncodingFacade evmEncoder;
-    protected TokenAccessor tokenAccessor;
 
     @Inject
     public EvmInfrastructureFactory(EvmEncodingFacade evmEncoder) {
         this.evmEncoder = evmEncoder;
     }
 
-    public EvmInfrastructureFactory(EvmEncodingFacade evmEncoder, TokenAccessor tokenAccessor) {
-        this(evmEncoder);
-        this.tokenAccessor = tokenAccessor;
-    }
 
     public RedirectViewExecutor newRedirectExecutor(
-            final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
+            final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator, final TokenAccessor tokenAccessor) {
         return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor);
     }
 
@@ -49,7 +44,7 @@ public class EvmInfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-            final ByteString ledgerId) {
-        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor, ledgerId);
+             final TokenAccessor tokenAccessor) {
+        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor);
     }
 }
