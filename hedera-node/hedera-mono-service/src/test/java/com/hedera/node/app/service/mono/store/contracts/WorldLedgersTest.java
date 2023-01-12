@@ -209,7 +209,7 @@ class WorldLedgersTest {
         worldLedgers =
                 new WorldLedgers(
                         aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
         token =
                 new MerkleToken(
                         Long.MAX_VALUE,
@@ -295,7 +295,7 @@ class WorldLedgersTest {
                 () -> worldLedgers.staticAllowanceOf(ownerId, spenderId, fungibleToken));
 
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         given(staticEntityAccess.allowanceOf(ownerId, spenderId, fungibleToken)).willReturn(123L);
         assertEquals(
@@ -312,7 +312,7 @@ class WorldLedgersTest {
                 IllegalStateException.class, () -> worldLedgers.staticApprovedSpenderOf(nftId));
 
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         given(staticEntityAccess.approvedSpenderOf(nftId)).willReturn(Address.ALTBN128_ADD);
         assertEquals(
@@ -326,7 +326,7 @@ class WorldLedgersTest {
                 () -> worldLedgers.staticIsOperator(ownerId, spenderId, nft));
 
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         given(staticEntityAccess.isOperator(ownerId, spenderId, nft)).willReturn(true);
         assertTrue(
@@ -374,7 +374,7 @@ class WorldLedgersTest {
     @Test
     void staticTokenInfoWorks() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         given(staticEntityAccess.infoForToken(fungibleToken)).willReturn(Optional.of(tokenInfo));
         given(tokenInfo.getPauseStatus()).willReturn(Paused);
@@ -494,7 +494,7 @@ class WorldLedgersTest {
     @Test
     void staticEvmNftTokenInfoWorks() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var nftAddr = asTypedEvmAddress(nftTokenId);
 
@@ -614,7 +614,7 @@ class WorldLedgersTest {
     @Test
     void staticKeyInfoWorks() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
         EvmKey evmKey = convertToEvmKey(asKeyUnchecked(key));
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(staticEntityAccess.keyOf(fungibleToken, TokenProperty.FREEZE_KEY)).willReturn(key);
@@ -951,7 +951,7 @@ class WorldLedgersTest {
         given(staticEntityAccess.isFrozen(accountID, fungibleToken)).willReturn(true);
 
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-        tokenAccessor();
+        tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         assertEquals(name, tokenAccessor.nameOf(fungibleTokenAddress));
         assertEquals(symbol, tokenAccessor.symbolOf(fungibleTokenAddress));
@@ -1049,10 +1049,6 @@ class WorldLedgersTest {
         token.setSupplyType(TokenSupplyType.FINITE);
         token.setFeeScheduleFrom(grpcCustomFees);
         token.setTokenType(FUNGIBLE_COMMON);
-    }
-
-    private void tokenAccessor() {
-        tokenAccessor = new TokenAccessorImpl(worldLedgers);
     }
 
     private static final int decimals = 666666;
