@@ -34,8 +34,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -76,8 +74,10 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.keys.KeyFactory;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -121,7 +121,7 @@ class LedgerBalanceChangesTest {
     @Mock private TransactionContext txnCtx;
     @Mock private AliasManager aliasManager;
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
-    private AccountNumbers accountNums = new MockAccountNumbers();
+    private HederaAccountNumbers accountNums = new MockAccountNumbers();
     private FeeDistribution feeDistribution = new FeeDistribution(accountNums, dynamicProperties);
 
     private HederaLedger subject;
