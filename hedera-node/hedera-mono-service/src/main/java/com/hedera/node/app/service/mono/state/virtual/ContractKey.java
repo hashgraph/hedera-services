@@ -174,7 +174,9 @@ public final class ContractKey implements VirtualKey<ContractKey> {
             out.write((byte) (contractId >> (b * 8)));
         }
         serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
-        return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override
@@ -188,7 +190,9 @@ public final class ContractKey implements VirtualKey<ContractKey> {
             buffer.put((byte) (contractId >> (b * 8)));
         }
         serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
-        return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override

@@ -369,8 +369,16 @@ public class IterableContractValue implements VirtualValue {
 
     int getSerializedSize() {
         int valueSize = uint256Value.length;
-        int prevSize = (prevUint256Key == null) ? 1 : 1 + prevUint256KeyNonZeroBytes;
-        int nextSize = (nextUint256Key == null) ? 1 : 1 + nextUint256KeyNonZeroBytes;
+        int prevSize =
+                (prevUint256Key == null)
+                        ? 1 // either an "empty" marker
+                        : 1 + prevUint256KeyNonZeroBytes; // or prev key non-zero bytes count +
+        // non-zero bytes
+        int nextSize =
+                (nextUint256Key == null)
+                        ? 1 // either an "empty" marker
+                        : 1 + nextUint256KeyNonZeroBytes; // or next key non-zero bytes count +
+        // non-zero bytes
         return valueSize + prevSize + nextSize;
     }
 

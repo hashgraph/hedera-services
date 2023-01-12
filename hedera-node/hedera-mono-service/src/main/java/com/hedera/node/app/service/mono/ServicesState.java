@@ -65,6 +65,7 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -216,12 +217,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 getBootstrapProperties()
                         .getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
         if (enabledJasperdbToMerkleDb) {
-            try {
-                migrateVirtualMapsToMerkleDb(this);
-            } catch (final InterruptedException e) {
-                log.error("VirtualMap migration to MerkleDb is interrupted", e);
-                throw new RuntimeException(e);
-            }
+            migrateVirtualMapsToMerkleDb(this);
         }
         return MerkleInternal.super.migrate(version);
     }
@@ -665,8 +661,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 && getChild(StateChildIndices.TOKEN_ASSOCIATIONS) instanceof MerkleMap<?, ?>;
     }
 
-    private static void migrateVirtualMapsToMerkleDb(final ServicesState state)
-            throws InterruptedException {
+    private static void migrateVirtualMapsToMerkleDb(final ServicesState state) {
         final VirtualMapFactory virtualMapFactory = vmFactory.get();
 
         // virtualized blobs
@@ -733,27 +728,36 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     private static <K extends VirtualKey<? super K>, V extends VirtualValue>
             VirtualMap<K, V> migrateVirtualMap(
-                    final VirtualMap<K, V> source, final VirtualMap<K, V> target)
-                    throws InterruptedException {
+                    final VirtualMap<K, V> source, final VirtualMap<K, V> target) {
         final int copyTargetMapEveryPuts = 10_000;
         final AtomicInteger count = new AtomicInteger(copyTargetMapEveryPuts);
         final AtomicReference<VirtualMap<K, V>> targetMapRef = new AtomicReference<>(target);
-        VirtualMapMigration.extractVirtualMapData(
-                AdHocThreadManager.getStaticThreadManager(),
-                source,
-                kvPair -> {
-                    final K key = kvPair.getKey();
-                    final V value = kvPair.getValue();
-                    final VirtualMap<K, V> curCopy = targetMapRef.get();
-                    curCopy.put(key, value);
-                    // Make a map copy every X rounds to flush map cache to disk
-                    if (count.decrementAndGet() == 0) {
-                        targetMapRef.set(curCopy.copy());
-                        curCopy.release();
-                        count.set(copyTargetMapEveryPuts);
+        MiscUtils.withLoggedDuration(
+                () -> {
+                    try {
+                        VirtualMapMigration.extractVirtualMapData(
+                                AdHocThreadManager.getStaticThreadManager(),
+                                source,
+                                kvPair -> {
+                                    final K key = kvPair.getKey();
+                                    final V value = kvPair.getValue();
+                                    final VirtualMap<K, V> curCopy = targetMapRef.get();
+                                    curCopy.put(key, value);
+                                    // Make a map copy every X rounds to flush map cache to disk
+                                    if (count.decrementAndGet() == 0) {
+                                        targetMapRef.set(curCopy.copy());
+                                        curCopy.release();
+                                        count.set(copyTargetMapEveryPuts);
+                                    }
+                                },
+                                4);
+                    } catch (final InterruptedException z) {
+                        log.error("Interrupted VirtualMap migration", z);
+                        throw new RuntimeException(z);
                     }
                 },
-                4);
+                log,
+                "VirtualMap migration: " + source.getLabel());
         return targetMapRef.get();
     }
 
