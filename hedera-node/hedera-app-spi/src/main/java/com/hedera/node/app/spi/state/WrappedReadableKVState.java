@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * Used to wrap a {@link ReadableKVState}, allowing to buffer reads into the {@link
@@ -40,7 +39,7 @@ public class WrappedReadableKVState<K extends Comparable<K>, V> extends Readable
      */
     public WrappedReadableKVState(@NonNull final ReadableKVState<K, V> delegate) {
         super(delegate.getStateKey());
-        this.delegate = Objects.requireNonNull(delegate);
+        this.delegate = delegate;
     }
 
     @Override

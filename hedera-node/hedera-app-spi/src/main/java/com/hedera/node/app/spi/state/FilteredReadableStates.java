@@ -16,10 +16,9 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link ReadableStates} that delegates to another instance, and filters the
@@ -42,14 +41,10 @@ public class FilteredReadableStates implements ReadableStates {
         this.delegate = Objects.requireNonNull(delegate);
 
         // Only include those state keys that are actually in the underlying delegate
-        final var set = new HashSet<String>(stateKeys.size());
-        for (final var stateKey : stateKeys) {
-            if (delegate.contains(stateKey)) {
-                set.add(stateKey);
-            }
-        }
-
-        this.stateKeys = Collections.unmodifiableSet(set);
+        this.stateKeys =
+                stateKeys.stream()
+                        .filter(delegate::contains)
+                        .collect(Collectors.toUnmodifiableSet());
     }
 
     @NonNull

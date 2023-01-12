@@ -129,7 +129,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             final var value = state.getForModify(A_KEY);
             assertThat(value).isEqualTo(APPLE);
 
-            // Verify the key used in lookup is now in readKeys and modifiedKeys
+            // Verify the key used in lookup is now in readKeys but NOT modifiedKeys
             assertThat(state.readKeys()).contains(A_KEY);
             assertThat(state.modifiedKeys()).isEmpty();
 
@@ -156,7 +156,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
                 final var value = state.getForModify(A_KEY);
                 assertThat(value).isEqualTo(APPLE);
 
-                // Verify the key used in lookup is now in readKeys and modifiedKeys
+                // Verify the key used in lookup is now in readKeys and NOT in modifiedKeys
                 assertThat(state.readKeys()).contains(A_KEY);
                 assertThat(state.modifiedKeys()).doesNotContain(A_KEY);
             }
@@ -294,6 +294,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             // We should be able to "get" the modification
             assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
+            assertThat(state.readKeys()).isEmpty();
 
             // Commit should cause the value to be added
             state.commit();
@@ -790,18 +791,12 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
     @Tag("Hammer")
     void deterministicUpdates() {
         // We will execute 'numIterations' iterations. This is parameterized with a system property
-        // so
-        // that we may dial the number up or down for certain types of tests (for example, nightly
-        // vs. continuous).
-        // Each iteration will construct a list of modifications (add, remove, modify). We will then
-        // create
-        // 39 threads each with their own WritableKVStateBase. Each will apply the modifications and
-        // commit
-        // them. We will then join back and verify that the order in which modifications were
-        // applied is
-        // identical. The hope is that if there is any non-determinism, we will tease it out by
-        // hammering
-        // it in this way.
+        // so that we may dial the number up or down for certain types of tests (for example,
+        // nightly vs. continuous). Each iteration will construct a list of modifications (add,
+        // remove, modify). We will then create 39 threads each with their own WritableKVStateBase.
+        // Each will apply the modifications and commit them. We will then join back and verify
+        // that the order in which modifications were applied is identical. The hope is that if
+        // there is any non-determinism, we will tease it out by hammering it in this way.
         final int numIterations = Integer.getInteger(NUM_ITERATIONS_ARG, 100);
         final var numMutations = 20;
         final var numThreads = 39;
@@ -813,7 +808,7 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
             for (int j = 0; j < numMutations; j++) {
                 final var key = random().nextInt(100);
                 if (random().nextInt(10) < 8) {
-                    final var randomSuffix = randomString("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 10);
+                    final var randomSuffix = randomString(10);
                     mutations.add(state -> state.put(key, randomSuffix));
                 } else {
                     mutations.add(state -> state.remove(key));
@@ -843,6 +838,15 @@ class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
                                 super.removeFromDataSource(key);
                             }
                         };
+
+                // Add a bunch of random junk to the state and then reset it.
+                // If the backend data structures are not able to maintain deterministic
+                // behavior in the face of this (like a HashMap), then the test will fail.
+                for (int j = 0; j < random().nextInt(100, 1000); j++) {
+                    state.put(random().nextInt(), randomString(100));
+                }
+                state.reset();
+
                 mutationOrders.add(state.keys);
                 executors.execute(
                         () -> {

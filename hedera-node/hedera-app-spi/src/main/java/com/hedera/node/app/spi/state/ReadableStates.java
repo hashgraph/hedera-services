@@ -26,6 +26,9 @@ public interface ReadableStates {
      * a fatal bug. Applications must only ask for states that they have previously registered with
      * the {@link Schema}.
      *
+     * <p>This method is idempotent. When called with the same stateKey, the same {@link
+     * ReadableKVState} instance is returned.
+     *
      * @param stateKey The key used for looking up state
      * @return The state for that key. This will never be null.
      * @param <K> The key type in the state.

@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 public class TestBase {
+    public static final String CAPITALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final Set<String> WORDS;
 
     protected static final String UNKNOWN_STATE_KEY = "BOGUS_STATE_KEY";
@@ -130,6 +131,17 @@ public class TestBase {
         final var randomWords = new ArrayList<>(WORDS);
         Collections.shuffle(randomWords, rand);
         return randomWords.subList(0, n);
+    }
+
+    /**
+     * Generate a pseudo-random string of capital letters of the given length.
+     *
+     * @param length The length of the string. Must be non-negative
+     * @return A random string of capital letters and of the requested length.
+     */
+    @NonNull
+    public static String randomString(final int length) {
+        return randomString(CAPITALS, length);
     }
 
     /**

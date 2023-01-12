@@ -182,8 +182,7 @@ has been modified, then we can trust the pre-work we did and complete the transa
 
 When a state is used during the [Transaction Handling Workflow](workflows.md#handling-transactions), it is always
 a `WritableKVState` based on the **current working state**. The only workflow that supports writable state is this one.
-At the end of the `Round`, after **all** transactions in the round have been handled, the state is committed to the
-merkle tree.
+After handling a transaction, the state is committed to the merkle tree.
 
 ## Serialization & Deserialization
 

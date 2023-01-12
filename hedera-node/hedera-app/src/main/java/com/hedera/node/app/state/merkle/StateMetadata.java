@@ -26,6 +26,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <V> The type of the state value
  */
 public final class StateMetadata<K extends Comparable<K>, V> {
+    private static final String ON_DISK_KEY_CLASS_ID_SUFFIX = "OnDiskKey";
+    private static final String ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskKeySerializer";
+    private static final String ON_DISK_VALUE_CLASS_ID_SUFFIX = "OnDiskValue";
+    private static final String ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskValueSerializer";
+    private static final String IN_MEMORY_VALUE_CLASS_ID_SUFFIX = "InMemoryValue";
+
     private final String serviceName;
     private final Schema schema;
     private final StateDefinition<K, V> stateDefinition;
@@ -53,15 +59,20 @@ public final class StateMetadata<K extends Comparable<K>, V> {
         final var stateKey = stateDefinition.stateKey();
         final var version = schema.getVersion();
         this.onDiskKeyClassId =
-                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskKey");
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, ON_DISK_KEY_CLASS_ID_SUFFIX);
         this.onDiskKeySerializerClassId =
-                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskKeySerializer");
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX);
         this.onDiskValueClassId =
-                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskValue");
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, ON_DISK_VALUE_CLASS_ID_SUFFIX);
         this.onDiskValueSerializerClassId =
-                StateUtils.computeClassId(serviceName, stateKey, version, "OnDiskValueSerializer");
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX);
         this.inMemoryValueClassId =
-                StateUtils.computeClassId(serviceName, stateKey, version, "InMemoryValue");
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, IN_MEMORY_VALUE_CLASS_ID_SUFFIX);
     }
 
     public String serviceName() {

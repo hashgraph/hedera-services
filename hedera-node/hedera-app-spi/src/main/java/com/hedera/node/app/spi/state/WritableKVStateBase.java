@@ -28,7 +28,7 @@ import java.util.*;
 public abstract class WritableKVStateBase<K extends Comparable<K>, V>
         extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
     /** A map of all modified values buffered in this mutable state */
-    private final Map<K, V> modifications = new HashMap<>();
+    private final Map<K, V> modifications = new LinkedHashMap<>();
 
     /**
      * Create a new StateBase.
@@ -75,9 +75,7 @@ public abstract class WritableKVStateBase<K extends Comparable<K>, V>
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
         if (modifications.containsKey(key)) {
-            final var value = modifications.get(key);
-            super.markRead(key, value);
-            return value;
+            return modifications.get(key);
         } else {
             return super.get(key);
         }

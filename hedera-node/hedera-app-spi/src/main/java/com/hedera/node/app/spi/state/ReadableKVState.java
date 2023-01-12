@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.state;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Provides access to key/value state for a service implementation. This interface is implemented by
@@ -74,4 +75,12 @@ public interface ReadableKVState<K extends Comparable<K>, V> {
      */
     @NonNull
     Iterator<K> keys();
+
+    /**
+     * Gets the set of keys that a client read from the {@link ReadableKVState}.
+     *
+     * @return The possibly empty set of keys.
+     */
+    @NonNull
+    Set<K> readKeys();
 }
