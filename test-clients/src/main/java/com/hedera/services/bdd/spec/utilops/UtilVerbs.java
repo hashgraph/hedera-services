@@ -405,7 +405,9 @@ public class UtilVerbs {
                         SIDECARS_PROP,
                         "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"),
                 overridingTwo( "lazyCreation.enabled", "false",
-                        "cryptoCreateWithAliasAndEvmAddress.enabled", "false"));
+                        "cryptoCreateWithAliasAndEvmAddress.enabled", "false"),
+                overridingTwo( "contracts.evm.version", "v0.32",
+                        "contracts.evm.version.dynamic", "true"));
     }
 
     public static HapiSpecOperation overridingTwo(
