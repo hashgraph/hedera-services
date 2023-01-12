@@ -60,7 +60,11 @@ class HederaEvmWorldStateTest {
 
         subject2 =
                 new HederaEvmWorldState(
-                        hederaEvmEntityAccess, evmProperties, abstractCodeCache, accountAccessor, tokenAccessor);
+                        hederaEvmEntityAccess,
+                        evmProperties,
+                        abstractCodeCache,
+                        accountAccessor,
+                        tokenAccessor);
     }
 
     @Test

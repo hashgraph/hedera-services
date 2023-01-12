@@ -62,7 +62,8 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         if (hederaPrecompile != null) {
             if (hederaPrecompile instanceof EvmHTSPrecompiledContract) {
                 var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
-                executeHederaPrecompile(hederaPrecompile, frame, operationTracer, updater.tokenAccessor());
+                executeHederaPrecompile(
+                        hederaPrecompile, frame, operationTracer, updater.tokenAccessor());
             }
             executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
         } else {
@@ -86,17 +87,17 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     }
 
     protected void executeHederaPrecompile(
-        final PrecompiledContract contract,
-        final MessageFrame frame,
-        final OperationTracer operationTracer,
-        final TokenAccessor tokenAccessor) {
+            final PrecompiledContract contract,
+            final MessageFrame frame,
+            final OperationTracer operationTracer,
+            final TokenAccessor tokenAccessor) {
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
             final var costedResult =
-                htsPrecompile.computeCosted(
-                    frame.getInputData(),
-                    frame,
-                    (now, minimumTinybarCost) -> minimumTinybarCost,
-                    tokenAccessor);
+                    htsPrecompile.computeCosted(
+                            frame.getInputData(),
+                            frame,
+                            (now, minimumTinybarCost) -> minimumTinybarCost,
+                            tokenAccessor);
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }

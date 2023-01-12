@@ -108,7 +108,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
         @Override
         public WorldUpdater updater() {
-            return new HederaEvmStackedWorldStateUpdater(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+            return new HederaEvmStackedWorldStateUpdater(
+                    accountAccessor, hederaEvmEntityAccess, tokenAccessor);
         }
     }
 }

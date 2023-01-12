@@ -15,13 +15,9 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
@@ -30,30 +26,20 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenTypePrecompile.decodeGetTokenType;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor.asSecondsTimestamp;
 import static com.hedera.node.app.service.evm.utils.EntityIdUtil.addressFromBytes;
-import static com.hedera.node.app.service.evm.utils.EntityIdUtil.asTypedEvmAddress;
-import static com.hedera.node.app.service.evm.utils.EntityIdUtil.tokenIdFromEvmAddress;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsFrozenPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenGetCustomFeesPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -67,7 +53,7 @@ public class ViewExecutor {
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
     private final TokenAccessor tokenAccessor;
-// TODO: add ledgerId
+    // TODO: add ledgerId
     public ViewExecutor(
             final Bytes input,
             final MessageFrame frame,
@@ -100,53 +86,65 @@ public class ViewExecutor {
 
     private Bytes answerGiven(final int selector) {
         switch (selector) {
-//            case ABI_ID_GET_TOKEN_INFO -> {
-//                final var wrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
-//                final var tokenInfo =
-//                        tokenAccessor
-//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-//                                .orElse(null);
-//
-//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-//
-//                return evmEncoder.encodeGetTokenInfo(tokenInfo);
-//            }
-//            case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
-//                final var wrapper =
-//                        EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-//                final var tokenInfo =
-//                        tokenAccessor
-//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-//                                .orElse(null);
-//
-//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-//
-//                return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
-//            }
-//            case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
-//                final var wrapper =
-//                        EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-//                final var tokenInfo =
-//                        tokenAccessor
-//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-//                                .orElse(null);
-//
-//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-//                final var nftID =
-//                        NftID.newBuilder()
-//                                .setTokenID(tokenIdFromEvmAddress(wrapper.token()))
-//                                .setSerialNumber(wrapper.serialNumber())
-//                                .build();
-//                final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
-//                final var nftSerialNo = nftID.getSerialNumber();
-//                final var nonFungibleTokenInfo =
-//                        tokenAccessor.evmNftInfo(nftAddress, nftSerialNo, ledgerId).orElse(null);
-//                validateTrueOrRevert(
-//                        nonFungibleTokenInfo != null,
-//                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
-//
-//                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
-//            }
+                //            case ABI_ID_GET_TOKEN_INFO -> {
+                //                final var wrapper =
+                // EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
+                //                final var tokenInfo =
+                //                        tokenAccessor
+                //
+                // .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+                //                                .orElse(null);
+                //
+                //                validateTrueOrRevert(tokenInfo != null,
+                // ResponseCodeEnum.INVALID_TOKEN_ID);
+                //
+                //                return evmEncoder.encodeGetTokenInfo(tokenInfo);
+                //            }
+                //            case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
+                //                final var wrapper =
+                //
+                // EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+                //                final var tokenInfo =
+                //                        tokenAccessor
+                //
+                // .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+                //                                .orElse(null);
+                //
+                //                validateTrueOrRevert(tokenInfo != null,
+                // ResponseCodeEnum.INVALID_TOKEN_ID);
+                //
+                //                return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
+                //            }
+                //            case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
+                //                final var wrapper =
+                //
+                // EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+                //                final var tokenInfo =
+                //                        tokenAccessor
+                //
+                // .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+                //                                .orElse(null);
+                //
+                //                validateTrueOrRevert(tokenInfo != null,
+                // ResponseCodeEnum.INVALID_TOKEN_ID);
+                //                final var nftID =
+                //                        NftID.newBuilder()
+                //
+                // .setTokenID(tokenIdFromEvmAddress(wrapper.token()))
+                //                                .setSerialNumber(wrapper.serialNumber())
+                //                                .build();
+                //                final var nftAddress = asTypedEvmAddress(nftID.getTokenID());
+                //                final var nftSerialNo = nftID.getSerialNumber();
+                //                final var nonFungibleTokenInfo =
+                //                        tokenAccessor.evmNftInfo(nftAddress, nftSerialNo,
+                // ledgerId).orElse(null);
+                //                validateTrueOrRevert(
+                //                        nonFungibleTokenInfo != null,
+                //                        ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                //
+                //                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo,
+                // nonFungibleTokenInfo);
+                //            }
             case ABI_ID_IS_FROZEN -> {
                 final var wrapper = EvmIsFrozenPrecompile.decodeIsFrozen(input);
 
@@ -229,23 +227,26 @@ public class ViewExecutor {
                 final var tokenType = tokenAccessor.typeOf(addressFromBytes(wrapper.token()));
                 return evmEncoder.encodeGetTokenType(tokenType.ordinal());
             }
-//            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
-//                final var wrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
-//                final var tokenInfo =
-//                        tokenAccessor
-//                                .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
-//                                .orElse(null);
-//
-//                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
-//                Objects.requireNonNull(tokenInfo);
-//                final var expiryInfo =
-//                        new TokenExpiryInfo(
-//                                tokenInfo.getExpiry(),
-//                                tokenInfo.getAutoRenewAccount(),
-//                                tokenInfo.getAutoRenewPeriod());
-//
-//                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
-//            }
+                //            case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
+                //                final var wrapper =
+                // EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+                //                final var tokenInfo =
+                //                        tokenAccessor
+                //
+                // .evmInfoForToken(addressFromBytes(wrapper.token()), ledgerId)
+                //                                .orElse(null);
+                //
+                //                validateTrueOrRevert(tokenInfo != null,
+                // ResponseCodeEnum.INVALID_TOKEN_ID);
+                //                Objects.requireNonNull(tokenInfo);
+                //                final var expiryInfo =
+                //                        new TokenExpiryInfo(
+                //                                tokenInfo.getExpiry(),
+                //                                tokenInfo.getAutoRenewAccount(),
+                //                                tokenInfo.getAutoRenewPeriod());
+                //
+                //                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
+                //            }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = EvmGetTokenKeyPrecompile.decodeGetTokenKey(input);
 

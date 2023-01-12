@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
@@ -34,9 +33,11 @@ public class EvmInfrastructureFactory {
         this.evmEncoder = evmEncoder;
     }
 
-
     public RedirectViewExecutor newRedirectExecutor(
-            final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator, final TokenAccessor tokenAccessor) {
+            final Bytes input,
+            final MessageFrame frame,
+            final ViewGasCalculator gasCalculator,
+            final TokenAccessor tokenAccessor) {
         return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor);
     }
 
@@ -44,7 +45,7 @@ public class EvmInfrastructureFactory {
             final Bytes input,
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
-             final TokenAccessor tokenAccessor) {
+            final TokenAccessor tokenAccessor) {
         return new ViewExecutor(input, frame, evmEncoder, gasCalculator, tokenAccessor);
     }
 }
