@@ -98,7 +98,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 .forEach(
                         def -> {
                             //noinspection rawtypes,unchecked
-                            final var md = new StateMetadata(serviceName, schema, def);
+                            final var md = new StateMetadata<>(serviceName, schema, def);
                             registerWithSystem(md);
                         });
 

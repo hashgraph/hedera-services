@@ -29,4 +29,6 @@ public class SemanticVersionComparator {
             Comparator.comparingInt(SemanticVersion::getMajor)
                     .thenComparingInt(SemanticVersion::getMinor)
                     .thenComparingInt(SemanticVersion::getPatch);
+
+    private SemanticVersionComparator() {}
 }
