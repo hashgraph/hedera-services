@@ -56,9 +56,9 @@ public class CustomFee {
             return false;
         }
         CustomFee customFee = (CustomFee) o;
-        return Objects.equals(fixedFee, customFee.fixedFee) && Objects.equals(
-            fractionalFee, customFee.fractionalFee) && Objects.equals(royaltyFee,
-            customFee.royaltyFee);
+        return Objects.equals(fixedFee, customFee.fixedFee)
+                && Objects.equals(fractionalFee, customFee.fractionalFee)
+                && Objects.equals(royaltyFee, customFee.royaltyFee);
     }
 
     @Override
