@@ -25,12 +25,10 @@ import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class SerializationTest extends MerkleTestBase {
 

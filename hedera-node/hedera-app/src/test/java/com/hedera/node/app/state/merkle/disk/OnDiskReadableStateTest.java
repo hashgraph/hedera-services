@@ -23,12 +23,10 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class OnDiskReadableStateTest extends MerkleTestBase {
     private StateMetadata<String, String> md;

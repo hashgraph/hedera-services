@@ -136,9 +136,7 @@ public class MerkleTestBase extends TestBase {
                                 FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
     }
 
-    /**
-     * Sets up the "Fruit" virtual map, label, and metadata.
-     */
+    /** Sets up the "Fruit" virtual map, label, and metadata. */
     protected void setupFruitVirtualMap() {
         fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitVirtualMetadata =
