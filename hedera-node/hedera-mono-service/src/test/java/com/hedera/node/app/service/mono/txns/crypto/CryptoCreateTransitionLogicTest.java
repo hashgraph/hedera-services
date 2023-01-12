@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
@@ -988,7 +989,7 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void followsHappyPathEVMAddress() {
+    void followsHappyPathEVMAddress() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
@@ -1024,10 +1025,11 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(7, changes.size());
+        assertEquals(8, changes.size());
         assertEquals(0, (long) changes.get(AUTO_RENEW_PERIOD));
         assertEquals(txnCtx.consensusTime().getEpochSecond(), (long) changes.get(EXPIRY));
         assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES), changes.get(AccountProperty.ALIAS));
+        assertEquals(EMPTY_KEY, changes.get(AccountProperty.KEY));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
         assertEquals(MEMO, changes.get(AccountProperty.MEMO));
         assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
