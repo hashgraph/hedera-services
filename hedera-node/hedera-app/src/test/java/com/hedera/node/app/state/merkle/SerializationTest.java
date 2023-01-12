@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
-import com.hedera.node.app.state.merkle.disk.OnDiskDataSourceBuilder;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -83,11 +83,12 @@ class SerializationTest extends MerkleTestBase {
      * to disk, and then load them back in, and verify everything was loaded correctly.
      */
     @Test
-    void simpleReadAndWrite(@TempDir Path path) throws IOException, ConstructableRegistryException {
+    void simpleReadAndWrite() throws IOException, ConstructableRegistryException {
         // Given a merkle tree with some fruit and animals
         final var v1 = version(1, 0, 0);
+        final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
         final var originalTree = new MerkleHederaState(tree -> {}, evt -> {}, (round, dual) -> {});
-        final var originalRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
+        final var originalRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         final var schemaV1 = createV1Schema();
         originalRegistry.register(schemaV1);
         originalRegistry.migrate(originalTree, null, v1);
@@ -95,8 +96,8 @@ class SerializationTest extends MerkleTestBase {
         // When we serialize it to bytes and deserialize it back into a tree
         originalTree.copy(); // make a fast copy because we can only write to disk an immutable copy
         CRYPTO.digestTreeSync(originalTree);
-        final var serializedBytes = writeTree(originalTree, path);
-        final var newRegistry = new MerkleSchemaRegistry(registry, path, FIRST_SERVICE);
+        final var serializedBytes = writeTree(originalTree, dir);
+        final var newRegistry = new MerkleSchemaRegistry(registry, dir, FIRST_SERVICE);
         newRegistry.register(schemaV1);
 
         // Register the MerkleHederaState so, when found in serialized bytes, it will register with
@@ -109,11 +110,8 @@ class SerializationTest extends MerkleTestBase {
                                 (round, dualState) -> {});
         final var pair = new ClassConstructorPair(MerkleHederaState.class, constructor);
         registry.registerConstructable(pair);
-        registry.registerConstructable(
-                new ClassConstructorPair(
-                        OnDiskDataSourceBuilder.class, OnDiskDataSourceBuilder::new));
 
-        final MerkleHederaState loadedTree = parseTree(serializedBytes, path);
+        final MerkleHederaState loadedTree = parseTree(serializedBytes, dir);
         loadedTree.migrate(1);
 
         // Then, we should be able to see all our original states again

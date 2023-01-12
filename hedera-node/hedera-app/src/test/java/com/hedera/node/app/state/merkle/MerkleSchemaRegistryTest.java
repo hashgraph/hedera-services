@@ -66,11 +66,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("A null storageDir throws")
-        void nullStorageDirThrows() {
-            //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, FIRST_SERVICE))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("A null storageDir is OK")
+        void nullStorageDirOK() {
+            assertThat(new MerkleSchemaRegistry(registry, null, FIRST_SERVICE)).isNotNull();
         }
 
         @Test
