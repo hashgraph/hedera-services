@@ -403,11 +403,7 @@ public class UtilVerbs {
                         "contracts.enforceCreationThrottle",
                         FALSE_VALUE,
                         SIDECARS_PROP,
-                        "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"),
-                overridingTwo( "lazyCreation.enabled", "false",
-                        "cryptoCreateWithAliasAndEvmAddress.enabled", "false"),
-                overridingTwo( "contracts.evm.version", "v0.32",
-                        "contracts.evm.version.dynamic", "true"));
+                        "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     public static HapiSpecOperation overridingTwo(

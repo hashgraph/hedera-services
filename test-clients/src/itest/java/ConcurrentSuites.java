@@ -149,7 +149,7 @@ public class ConcurrentSuites {
                     ERCPrecompileSuite::new,
                     FreezeUnfreezeTokenPrecompileSuite::new,
                     GrantRevokeKycSuite::new,
-//                    LazyCreateThroughPrecompileSuite::new,
+                    LazyCreateThroughPrecompileSuite::new,
                     MixedHTSPrecompileTestsSuite::new,
                     PauseUnpauseTokenAccountPrecompileSuite::new,
                     PrngPrecompileSuite::new,

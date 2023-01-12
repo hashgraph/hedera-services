@@ -93,17 +93,16 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountInvalidED25519(),
                 syntaxChecksAreAsExpected(),
                 usdFeeAsExpected(),
-                createAnAccountWithStakingFields()
+                createAnAccountWithStakingFields(),
                 /* --- HIP-583 --- */
-//                createAnAccountWithECDSAAlias(),
-//                createAnAccountWithEVMAddress(),
-//                createAnAccountWithED25519Alias(),
-//                createAnAccountWithECKeyAndNoAlias(),
-//                createAnAccountWithEDKeyAndNoAlias(),
-//                createAnAccountWithED25519KeyAndED25519Alias(),
-//                createAnAccountWithECKeyAndECKeyAlias(),
-//                hollowAccountCompletionAfterCryptoCreate()
-        );
+                createAnAccountWithECDSAAlias(),
+                createAnAccountWithEVMAddress(),
+                createAnAccountWithED25519Alias(),
+                createAnAccountWithECKeyAndNoAlias(),
+                createAnAccountWithEDKeyAndNoAlias(),
+                createAnAccountWithED25519KeyAndED25519Alias(),
+                createAnAccountWithECKeyAndECKeyAlias(),
+                hollowAccountCompletionAfterCryptoCreate());
     }
 
     private HapiSpec createAnAccountWithStakingFields() {

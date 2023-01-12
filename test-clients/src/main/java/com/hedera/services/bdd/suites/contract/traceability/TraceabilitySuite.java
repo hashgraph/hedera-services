@@ -159,7 +159,7 @@ public class TraceabilitySuite extends HapiSuite {
                         vanillaBytecodeSidecar2(),
                         actionsShowPropagatedRevert(),
                         ethereumLazyCreateExportsExpectedSidecars(),
-//                        hollowAccountCreate2MergeExportsExpectedSidecars(),
+                        hollowAccountCreate2MergeExportsExpectedSidecars(),
                         assertSidecars())
                 .toList();
     }

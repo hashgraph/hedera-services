@@ -193,20 +193,19 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
                 canAutoCreateWithHbarAndTokenTransfers(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging()
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
                 /* --- HIP 583 --- */
-//                hollowAccountCreationWithCryptoTransfer(),
-//                failureAfterHollowAccountCreationReclaimsAlias(),
-//                hollowAccountCompletionWithCryptoTransfer(),
-//                hollowAccountCompletionWithContractCreate(),
-//                hollowAccountCompletionWithContractCall(),
-//                hollowAccountCompletionWithTokenAssociation(),
-//                completedHollowAccountsTransfer(),
-                //                transferHbarsToEVMAddressAlias(),
-//                transferFungibleToEVMAddressAlias(),
-//                transferNonFungibleToEVMAddressAlias(),
-//                hollowAccountCompletionWithTokenTransfer()
-                );
+                hollowAccountCreationWithCryptoTransfer(),
+                failureAfterHollowAccountCreationReclaimsAlias(),
+                hollowAccountCompletionWithCryptoTransfer(),
+                hollowAccountCompletionWithContractCreate(),
+                hollowAccountCompletionWithContractCall(),
+                hollowAccountCompletionWithTokenAssociation(),
+                completedHollowAccountsTransfer(),
+                transferHbarsToEVMAddressAlias(),
+                transferFungibleToEVMAddressAlias(),
+                transferNonFungibleToEVMAddressAlias(),
+                hollowAccountCompletionWithTokenTransfer());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {

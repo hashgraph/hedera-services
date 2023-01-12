@@ -173,10 +173,9 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
+                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
-//                canMergeCreate2ChildWithHollowAccount(),
-                );
+                canMergeCreate2ChildWithHollowAccount());
     }
 
     @SuppressWarnings("java:S5669")
