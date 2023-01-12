@@ -18,14 +18,12 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -39,9 +37,6 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
      *
      * @param txBody the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
@@ -61,10 +56,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var adminKey = asHederaKey(op.getAdminKey());
         final var submitKey = asHederaKey(op.getSubmitKey());
         if (adminKey.isPresent() || submitKey.isPresent()) {
-            final var otherReqs = new ArrayList<HederaKey>();
-            adminKey.ifPresent(otherReqs::add);
-            submitKey.ifPresent(otherReqs::add);
-            metaBuilder.addAllReqKeys(otherReqs);
+            adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+            submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
         }
 
         return metaBuilder.build();

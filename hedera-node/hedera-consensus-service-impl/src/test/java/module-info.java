@@ -1,4 +1,4 @@
-module com.hedera.node.app.service.consensus.impl.test {
+open module com.hedera.node.app.service.consensus.impl.test {
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.consensus.impl;
     requires org.junit.jupiter.api;
@@ -8,7 +8,4 @@ module com.hedera.node.app.service.consensus.impl.test {
     requires org.mockito.junit.jupiter;
     requires org.assertj.core;
     requires com.google.protobuf;
-
-    opens com.hedera.node.app.service.consensus.impl.test;
-    opens com.hedera.node.app.service.consensus.impl.handlers.test;
 }
