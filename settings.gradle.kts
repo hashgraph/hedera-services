@@ -39,7 +39,7 @@ gitRepositories {
     include("hedera-protobufs") {
         uri.set("https://github.com/hashgraph/hedera-protobufs.git")
         // choose tag or branch of HAPI you would like to test with
-        tag.set("0.34.0")   // must match hapi-version under dependencyResolutionManagement below
+        tag.set("main")   // must match hapi-version under dependencyResolutionManagement below
         // do not load project from repo
         autoInclude.set(false)
     }
