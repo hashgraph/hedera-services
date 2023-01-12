@@ -21,9 +21,6 @@ import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.Executor;
@@ -54,10 +51,9 @@ public class MapWarmer {
 
     private static final Logger log = LoggerFactory.getLogger(MapWarmer.class);
 
-    private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts = null;
-    private VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts = null;
-    private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRels = null;
-
+    // Note: these suppliers need to be stored here as they are (instead of storing what
+    // the supplier references) in order for this class to get the latest copies of the
+    // underlying data structures
     private final Supplier<AccountStorageAdapter> accountsStorageAdapter;
     private final Supplier<UniqueTokenMapAdapter> nftsAdapter;
     private final Supplier<TokenRelStorageAdapter> tokenRelsAdapter;
@@ -77,27 +73,21 @@ public class MapWarmer {
     }
 
     public void warmAccount(EntityNumVirtualKey accountId) {
-        if (accounts == null) {
-            var accountsStorage = accountsStorageAdapter.get();
-            accounts = accountsStorage.areOnDisk() ? accountsStorage.getOnDiskAccounts() : null;
+        if (accountsStorageAdapter.get().areOnDisk()) {
+            submitToThreadpool(accountsStorageAdapter.get().getOnDiskAccounts(), accountId);
         }
-        submitToThreadpool(accounts, accountId);
     }
 
     public void warmNft(UniqueTokenKey nftId) {
-        if (nfts == null) {
-            var nftsStorage = nftsAdapter.get();
-            nfts = nftsStorage.isVirtual() ? nftsStorage.virtualMap() : null;
+        if (nftsAdapter.get().isVirtual()) {
+            submitToThreadpool(nftsAdapter.get().getOnDiskNfts(), nftId);
         }
-        submitToThreadpool(nfts, nftId);
     }
 
     public void warmTokenRel(EntityNumVirtualKey tokenRelKey) {
-        if (tokenRels == null) {
-            var tokenRelStorage = tokenRelsAdapter.get();
-            tokenRels = tokenRelStorage.areOnDisk() ? tokenRelStorage.getOnDiskRels() : null;
+        if (tokenRelsAdapter.get().areOnDisk()) {
+            submitToThreadpool(tokenRelsAdapter.get().getOnDiskRels(), tokenRelKey);
         }
-        submitToThreadpool(tokenRels, tokenRelKey);
     }
 
     private <T extends VirtualKey<? super T>> void submitToThreadpool(

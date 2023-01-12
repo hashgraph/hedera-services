@@ -703,11 +703,6 @@ public class SigRequirements {
             final var token = xfers.getToken();
             for (final NftTransfer adjust : xfers.getNftTransfersList()) {
                 final var sender = adjust.getSenderAccountID();
-                if (linkedRefsLoaded) {
-                    mapWarmer
-                            .get()
-                            .warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
-                }
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -724,10 +719,6 @@ public class SigRequirements {
                 }
                 final var receiver = adjust.getReceiverAccountID();
                 if (linkedRefsLoaded) {
-                    mapWarmer
-                            .get()
-                            .warmAccount(
-                                    EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
                     mapWarmer
                             .get()
                             .warmNft(
