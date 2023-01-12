@@ -16,10 +16,14 @@
 package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import java.util.ArrayList;
 import java.util.Collections;
+
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -93,5 +97,47 @@ class SchemaTest extends StateTestBase {
         final var schema1 = new TestSchema(1);
         final var schema2 = new TestSchema(2);
         assertThat(schema1.hashCode()).isNotEqualTo(schema2.hashCode());
+    }
+
+    @Test
+    @DisplayName("`getVersion` returns the version")
+    void version() {
+        final var schema1 = new TestSchema(1);
+        assertThat(schema1.getVersion()).isEqualTo(
+                SemanticVersion.newBuilder().setMajor(1).build());
+    }
+
+    @Test
+    @DisplayName("`statesToCreate` is empty when not overridden")
+    void statesToCreate() {
+        final var schema1 = new TestSchema(1);
+        assertThat(schema1.statesToCreate()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("`statesToRemove` is empty when not overridden")
+    void statesToRemove() {
+        final var schema1 = new TestSchema(1);
+        assertThat(schema1.statesToRemove()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("passing null previous states to migrate throws NPE")
+    void nullPreviousStatesThrows() {
+        final var schema1 = new TestSchema(1);
+        final var newStates = new MapWritableStates(Collections.emptyMap());
+        //noinspection DataFlowIssue
+        assertThatThrownBy(() -> schema1.migrate(null, newStates))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("passing null new states to migrate throws NPE")
+    void nullNewStatesThrows() {
+        final var schema1 = new TestSchema(1);
+        final var prevStates = new MapWritableStates(Collections.emptyMap());
+        //noinspection DataFlowIssue
+        assertThatThrownBy(() -> schema1.migrate(prevStates, null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

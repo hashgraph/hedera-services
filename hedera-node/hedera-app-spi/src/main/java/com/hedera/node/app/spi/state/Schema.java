@@ -80,7 +80,10 @@ public abstract class Schema implements Comparable<Schema> {
      * @param newStates {@link WritableStates} for this schema.
      */
     public void migrate(
-            @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {}
+            @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+        Objects.requireNonNull(previousStates);
+        Objects.requireNonNull(newStates);
+    }
 
     /**
      * The {@link Set} of state keys of all states that should be removed <b>AFTER</b> {@link

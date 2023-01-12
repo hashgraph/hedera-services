@@ -48,6 +48,7 @@ public class TestSchema extends Schema {
 
     @Override
     public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+        super.migrate(previousStates, newStates);
         if (onMigrate != null) {
             onMigrate.run();
         }
