@@ -742,11 +742,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                         expiry());
 
         final var adminCandidate = adminKey();
-        adminCandidate.ifPresent(
+        adminCandidate.ifPresentOrElse(
                 k -> {
                     final var key = asKeyUnchecked(k);
                     info.setAdminKey(convertToEvmKey(key));
-                });
+                },
+                () -> info.setAdminKey(new EvmKey()));
 
         final var freezeCandidate = freezeKey();
         freezeCandidate.ifPresentOrElse(
@@ -756,9 +757,11 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                     final var key = asKeyUnchecked(k);
                     info.setFreezeKey(convertToEvmKey(key));
                 },
-                () ->
-                        info.setDefaultFreezeStatus(
-                                TokenFreezeStatus.FreezeNotApplicable.getNumber() == 1));
+                () -> {
+                    info.setFreezeKey(new EvmKey());
+                    info.setDefaultFreezeStatus(
+                            TokenFreezeStatus.FreezeNotApplicable.getNumber() == 1);
+                });
 
         final var kycCandidate = kycKey();
         kycCandidate.ifPresentOrElse(
@@ -768,28 +771,34 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                     final var key = asKeyUnchecked(k);
                     info.setKycKey(convertToEvmKey(key));
                 },
-                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber() == 1));
+                () -> {
+                    info.setKycKey(new EvmKey());
+                    info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber() == 1);
+                });
 
         final var supplyCandidate = supplyKey();
-        supplyCandidate.ifPresent(
+        supplyCandidate.ifPresentOrElse(
                 k -> {
                     final var key = asKeyUnchecked(k);
                     info.setSupplyKey(convertToEvmKey(key));
-                });
+                },
+                () -> info.setSupplyKey(new EvmKey()));
 
         final var wipeCandidate = wipeKey();
-        wipeCandidate.ifPresent(
+        wipeCandidate.ifPresentOrElse(
                 k -> {
                     final var key = asKeyUnchecked(k);
                     info.setWipeKey(convertToEvmKey(key));
-                });
+                },
+                () -> info.setWipeKey(new EvmKey()));
 
         final var feeScheduleCandidate = feeScheduleKey();
-        feeScheduleCandidate.ifPresent(
+        feeScheduleCandidate.ifPresentOrElse(
                 k -> {
                     final var key = asKeyUnchecked(k);
                     info.setFeeScheduleKey(convertToEvmKey(key));
-                });
+                },
+                () -> info.setFeeScheduleKey(new EvmKey()));
 
         final var pauseCandidate = pauseKey();
         pauseCandidate.ifPresentOrElse(
@@ -798,7 +807,10 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                     info.setPauseKey(convertToEvmKey(key));
                     info.setIsPaused(tokenPauseStatusOf(isPaused()).getNumber() == 1);
                 },
-                () -> info.setIsPaused(TokenPauseStatus.PauseNotApplicable.getNumber() == 1));
+                () -> {
+                    info.setPauseKey(new EvmKey());
+                    info.setIsPaused(TokenPauseStatus.PauseNotApplicable.getNumber() == 1);
+                });
 
         if (hasAutoRenewAccount()) {
             info.setAutoRenewAccount(EntityIdUtils.asTypedEvmAddress(autoRenewAccount()));

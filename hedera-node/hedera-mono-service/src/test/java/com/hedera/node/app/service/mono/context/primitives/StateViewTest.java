@@ -597,6 +597,8 @@ class StateViewTest {
         assertEquals(token.totalSupply(), info.getTotalSupply());
         assertEquals(token.decimals(), info.getDecimals());
         assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
+        info.setAutoRenewAccount(null);
+        assertEquals(Address.ZERO, info.getAutoRenewAccount());
         assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
         assertEquals(expiry, info.getExpiry());
         assertEquals(TokenFreezeStatus.Frozen.getNumber() == 1, info.getDefaultFreezeStatus());
