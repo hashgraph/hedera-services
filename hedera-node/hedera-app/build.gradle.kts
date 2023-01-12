@@ -59,3 +59,7 @@ dependencies {
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
 }
+
+tasks.withType<Test> {
+    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+}
