@@ -40,7 +40,6 @@ import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * A variety of robust tests for the on-disk merkle data structure, especially including
@@ -52,15 +51,16 @@ class OnDiskTest extends MerkleTestBase {
     private static final String SERVICE_NAME = "CryptoService";
     private static final String ACCOUNT_STATE_KEY = "Account";
 
-    @TempDir Path storageDir;
+    private Path storageDir;
     private Schema schema;
     private StateDefinition<AccountID, Account> def;
     private StateMetadata<AccountID, Account> md;
     private VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> virtualMap;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         setupConstructableRegistry();
+        storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
         def =
                 new StateDefinition<>(
@@ -144,16 +144,16 @@ class OnDiskTest extends MerkleTestBase {
         virtualMap.copy(); // throw away the copy, we won't use it
         CRYPTO.digestTreeSync(virtualMap);
 
-        final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
-        final byte[] serializedBytes = writeTree(virtualMap, dir);
+        final var snapshotDir = TemporaryFileBuilder.buildTemporaryDirectory("snapshot");
+        final byte[] serializedBytes = writeTree(virtualMap, snapshotDir);
 
         // Before we can read the data back, we need to register the data types
         // I plan to deserialize.
-        final var r = new MerkleSchemaRegistry(registry, dir, SERVICE_NAME);
+        final var r = new MerkleSchemaRegistry(registry, storageDir, SERVICE_NAME);
         r.register(schema);
 
         // read it back now as our map and validate the data come back fine
-        virtualMap = parseTree(serializedBytes, dir);
+        virtualMap = parseTree(serializedBytes, snapshotDir);
         final var rs = new OnDiskReadableKVState<>(md, virtualMap);
         for (int i = 0; i < 10; i++) {
             final var id = new AccountID(0, 0, i);
