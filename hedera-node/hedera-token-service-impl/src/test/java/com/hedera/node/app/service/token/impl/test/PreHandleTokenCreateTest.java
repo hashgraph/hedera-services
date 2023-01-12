@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.test;
 
+import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicMetaAssertions;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
@@ -25,6 +26,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
@@ -36,6 +38,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ROYALTY_FEE_NO_FALLBACK_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_TREASURY_AS_PAYER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
@@ -52,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
@@ -119,6 +121,7 @@ class PreHandleTokenCreateTest {
         final var meta =
                 subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
 
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
@@ -140,6 +143,7 @@ class PreHandleTokenCreateTest {
         final var meta =
                 subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
 
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         basicMetaAssertions(meta, 1, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
@@ -367,6 +371,32 @@ class PreHandleTokenCreateTest {
     }
 
     @Test
+    void tokenCreateCustomFixedFeeNoSigRequiredWithPositiveDenom() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateCustomRoyaltyFeeNoSigRequiredWithPositiveDenom() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_NO_FALLBACK_AND_NO_SIG_REQ);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
     void handleFunctionalityTest() {
         final var notImplemented = "Not implemented";
         try {
@@ -374,15 +404,5 @@ class PreHandleTokenCreateTest {
         } catch (final UnsupportedOperationException e) {
             assertEquals(e.getMessage(), notImplemented);
         }
-    }
-
-    private void basicMetaAssertions(
-            final TransactionMetadata meta,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.requiredNonPayerKeys().size());
-        assertEquals(failed, meta.failed());
-        assertEquals(failureStatus, meta.status());
     }
 }

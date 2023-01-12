@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -75,7 +74,7 @@ public class TokenCreateHandler implements TransactionHandler {
             adminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
 
-        addCustomFeeKey(meta, customFees, accountStore);
+        addCustomFeeCollectorKeys(meta, customFees);
         return meta.build();
     }
 
@@ -100,14 +99,11 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param meta given transaction metadata
      * @param customFeesList list with the custom fees
      */
-    private void addCustomFeeKey(
-            SigTransactionMetadataBuilder meta,
-            final List<CustomFee> customFeesList,
-            final AccountKeyLookup accountStore) {
+    private void addCustomFeeCollectorKeys(
+            SigTransactionMetadataBuilder meta, final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
-            final var sigRequiredLookup = accountStore.getKeyIfReceiverSigRequired(collector);
 
             /* A fractional fee collector and a collector for a fixed fee denominated
             in the units of the newly created token both must always sign a TokenCreate,
@@ -117,7 +113,7 @@ public class TokenCreateHandler implements TransactionHandler {
                 final var alwaysAdd =
                         fixedFee.hasDenominatingTokenId()
                                 && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                addAccount(meta, collector, alwaysAdd, sigRequiredLookup);
+                addAccount(meta, collector, alwaysAdd);
             } else if (customFee.hasFractionalFee()) {
                 meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
             } else {
@@ -129,7 +125,7 @@ public class TokenCreateHandler implements TransactionHandler {
                             fFee.hasDenominatingTokenId()
                                     && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
-                addAccount(meta, collector, alwaysAdd, sigRequiredLookup);
+                addAccount(meta, collector, alwaysAdd);
             }
         }
     }
@@ -140,20 +136,16 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param meta given transaction metadata
      * @param collector the ID of the collector
      * @param alwaysAdd if true, will always add the key
-     * @param sigRequiredLookup lookup for signature required on the collector ID
      */
     private void addAccount(
             final SigTransactionMetadataBuilder meta,
             final AccountID collector,
-            final boolean alwaysAdd,
-            final KeyOrLookupFailureReason sigRequiredLookup) {
+            final boolean alwaysAdd) {
 
         if (alwaysAdd) {
             meta.addNonPayerKey(collector);
-        } else if (!sigRequiredLookup.failed()) {
-            meta.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {
-            meta.status(INVALID_CUSTOM_FEE_COLLECTOR);
+            meta.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         }
     }
 }
