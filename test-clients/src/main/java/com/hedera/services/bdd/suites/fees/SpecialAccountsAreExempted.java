@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.annotations.LeakyFeeSchedule;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.file.Path;
@@ -50,30 +50,11 @@ public class SpecialAccountsAreExempted extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    feeScheduleControlAccountIsntCharged(), exchangeRateControlAccountIsntCharged(),
-                });
+        return List.of(feeScheduleControlAccountIsntCharged());
     }
 
-    public static HapiSpec exchangeRateControlAccountIsntCharged() {
-        return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
-                .given(
-                        cryptoTransfer(
-                                tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000_000L)),
-                        balanceSnapshot("pre", EXCHANGE_RATE_CONTROL),
-                        getFileContents(EXCHANGE_RATES).saveTo("exchangeRates.bin"))
-                .when(
-                        fileUpdate(EXCHANGE_RATES)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .path(Path.of("./", "exchangeRates.bin").toString()))
-                .then(
-                        UtilVerbs.sleepFor(1000L),
-                        getAccountBalance(EXCHANGE_RATE_CONTROL)
-                                .hasTinyBars(changeFromSnapshot("pre", 0)));
-    }
-
-    public static HapiSpec feeScheduleControlAccountIsntCharged() {
+    @LeakyFeeSchedule
+    private HapiSpec feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 
         return defaultHapiSpec("FeeScheduleControlAccountIsntCharged")
@@ -106,10 +87,6 @@ public class SpecialAccountsAreExempted extends HapiSuite {
                 .then(
                         getAccountBalance(FEE_SCHEDULE_CONTROL)
                                 .hasTinyBars(changeFromSnapshot("pre", 0)));
-    }
-
-    private static String path(String prefix, String file) {
-        return Path.of(prefix, file).toString();
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.math.BigInteger;
@@ -58,6 +59,10 @@ public abstract class HapiSuite {
     public static final Key EMPTY_KEY =
             Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
+    public static final Key STANDIN_CONTRACT_ID_KEY =
+            Key.newBuilder()
+                    .setContractID(ContractID.newBuilder().setContractNum(0).build())
+                    .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);

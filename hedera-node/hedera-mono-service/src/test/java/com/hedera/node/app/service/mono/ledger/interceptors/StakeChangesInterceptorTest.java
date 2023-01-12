@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -37,6 +36,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumMap;
@@ -56,7 +56,7 @@ class StakeChangesInterceptorTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private StakePeriodManager stakePeriodManager;
     @Mock private StakeInfoManager stakeInfoManager;
-    @Mock private AccountNumbers accountNumbers;
+    @Mock private HederaAccountNumbers accountNumbers;
     @Mock private TransactionContext txnCtx;
     @Mock private UsageLimits usageLimits;
 

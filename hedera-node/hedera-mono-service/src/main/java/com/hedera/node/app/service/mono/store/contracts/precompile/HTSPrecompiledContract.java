@@ -854,7 +854,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         try {
             this.transactionBody = this.precompile.body(input, aliasResolver);
         } catch (final Exception e) {
-            log.warn("Internal precompile failure", e);
             transactionBody = null;
         }
     }
