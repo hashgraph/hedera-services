@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@ package com.hedera.node.app.service.mono.fees;
 
 import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class StandardExemptions implements FeeExemptions {
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final SystemOpPolicies systemOpPolicies;
 
     @Inject
-    public StandardExemptions(AccountNumbers accountNums, SystemOpPolicies systemOpPolicies) {
+    public StandardExemptions(
+            final HederaAccountNumbers accountNums, final SystemOpPolicies systemOpPolicies) {
         this.accountNums = accountNums;
         this.systemOpPolicies = systemOpPolicies;
     }

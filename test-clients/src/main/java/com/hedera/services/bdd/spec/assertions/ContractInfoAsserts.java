@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -186,6 +187,15 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         return this;
     }
 
+    public ContractInfoAsserts isNotDeleted() {
+        registerProvider(
+                (spec, o) ->
+                        assertFalse(
+                                object2ContractInfo(o).getDeleted(),
+                                "Should not have been deleted"));
+        return this;
+    }
+
     public ContractInfoAsserts memo(String expectedMemo) {
         registerProvider(
                 (spec, o) ->
@@ -271,6 +281,16 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
                     Key expectedKey = spec.registry().getKey(expectedKeyName);
                     assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), BAD_ADMIN_KEY);
                 });
+        return this;
+    }
+
+    public ContractInfoAsserts hasStandinContractKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                STANDIN_CONTRACT_ID_KEY,
+                                object2ContractInfo(o).getAdminKey(),
+                                BAD_ADMIN_KEY));
         return this;
     }
 

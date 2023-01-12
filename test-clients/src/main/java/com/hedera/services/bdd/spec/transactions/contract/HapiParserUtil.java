@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,14 @@ public class HapiParserUtil {
         final var addressBytes = Bytes.wrap(address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Address[] asHeadlongAddressArray(final byte[]... addresses) {
+        Address[] headlongAddresses = new Address[addresses.length];
+        for (int i = 0; i < addresses.length; i++) {
+            headlongAddresses[i] = asHeadlongAddress(addresses[i]);
+        }
+        return headlongAddresses;
     }
 
     public static Address evmAddressFromSecp256k1Key(final Key key) {

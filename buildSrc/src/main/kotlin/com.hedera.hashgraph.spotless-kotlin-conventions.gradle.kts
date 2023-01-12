@@ -40,6 +40,6 @@ spotless {
             * limitations under the License.
             */
         """.trimIndent(), "(import|plugins)"
-        )
+        ).updateYearWithLatest(true)
     })
 }

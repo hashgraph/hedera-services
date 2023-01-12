@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,6 +182,12 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+                tokenID,
+                tokenName,
+                tokenSymbol,
+                tokenTreasury.getAccountNum() == 0 ? null : tokenTreasury,
+                tokenMemo,
+                tokenKeys,
+                tokenExpiry);
     }
 }

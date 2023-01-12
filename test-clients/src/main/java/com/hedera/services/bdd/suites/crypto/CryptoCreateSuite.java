@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,23 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.TRANSFER_TXN_2;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -39,11 +46,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -90,7 +100,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithECKeyAndNoAlias(),
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
-                createAnAccountWithECKeyAndECKeyAlias());
+                createAnAccountWithECKeyAndECKeyAlias(),
+                hollowAccountCompletionAfterCryptoCreate());
     }
 
     private HapiSpec createAnAccountWithStakingFields() {
@@ -509,6 +520,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .logged()
                                                     .has(
                                                             accountWith()
+                                                                    .hasEmptyKey()
                                                                     .evmAddress(evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -690,6 +702,67 @@ public class CryptoCreateSuite extends HapiSuite {
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
                                     allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo);
+                                }))
+                .then();
+    }
+
+    private HapiSpec hollowAccountCompletionAfterCryptoCreate() {
+        return defaultHapiSpec("HollowAccountCompletionAfterCryptoCreate")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes.length > 0;
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .via("createTxn");
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord("createTxn").andAllChildRecords().logged();
+
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getResponseRecord()
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var op2 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    CRYPTO_TRANSFER_RECEIVER,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .logged()
+                                                    .has(
+                                                            accountWith()
+                                                                    .evmAddress(evmAddressBytes)
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias());
+
+                                    allRunFor(spec, op2, hapiGetAccountInfo);
                                 }))
                 .then();
     }

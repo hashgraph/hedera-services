@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,11 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.test.utils.ResponsibleVMapUser;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class BackingNftsTest {
+class BackingNftsTest extends ResponsibleVMapUser {
     private final NftId aNftId = new NftId(0, 0, 3, 4);
     private final NftId bNftId = new NftId(0, 0, 4, 5);
     private final NftId cNftId = new NftId(0, 0, 5, 6);
@@ -85,7 +87,12 @@ class BackingNftsTest {
 
     @Test
     void virtualMapDoesNotSupportIdSet() {
-        subject = new BackingNfts(() -> UniqueTokenMapAdapter.wrap(new VirtualMap<>()));
+        subject =
+                new BackingNfts(
+                        () ->
+                                UniqueTokenMapAdapter.wrap(
+                                        this.<UniqueTokenKey, UniqueTokenValue>trackedMap(
+                                                new VirtualMap<>())));
 
         // expect:
         assertThrows(UnsupportedOperationException.class, subject::idSet);
