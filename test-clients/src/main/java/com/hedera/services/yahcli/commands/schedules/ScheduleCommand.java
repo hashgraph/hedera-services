@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.yahcli.commands.accounts;
+package com.hedera.services.yahcli.commands.schedules;
 
 import com.hedera.services.yahcli.Yahcli;
 import java.util.concurrent.Callable;
@@ -22,25 +22,16 @@ import picocli.CommandLine.HelpCommand;
 import picocli.CommandLine.ParentCommand;
 
 @CommandLine.Command(
-        name = "accounts",
-        subcommands = {
-            HelpCommand.class,
-            BalanceCommand.class,
-            InfoCommand.class,
-            RekeyCommand.class,
-            SendCommand.class,
-            CreateCommand.class,
-            StakeCommand.class,
-            UpdateCommand.class
-        },
-        description = "Performs account operations")
-public class AccountsCommand implements Callable<Integer> {
+        name = "schedule",
+        subcommands = {HelpCommand.class, SignCommand.class},
+        description = "Performs scheduler operations")
+public class ScheduleCommand implements Callable<Integer> {
     @ParentCommand Yahcli yahcli;
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() throws CommandLine.ParameterException {
         throw new CommandLine.ParameterException(
-                yahcli.getSpec().commandLine(), "Please specify an accounts subcommand!");
+                yahcli.getSpec().commandLine(), "Please specify a schedule subcommand!");
     }
 
     public Yahcli getYahcli() {
