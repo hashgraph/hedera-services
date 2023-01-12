@@ -66,10 +66,14 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
 
     @Override
     public KeyOrLookupFailureReason getKey(ContractID idOrAlias) {
-        return accounts.get(accountNumOf(asAccount(idOrAlias)))
-                .map(HederaAccount::getAccountKey)
-                .map(this::validateContractKey)
-                .orElse(withFailureReason(INVALID_CONTRACT_ID));
+        final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
+        if (account.isEmpty()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        } else if (account.get().isDeleted() || !account.get().isSmartContract()) {
+            return withFailureReason(INVALID_CONTRACT_ID);
+        }
+        final var key = account.get().getAccountKey();
+        return validateKey(key, true);
     }
 
     @Override
@@ -80,10 +84,13 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
         } else if (account.get().isDeleted() || !account.get().isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         } else {
-            return account.map(HederaAccount::getAccountKey)
-                    .map(this::validateContractKey)
-                    .filter(reason -> reason.failed() || account.get().isReceiverSigRequired())
-                    .orElse(PRESENT_BUT_NOT_REQUIRED);
+            final var key = account.get().getAccountKey();
+            final var keyResult = validateKey(key, true);
+            if (account.get().isReceiverSigRequired()) {
+                return keyResult;
+            } else {
+                return PRESENT_BUT_NOT_REQUIRED;
+            }
         }
     }
 

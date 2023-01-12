@@ -15,16 +15,6 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.AdapterUtils;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.SIMPLE_NEW_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.*;
@@ -34,6 +24,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.AdapterUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ContractUpdateHandlerParityTest {
     private AccountKeyLookup keyLookup;
@@ -52,7 +51,9 @@ class ContractUpdateHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -67,7 +68,8 @@ class ContractUpdateHandlerParityTest {
 
     @Test
     void getsContractUpdateWithDeprecatedAdminKey() {
-        final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
+        final var theTxn =
+                txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
         final var meta =
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
@@ -82,7 +84,9 @@ class ContractUpdateHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -132,7 +136,7 @@ class ContractUpdateHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

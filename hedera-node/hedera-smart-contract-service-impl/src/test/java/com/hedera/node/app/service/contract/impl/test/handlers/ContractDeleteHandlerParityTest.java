@@ -15,16 +15,6 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.AdapterUtils;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.RECEIVER_SIG_KT;
@@ -32,11 +22,19 @@ import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.AdapterUtils;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ContractDeleteHandlerParityTest {
     private AccountKeyLookup keyLookup;
@@ -66,7 +64,9 @@ class ContractDeleteHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -76,8 +76,8 @@ class ContractDeleteHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        assertEquals(INVALID_CONTRACT_ID, meta.status());
+        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, meta.status());
     }
 
     @Test
@@ -87,7 +87,7 @@ class ContractDeleteHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
+        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
         assertEquals(INVALID_CONTRACT_ID, meta.status());
     }
 
@@ -98,7 +98,9 @@ class ContractDeleteHandlerParityTest {
                 subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
         assertEquals(OK, meta.status());
     }
 
