@@ -72,6 +72,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /** The Merkle tree root of the Hedera Services world state. */
+// Comments, comments comments
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2 {
     private static final VirtualMapDataAccess VIRTUAL_MAP_DATA_ACCESS =
