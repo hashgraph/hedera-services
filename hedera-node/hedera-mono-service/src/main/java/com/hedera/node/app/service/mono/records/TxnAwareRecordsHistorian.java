@@ -269,6 +269,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final var inProgress = childRecords.get(i);
             final var child = inProgress.recordBuilder();
             if (child.shouldNotBeExternalized()) {
+                System.out.println("BOOP");
                 continue;
             }
             topLevel.excludeHbarChangesFrom(child);

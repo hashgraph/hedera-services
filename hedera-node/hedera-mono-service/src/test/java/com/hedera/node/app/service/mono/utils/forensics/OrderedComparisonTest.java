@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -130,6 +131,35 @@ class OrderedComparisonTest {
         assertEquals(3, fileAppends.size());
         final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
         assertEquals(48287857L, appendTarget.getFileNum());
+    }
+
+    @Test
+    void canSeeCollidingConsensusTimes() throws IOException {
+//        final var loc = "/Users/michaeltinker/Forensics/mainnet-telemetry/node1";
+        final var loc = "/Users/michaeltinker/Forensics/testnet-telemetry/node0";
+        final var entries = parseV6RecordStreamEntriesIn(loc);
+        final var consensusTime = "1673558923.284234684";
+        final var asInstant = Instant.ofEpochSecond(1673620505L, 253260014);
+        final var validStart = MiscUtils.asTimestamp(asInstant);
+        final var payer = AccountID.newBuilder().setAccountNum(30918751).build();
+        final var targetTxnId = TransactionID.newBuilder().setAccountID(payer)
+                .setTransactionValidStart(validStart).build();
+
+        final var histograms = statusHistograms(entries);
+        System.out.println(histograms);
+
+        for (final var entry : entries) {
+            if (targetTxnId.equals(
+                    entry.accessor().getTxnId().toBuilder().clearNonce().build())) {
+                System.out.println(entry.accessor().getTxn() + " --- > " + entry.txnRecord());
+            }
+//            final var thisValidStart = entry.accessor().getTxnId().getTransactionValidStart();
+//            if (thisValidStart.equals(validStart)) {
+//                System.out.println(entry);
+//            }
+//            System.out.println(validStart);
+
+        }
     }
 
     @Test

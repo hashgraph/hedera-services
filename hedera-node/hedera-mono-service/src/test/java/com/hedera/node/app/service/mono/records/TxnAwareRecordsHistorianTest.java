@@ -188,17 +188,32 @@ class TxnAwareRecordsHistorianTest {
 
     @Test
     void ignoresUnsuccessfulChildRecordIfNotExternalizedOnFailure() {
+        final var mockFollowingRecord = mock(ExpirableTxnRecord.class);
         final var mockTopLevelRecord = mock(ExpirableTxnRecord.class);
         given(mockTopLevelRecord.getEnumStatus()).willReturn(SUCCESS);
+        final var expFollowId = txnIdA.toBuilder().setNonce(1).build();
+        final var followingChildNows = nows + 2;
+        given(mockFollowingRecord.getConsensusSecond()).willReturn(followingChildNows);
 
         final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
         given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
         final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
         given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+        final var followingAfterBuilder = mock(ExpirableTxnRecord.Builder.class);
+        given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
+        given(followingBuilder.build()).willReturn(mockFollowingRecord);
 
         givenTopLevelContext();
         given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
         given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
+
+        given(
+                creator.saveExpiringRecord(
+                        effPayer,
+                        mockFollowingRecord,
+                        followingChildNows,
+                        submittingMember))
+                .willReturn(mockFollowingRecord);
 
         given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
         given(txnCtx.sidecars()).willReturn(List.of(TransactionSidecarRecord.newBuilder()));
@@ -212,6 +227,17 @@ class TxnAwareRecordsHistorianTest {
                 followSynthBody,
                 followingBuilder,
                 List.of(TransactionSidecarRecord.newBuilder()));
+
+        final var followAfterSynthBody = aBuilderWith("FOLLOW_AFTER");
+        given(followingAfterBuilder.getTxnId()).willReturn(TxnId.fromGrpc(expFollowId));
+        given(mockFollowingRecord.getTxnId()).willReturn(TxnId.fromGrpc(expFollowId));
+        assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
+        subject.trackFollowingChildRecord(
+                1,
+                followAfterSynthBody,
+                followingAfterBuilder,
+                List.of(TransactionSidecarRecord.newBuilder()));
+
         given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
         given(txnCtx.accessor()).willReturn(accessor);
 

@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -33,13 +34,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -55,6 +59,8 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,7 +99,34 @@ public class ContractUpdateSuite extends HapiSuite {
                 eip1014AddressAlwaysHasPriority(),
                 immutableContractKeyFormIsStandard(),
                 updateAutoRenewAccountWorks(),
-                updateStakingFieldsWorks());
+                updateStakingFieldsWorks(),
+                consTimeManagementWorksWithRevertedInternalCreations());
+    }
+
+    private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
+        final var contract = "ConsTimeRepro";
+        final var failingCall = "FailingCall";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+        return onlyDefaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                )
+                .when(
+                        contractCall(contract,
+                                "createChildThenFailToAssociate",
+                                asHeadlongAddress(new byte[20]),
+                                asHeadlongAddress(new byte[20]))
+                                .via(failingCall)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(
+                        getTxnRecord(failingCall)
+                                .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp())),
+                        sourcing(() -> childRecordsCheck(failingCall,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INSUFFICIENT_GAS)
+                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
     }
 
     private HapiSpec updateStakingFieldsWorks() {
