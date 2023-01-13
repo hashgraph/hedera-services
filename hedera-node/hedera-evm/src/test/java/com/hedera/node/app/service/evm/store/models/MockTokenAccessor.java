@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.models;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -30,12 +29,12 @@ import org.hyperledger.besu.datatypes.Address;
 public class MockTokenAccessor implements TokenAccessor {
 
     @Override
-    public Optional<EvmTokenInfo> evmInfoForToken(Address token, ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(Address token) {
         return Optional.empty();
     }
 
     @Override
-    public Optional<EvmNftInfo> evmNftInfo(Address nft, long serialNo, ByteString ledgerId) {
+    public Optional<EvmNftInfo> evmNftInfo(Address nft, long serialNo) {
         return Optional.empty();
     }
 
@@ -132,5 +131,10 @@ public class MockTokenAccessor implements TokenAccessor {
     @Override
     public String metadataOf(Address nft, long serialNo) {
         return null;
+    }
+
+    @Override
+    public byte[] ledgerId() {
+        return new byte[0];
     }
 }

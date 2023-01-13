@@ -152,7 +152,7 @@ class GetTokenExpiryInfoPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
 
         getTokenExpiryInfoPrecompile = Mockito.mockStatic(GetTokenExpiryInfoPrecompile.class);
     }

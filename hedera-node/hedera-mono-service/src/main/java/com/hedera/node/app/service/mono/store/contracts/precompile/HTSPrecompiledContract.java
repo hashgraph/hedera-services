@@ -161,7 +161,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private WorldLedgers ledgers;
     private Address senderAddress;
     private HederaStackedWorldStateUpdater updater;
-  private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Inject
     public HTSPrecompiledContract(
@@ -202,9 +202,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
-              return evmHTSPrecompiledContract.computeCosted(
-                  input, frame, precompilePricingUtils::computeViewFunctionGas,
-                  new TokenAccessorImpl(proxyUpdater.trackingLedgers()));
+                return evmHTSPrecompiledContract.computeCosted(
+                        input,
+                        frame,
+                        precompilePricingUtils::computeViewFunctionGas,
+                        new TokenAccessorImpl(
+                                proxyUpdater.trackingLedgers(),
+                                currentView.getNetworkInfo().ledgerId()));
             }
         }
         final var result = computePrecompile(input, frame);

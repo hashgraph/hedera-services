@@ -16,12 +16,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -54,7 +52,6 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
@@ -84,7 +81,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -153,16 +149,17 @@ class InfrastructureFactoryTest {
                         entityCreator);
     }
 
-//    @Test
-//    void canCreateViewExecutor() {
-//        final var fakeInput = Bytes.of(1, 2, 3);
-//        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
-//        given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
-//        assertInstanceOf(
-//                ViewExecutor.class,
-//                subject.newViewExecutor(
-//                        fakeInput, frame, evmEncoder, gasCalculator, view.getNetworkInfo().ledgerId()));
-//    }
+    //    @Test
+    //    void canCreateViewExecutor() {
+    //        final var fakeInput = Bytes.of(1, 2, 3);
+    //        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
+    //        given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
+    //        assertInstanceOf(
+    //                ViewExecutor.class,
+    //                subject.newViewExecutor(
+    //                        fakeInput, frame, evmEncoder, gasCalculator,
+    // view.getNetworkInfo().ledgerId()));
+    //    }
 
     @Test
     void canCreateSideEffects() {
@@ -306,14 +303,14 @@ class InfrastructureFactoryTest {
                         tokenRelsLedger));
     }
 
-//    @Test
-//    void canCreateNewRedirectExecutor() {
-//        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
-//
-//        assertInstanceOf(
-//                RedirectViewExecutor.class,
-//                subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
-//    }
+    //    @Test
+    //    void canCreateNewRedirectExecutor() {
+    //        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
+    //
+    //        assertInstanceOf(
+    //                RedirectViewExecutor.class,
+    //                subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
+    //    }
 
     @Test
     void canCreateNewApproveAllowanceLogic() {

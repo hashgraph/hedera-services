@@ -38,19 +38,20 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class TokenAccessorImpl implements TokenAccessor {
     private final WorldLedgers trackingLedgers;
+    private final ByteString ledgerId;
 
-    public TokenAccessorImpl(final WorldLedgers trackingLedgers) {
+    public TokenAccessorImpl(final WorldLedgers trackingLedgers, ByteString ledgerId) {
         this.trackingLedgers = trackingLedgers;
+        this.ledgerId = ledgerId;
     }
 
     @Override
-    public Optional<EvmTokenInfo> evmInfoForToken(Address token, ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(final Address token) {
         return trackingLedgers.evmInfoForToken(tokenIdFromEvmAddress(token), ledgerId);
     }
 
     @Override
-    public Optional<EvmNftInfo> evmNftInfo(
-            final Address token, long serialNo, final ByteString ledgerId) {
+    public Optional<EvmNftInfo> evmNftInfo(final Address token, long serialNo) {
         final var target =
                 NftID.newBuilder()
                         .setSerialNumber(serialNo)
@@ -165,6 +166,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public String metadataOf(final Address nft, long serialNo) {
         return trackingLedgers.metadataOf(nftIdOf(nft, serialNo));
+    }
+
+    @Override
+    public byte[] ledgerId() {
+        return ledgerId.toByteArray();
     }
 
     private NftId nftIdOf(Address token, long serialNo) {

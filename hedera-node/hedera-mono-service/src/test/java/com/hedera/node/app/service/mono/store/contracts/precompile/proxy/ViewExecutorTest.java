@@ -540,14 +540,9 @@ class ViewExecutorTest {
         given(updater.trackingLedgers()).willReturn(ledgers);
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var ledgers = updater.trackingLedgers();
-        final var tokenAccessor = new TokenAccessorImpl(ledgers);
+        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        tokenAccessor);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
         return input;
     }
 
@@ -565,14 +560,9 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var ledgers = updater.trackingLedgers();
-        final var tokenAccessor = new TokenAccessorImpl(ledgers);
+        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        tokenAccessor);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
         return input;
     }
 

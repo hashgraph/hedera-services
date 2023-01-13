@@ -300,7 +300,7 @@ class TransferPrecompilesTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
 
         transferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }

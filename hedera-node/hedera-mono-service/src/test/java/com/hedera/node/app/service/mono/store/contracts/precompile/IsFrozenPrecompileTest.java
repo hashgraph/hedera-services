@@ -153,7 +153,7 @@ class IsFrozenPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         isFrozenPrecompile = Mockito.mockStatic(IsFrozenPrecompile.class);
     }
 

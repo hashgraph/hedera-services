@@ -131,7 +131,7 @@ class TokenPrecompileReadOperationsTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         merkleToken =
                 new MerkleToken(
                         Long.MAX_VALUE,

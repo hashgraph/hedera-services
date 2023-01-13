@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.tokens;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -26,9 +25,9 @@ import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface TokenAccessor {
-    Optional<EvmTokenInfo> evmInfoForToken(final Address token, final ByteString ledgerId);
+    Optional<EvmTokenInfo> evmInfoForToken(final Address token);
 
-    Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo, final ByteString ledgerId);
+    Optional<EvmNftInfo> evmNftInfo(final Address nft, final long serialNo);
 
     boolean isTokenAddress(final Address address);
 
@@ -67,4 +66,6 @@ public interface TokenAccessor {
     Address canonicalAddress(final Address addressOrAlias);
 
     String metadataOf(final Address nft, long serialNo);
+
+    byte[] ledgerId();
 }

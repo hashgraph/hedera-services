@@ -116,7 +116,7 @@ class GetTokenDefaultKycStatusTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         getTokenDefaultKycStatus = Mockito.mockStatic(GetTokenDefaultKycStatus.class);
     }
 

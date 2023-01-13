@@ -138,7 +138,7 @@ class GetTokenKeyPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
     }
 

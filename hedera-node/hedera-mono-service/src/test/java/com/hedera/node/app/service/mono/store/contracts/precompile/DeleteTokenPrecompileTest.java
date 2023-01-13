@@ -169,7 +169,7 @@ class DeleteTokenPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         deleteTokenPrecompile = Mockito.mockStatic(DeleteTokenPrecompile.class);
     }
 

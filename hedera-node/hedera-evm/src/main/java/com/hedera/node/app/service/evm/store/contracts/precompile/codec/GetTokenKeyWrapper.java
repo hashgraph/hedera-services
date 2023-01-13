@@ -21,7 +21,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 public record GetTokenKeyWrapper<T>(T token, long keyType) {
 
     public TokenKeyType tokenKeyType() {
-        return switch (((int) keyType)) {
+        return switch ((int) keyType) {
             case 1 -> TokenKeyType.ADMIN_KEY;
             case 2 -> TokenKeyType.KYC_KEY;
             case 4 -> TokenKeyType.FREEZE_KEY;

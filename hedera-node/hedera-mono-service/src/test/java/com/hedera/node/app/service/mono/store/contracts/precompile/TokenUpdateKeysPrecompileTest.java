@@ -167,7 +167,7 @@ class TokenUpdateKeysPrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
         tokenUpdateKeysPrecompile = Mockito.mockStatic(TokenUpdateKeysPrecompile.class);
     }
 

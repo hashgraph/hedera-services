@@ -425,7 +425,7 @@ class WorldLedgersTest {
     void nonStaticEvmTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = tokenAccessor.evmInfoForToken(fungibleTokenAddress, ledgerId).get();
+        final var tokenInfo = tokenAccessor.evmInfoForToken(fungibleTokenAddress).get();
 
         assertEquals(token.memo(), tokenInfo.getMemo());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
@@ -506,7 +506,7 @@ class WorldLedgersTest {
         given(tokenNftInfo.getMetadata()).willReturn(ByteString.copyFrom(nftMeta));
         given(tokenNftInfo.getSpenderId()).willReturn(spenderId);
 
-        final var tokenNftInfo = tokenAccessor.evmNftInfo(nftAddr, 1L, ledgerId).get();
+        final var tokenNftInfo = tokenAccessor.evmNftInfo(nftAddr, 1L).get();
 
         assertEquals(nftId.getSerialNumber(), tokenNftInfo.getSerialNumber());
         assertEquals(asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
@@ -1052,7 +1052,7 @@ class WorldLedgersTest {
     }
 
     private void tokenAccessor() {
-        tokenAccessor = new TokenAccessorImpl(worldLedgers);
+        tokenAccessor = new TokenAccessorImpl(worldLedgers, ledgerId);
     }
 
     private static final int decimals = 666666;

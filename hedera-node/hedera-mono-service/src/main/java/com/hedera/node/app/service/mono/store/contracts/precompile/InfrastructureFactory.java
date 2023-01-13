@@ -17,11 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
-import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -54,9 +50,7 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.store.contracts.TokenAccessorImpl;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
@@ -92,8 +86,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 @Singleton
 public class InfrastructureFactory {
@@ -266,18 +258,20 @@ public class InfrastructureFactory {
                 feeDistribution);
     }
 
-//    public com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor newRedirectExecutor(
-//        final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-//        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
-//    }
-//
-//    public ViewExecutor newViewExecutor(
-//        final Bytes input,
-//        final MessageFrame frame,
-//        final ViewGasCalculator gasCalculator,
-//        final StateView stateView) {
-//        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, stateView);
-//    }
+    //    public
+    // com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor
+    // newRedirectExecutor(
+    //        final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
+    //        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
+    //    }
+    //
+    //    public ViewExecutor newViewExecutor(
+    //        final Bytes input,
+    //        final MessageFrame frame,
+    //        final ViewGasCalculator gasCalculator,
+    //        final StateView stateView) {
+    //        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, stateView);
+    //    }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {

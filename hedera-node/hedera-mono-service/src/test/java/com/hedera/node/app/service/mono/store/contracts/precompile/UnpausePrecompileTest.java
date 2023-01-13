@@ -182,7 +182,7 @@ class UnpausePrecompileTest {
                         stateView,
                         precompilePricingUtils,
                         infrastructureFactory,
-                    evmHTSPrecompiledContract);
+                        evmHTSPrecompiledContract);
 
         unpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
     }
