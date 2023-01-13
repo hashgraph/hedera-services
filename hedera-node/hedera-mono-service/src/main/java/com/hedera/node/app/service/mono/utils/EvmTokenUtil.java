@@ -39,6 +39,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class EvmTokenUtil {
 
+    private EvmTokenUtil() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static EvmTokenInfo asEvmTokenInfo(MerkleToken token, final ByteString ledgerId) {
         final var info =
                 new EvmTokenInfo(
