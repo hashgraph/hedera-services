@@ -118,8 +118,9 @@ public class ContractUpdateSuite extends HapiSuite {
                 .then(
                         getTxnRecord(failingCall)
                                 .exposingTo(
-                                        record ->
-                                                parentConsTime.set(record.getConsensusTimestamp())),
+                                        failureRecord ->
+                                                parentConsTime.set(
+                                                        failureRecord.getConsensusTimestamp())),
                         sourcing(
                                 () ->
                                         childRecordsCheck(
