@@ -16,8 +16,8 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -119,6 +119,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -1017,8 +1018,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var lazyCreateTxn = "payTxn";
         final var failedLazyCreateTxn = "failedLazyCreateTxn";
-        return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+        return onlyPropertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
+                .preserving(
+                        CHAIN_ID_PROP,
+                        LAZY_CREATE_PROPERTY_NAME,
+                        "contracts.evm.version",
+                        "contracts.evm.version.dynamic")
                 .given(
                         overridingThree(
                                 CHAIN_ID_PROP,
@@ -1027,6 +1032,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 "true",
                                 "contracts.evm.version",
                                 "v0.32"),
+                        overriding("contracts.evm.version.dynamic", "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -1106,25 +1112,32 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     allRunFor(spec, lazyAccountInfoCheck);
+                                    final var id =
+                                            ContractID.newBuilder()
+                                                    .setContractNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getAccountNum())
+                                                    .setShardNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getShardNum())
+                                                    .setRealmNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getRealmNum())
+                                                    .build();
                                     final var payTxn =
                                             getTxnRecord(lazyCreateTxn)
                                                     .hasPriority(
                                                             recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getAccountNum())
-                                                                                    .setShardNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getShardNum())
-                                                                                    .setRealmNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getRealmNum())
-                                                                                    .build()))
+                                                                    .targetedContractId(id)
+                                                                    .contractCallResult(
+                                                                            ContractFnResultAsserts
+                                                                                    .resultWith()
+                                                                                    .contract(
+                                                                                            asContractString(
+                                                                                                    id))))
                                                     .andAllChildRecords()
                                                     .logged();
                                     final var childRecordsCheck =
