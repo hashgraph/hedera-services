@@ -230,6 +230,7 @@ public class StakingSuite extends HapiApiSuite {
                                         }
                                         opLog.info("=  Alice   : {}", aliceReward);
                                         opLog.info("=  Baldwin : {}", baldwinReward);
+                                        // Some difference
                                         opLog.info("==============================\n");
                                     }
                                 }));
