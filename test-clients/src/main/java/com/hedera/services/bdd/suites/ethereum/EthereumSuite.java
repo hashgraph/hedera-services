@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.ethereum;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -979,7 +978,7 @@ public class EthereumSuite extends HapiApiSuite {
 
         final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
-        return onlyDefaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
