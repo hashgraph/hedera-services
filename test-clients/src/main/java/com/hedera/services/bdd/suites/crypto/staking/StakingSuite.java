@@ -238,7 +238,7 @@ public class StakingSuite extends HapiApiSuite {
     private HapiApiSpec canSendValueGreaterThanFiftyPercent() {
         final var initBalance = ONE_HBAR * 1000;
         final var callWithValue = "callWithValue";
-        return onlyDefaultHapiSpec("CanSendValueGreaterThanFiftyPercent")
+        return defaultHapiSpec("CanSendValueGreaterThanFiftyPercent")
                 .given(
                         cryptoCreate("sender").balance(initBalance),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT))
