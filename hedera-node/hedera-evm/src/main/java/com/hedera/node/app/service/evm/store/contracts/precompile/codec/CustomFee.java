@@ -68,10 +68,13 @@ public class CustomFee {
 
     @Override
     public String toString() {
-        return "CustomFee{" +
-            "fixedFee=" + fixedFee +
-            ", fractionalFee=" + fractionalFee +
-            ", royaltyFee=" + royaltyFee +
-            '}';
+        return "CustomFee{"
+                + "fixedFee="
+                + fixedFee
+                + ", fractionalFee="
+                + fractionalFee
+                + ", royaltyFee="
+                + royaltyFee
+                + '}';
     }
 }

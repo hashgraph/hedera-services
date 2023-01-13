@@ -93,13 +93,19 @@ public class FractionalFee {
 
     @Override
     public String toString() {
-        return "FractionalFee{" +
-            "numerator=" + numerator +
-            ", denominator=" + denominator +
-            ", getMinimumAmount=" + getMinimumAmount +
-            ", getMaximumAmount=" + getMaximumAmount +
-            ", netOfTransfers=" + netOfTransfers +
-            ", feeCollector=" + feeCollector +
-            '}';
+        return "FractionalFee{"
+                + "numerator="
+                + numerator
+                + ", denominator="
+                + denominator
+                + ", getMinimumAmount="
+                + getMinimumAmount
+                + ", getMaximumAmount="
+                + getMaximumAmount
+                + ", netOfTransfers="
+                + netOfTransfers
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }

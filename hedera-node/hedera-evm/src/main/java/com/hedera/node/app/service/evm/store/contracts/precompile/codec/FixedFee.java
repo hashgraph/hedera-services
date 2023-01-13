@@ -83,12 +83,17 @@ public class FixedFee {
 
     @Override
     public String toString() {
-        return "FixedFee{" +
-            "amount=" + amount +
-            ", denominatingTokenId=" + denominatingTokenId +
-            ", useHbarsForPayment=" + useHbarsForPayment +
-            ", useCurrentTokenForPayment=" + useCurrentTokenForPayment +
-            ", feeCollector=" + feeCollector +
-            '}';
+        return "FixedFee{"
+                + "amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", useCurrentTokenForPayment="
+                + useCurrentTokenForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }

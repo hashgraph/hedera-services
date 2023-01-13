@@ -92,13 +92,19 @@ public class RoyaltyFee {
 
     @Override
     public String toString() {
-        return "RoyaltyFee{" +
-            "numerator=" + numerator +
-            ", denominator=" + denominator +
-            ", amount=" + amount +
-            ", denominatingTokenId=" + denominatingTokenId +
-            ", useHbarsForPayment=" + useHbarsForPayment +
-            ", feeCollector=" + feeCollector +
-            '}';
+        return "RoyaltyFee{"
+                + "numerator="
+                + numerator
+                + ", denominator="
+                + denominator
+                + ", amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }
