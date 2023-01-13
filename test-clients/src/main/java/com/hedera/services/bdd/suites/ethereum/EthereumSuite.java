@@ -75,7 +75,6 @@ import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -508,8 +507,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -576,8 +574,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -646,8 +643,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
