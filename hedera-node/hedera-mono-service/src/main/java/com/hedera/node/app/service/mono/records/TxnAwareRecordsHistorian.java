@@ -269,13 +269,15 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final var inProgress = childRecords.get(i);
             final var child = inProgress.recordBuilder();
             if (child.shouldNotBeExternalized()) {
-                System.out.println("BOOP");
                 continue;
             }
             topLevel.excludeHbarChangesFrom(child);
 
-            child.setTxnId(parentId.withNonce(nextNonce++));
-            final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * (i + 1));
+            // Both the child's transactionId and consensus time are determined by its nonce
+            child.setTxnId(parentId.withNonce(nextNonce));
+            final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * nextNonce);
+            // Ensure following child records will be unique
+            nextNonce++;
             child.setConsensusTime(RichInstant.fromJava(childConsTime));
             /* Mirror node team prefers we only set a parent consensus time for records that FOLLOW
              * the top-level transaction. This might change for future use cases. */

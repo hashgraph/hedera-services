@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -56,11 +55,10 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,26 +105,30 @@ public class ContractUpdateSuite extends HapiSuite {
         final var contract = "ConsTimeRepro";
         final var failingCall = "FailingCall";
         final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
-        return onlyDefaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
-                .given(
-                        uploadInitCode(contract),
-                        contractCreate(contract)
-                )
+        return defaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
+                .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
-                        contractCall(contract,
-                                "createChildThenFailToAssociate",
-                                asHeadlongAddress(new byte[20]),
-                                asHeadlongAddress(new byte[20]))
+                        contractCall(
+                                        contract,
+                                        "createChildThenFailToAssociate",
+                                        asHeadlongAddress(new byte[20]),
+                                        asHeadlongAddress(new byte[20]))
                                 .via(failingCall)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
                         getTxnRecord(failingCall)
-                                .exposingTo(record -> parentConsTime.set(record.getConsensusTimestamp())),
-                        sourcing(() -> childRecordsCheck(failingCall,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                .exposingTo(
+                                        record ->
+                                                parentConsTime.set(record.getConsensusTimestamp())),
+                        sourcing(
+                                () ->
+                                        childRecordsCheck(
+                                                failingCall,
+                                                CONTRACT_REVERT_EXECUTED,
+                                                recordWith()
+                                                        .status(INSUFFICIENT_GAS)
+                                                        .consensusTimeImpliedByNonce(
+                                                                parentConsTime.get(), 1))));
     }
 
     private HapiSpec updateStakingFieldsWorks() {

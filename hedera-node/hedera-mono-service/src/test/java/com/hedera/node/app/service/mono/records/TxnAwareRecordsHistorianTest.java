@@ -192,8 +192,9 @@ class TxnAwareRecordsHistorianTest {
         final var mockTopLevelRecord = mock(ExpirableTxnRecord.class);
         given(mockTopLevelRecord.getEnumStatus()).willReturn(SUCCESS);
         final var expFollowId = txnIdA.toBuilder().setNonce(1).build();
-        final var followingChildNows = nows + 2;
-        given(mockFollowingRecord.getConsensusSecond()).willReturn(followingChildNows);
+        final var correctFollowingChildConsTime = RichInstant.fromJava(topLevelNow.plusNanos(1));
+        final var placeholderFollowingChildNows = nows + 7;
+        given(mockFollowingRecord.getConsensusSecond()).willReturn(placeholderFollowingChildNows);
 
         final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
         given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
@@ -201,18 +202,18 @@ class TxnAwareRecordsHistorianTest {
         given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
         final var followingAfterBuilder = mock(ExpirableTxnRecord.Builder.class);
         given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
-        given(followingBuilder.build()).willReturn(mockFollowingRecord);
+        given(followingAfterBuilder.build()).willReturn(mockFollowingRecord);
 
         givenTopLevelContext();
         given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
         given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
 
         given(
-                creator.saveExpiringRecord(
-                        effPayer,
-                        mockFollowingRecord,
-                        followingChildNows,
-                        submittingMember))
+                        creator.saveExpiringRecord(
+                                effPayer,
+                                mockFollowingRecord,
+                                placeholderFollowingChildNows,
+                                submittingMember))
                 .willReturn(mockFollowingRecord);
 
         given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
@@ -243,8 +244,9 @@ class TxnAwareRecordsHistorianTest {
 
         subject.saveExpirableTransactionRecords();
         final var followingRsos = subject.getFollowingChildRecords();
-        assertTrue(followingRsos.isEmpty());
-        verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
+        assertEquals(1, followingRsos.size());
+        verify(consensusTimeTracker).setActualFollowingRecordsCount(1L);
+        verify(followingAfterBuilder).setConsensusTime(correctFollowingChildConsTime);
     }
 
     @Test
