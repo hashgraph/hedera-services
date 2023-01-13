@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -428,7 +429,7 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
-        return defaultHapiSpec("Create2FactoryWorksAsExpected")
+        return onlyDefaultHapiSpec("Create2FactoryWorksAsExpected")
                 .given(
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),

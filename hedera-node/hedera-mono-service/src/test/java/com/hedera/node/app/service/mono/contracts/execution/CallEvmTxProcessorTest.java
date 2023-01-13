@@ -195,12 +195,32 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress())
                 .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
 
         givenSenderWithBalance(350_000L);
         var result =
                 callEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
         assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
+
+    @Test
+    void nonExistingReceiverSetsNewMirrorAddressInResultOnSuccessfulCreation() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        final var evmAddress = Address.fromHexString("0xFEFE");
+        given(aliasManager.resolveForEvm(evmAddress))
+                .willReturn(evmAddress)
+                .willReturn(receiverAddress);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.execute(
+                        sender, evmAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiverAddress, result.getRecipient().get());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
     }
 
@@ -626,7 +646,8 @@ class CallEvmTxProcessorTest {
     @Test
     @SuppressWarnings("unchecked")
     void assertResourceExhaustionChargesBothSenderAndRelayerWithoutRefunds() {
-        givenValidMockEth();
+        final var evmAccount = givenValidMockWithoutGetOrCreateEth();
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
         final var mockAccounts =
                 (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
@@ -1294,6 +1315,7 @@ class CallEvmTxProcessorTest {
     private void givenValidMock() {
         final var evmAccount = givenValidMockWithoutGetOrCreate(0L);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.aliases()).willReturn(aliasManager);
     }
 
     private EvmAccount givenValidMockWithoutGetOrCreate(final long intrinsicGasCost) {
@@ -1332,6 +1354,7 @@ class CallEvmTxProcessorTest {
     private void givenValidMockEth() {
         final var evmAccount = givenValidMockWithoutGetOrCreateEth();
         given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.aliases()).willReturn(aliasManager);
     }
 
     private EvmAccount givenValidMockWithoutGetOrCreateEth() {
