@@ -253,7 +253,8 @@ class GetTokenInfoPrecompilesTest {
                         EntityIdUtils.asTypedEvmAddress(payer),
                         creationTime,
                         metadata.toByteArray(),
-                        EntityIdUtils.asTypedEvmAddress(sender));
+                        EntityIdUtils.asTypedEvmAddress(sender),
+                        evmTokenInfo.getLedgerId());
         nonFungibleTokenInfo =
                 TokenNftInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))

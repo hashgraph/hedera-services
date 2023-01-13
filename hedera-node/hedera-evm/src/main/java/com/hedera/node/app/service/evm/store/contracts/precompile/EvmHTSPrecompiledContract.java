@@ -24,11 +24,12 @@ import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-public class EvmHTSPrecompiledContract {
+public class EvmHTSPrecompiledContract implements PrecompiledContract {
 
     private final EvmInfrastructureFactory infrastructureFactory;
-    //    private final ByteString networkId;
+    public static final String EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 
     @Inject
     public EvmHTSPrecompiledContract(EvmInfrastructureFactory infrastructureFactory) {
@@ -53,5 +54,15 @@ public class EvmHTSPrecompiledContract {
         }
 
         return Pair.of(-1L, Bytes.EMPTY);
+    }
+
+    @Override
+    public String getName() {
+        return "EvmHTS";
+    }
+
+    @Override
+    public long gasRequirement(Bytes input) {
+        return 0;
     }
 }

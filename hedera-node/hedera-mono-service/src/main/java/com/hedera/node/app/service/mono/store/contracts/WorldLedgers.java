@@ -184,7 +184,8 @@ public class WorldLedgers {
                             EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
                             info.getCreationTime().getSeconds(),
                             info.getMetadata().toByteArray(),
-                            EntityIdUtils.asTypedEvmAddress(info.getSpenderId())));
+                            EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                            ledgerId.toByteArray()));
         }
 
         return Optional.empty();
