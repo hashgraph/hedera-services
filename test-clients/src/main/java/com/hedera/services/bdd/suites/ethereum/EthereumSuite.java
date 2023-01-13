@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoT
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -54,8 +56,10 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite.TOKEN_CREATE_CONTRACT;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -70,7 +74,7 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -128,7 +132,8 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        sendingLargerBalanceThanAvailableFailsGracefully())))
                 .toList();
     }
 
@@ -502,8 +507,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -570,8 +574,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -640,8 +643,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
@@ -874,17 +876,17 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                 SECP_256K1_SOURCE_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
@@ -969,6 +971,59 @@ public class EthereumSuite extends HapiApiSuite {
                                             Arrays.copyOfRange(
                                                     originalBytecode, 29, originalBytecode.length);
                                     Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+                                }));
+    }
+
+    HapiApiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
+
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                tinyBarsFromAccountToAlias(
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS - 1)),
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)))
+                .when(
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS)
+                                .via("deployTokenCreateContract"),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(
+                                        cb ->
+                                                tokenCreateContractAddress.set(
+                                                        asHeadlongAddress(cb))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var call =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            tokenCreateContractAddress.get())
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .gasPrice(10L)
+                                                    .sending(ONE_HUNDRED_HBARS)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                                    allRunFor(spec, call);
                                 }));
     }
 
