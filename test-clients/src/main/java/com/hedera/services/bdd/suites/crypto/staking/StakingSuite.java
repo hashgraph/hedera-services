@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.crypto.staking;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -106,6 +107,7 @@ public class StakingSuite extends HapiApiSuite {
                 canBeRewardedWithoutMinStakeIfSoConfigured(),
                 zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
                 autoRenewalsCanTriggerStakingRewards(),
+                canSendValueGreaterThanFiftyPercent(),
                 stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries());
     }
 
@@ -231,6 +233,22 @@ public class StakingSuite extends HapiApiSuite {
                                         opLog.info("==============================\n");
                                     }
                                 }));
+    }
+
+    private HapiApiSpec canSendValueGreaterThanFiftyPercent() {
+        final var initBalance = ONE_HBAR * 1000;
+        final var callWithValue = "callWithValue";
+        return onlyDefaultHapiSpec("CanSendValueGreaterThanFiftyPercent")
+                .given(
+                        cryptoCreate("sender").balance(initBalance),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
+                .when(contractCreate(PAY_RECEIVABLE_CONTRACT))
+                .then(
+                        contractCall(PAY_RECEIVABLE_CONTRACT)
+                                .sending(initBalance / 2 + ONE_HBAR)
+                                .payingWith("sender")
+                                .via(callWithValue),
+                        getTxnRecord(callWithValue).logged());
     }
 
     /**
