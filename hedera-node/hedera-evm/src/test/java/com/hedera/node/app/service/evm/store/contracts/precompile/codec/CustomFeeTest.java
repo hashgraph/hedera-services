@@ -46,6 +46,11 @@ class CustomFeeTest {
         FractionalFee fractionalFee = new FractionalFee(15, 100, 10, 50, false, payerAccount);
         CustomFee customFee = new CustomFee();
 
+        assertEquals("CustomFee{fixedFee=null, fractionalFee=null, royaltyFee=null}", customFee.toString());
+        assertEquals("RoyaltyFee{numerator=15, denominator=100, amount=50, denominatingTokenId=0x00000000000000000000000000000000000005cb, useHbarsForPayment=true, feeCollector=0x00000000000000000000000000000000000005ce}", royaltyFee.toString());
+        assertEquals("FixedFee{amount=100, denominatingTokenId=null, useHbarsForPayment=true, useCurrentTokenForPayment=false, feeCollector=0x00000000000000000000000000000000000005ce}", fixedFeeInHbar.toString());
+        assertEquals("FractionalFee{numerator=15, denominator=100, getMinimumAmount=10, getMaximumAmount=50, netOfTransfers=false, feeCollector=0x00000000000000000000000000000000000005ce}", fractionalFee.toString());
+
         assertNotEquals(customFee, new Object());
         assertNotEquals(royaltyFee, new Object());
         assertNotEquals(fixedFeeInHbar, new Object());

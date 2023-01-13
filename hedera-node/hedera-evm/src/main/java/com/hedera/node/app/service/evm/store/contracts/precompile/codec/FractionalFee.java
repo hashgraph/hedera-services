@@ -90,4 +90,16 @@ public class FractionalFee {
                 && this.getMaximumAmount == other.getMaximumAmount
                 && this.netOfTransfers == other.netOfTransfers;
     }
+
+    @Override
+    public String toString() {
+        return "FractionalFee{" +
+            "numerator=" + numerator +
+            ", denominator=" + denominator +
+            ", getMinimumAmount=" + getMinimumAmount +
+            ", getMaximumAmount=" + getMaximumAmount +
+            ", netOfTransfers=" + netOfTransfers +
+            ", feeCollector=" + feeCollector +
+            '}';
+    }
 }
