@@ -120,33 +120,20 @@ public class EthereumSuite extends HapiApiSuite {
                         Stream.concat(
                                 feePaymentMatrix().stream(),
                                 Stream.of(
-                                        //                                        invalidTxData(),
-                                        //
-                                        // ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                        //
-                                        // ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                        //
-                                        // ETX_009_callsToTokenAddresses(),
-                                        //
-                                        // ETX_010_transferToCryptoAccountSucceeds(),
-                                        //
-                                        // ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                        //
-                                        // ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                        //
-                                        // ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                        //
-                                        // ETX_014_contractCreateInheritsSignerProperties(),
-                                        //
-                                        // accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                                        //
-                                        // ETX_009_callsToTokenAddresses(),
-                                        //
-                                        // originAndSenderAreEthereumSigner(),
-                                        //
-                                        // ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        //
-                                        // ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        invalidTxData(),
+                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        ETX_010_transferToCryptoAccountSucceeds(),
+                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                        ETX_014_contractCreateInheritsSignerProperties(),
+                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        originAndSenderAreEthereumSigner(),
+                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
                                         sendingLargerBalanceThanAvailableFailsGracefully())))
                 .toList();
     }
