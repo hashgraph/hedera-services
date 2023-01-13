@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ public class StakingSuite extends HapiApiSuite {
                 canBeRewardedWithoutMinStakeIfSoConfigured(),
                 zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
                 autoRenewalsCanTriggerStakingRewards(),
+                canSendValueGreaterThanFiftyPercent(),
                 stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries());
     }
 
@@ -231,6 +232,22 @@ public class StakingSuite extends HapiApiSuite {
                                         opLog.info("==============================\n");
                                     }
                                 }));
+    }
+
+    private HapiApiSpec canSendValueGreaterThanFiftyPercent() {
+        final var initBalance = ONE_HBAR * 1000;
+        final var callWithValue = "callWithValue";
+        return defaultHapiSpec("CanSendValueGreaterThanFiftyPercent")
+                .given(
+                        cryptoCreate("sender").balance(initBalance),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT))
+                .when(contractCreate(PAY_RECEIVABLE_CONTRACT))
+                .then(
+                        contractCall(PAY_RECEIVABLE_CONTRACT)
+                                .sending(initBalance / 2 + ONE_HBAR)
+                                .payingWith("sender")
+                                .via(callWithValue),
+                        getTxnRecord(callWithValue).logged());
     }
 
     /**

@@ -150,6 +150,12 @@ class CallLocalEvmTxProcessorTest {
 
     @Test
     void throwsWhenCodeCacheFailsLoading() {
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
+                .willReturn(mock(MutableAccount.class));
+
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(updater);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
