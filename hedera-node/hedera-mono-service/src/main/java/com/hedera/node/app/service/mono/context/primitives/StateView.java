@@ -28,6 +28,8 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -199,7 +201,7 @@ public class StateView {
             if (token == null) {
                 return Optional.empty();
             }
-            return Optional.of(token.asEvmTokenInfo(networkInfo.ledgerId()));
+            return Optional.of(asEvmTokenInfo(token, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
             log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
@@ -497,7 +499,7 @@ public class StateView {
             if (token == null) {
                 return emptyList();
             }
-            return token.evmCustomFees();
+            return evmCustomFees(token.grpcFeeSchedule());
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting custom fees for token {}!",

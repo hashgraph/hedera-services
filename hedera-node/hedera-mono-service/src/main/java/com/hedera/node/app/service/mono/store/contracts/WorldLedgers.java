@@ -42,6 +42,8 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -158,7 +160,7 @@ public class WorldLedgers {
             if (token == null) {
                 return Optional.empty();
             }
-            return Optional.of(token.asEvmTokenInfo(ledgerId));
+            return Optional.of(asEvmTokenInfo(token, ledgerId));
         }
     }
 
@@ -235,7 +237,7 @@ public class WorldLedgers {
                 if (token == null) {
                     return Optional.empty();
                 }
-                return Optional.of(token.evmCustomFees());
+                return Optional.of(evmCustomFees(token.grpcFeeSchedule()));
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting custom fees for token {}!",
