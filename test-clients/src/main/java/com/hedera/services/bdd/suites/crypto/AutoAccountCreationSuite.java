@@ -186,13 +186,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 autoAccountCreationWorksWhenUsingAliasOfDeletedAccount(),
                 canGetBalanceAndInfoViaAlias(),
                 noStakePeriodStartIfNotStakingToNode(),
-                hollowAccountCreationWithCryptoTransfer(),
-                failureAfterHollowAccountCreationReclaimsAlias(),
-                hollowAccountCompletionWithCryptoTransfer(),
-                hollowAccountCompletionWithContractCreate(),
-                hollowAccountCompletionWithContractCall(),
-                hollowAccountCompletionWithTokenAssociation(),
-                completedHollowAccountsTransfer(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -200,11 +193,19 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
                 canAutoCreateWithHbarAndTokenTransfers(),
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
+                /* --- HIP 583 --- */
+                hollowAccountCreationWithCryptoTransfer(),
+                failureAfterHollowAccountCreationReclaimsAlias(),
+                hollowAccountCompletionWithCryptoTransfer(),
+                hollowAccountCompletionWithContractCreate(),
+                hollowAccountCompletionWithContractCall(),
+                hollowAccountCompletionWithTokenAssociation(),
+                completedHollowAccountsTransfer(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
-                hollowAccountCompletionWithTokenTransfer(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging());
+                hollowAccountCompletionWithTokenTransfer());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
