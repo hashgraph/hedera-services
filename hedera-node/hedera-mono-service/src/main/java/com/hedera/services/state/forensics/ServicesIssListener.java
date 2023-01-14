@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +53,8 @@ public class ServicesIssListener implements IssListener {
 
         final long round = notice.getRound();
         final long otherNodeId = notice.getOtherNodeId();
-        try(final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<ServicesState> wrapper =
+                platform.getLatestImmutableState()) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
@@ -64,7 +64,8 @@ public class ServicesIssListener implements IssListener {
                 issState.logSummary();
             }
         } catch (final Exception any) {
-            final String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
+            final String fallbackMsg =
+                    String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
             log.warn(fallbackMsg, any);
         }
     }
