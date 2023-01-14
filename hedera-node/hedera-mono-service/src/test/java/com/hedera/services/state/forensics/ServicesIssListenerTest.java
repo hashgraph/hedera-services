@@ -15,12 +15,6 @@
  */
 package com.hedera.services.state.forensics;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.test.extensions.LogCaptor;
@@ -30,13 +24,21 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesIssListenerTest {
@@ -56,11 +58,21 @@ class ServicesIssListenerTest {
     @BeforeEach
     void setup() {
         subject = new ServicesIssListener(issEventInfo, platform);
-        givenNoticeMeta();
+    }
+
+    @Test
+    void doesntNotifyIfOtherNodeHasIss() {
+        given(issNotification.getIssType()).willReturn(IssNotification.IssType.OTHER_ISS);
+        subject.notify(issNotification);
+
+        assertTrue(logCaptor.warnLogs().isEmpty());
+        verify(issNotification, never()).getRound();
+        verify(issEventInfo, never()).decrementRoundsToLog();
     }
 
     @Test
     void logsFallbackInfo() {
+        givenNoticeMeta();
         // when:
         subject.notify(issNotification);
 
@@ -72,6 +84,8 @@ class ServicesIssListenerTest {
 
     @Test
     void onlyLogsIfConfiguredInfo() {
+        givenNoticeMeta();
+
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
         given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
@@ -89,6 +103,8 @@ class ServicesIssListenerTest {
 
     @Test
     void shouldDumpThisRoundIsFalse() {
+        givenNoticeMeta();
+
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
         given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
