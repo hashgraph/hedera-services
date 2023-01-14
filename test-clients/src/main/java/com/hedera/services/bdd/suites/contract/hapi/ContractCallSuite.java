@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -1436,7 +1435,7 @@ public class ContractCallSuite extends HapiSuite {
         final var doomedCreation = "doomedCreation";
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> spenderAddress = new AtomicReference<>();
-        return onlyDefaultHapiSpec("TestApprover")
+        return defaultHapiSpec("TestApprover")
                 .given(
                         cryptoCreate(spender)
                                 .balance(123 * ONE_HUNDRED_HBARS)
@@ -1457,10 +1456,8 @@ public class ContractCallSuite extends HapiSuite {
                                                 .gas(5_000_000)
                                                 .payingWith(spender)
                                                 .via(doomedCreation)
-                                                // TODO - Noooo...should succeed, see
-                                                // https://github.com/hashgraph/hedera-services/issues/4616
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(getTxnRecord(doomedCreation).andAllChildRecords().logged());
+                                                .hasKnownStatus(SUCCESS)))
+                .then();
     }
 
     HapiSpec payableSuccess() {
