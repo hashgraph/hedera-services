@@ -199,7 +199,7 @@ public class ContractCallSuite extends HapiSuite {
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
-                testApprover(),
+                associationAcknowledgedInApprovePrecompile(),
                 multipleDepositSuccess(),
                 payTestSelfDestructCall(),
                 multipleSelfDestructsAreSafe(),
@@ -1429,13 +1429,12 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(BENEFICIARY).hasTinyBars(initBalance + DEPOSIT_AMOUNT));
     }
 
-    HapiSpec testApprover() {
+    HapiSpec associationAcknowledgedInApprovePrecompile() {
         final var token = "TOKEN";
         final var spender = "SPENDER";
-        final var doomedCreation = "doomedCreation";
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> spenderAddress = new AtomicReference<>();
-        return defaultHapiSpec("TestApprover")
+        return defaultHapiSpec("AssociationAcknowledgedInApprovePrecompile")
                 .given(
                         cryptoCreate(spender)
                                 .balance(123 * ONE_HUNDRED_HBARS)
@@ -1455,7 +1454,6 @@ public class ContractCallSuite extends HapiSuite {
                                                         spenderAddress.get())
                                                 .gas(5_000_000)
                                                 .payingWith(spender)
-                                                .via(doomedCreation)
                                                 .hasKnownStatus(SUCCESS)))
                 .then();
     }
