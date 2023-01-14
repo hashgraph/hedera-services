@@ -29,8 +29,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
@@ -39,7 +37,8 @@ import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -68,9 +67,9 @@ class TokenPreTransactionHandlerImplTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
-    @Mock private States states;
+    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
+    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
+    @Mock private ReadableStates states;
     @Mock private MerkleAccount payerAccount;
     @Mock private ReadableTokenStore tokenStore;
     @Mock private PreHandleContext context;
@@ -80,9 +79,9 @@ class TokenPreTransactionHandlerImplTest {
 
     @BeforeEach
     void setUp() {
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
-        given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
+        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
+        given(accounts.get(payerNum)).willReturn(payerAccount);
         given(payerAccount.getAccountKey()).willReturn((JKey) payerKey);
 
         accountStore = new ReadableAccountStore(states);

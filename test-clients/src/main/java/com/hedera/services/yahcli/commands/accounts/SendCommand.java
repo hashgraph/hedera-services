@@ -91,7 +91,12 @@ public class SendCommand implements Callable<Integer> {
         final var effectiveMemo = memo != null ? memo : "";
         var delegate =
                 new SendSuite(
-                        config.asSpecConfig(), beneficiary, amount, effectiveMemo, denomination);
+                        config.asSpecConfig(),
+                        beneficiary,
+                        amount,
+                        effectiveMemo,
+                        denomination,
+                        accountsCommand.getYahcli().isScheduled());
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
