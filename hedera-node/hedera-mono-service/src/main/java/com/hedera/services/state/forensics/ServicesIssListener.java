@@ -22,6 +22,8 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,19 +47,24 @@ public class ServicesIssListener implements IssListener {
 
     @Override
     public void notify(final IssNotification notice) {
-        final var round = notice.getRound();
-        final var otherNodeId = notice.getOtherNodeId();
-        try {
-            ServicesState issState = (ServicesState) platform.getLatestImmutableState().get();
+        if (notice.getIssType() == IssNotification.IssType.OTHER_ISS) {
+            // Another node is experiencing an ISS, but we are healthy.
+            return;
+        }
+
+        final long round = notice.getRound();
+        final long otherNodeId = notice.getOtherNodeId();
+        try(final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState()) {
+            final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
-                var msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
+                final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
                 log.error(msg);
                 issState.logSummary();
             }
         } catch (final Exception any) {
-            String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
+            final String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
             log.warn(fallbackMsg, any);
         }
     }
