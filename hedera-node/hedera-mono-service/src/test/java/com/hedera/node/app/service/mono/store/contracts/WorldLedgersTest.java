@@ -28,11 +28,11 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.T
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.convertToEvmKey;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -517,10 +517,10 @@ class WorldLedgersTest {
 
     @Test
     void staticEvmNftTokenInfoEmpty() {
-        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.empty());
-        final var tokenNftInfo = subject.evmNftInfo(nftId, ledgerId);
+        final var tokenNftInfo = worldLedgers.evmNftInfo(nftId, ledgerId);
 
         assertEquals(Optional.empty(), tokenNftInfo);
     }

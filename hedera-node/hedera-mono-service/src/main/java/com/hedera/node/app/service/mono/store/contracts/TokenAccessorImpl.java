@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import static com.hedera.node.app.service.mono.state.merkle.MerkleToken.convertToEvmKey;
 import static com.hedera.node.app.service.mono.store.models.NftId.fromGrpc;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.protobuf.ByteString;
