@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.bdd.suites.regression;
+package com.hedera.services.bdd.suites.regression.factories;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -74,16 +74,21 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.io.File;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RegressionProviderFactory {
     public static final String RESOURCE_DIR = "eet-config";
 
+    static HapiPropertySource propsFrom(final String resource) {
+        final var loc = RESOURCE_DIR + File.separator + resource;
+        return new JutilPropertySource(loc);
+    }
+
     public static Function<HapiSpec, OpProvider> factoryFrom(Supplier<String> resource) {
         return spec -> {
-            String path = RESOURCE_DIR + "/" + resource.get();
-            HapiPropertySource props = new JutilPropertySource(path);
+            HapiPropertySource props = propsFrom(resource.get());
 
             var keys =
                     new RegistrySourcedNameProvider<>(
@@ -321,7 +326,7 @@ public class RegressionProviderFactory {
         return props.has(name) ? props.getDouble(name) : defaultValue;
     }
 
-    private static int intPropOrElse(String name, int defaultValue, HapiPropertySource props) {
+    static int intPropOrElse(String name, int defaultValue, HapiPropertySource props) {
         return props.has(name) ? props.getInteger(name) : defaultValue;
     }
 }

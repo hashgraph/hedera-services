@@ -21,7 +21,7 @@ import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.RegistryChangeContext;
 import com.hedera.services.bdd.spec.infrastructure.listeners.PresenceTrackingListener;
-import com.hedera.services.bdd.suites.regression.RegressionProviderFactory;
+import com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
