@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType.ADMIN_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
@@ -348,7 +349,7 @@ class GetTokenKeyPrecompileTest {
         final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
         assertTrue(decodedInput.token().getTokenNum() > 0);
         assertEquals(1L, decodedInput.keyType());
-        assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
+        assertEquals(ADMIN_KEY, decodedInput.tokenKeyType());
     }
 
     private void givenMinimalFrameContext() {

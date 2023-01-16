@@ -41,16 +41,18 @@ public class EvmHTSPrecompiledContract implements PrecompiledContract {
             final MessageFrame frame,
             ViewGasCalculator viewGasCalculator,
             final TokenAccessor tokenAccessor) {
-        if (isTokenProxyRedirect(input)) {
-            final var executor =
-                    infrastructureFactory.newRedirectExecutor(
-                            input, frame, viewGasCalculator, tokenAccessor);
-            return executor.computeCosted();
-        } else if (isViewFunction(input)) {
-            final var executor =
-                    infrastructureFactory.newViewExecutor(
-                            input, frame, viewGasCalculator, tokenAccessor);
-            return executor.computeCosted();
+        if (frame.isStatic()) {
+            if (isTokenProxyRedirect(input)) {
+                final var executor =
+                        infrastructureFactory.newRedirectExecutor(
+                                input, frame, viewGasCalculator, tokenAccessor);
+                return executor.computeCosted();
+            } else if (isViewFunction(input)) {
+                final var executor =
+                        infrastructureFactory.newViewExecutor(
+                                input, frame, viewGasCalculator, tokenAccessor);
+                return executor.computeCosted();
+            }
         }
 
         return Pair.of(-1L, Bytes.EMPTY);
