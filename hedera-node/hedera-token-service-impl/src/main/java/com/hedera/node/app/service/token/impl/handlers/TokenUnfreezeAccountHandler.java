@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 /**
@@ -45,9 +44,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * change.
      *
      * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer  the {@link AccountID} of the payer
+     * @param payer the {@link AccountID} of the payer
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     * {@link #handle(TransactionMetadata)}
+     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
@@ -82,16 +81,19 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     }
 
     /**
-     * Gets the token meta for a given {@link TokenID} and attempts to add a unfreeze key to the list
-     * of required keys for a given unfreeze transaction. Upon failure the status of the
-     * {@link SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
+     * Gets the token meta for a given {@link TokenID} and attempts to add a unfreeze key to the
+     * list of required keys for a given unfreeze transaction. Upon failure the status of the {@link
+     * SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
      *
-     * @param tokenId    given token id
-     * @param meta       given transaction metadata builder
-     * @param tokenStore Provides read-only methods for interacting with data storage for working with Tokens.
+     * @param tokenId given token id
+     * @param meta given transaction metadata builder
+     * @param tokenStore Provides read-only methods for interacting with data storage for working
+     *     with Tokens.
      */
-    public void addUnfreezeKey(final TokenID tokenId, final SigTransactionMetadataBuilder meta,
-                               @NonNull final ReadableTokenStore tokenStore) {
+    public void addUnfreezeKey(
+            final TokenID tokenId,
+            final SigTransactionMetadataBuilder meta,
+            @NonNull final ReadableTokenStore tokenStore) {
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
 
         if (!tokenMeta.failed()) {
@@ -104,5 +106,4 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
             meta.status(tokenMeta.failureReason());
         }
     }
-
 }

@@ -29,9 +29,8 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
-import java.util.Map;
-
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Map;
 import org.mockito.Mockito;
 
 public class AdapterUtils {
