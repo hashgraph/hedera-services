@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
@@ -26,7 +27,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -42,7 +42,9 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetAppro
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
@@ -83,6 +85,7 @@ class RedirectViewExecutorTest {
     @Mock private BlockValues blockValues;
     @Mock private BalanceOfWrapper<AccountID> balanceOfWrapper;
     @Mock private OwnerOfAndTokenURIWrapper ownerOfAndTokenURIWrapper;
+    @Mock private TokenAccessor tokenAccessor;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
     public static final AccountID spender = IdUtils.asAccount("0.0.888");
@@ -309,7 +312,9 @@ class RedirectViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
-        this.subject = new RedirectViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator);
+        this.subject =
+                new RedirectViewExecutor(
+                        input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
         return nestedInput;
     }
 }
