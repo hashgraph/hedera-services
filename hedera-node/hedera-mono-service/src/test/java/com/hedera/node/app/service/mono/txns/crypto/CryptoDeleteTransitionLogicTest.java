@@ -43,6 +43,7 @@ import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -71,6 +72,7 @@ class CryptoDeleteTransitionLogicTest {
     private SigImpactHistorian sigImpactHistorian;
     private TransactionContext txnCtx;
     private SignedTxnAccessor accessor;
+    private CryptoDeletionLogic deletionLogic;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private CryptoDeleteTransitionLogic subject;
@@ -81,10 +83,11 @@ class CryptoDeleteTransitionLogicTest {
         ledger = mock(HederaLedger.class);
         accessor = mock(SignedTxnAccessor.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
+        deletionLogic = mock(CryptoDeletionLogic.class);
 
         given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-        subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx);
+        subject = new CryptoDeleteTransitionLogic(deletionLogic, txnCtx);
     }
 
     @Test

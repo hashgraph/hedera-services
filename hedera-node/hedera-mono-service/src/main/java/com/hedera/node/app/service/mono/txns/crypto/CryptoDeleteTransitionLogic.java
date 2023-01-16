@@ -15,36 +15,15 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
-import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
-import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoDelete transaction, and the conditions
@@ -54,25 +33,23 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
-
     private final CryptoDeletionLogic deletionLogic;
     private final TransactionContext txnCtx;
 
     @Inject
     public CryptoDeleteTransitionLogic(
-        final CryptoDeletionLogic deletionLogic
-            final TransactionContext txnCtx) {
+            final CryptoDeletionLogic deletionLogic, final TransactionContext txnCtx) {
         this.deletionLogic = deletionLogic;
         this.txnCtx = txnCtx;
     }
 
     @Override
     public void doStateTransition() {
-            final var op = txnCtx.accessor().getTxn().getCryptoDelete();
-            final var deleted = deletionLogic.performCryptoDeleteFor(op);
+        final var op = txnCtx.accessor().getTxn().getCryptoDelete();
+        final var deleted = deletionLogic.performCryptoDeleteFor(op);
 
-            txnCtx.recordBeneficiaryOfDeleted(deleted.getAccountNum(), deletionLogic.getLastBeneficiary().getAccountNum());
+        txnCtx.recordBeneficiaryOfDeleted(
+                deleted.getAccountNum(), deletionLogic.getLastBeneficiary().getAccountNum());
     }
 
     @Override
@@ -86,6 +63,6 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
     }
 
     private ResponseCodeEnum validate(TransactionBody cryptoDeleteTxn) {
-return deletionLogic.validate(cryptoDeleteTxn.getCryptoDelete());
+        return deletionLogic.validate(cryptoDeleteTxn.getCryptoDelete());
     }
 }
