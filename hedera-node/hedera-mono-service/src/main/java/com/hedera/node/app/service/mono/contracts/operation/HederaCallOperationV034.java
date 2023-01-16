@@ -41,13 +41,13 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperationV032 extends CallOperation {
+public class HederaCallOperationV034 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
     private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaCallOperationV032(
+    public HederaCallOperationV034(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,

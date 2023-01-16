@@ -1407,7 +1407,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 lazyCreationProperty,
                                 "true",
                                 contractsEvmVersionProperty,
-                                "v0.32",
+                                "v0.34",
                                 contractsEvmVersionDynamicProperty,
                                 "true"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
@@ -1479,7 +1479,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
                         overridingTwo(
                                 contractsEvmVersionProperty,
-                                "v0.32",
+                                "v0.34",
                                 contractsEvmVersionDynamicProperty,
                                 "true"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
