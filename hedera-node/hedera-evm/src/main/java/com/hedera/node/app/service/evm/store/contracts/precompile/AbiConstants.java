@@ -17,6 +17,10 @@ package com.hedera.node.app.service.evm.store.contracts.precompile;
 
 public class AbiConstants {
 
+    private AbiConstants() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     // **** HIP-218 + HIP-376 function selectors and event signatures ****
     // redirectForToken(address token, bytes memory data)
     public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;

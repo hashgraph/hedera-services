@@ -35,6 +35,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class DescriptorUtils {
 
+    private DescriptorUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static boolean isTokenProxyRedirect(final Bytes input) {
         return ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
     }

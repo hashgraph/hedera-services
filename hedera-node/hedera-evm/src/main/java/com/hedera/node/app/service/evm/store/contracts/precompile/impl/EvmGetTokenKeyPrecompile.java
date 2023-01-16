@@ -34,8 +34,7 @@ public interface EvmGetTokenKeyPrecompile {
     static GetTokenKeyWrapper<byte[]> decodeGetTokenKey(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
-        final var token = decodedArguments.get(0);
         final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
-        return new GetTokenKeyWrapper(token, tokenType);
+        return new GetTokenKeyWrapper<>(decodedArguments.get(0), tokenType);
     }
 }
