@@ -82,7 +82,6 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.stream to
             com.swirlds.common;
 
-    exports com.hedera.node.app.service.mono.state.impl;
     exports com.hedera.node.app.service.mono.state.migration;
 
     requires com.hedera.hashgraph.protobuf.java.api;
