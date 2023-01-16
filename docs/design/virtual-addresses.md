@@ -56,7 +56,23 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 ## Acceptance Tests
 
 ### Positive Tests
-TODO
+- CryptoCreate with `ECDSA key` should create an account with single virtual address and make it the default virtual address
+- CryptoCreate with `ECDSA key alias` should create an account with single virtual address and make it the default virtual address
+- CryptoCreate with `evmAddress` should create a hollow account with single virtual address and make it the default virtual address
+- CryptoTransfer with `ECDSA key alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
+- CryptoTransfer with `evmAddress` to a non-existing account should lazy-create a hollow account with single virtual address and make it the default virtual address
+- EthereumTransaction to a non-existing account with `tx.to` EVM address value should lazy-create a hollow account with single virtual address and make it the default virtual address
+- ContractCreate/ContractCall for an account with a default virtual address should use that address in the EVM
+- ContractCreate/ContractCall with `virtual_address_override` address value should use that address in the EVM
+- ContractCreate/ContractCall resulting in creation of a new contract should add the CREATE/CREATE2 EVM address value to `contract.account.virtualAddresses`
+- CryptoUpdate with `virtual_address_update.add.address` for an existing account should add a new virtual address, if `virtual_address_update.add.is_default` is set to `true` the added address should become the default virtual address
+- CryptoUpdate with `virtual_address_update.disable` value that is present in the virtual address list for an existing account should disable the virtual address
+- CryptoUpdate with `virtual_address_update.remove` value that is present in the virtual address list for an existing account should remove the virtual address from the list
+- CryptoGetInfoQuery for an existing account should return the virtual addresses list for the account
 
 ### Negative Tests
-TODO
+- TODO (fail?): CryptoCreate with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
+- TODO (fail?): CryptoTransfer with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
+- TODO: Contracts may only have 1 virtual address entry to ensure immutability in accordance with the Ethereum yellow paper. The network should prevent the update of a contracts virtual addresses.
+- TODO: Any transaction using `evmAddress` that is in not allowed list should fail
+- TODO: CryptoUpdate with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
