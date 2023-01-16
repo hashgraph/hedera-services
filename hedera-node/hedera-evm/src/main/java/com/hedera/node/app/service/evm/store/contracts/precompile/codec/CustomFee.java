@@ -48,6 +48,11 @@ public class CustomFee {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(fixedFee, fractionalFee, royaltyFee);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -62,7 +67,14 @@ public class CustomFee {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(fixedFee, fractionalFee, royaltyFee);
+    public String toString() {
+        return "CustomFee{"
+                + "fixedFee="
+                + fixedFee
+                + ", fractionalFee="
+                + fractionalFee
+                + ", royaltyFee="
+                + royaltyFee
+                + '}';
     }
 }

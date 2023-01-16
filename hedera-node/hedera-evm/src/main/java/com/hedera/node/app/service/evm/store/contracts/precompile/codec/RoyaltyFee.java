@@ -89,4 +89,22 @@ public class RoyaltyFee {
                 && this.amount == other.amount
                 && this.useHbarsForPayment == other.useHbarsForPayment;
     }
+
+    @Override
+    public String toString() {
+        return "RoyaltyFee{"
+                + "numerator="
+                + numerator
+                + ", denominator="
+                + denominator
+                + ", amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
+    }
 }
