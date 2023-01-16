@@ -516,6 +516,16 @@ class WorldLedgersTest {
     }
 
     @Test
+    void staticEvmNftTokenInfoEmpty() {
+        subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+        given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.empty());
+        final var tokenNftInfo = subject.evmNftInfo(nftId, ledgerId);
+
+        assertEquals(Optional.empty(), tokenNftInfo);
+    }
+
+    @Test
     void nonStaticNftTokenInfoWorks() {
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);

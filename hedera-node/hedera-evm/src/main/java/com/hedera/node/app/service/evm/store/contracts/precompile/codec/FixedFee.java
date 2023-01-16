@@ -80,4 +80,20 @@ public class FixedFee {
                 && this.useHbarsForPayment == other.useHbarsForPayment
                 && this.useCurrentTokenForPayment == other.useCurrentTokenForPayment;
     }
+
+    @Override
+    public String toString() {
+        return "FixedFee{"
+                + "amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", useCurrentTokenForPayment="
+                + useCurrentTokenForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
+    }
 }
