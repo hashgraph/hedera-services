@@ -31,7 +31,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -42,6 +41,12 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetAppro
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsApprovedForAllPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -51,7 +56,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
@@ -83,7 +87,7 @@ class RedirectViewExecutorTest {
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
-    @Mock private BalanceOfWrapper<AccountID> balanceOfWrapper;
+    @Mock private BalanceOfWrapper<byte[]> balanceOfWrapper;
     @Mock private OwnerOfAndTokenURIWrapper ownerOfAndTokenURIWrapper;
     @Mock private TokenAccessor tokenAccessor;
 
@@ -94,8 +98,12 @@ class RedirectViewExecutorTest {
     public static final NftId nonfungible = new NftId(0, 0, 999, 1);
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Id nonfungibleId = Id.fromGrpcToken(nonfungibletoken);
+    public static final Id accountId = Id.fromGrpcAccount(account);
+    public static final Id spenderId = Id.fromGrpcAccount(spender);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
     public static final Address nonfungibleTokenAddress = nonfungibleId.asEvmAddress();
+    public static final Address accountAddress = accountId.asEvmAddress();
+    public static final Address spenderAddress = spenderId.asEvmAddress();
 
     private static final long timestamp = 10L;
     private static final Timestamp resultingTimestamp =
@@ -105,7 +113,6 @@ class RedirectViewExecutorTest {
 
     RedirectViewExecutor subject;
     private MockedStatic<AllowancePrecompile> allowancePrecompile;
-    private MockedStatic<GetApprovedPrecompile> getApprovedPrecompile;
     private MockedStatic<IsApprovedForAllPrecompile> isApprovedForAllPrecompile;
     private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     private MockedStatic<OwnerOfPrecompile> ownerOfPrecompile;
@@ -114,7 +121,6 @@ class RedirectViewExecutorTest {
     @BeforeEach
     void setUp() {
         allowancePrecompile = Mockito.mockStatic(AllowancePrecompile.class);
-        getApprovedPrecompile = Mockito.mockStatic(GetApprovedPrecompile.class);
         isApprovedForAllPrecompile = Mockito.mockStatic(IsApprovedForAllPrecompile.class);
         balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
         ownerOfPrecompile = Mockito.mockStatic(OwnerOfPrecompile.class);
@@ -124,7 +130,6 @@ class RedirectViewExecutorTest {
     @AfterEach
     void closeMocks() {
         allowancePrecompile.close();
-        getApprovedPrecompile.close();
         isApprovedForAllPrecompile.close();
         balanceOfPrecompile.close();
         ownerOfPrecompile.close();
@@ -137,7 +142,7 @@ class RedirectViewExecutorTest {
 
         final var result = "name";
 
-        given(worldLedgers.nameOf(fungible)).willReturn(result);
+        given(tokenAccessor.nameOf(fungibleTokenAddress)).willReturn(result);
         given(evmEncodingFacade.encodeName(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
@@ -149,7 +154,7 @@ class RedirectViewExecutorTest {
 
         final var result = "symbol";
 
-        given(worldLedgers.symbolOf(fungible)).willReturn(result);
+        given(tokenAccessor.symbolOf(fungibleTokenAddress)).willReturn(result);
         given(evmEncodingFacade.encodeSymbol(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
@@ -157,63 +162,66 @@ class RedirectViewExecutorTest {
 
     @Test
     void computeAllowanceOf() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
-        allowancePrecompile
-                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
+        try (MockedStatic<EvmAllowancePrecompile> utilities = Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+            final var allowanceWrapper = new TokenAllowanceWrapper<>(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
+            utilities.when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
                 .thenReturn(allowanceWrapper);
-        given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
-        given(evmEncodingFacade.encodeAllowance(123L)).willReturn(answer);
+            given(tokenAccessor.staticAllowanceOf(any(), any(), any())).willReturn(123L);
+            given(evmEncodingFacade.encodeAllowance(123L)).willReturn(answer);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
     void computeApprovedSpenderOf() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
-        final var getApprovedWrapper = new GetApprovedWrapper<>(nonfungibletoken, 123L);
-        getApprovedPrecompile
-                .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
+        try (MockedStatic<EvmGetApprovedPrecompile> utilities = Mockito.mockStatic(EvmGetApprovedPrecompile.class)) {
+            final var getApprovedWrapper = new GetApprovedWrapper<>(nonfungibleTokenAddress.toArrayUnsafe(), 123L);
+            utilities.when(() -> EvmGetApprovedPrecompile.decodeGetApproved(any()))
                 .thenReturn(getApprovedWrapper);
-        given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
+            given(evmEncodingFacade.encodeGetApproved(any())).willReturn(answer);
+            given(tokenAccessor.staticApprovedSpenderOf(nonfungibleTokenAddress,
+                getApprovedWrapper.serialNo()))
                 .willReturn(Address.ALTBN128_ADD);
-        given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
-        given(evmEncodingFacade.encodeGetApproved(Address.ALTBN128_ADD)).willReturn(answer);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
     void computeOperatorCheck() {
-        final var nestedInput =
-                prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
-        final var isApproveForAll =
-                new IsApproveForAllWrapper<>(nonfungibletoken, account, spender);
-        isApprovedForAllPrecompile
-                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
+        try (MockedStatic<EvmIsApprovedForAllPrecompile> utilities = Mockito.mockStatic(EvmIsApprovedForAllPrecompile.class)) {
+            final var isApproveForAll =
+                new IsApproveForAllWrapper<>(nonfungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
+            utilities.when(() -> EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(any()))
                 .thenReturn(isApproveForAll);
-        given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
-        given(evmEncodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            given(tokenAccessor.staticIsOperator(any(), any(), any())).willReturn(true);
+            given(evmEncodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
+
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
     void revertsFrameAndReturnsNullOnRevertingException() {
-        final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+        prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
-        allowancePrecompile
-                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
+        try (MockedStatic<EvmAllowancePrecompile> utilities = Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+            final var allowanceWrapper = new TokenAllowanceWrapper<>(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
+            utilities.when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
                 .thenReturn(allowanceWrapper);
-        given(worldLedgers.staticAllowanceOf(account, spender, fungible))
-                .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
+            given(tokenAccessor.staticAllowanceOf(any(), any(), any())).willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
 
-        assertEquals(Pair.of(gas, null), subject.computeCosted());
-        verify(frame).setState(MessageFrame.State.REVERT);
+            assertEquals(Pair.of(gas, null), subject.computeCosted());
+            verify(frame).setState(MessageFrame.State.REVERT);
+        }
     }
 
     @Test
@@ -222,8 +230,8 @@ class RedirectViewExecutorTest {
 
         final var result = 1;
 
-        given(worldLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(worldLedgers.decimalsOf(fungible)).willReturn(result);
+        given(tokenAccessor.typeOf(fungibleTokenAddress)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(tokenAccessor.decimalsOf(fungibleTokenAddress)).willReturn(result);
         given(evmEncodingFacade.encodeDecimals(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
@@ -235,7 +243,7 @@ class RedirectViewExecutorTest {
 
         final var result = 1L;
 
-        given(worldLedgers.totalSupplyOf(fungible)).willReturn(result);
+        given(tokenAccessor.totalSupplyOf(fungibleTokenAddress)).willReturn(result);
         given(evmEncodingFacade.encodeTotalSupply(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
@@ -247,14 +255,15 @@ class RedirectViewExecutorTest {
 
         final var result = 1L;
 
-        balanceOfPrecompile
-                .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedInput), any()))
+        try (MockedStatic<EvmBalanceOfPrecompile> utilities = Mockito.mockStatic(EvmBalanceOfPrecompile.class)) {
+            utilities.when(() -> EvmBalanceOfPrecompile.decodeBalanceOf(nestedInput))
                 .thenReturn(balanceOfWrapper);
-        given(balanceOfWrapper.account()).willReturn(account);
-        given(worldLedgers.balanceOf(account, fungible)).willReturn(result);
-        given(evmEncodingFacade.encodeBalance(result)).willReturn(answer);
+            given(balanceOfWrapper.account()).willReturn(accountAddress.toArray());
+            given(tokenAccessor.balanceOf(any(), any())).willReturn(result);
+            given(evmEncodingFacade.encodeBalance(result)).willReturn(answer);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
@@ -264,32 +273,33 @@ class RedirectViewExecutorTest {
         final var result = Address.fromHexString("0x000000000000013");
         final var serialNum = 1L;
 
-        ownerOfPrecompile
-                .when(() -> OwnerOfPrecompile.decodeOwnerOf(nestedInput))
+        try (MockedStatic<EvmOwnerOfPrecompile> utilities = Mockito.mockStatic(EvmOwnerOfPrecompile.class)) {
+            utilities.when(() -> EvmOwnerOfPrecompile.decodeOwnerOf(nestedInput))
                 .thenReturn(ownerOfAndTokenURIWrapper);
-        given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
-        given(worldLedgers.ownerOf(nonfungible)).willReturn(result);
-        given(worldLedgers.canonicalAddress(result)).willReturn(result);
-        given(evmEncodingFacade.encodeOwner(result)).willReturn(answer);
+            given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
+            given(tokenAccessor.ownerOf(nonfungibleTokenAddress, serialNum)).willReturn(result);
+            given(tokenAccessor.canonicalAddress(result)).willReturn(result);
+            given(evmEncodingFacade.encodeOwner(result)).willReturn(answer);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
     void computeCostedTOKEN_URI_NFT() {
         Bytes nestedInput = prerequisites(ABI_ID_ERC_TOKEN_URI_NFT, nonfungibleTokenAddress);
-
         final var result = "some metadata";
         final var serialNum = 1L;
 
-        tokenURIPrecompile
-                .when(() -> TokenURIPrecompile.decodeTokenUriNFT(nestedInput))
+        try (MockedStatic<EvmTokenURIPrecompile> utilities = Mockito.mockStatic(EvmTokenURIPrecompile.class)) {
+            utilities.when(() -> EvmTokenURIPrecompile.decodeTokenUriNFT(nestedInput))
                 .thenReturn(ownerOfAndTokenURIWrapper);
-        given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
-        given(worldLedgers.metadataOf(nonfungible)).willReturn(result);
-        given(evmEncodingFacade.encodeTokenUri(result)).willReturn(answer);
+            given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
+            given(evmEncodingFacade.encodeTokenUri(result)).willReturn(answer);
+            given(tokenAccessor.metadataOf(nonfungibleTokenAddress, ownerOfAndTokenURIWrapper.serialNo())).willReturn(result);
 
-        assertEquals(Pair.of(gas, answer), subject.computeCosted());
+            assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
     }
 
     @Test
@@ -299,8 +309,6 @@ class RedirectViewExecutorTest {
     }
 
     Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {
-        given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
-        given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         Bytes nestedInput = Bytes.of(Integers.toBytes(descriptor));
         Bytes input =
                 Bytes.concatenate(
@@ -310,8 +318,6 @@ class RedirectViewExecutorTest {
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
-        given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
-        given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         this.subject =
                 new RedirectViewExecutor(
                         input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
