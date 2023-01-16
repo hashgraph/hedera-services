@@ -15,20 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.util;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.StateKeyAdapter;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.NotImplementedException;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
@@ -40,6 +26,19 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.StateKeyAdapter;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.NotImplementedException;
+
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
 
@@ -49,7 +48,6 @@ public class SigReqAdapterUtils {
      * of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a
      * {@link ReadableTokenStore}.
      *
-     * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {

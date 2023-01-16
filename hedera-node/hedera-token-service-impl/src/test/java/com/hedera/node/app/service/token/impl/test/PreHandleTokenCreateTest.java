@@ -29,6 +29,7 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_WILDCARD_AND_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
@@ -54,10 +55,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,9 +67,7 @@ class PreHandleTokenCreateTest {
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-
-        accountStore = AdapterUtils.wellKnownKeyLookupAt(now);
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
         subject = new TokenCreateHandler();
     }
 
@@ -381,6 +379,20 @@ class PreHandleTokenCreateTest {
         assertThat(
                 sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
         basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateCustomFixedFeeSigRequiredWithSigRequired() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_WILDCARD_AND_SIG_REQ);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
