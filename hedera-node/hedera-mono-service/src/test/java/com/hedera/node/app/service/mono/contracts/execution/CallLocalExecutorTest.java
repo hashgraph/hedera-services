@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;

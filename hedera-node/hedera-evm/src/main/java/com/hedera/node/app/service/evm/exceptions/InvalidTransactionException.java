@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
- * Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents
+ * Captures a failure in transaction processing to be captured by the {TransitionRunner} and used to
+ * set the final resolved status of the transaction.
+ *
+ * <p>Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents
  * some form of user error. The {@code FAIL_INVALID} code indicates an internal system error; and it
  * is usually desirable in that case to include a detail message in the constructor.
  */

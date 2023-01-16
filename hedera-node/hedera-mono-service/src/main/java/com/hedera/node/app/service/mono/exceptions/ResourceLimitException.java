@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class ResourceLimitException extends InvalidTransactionException {
