@@ -103,7 +103,7 @@ class GetTokenKeyPrecompileTest {
                     "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
     private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
-    private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
+    private GetTokenKeyWrapper<TokenID> wrapper = new GetTokenKeyWrapper<>(fungible, 1L);
     private final byte[] ed25519Key =
             new byte[] {
                 -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
@@ -177,7 +177,7 @@ class GetTokenKeyPrecompileTest {
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         givenJKeyContractAndDelegateContext();
-        wrapper = new GetTokenKeyWrapper(fungible, 16L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 16L);
         given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
@@ -199,7 +199,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(fungible, 4L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 4L);
         given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
@@ -221,7 +221,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(fungible, 8L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 8L);
         given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
@@ -243,7 +243,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(fungible, 64L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 64L);
         given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
@@ -265,7 +265,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(fungible, 32L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 32L);
         given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
@@ -309,7 +309,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(fungible, 200L);
+        wrapper = new GetTokenKeyWrapper<>(fungible, 200L);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(tokens.exists(any())).willReturn(true);

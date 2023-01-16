@@ -40,8 +40,6 @@ import org.apache.tuweni.bytes.Bytes;
 public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
         implements EvmGetTokenKeyPrecompile {
     private TokenProperty keyType;
-    private GetTokenKeyWrapper<TokenID> getTokenKeyWrapper;
-
     public GetTokenKeyPrecompile(
             final TokenID tokenId,
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -55,7 +53,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        getTokenKeyWrapper = decodeGetTokenKey(input);
+        final var getTokenKeyWrapper = decodeGetTokenKey(input);
         tokenId = getTokenKeyWrapper.token();
         keyType = TokenProperty.valueOf(getTokenKeyWrapper.tokenKeyType().name());
         return super.body(input, aliasResolver);
@@ -75,6 +73,6 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
         final var rawGetTokenKeyWrapper = EvmGetTokenKeyPrecompile.decodeGetTokenKey(input);
         final var tokenID = convertAddressBytesToTokenID(rawGetTokenKeyWrapper.token());
         final var tokenType = rawGetTokenKeyWrapper.keyType();
-        return new GetTokenKeyWrapper(tokenID, tokenType);
+        return new GetTokenKeyWrapper<>(tokenID, tokenType);
     }
 }
