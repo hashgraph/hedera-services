@@ -6485,12 +6485,4 @@ public class SigRequirementsTest {
                         })
                 .collect(toList());
     }
-
-    public static Key sanityRestored(HederaKey jKey) {
-        try {
-            return JKey.mapJKey((JKey) jKey);
-        } catch (Exception ignore) {
-            throw new AssertionError("All keys should be mappable!");
-        }
-    }
 }

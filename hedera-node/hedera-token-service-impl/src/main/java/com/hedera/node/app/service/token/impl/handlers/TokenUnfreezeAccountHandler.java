@@ -15,11 +15,18 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -38,14 +45,27 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * change.
      *
      * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
+     * @param payer  the {@link AccountID} of the payer
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final AccountKeyLookup accountStore) {
+        Objects.requireNonNull(txBody);
+        final var op = txBody.getTokenUnfreeze();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
+
+        if (op.hasToken()) {
+            addUnfreezeKey(op.getToken(), meta, tokenStore);
+        } else {
+            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+        }
+        return meta.build();
     }
 
     /**
@@ -60,4 +80,29 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
     public void handle(@NonNull final TransactionMetadata metadata) {
         throw new UnsupportedOperationException("Not implemented");
     }
+
+    /**
+     * Gets the token meta for a given {@link TokenID} and attempts to add a unfreeze key to the list
+     * of required keys for a given unfreeze transaction. Upon failure the status of the
+     * {@link SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
+     *
+     * @param tokenId    given token id
+     * @param meta       given transaction metadata builder
+     * @param tokenStore Provides read-only methods for interacting with data storage for working with Tokens.
+     */
+    public void addUnfreezeKey(final TokenID tokenId, final SigTransactionMetadataBuilder meta,
+                               @NonNull final ReadableTokenStore tokenStore) {
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+
+        if (!tokenMeta.failed()) {
+            if (tokenMeta.metadata().freezeKey().isPresent()) {
+                meta.addToReqNonPayerKeys(tokenMeta.metadata().freezeKey().get());
+            } else {
+                meta.status(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY);
+            }
+        } else {
+            meta.status(tokenMeta.failureReason());
+        }
+    }
+
 }
