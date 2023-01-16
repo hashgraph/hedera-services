@@ -40,6 +40,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile
         implements EvmGetTokenKeyPrecompile {
     private TokenProperty keyType;
+
     public GetTokenKeyPrecompile(
             final TokenID tokenId,
             final SyntheticTxnFactory syntheticTxnFactory,
