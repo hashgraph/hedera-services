@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -53,54 +56,23 @@ import org.apache.logging.log4j.Logger;
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
     private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
 
-    private final HederaLedger ledger;
-    private final SigImpactHistorian sigImpactHistorian;
+    private final CryptoDeletionLogic deletionLogic;
     private final TransactionContext txnCtx;
 
     @Inject
     public CryptoDeleteTransitionLogic(
-            final HederaLedger ledger,
-            final SigImpactHistorian sigImpactHistorian,
+        final CryptoDeletionLogic deletionLogic
             final TransactionContext txnCtx) {
-        this.ledger = ledger;
+        this.deletionLogic = deletionLogic;
         this.txnCtx = txnCtx;
-        this.sigImpactHistorian = sigImpactHistorian;
     }
 
     @Override
     public void doStateTransition() {
-        try {
-            CryptoDeleteTransactionBody op = txnCtx.accessor().getTxn().getCryptoDelete();
+            final var op = txnCtx.accessor().getTxn().getCryptoDelete();
+            final var deleted = deletionLogic.performCryptoDeleteFor(op);
 
-            AccountID id = op.getDeleteAccountID();
-            if (ledger.isKnownTreasury(id)) {
-                txnCtx.setStatus(ACCOUNT_IS_TREASURY);
-                return;
-            }
-            AccountID beneficiary = op.getTransferAccountID();
-            if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
-                txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-                return;
-            }
-
-            if (!ledger.allTokenBalancesVanish(id)) {
-                txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-                return;
-            }
-
-            ledger.delete(id, beneficiary);
-            sigImpactHistorian.markEntityChanged(id.getAccountNum());
-
-            txnCtx.recordBeneficiaryOfDeleted(id.getAccountNum(), beneficiary.getAccountNum());
-            txnCtx.setStatus(SUCCESS);
-        } catch (MissingEntityException mae) {
-            txnCtx.setStatus(INVALID_ACCOUNT_ID);
-        } catch (DeletedAccountException dae) {
-            txnCtx.setStatus(ACCOUNT_DELETED);
-        } catch (Exception e) {
-            log.warn("Avoidable exception!", e);
-            txnCtx.setStatus(FAIL_INVALID);
-        }
+            txnCtx.recordBeneficiaryOfDeleted(deleted.getAccountNum(), deletionLogic.getLastBeneficiary().getAccountNum());
     }
 
     @Override
@@ -114,16 +86,6 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
     }
 
     private ResponseCodeEnum validate(TransactionBody cryptoDeleteTxn) {
-        CryptoDeleteTransactionBody op = cryptoDeleteTxn.getCryptoDelete();
-
-        if (!op.hasDeleteAccountID() || !op.hasTransferAccountID()) {
-            return ACCOUNT_ID_DOES_NOT_EXIST;
-        }
-
-        if (op.getDeleteAccountID().equals(op.getTransferAccountID())) {
-            return TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
-        }
-
-        return OK;
+return deletionLogic.validate(cryptoDeleteTxn.getCryptoDelete());
     }
 }
