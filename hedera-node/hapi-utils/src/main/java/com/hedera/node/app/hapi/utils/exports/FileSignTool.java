@@ -328,7 +328,7 @@ public class FileSignTool {
                                 Integer.parseInt(versions[1]),
                                 Integer.parseInt(versions[2]),
                             };
-                } catch (NumberFormatException e) {
+                } catch (final NumberFormatException e) {
                     LOGGER.error(
                             MARKER,
                             "Error when parsing app version string {}",
