@@ -103,6 +103,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -193,6 +194,7 @@ public class ContractCallSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                consTimeManagementWorksWithRevertedInternalCreations(),
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
@@ -2736,6 +2738,37 @@ public class ContractCallSuite extends HapiSuite {
                                                         BigInteger.valueOf(200_000))
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)));
+    }
+
+    private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
+        final var contract = "ConsTimeRepro";
+        final var failingCall = "FailingCall";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+        return defaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(
+                        contractCall(
+                                        contract,
+                                        "createChildThenFailToAssociate",
+                                        asHeadlongAddress(new byte[20]),
+                                        asHeadlongAddress(new byte[20]))
+                                .via(failingCall)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(
+                        getTxnRecord(failingCall)
+                                .exposingTo(
+                                        failureRecord ->
+                                                parentConsTime.set(
+                                                        failureRecord.getConsensusTimestamp())),
+                        sourcing(
+                                () ->
+                                        childRecordsCheck(
+                                                failingCall,
+                                                CONTRACT_REVERT_EXECUTED,
+                                                recordWith()
+                                                        .status(INSUFFICIENT_GAS)
+                                                        .consensusTimeImpliedByNonce(
+                                                                parentConsTime.get(), 1))));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

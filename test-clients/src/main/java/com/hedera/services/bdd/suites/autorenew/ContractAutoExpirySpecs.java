@@ -19,11 +19,13 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.literalInitcodeFor;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -33,19 +35,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,9 +60,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -426,13 +436,18 @@ public class ContractAutoExpirySpecs extends HapiSuite {
         final var standardLifetime = 7776000L;
         final var creation = "creation";
         final var expectedExpiryPostRenew = new AtomicLong();
+        final var consTimeRepro = "ConsTimeRepro";
+        final var failingCall = "FailingCall";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
 
         return defaultHapiSpec("RenewsUsingContractFundsIfNoAutoRenewAccount")
                 .given(
+                        uploadInitCode(consTimeRepro),
+                        contractCreate(consTimeRepro),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
-                        contractCreate(contractToRenew, 63)
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -454,9 +469,30 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         contractUpdate(contractToRenew).newAutoRenew(7776000L),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
-                        // Any transaction will do
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                        // Any transaction will do; we choose a contract call that has
+                        // a child record to validate consensus time assignment
+                        contractCall(
+                                        consTimeRepro,
+                                        "createChildThenFailToAssociate",
+                                        asHeadlongAddress(new byte[20]),
+                                        asHeadlongAddress(new byte[20]))
+                                .via(failingCall)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
+                        getTxnRecord(failingCall)
+                                .exposingTo(
+                                        failureRecord ->
+                                                parentConsTime.set(
+                                                        failureRecord.getConsensusTimestamp())),
+                        sourcing(
+                                () ->
+                                        childRecordsCheck(
+                                                failingCall,
+                                                CONTRACT_REVERT_EXECUTED,
+                                                recordWith()
+                                                        .status(ResponseCodeEnum.INSUFFICIENT_GAS)
+                                                        .consensusTimeImpliedByNonce(
+                                                                parentConsTime.get(), 1))),
                         assertionsHold(
                                 (spec, opLog) -> {
                                     final var lookup =
