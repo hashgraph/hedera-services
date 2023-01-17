@@ -97,8 +97,9 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
 
         if (!tokenMeta.failed()) {
-            if (tokenMeta.metadata().freezeKey().isPresent()) {
-                meta.addToReqNonPayerKeys(tokenMeta.metadata().freezeKey().get());
+            final var freezeKey = tokenMeta.metadata().freezeKey();
+            if (freezeKey.isPresent()) {
+                meta.addToReqNonPayerKeys(freezeKey.get());
             } else {
                 meta.status(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY);
             }
