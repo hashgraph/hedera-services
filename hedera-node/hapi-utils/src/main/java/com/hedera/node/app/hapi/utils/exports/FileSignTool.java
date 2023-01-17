@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -316,7 +317,8 @@ public class FileSignTool {
         // extract latest app version from system property if available
         final String appVersionString = System.getProperty(APP_VERSION);
         if (appVersionString != null) {
-            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
+            final String[] versions =
+                    appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
             if (versions.length >= 3) {
                 try {
                     fileHeader =
