@@ -20,10 +20,9 @@ import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +53,8 @@ public class ServicesIssListener implements IssListener {
 
         final long round = notice.getRound();
         final long otherNodeId = notice.getOtherNodeId();
-        try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<ServicesState> wrapper =
+                platform.getLatestImmutableState()) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
