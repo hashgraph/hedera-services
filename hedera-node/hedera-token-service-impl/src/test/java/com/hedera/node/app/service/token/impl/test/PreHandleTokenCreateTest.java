@@ -29,7 +29,8 @@ import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CRE
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM;
-import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_WILDCARD_AND_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ;
+import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_AUTO_RENEW;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_MISSING_COLLECTOR;
@@ -382,8 +383,8 @@ class PreHandleTokenCreateTest {
     }
 
     @Test
-    void tokenCreateCustomFixedFeeSigRequiredWithSigRequired() {
-        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_WILDCARD_AND_SIG_REQ);
+    void tokenCreateCustomFixedNoDenomWithSigRequired() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ);
 
         final var meta =
                 subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
@@ -393,6 +394,19 @@ class PreHandleTokenCreateTest {
                 sanityRestored(meta.requiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+    }
+
+    @Test
+    void tokenCreateCustomFixedNoDenomNoSigRequired() {
+        final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ);
+
+        final var meta =
+                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test

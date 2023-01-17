@@ -209,13 +209,25 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
-    TOKEN_CREATE_WITH_FIXED_FEE_WILDCARD_AND_SIG_REQ {
+    TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
             return PlatformTxnAccessor.from(
                     newSignedTokenCreate()
                             .missingAdmin()
-                            .plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector, false))
+                            .plusCustomFee(
+                                    royaltyFee(1, 2, new FixedFeeSpec(1, null), collector, false))
+                            .get());
+        }
+    },
+    TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
+            return PlatformTxnAccessor.from(
+                    newSignedTokenCreate()
+                            .missingAdmin()
+                            .plusCustomFee(
+                                    royaltyFee(1, 2, new FixedFeeSpec(1, null), collector, false))
                             .get());
         }
     },
