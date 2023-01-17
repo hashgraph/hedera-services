@@ -90,7 +90,7 @@ public class FileSignTool {
     private static final byte TYPE_SIGNATURE = 3;
     /** next 48 bytes are hash384 of content of the file to be signed */
     private static final byte TYPE_FILE_HASH = 4;
-    private static final int DEFAULT_RECORD_STREAM_VERSION = 6,
+    private static final int DEFAULT_RECORD_STREAM_VERSION = 6;
 
     private static final String STREAM_TYPE_JSON_PROPERTY = "streamTypeJson";
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
@@ -318,19 +318,19 @@ public class FileSignTool {
             final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(".");
             if (versions.length >= 3) {
                 try {
-                    fileHeader = {
+                    fileHeader = new int[] {
                             DEFAULT_RECORD_STREAM_VERSION,
                             Integer.parseInt(versions[0]),
                             Integer.parseInt(versions[1]),
                             Integer.parseInt(versions[2]),
-                    }
+                    };
                 } catch (NumberFormatException e) {
                     LOGGER.error(MARKER, "Error when parsing app version string {}", appVersionString, e);
                 }
             }
         }
-        LOGGER.info(MARKER, "file header is {}", Arrays.toString(fileHeader));
-        
+        LOGGER.info(MARKER, "Record stream file header is {}", Arrays.toString(fileHeader));
+
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(
                                 new HashingOutputStream(metadataStreamDigest));
