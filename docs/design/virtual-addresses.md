@@ -53,26 +53,71 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 - Update `GetAccountInfoAnswer.responseGiven` to return the virtual addresses list for an account
 - Introduce new `CryptoGetAccountVirtualAddressesQuery` in order to return unbounded list of virtual addresses for an account
 
+### Global properties
+Create the following properties to configure the virtual addresses' behavior:
+- `virtualAddresses.maxNumber` - the maximum number of virtual addresses per account
+- `virtualAddresses.canDisable` - toggle for the ability to disable virtual accounts
+- `virtualAddresses.canRemove` - toggle for the ability to remove virtual accounts
+
+## Phases of development
+
+The development will be done in iterative phases that build on previous ones. Protobuf changes needed for a given phase should be introduced in the preceding phase.
+
+- Phase 0
+  - Protobuf changes:
+    - Add virtual addresses list to `AccountInfo` proto (already added)
+  - Create design doc and test plan
+- Phase 1
+  - Implement changes to state
+    - Add virtual addresses list account state (capped to 1)
+    - Track nonces by `evmAddress` and support incrementing a specific address increment
+  - Account aliases map split
+    - Introduce the `evmAddress -> accountId` map
+    - Update alias resolution logic to work with `alias -> accountId` map for public key aliases and with `evmAddress -> accountId` map for `evmAddress` aliases
+    - Add support for `CryptoGetInfoQuery` with `evmAddress` to use the `evmAddress -> accountId` map
+  - Create new system account for exposed keys from Ethereum tools and external chains
+- Phase 2
+  - Protobuf changes
+    - Add `virtual_address_override` to `ContractCall` and `ContractCreate` transactions
+  - Account migration
+    - All ECDSA accounts with an alias get a single virtual address
+    - All ECDSA accounts with `evmAddress` stored in alias path get a single virtual address 
+    - All ECDSA accounts which calculated addresses are not present in the map will get a single virtual address
+    - All contracts with valid 20 byte addresses will get a single virtual address
+  - Accounts to utilize virtual addresses on creation
+    - EOAs set virtual address for regular `CryptoCreate` with ECDSA key, auto-create with alias and lazy-crate with `evmAddress`
+    - Contracts set virtual address for Smart contract `new()` (`CREATE` & `CREATE2`) and `EthereumTransaction CREATE` with empty `to` address
+    - Creation logic verifies `evmAddress` uniqueness and fails/doesn't set if entry already exists
+- Phase 3
+  - Protobuf changes
+    - Add disable to `CryptoUpdateTransactionBody.virtual_address_update`
+  - Expand virtual address limit per account to 3
+  - Virtual address addition to existing accounts with signature verification logic and verification for `evmAddress` uniqueness
+  - Support `virtual_address_override` logic for `ContractCreate` and `ContractCall` transaction
+- Phase 4
+  - Support virtual address disabling on `CryptoUpdate`
+  - Design virtual address deletion & transfer
+
 ## Acceptance Tests
 
 ### Positive Tests
-- CryptoCreate with `ECDSA key` should create an account with single virtual address and make it the default virtual address
-- CryptoCreate with `ECDSA key alias` should create an account with single virtual address and make it the default virtual address
-- CryptoCreate with `evmAddress` should create a hollow account with single virtual address and make it the default virtual address
-- CryptoTransfer with `ECDSA key alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
-- CryptoTransfer with `evmAddress` to a non-existing account should lazy-create a hollow account with single virtual address and make it the default virtual address
-- EthereumTransaction to a non-existing account with `tx.to` EVM address value should lazy-create a hollow account with single virtual address and make it the default virtual address
-- ContractCreate/ContractCall for an account with a default virtual address should use that address in the EVM
-- ContractCreate/ContractCall with `virtual_address_override` address value should use that address in the EVM
-- ContractCreate/ContractCall resulting in creation of a new contract should add the CREATE/CREATE2 EVM address value to `contract.account.virtualAddresses`
-- CryptoUpdate with `virtual_address_update.add.address` for an existing account should add a new virtual address, if `virtual_address_update.add.is_default` is set to `true` the added address should become the default virtual address
-- CryptoUpdate with `virtual_address_update.disable` value that is present in the virtual address list for an existing account should disable the virtual address
-- CryptoUpdate with `virtual_address_update.remove` value that is present in the virtual address list for an existing account should remove the virtual address from the list
-- CryptoGetInfoQuery for an existing account should return the virtual addresses list for the account
+- `CryptoCreate` with `ECDSA key` should create an account with single virtual address and make it the default virtual address
+- `CryptoCreate` with `ECDSA key alias` should create an account with single virtual address and make it the default virtual address
+- `CryptoCreate` with `evmAddress` should create a hollow account with single virtual address and make it the default virtual address
+- `CryptoTransfer` with `ECDSA key alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
+- `CryptoTransfer` with `evmAddress` to a non-existing account should lazy-create a hollow account with single virtual address and make it the default virtual address
+- `EthereumTransaction` to a non-existing account with `tx.to` EVM address value should lazy-create a hollow account with single virtual address and make it the default virtual address
+- `ContractCreate/ContractCall` for an account with a default virtual address should use that address in the EVM
+- `ContractCreate/ContractCall` with `virtual_address_override` address value should use that address in the EVM
+- `ContractCreate/ContractCall` resulting in creation of a new contract should add the CREATE/CREATE2 EVM address value to `contract.account.virtualAddresses`
+- `CryptoUpdate` with `virtual_address_update.add.address` for an existing account should add a new virtual address, if `virtual_address_update.add.is_default` is set to `true` the added address should become the default virtual address
+- `CryptoUpdate` with `virtual_address_update.disable` value that is present in the virtual address list for an existing account should disable the virtual address
+- `CryptoUpdate` with `virtual_address_update.remove` value that is present in the virtual address list for an existing account should remove the virtual address from the list
+- `CryptoGetInfoQuery` for an existing account should return the virtual addresses list for the account
 
 ### Negative Tests
-- TODO (fail?): CryptoCreate with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
-- TODO (fail?): CryptoTransfer with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
-- TODO: Contracts may only have 1 virtual address entry to ensure immutability in accordance with the Ethereum yellow paper. The network should prevent the update of a contracts virtual addresses.
-- TODO: Any transaction using `evmAddress` that is in not allowed list should fail
-- TODO: CryptoUpdate with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
+- CryptoCreate with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
+- CryptoTransfer with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
+- Virtual address update for a contracts should fail, ensuring contract accounts immutability
+- Any transaction using an `evmAddress` that is in the not-allowed list should fail
+- CryptoUpdate with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
