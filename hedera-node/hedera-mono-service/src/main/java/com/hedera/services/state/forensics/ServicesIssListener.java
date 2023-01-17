@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -45,19 +46,26 @@ public class ServicesIssListener implements IssListener {
 
     @Override
     public void notify(final IssNotification notice) {
-        final var round = notice.getRound();
-        final var otherNodeId = notice.getOtherNodeId();
-        try {
-            ServicesState issState = (ServicesState) platform.getLatestImmutableState().get();
+        if (notice.getIssType() == IssNotification.IssType.OTHER_ISS) {
+            // Another node is experiencing an ISS, but we are healthy.
+            return;
+        }
+
+        final long round = notice.getRound();
+        final long otherNodeId = notice.getOtherNodeId();
+        try (final AutoCloseableWrapper<ServicesState> wrapper =
+                platform.getLatestImmutableState()) {
+            final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
-                var msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
+                final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
                 log.error(msg);
                 issState.logSummary();
             }
         } catch (final Exception any) {
-            String fallbackMsg = String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
+            final String fallbackMsg =
+                    String.format(ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherNodeId);
             log.warn(fallbackMsg, any);
         }
     }
