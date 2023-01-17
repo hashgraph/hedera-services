@@ -38,9 +38,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.grpc.marshalling.AssessedCustomFeeWrapper;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;

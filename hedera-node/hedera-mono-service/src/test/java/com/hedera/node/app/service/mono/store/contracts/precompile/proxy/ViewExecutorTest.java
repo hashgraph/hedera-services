@@ -249,14 +249,20 @@ class ViewExecutorTest {
     void computeGetTokenDefaultFreezeStatus() {
         prerequisites(ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS, fungibleTokenAddress);
 
-        try (MockedStatic<EvmGetTokenDefaultFreezeStatus> utilities = Mockito.mockStatic(EvmGetTokenDefaultFreezeStatus.class)) {
-            final var wrapper = new GetTokenDefaultFreezeStatusWrapper<>(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(any()))
-                .thenReturn(wrapper);
+        try (MockedStatic<EvmGetTokenDefaultFreezeStatus> utilities =
+                Mockito.mockStatic(EvmGetTokenDefaultFreezeStatus.class)) {
+            final var wrapper =
+                    new GetTokenDefaultFreezeStatusWrapper<>(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(
+                            () ->
+                                    EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(
+                                            any()))
+                    .thenReturn(wrapper);
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(evmEncodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
-                .willReturn(RETURN_SUCCESS_TRUE);
+                    .willReturn(RETURN_SUCCESS_TRUE);
 
             assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
         }
@@ -266,14 +272,17 @@ class ViewExecutorTest {
     void computeGetTokenDefaultKycStatus() {
         prerequisites(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS, fungibleTokenAddress);
 
-        try (MockedStatic<EvmGetTokenDefaultKycStatus> utilities = Mockito.mockStatic(EvmGetTokenDefaultKycStatus.class)) {
-            final var wrapper = new GetTokenDefaultKycStatusWrapper<>(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(any()))
-                .thenReturn(wrapper);
+        try (MockedStatic<EvmGetTokenDefaultKycStatus> utilities =
+                Mockito.mockStatic(EvmGetTokenDefaultKycStatus.class)) {
+            final var wrapper =
+                    new GetTokenDefaultKycStatusWrapper<>(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(any()))
+                    .thenReturn(wrapper);
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(evmEncodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
-                .willReturn(RETURN_SUCCESS_TRUE);
+                    .willReturn(RETURN_SUCCESS_TRUE);
 
             assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
         }
@@ -283,10 +292,12 @@ class ViewExecutorTest {
     void computeIsKyc() {
         prerequisites(ABI_ID_IS_KYC, fungibleTokenAddress);
 
-        try (MockedStatic<EvmIsKycPrecompile> utilities = Mockito.mockStatic(EvmIsKycPrecompile.class)) {
-            final var wrapper = new GrantRevokeKycWrapper<>(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe());
-            utilities.when(() -> EvmIsKycPrecompile.decodeIsKyc(any()))
-                .thenReturn(wrapper);
+        try (MockedStatic<EvmIsKycPrecompile> utilities =
+                Mockito.mockStatic(EvmIsKycPrecompile.class)) {
+            final var wrapper =
+                    new GrantRevokeKycWrapper<>(
+                            fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe());
+            utilities.when(() -> EvmIsKycPrecompile.decodeIsKyc(any())).thenReturn(wrapper);
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(evmEncodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
@@ -299,14 +310,17 @@ class ViewExecutorTest {
     void computeGetTokenInfo() {
         prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
 
-        try (MockedStatic<EvmTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmTokenInfoPrecompile.decodeGetTokenInfo(any()))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmTokenInfoPrecompile.decodeGetTokenInfo(any()))
+                    .thenReturn(tokenInfoWrapper);
 
             given(networkInfo.ledgerId()).willReturn(ledgerId);
             given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(evmTokenInfo));
+                    .willReturn(Optional.of(evmTokenInfo));
             given(evmEncodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
 
             assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -317,15 +331,17 @@ class ViewExecutorTest {
     void computeGetFungibleTokenInfo() {
         prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
 
-
-        try (MockedStatic<EvmFungibleTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmFungibleTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(any()))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmFungibleTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmFungibleTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forFungibleToken(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(any()))
+                    .thenReturn(tokenInfoWrapper);
 
             given(networkInfo.ledgerId()).willReturn(ledgerId);
             given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(evmTokenInfo));
+                    .willReturn(Optional.of(evmTokenInfo));
 
             given(evmEncodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
@@ -337,23 +353,30 @@ class ViewExecutorTest {
     void computeGetNonFungibleTokenInfo() {
         prerequisites(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, nonfungibleTokenAddress);
 
-        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibleTokenAddress.toArrayUnsafe(), 1L);
-            utilities.when(() -> EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(any()))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forNonFungibleToken(
+                            nonfungibleTokenAddress.toArrayUnsafe(), 1L);
+            utilities
+                    .when(
+                            () ->
+                                    EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(
+                                            any()))
+                    .thenReturn(tokenInfoWrapper);
             given(networkInfo.ledgerId()).willReturn(ledgerId);
             given(ledgers.evmInfoForToken(nonfungibletoken, networkInfo.ledgerId()))
-                .willReturn(Optional.of(evmTokenInfo));
+                    .willReturn(Optional.of(evmTokenInfo));
             given(
-                ledgers.evmNftInfo(
-                    NftID.newBuilder()
-                        .setTokenID(nonfungibletoken)
-                        .setSerialNumber(1L)
-                        .build(),
-                    networkInfo.ledgerId()))
-                .willReturn(Optional.of(new EvmNftInfo()));
+                            ledgers.evmNftInfo(
+                                    NftID.newBuilder()
+                                            .setTokenID(nonfungibletoken)
+                                            .setSerialNumber(1L)
+                                            .build(),
+                                    networkInfo.ledgerId()))
+                    .willReturn(Optional.of(new EvmNftInfo()));
             given(evmEncodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
-                .willReturn(tokenInfoEncoded);
+                    .willReturn(tokenInfoEncoded);
 
             assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
         }
@@ -363,10 +386,14 @@ class ViewExecutorTest {
     void computeIsFrozen() {
         prerequisites(ABI_ID_IS_FROZEN, fungibleTokenAddress);
 
-        try (MockedStatic<EvmIsFrozenPrecompile> utilities = Mockito.mockStatic(EvmIsFrozenPrecompile.class)) {
-            final var isFrozenWrapper = TokenFreezeUnfreezeWrapper.forIsFrozen(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe());
-            utilities.when(() -> EvmIsFrozenPrecompile.decodeIsFrozen(any()))
-                .thenReturn(isFrozenWrapper);
+        try (MockedStatic<EvmIsFrozenPrecompile> utilities =
+                Mockito.mockStatic(EvmIsFrozenPrecompile.class)) {
+            final var isFrozenWrapper =
+                    TokenFreezeUnfreezeWrapper.forIsFrozen(
+                            fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmIsFrozenPrecompile.decodeIsFrozen(any()))
+                    .thenReturn(isFrozenWrapper);
 
             given(ledgers.isFrozen(account, fungible)).willReturn(true);
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
@@ -383,13 +410,17 @@ class ViewExecutorTest {
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000900000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000378000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000f0000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000090000000000000000000000000000000000000000000000000000000000000000");
 
-        try (MockedStatic<EvmTokenGetCustomFeesPrecompile> utilities = Mockito.mockStatic(EvmTokenGetCustomFeesPrecompile.class)) {
-            utilities.when(() -> EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
-                .thenReturn(new TokenGetCustomFeesWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
+        try (MockedStatic<EvmTokenGetCustomFeesPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenGetCustomFeesPrecompile.class)) {
+            utilities
+                    .when(() -> EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
+                    .thenReturn(
+                            new TokenGetCustomFeesWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
 
             given(ledgers.infoForTokenCustomFees(fungible))
-                .willReturn(Optional.ofNullable(customFees()));
-            given(evmEncodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
+                    .willReturn(Optional.ofNullable(customFees()));
+            given(evmEncodingFacade.encodeTokenGetCustomFees(any()))
+                    .willReturn(tokenCustomFeesEncoded);
 
             assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
         }
@@ -402,9 +433,11 @@ class ViewExecutorTest {
                 Bytes.fromHexString(
                         "0x000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000209e417334d2ea6be459624060e3efdc1b459a884bc6a9c232349af35e9060ed620000000000000000000000000000000000000000000000000000000000000000");
 
-        try (MockedStatic<EvmGetTokenKeyPrecompile> utilities = Mockito.mockStatic(EvmGetTokenKeyPrecompile.class)) {
-            utilities.when(() -> EvmGetTokenKeyPrecompile.decodeGetTokenKey(input))
-                .thenReturn(new GetTokenKeyWrapper<>(fungibleTokenAddress.toArrayUnsafe(), 1));
+        try (MockedStatic<EvmGetTokenKeyPrecompile> utilities =
+                Mockito.mockStatic(EvmGetTokenKeyPrecompile.class)) {
+            utilities
+                    .when(() -> EvmGetTokenKeyPrecompile.decodeGetTokenKey(input))
+                    .thenReturn(new GetTokenKeyWrapper<>(fungibleTokenAddress.toArrayUnsafe(), 1));
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(ledgers.keyOf(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
@@ -418,9 +451,12 @@ class ViewExecutorTest {
     void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
 
-        try (MockedStatic<EvmTokenGetCustomFeesPrecompile> utilities = Mockito.mockStatic(EvmTokenGetCustomFeesPrecompile.class)) {
-            utilities.when(() -> EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
-                .thenReturn(new TokenGetCustomFeesWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
+        try (MockedStatic<EvmTokenGetCustomFeesPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenGetCustomFeesPrecompile.class)) {
+            utilities
+                    .when(() -> EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
+                    .thenReturn(
+                            new TokenGetCustomFeesWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -431,10 +467,13 @@ class ViewExecutorTest {
     void computeIsToken() {
         final var input = prerequisites(ABI_ID_IS_TOKEN, fungibleTokenAddress);
 
-        try (MockedStatic<EvmIsTokenPrecompile> utilities = Mockito.mockStatic(EvmIsTokenPrecompile.class)) {
-            final var isTokenWrapper = TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmIsTokenPrecompile.decodeIsToken(input))
-                .thenReturn(isTokenWrapper);
+        try (MockedStatic<EvmIsTokenPrecompile> utilities =
+                Mockito.mockStatic(EvmIsTokenPrecompile.class)) {
+            final var isTokenWrapper =
+                    TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmIsTokenPrecompile.decodeIsToken(input))
+                    .thenReturn(isTokenWrapper);
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(evmEncodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
@@ -446,15 +485,17 @@ class ViewExecutorTest {
     void computeGetTokenType() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_TYPE, fungibleTokenAddress);
 
-        try (MockedStatic<EvmGetTokenTypePrecompile> utilities = Mockito.mockStatic(EvmGetTokenTypePrecompile.class)) {
+        try (MockedStatic<EvmGetTokenTypePrecompile> utilities =
+                Mockito.mockStatic(EvmGetTokenTypePrecompile.class)) {
             final var wrapper = TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmGetTokenTypePrecompile.decodeGetTokenType(input))
-                .thenReturn(wrapper);
+            utilities
+                    .when(() -> EvmGetTokenTypePrecompile.decodeGetTokenType(input))
+                    .thenReturn(wrapper);
 
             given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
             given(ledgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
             given(evmEncodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
-                .willReturn(RETURN_SUCCESS_TRUE);
+                    .willReturn(RETURN_SUCCESS_TRUE);
             assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
         }
     }
@@ -469,10 +510,13 @@ class ViewExecutorTest {
     void getTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_INFO, fungibleTokenAddress);
 
-        try (MockedStatic<EvmTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmTokenInfoPrecompile.decodeGetTokenInfo(input))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forToken(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmTokenInfoPrecompile.decodeGetTokenInfo(input))
+                    .thenReturn(tokenInfoWrapper);
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -483,10 +527,13 @@ class ViewExecutorTest {
     void getFungibleTokenInfoRevertsFrameAndReturnsNullOnRevertingException() {
         final var input = prerequisites(ABI_ID_GET_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress);
 
-        try (MockedStatic<EvmFungibleTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmFungibleTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forFungibleToken(fungibleTokenAddress.toArrayUnsafe());
-            utilities.when(() -> EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmFungibleTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmFungibleTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forFungibleToken(fungibleTokenAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input))
+                    .thenReturn(tokenInfoWrapper);
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -498,10 +545,17 @@ class ViewExecutorTest {
         final var input =
                 prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
 
-        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibleTokenAddress.toArrayUnsafe(), 1L);
-            utilities.when(() -> EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forNonFungibleToken(
+                            nonfungibleTokenAddress.toArrayUnsafe(), 1L);
+            utilities
+                    .when(
+                            () ->
+                                    EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(
+                                            input))
+                    .thenReturn(tokenInfoWrapper);
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -513,10 +567,17 @@ class ViewExecutorTest {
         final var input =
                 prerequisitesForNft(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO, fungibleTokenAddress, 1L);
 
-        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities = Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
-            final var tokenInfoWrapper = TokenInfoWrapper.forNonFungibleToken(nonfungibleTokenAddress.toArrayUnsafe(), 1L);
-            utilities.when(() -> EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input))
-                .thenReturn(tokenInfoWrapper);
+        try (MockedStatic<EvmNonFungibleTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmNonFungibleTokenInfoPrecompile.class)) {
+            final var tokenInfoWrapper =
+                    TokenInfoWrapper.forNonFungibleToken(
+                            nonfungibleTokenAddress.toArrayUnsafe(), 1L);
+            utilities
+                    .when(
+                            () ->
+                                    EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(
+                                            input))
+                    .thenReturn(tokenInfoWrapper);
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -530,14 +591,18 @@ class ViewExecutorTest {
                 Bytes.fromHexString(
                         "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000006370f6ca00000000000000000000000000000000000000000000000000000000000004c2000000000000000000000000000000000000000000000000000000000076a700");
 
-        try (MockedStatic<EvmGetTokenExpiryInfoPrecompile> utilities = Mockito.mockStatic(EvmGetTokenExpiryInfoPrecompile.class)) {
-            utilities.when(() -> EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
-                .thenReturn(new GetTokenExpiryInfoWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
+        try (MockedStatic<EvmGetTokenExpiryInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmGetTokenExpiryInfoPrecompile.class)) {
+            utilities
+                    .when(() -> EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
+                    .thenReturn(
+                            new GetTokenExpiryInfoWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
 
             given(networkInfo.ledgerId()).willReturn(ledgerId);
             given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(evmTokenInfo));
-            given(evmEncodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+                    .willReturn(Optional.of(evmTokenInfo));
+            given(evmEncodingFacade.encodeGetTokenExpiryInfo(any()))
+                    .willReturn(tokenExpiryInfoEncoded);
 
             assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
         }
@@ -547,9 +612,12 @@ class ViewExecutorTest {
     void computeGetTokenExpiryInfoFailsAsExpected() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_EXPIRY_INFO, fungibleTokenAddress);
 
-        try (MockedStatic<EvmGetTokenExpiryInfoPrecompile> utilities = Mockito.mockStatic(EvmGetTokenExpiryInfoPrecompile.class)) {
-            utilities.when(() -> EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
-                .thenReturn(new GetTokenExpiryInfoWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
+        try (MockedStatic<EvmGetTokenExpiryInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmGetTokenExpiryInfoPrecompile.class)) {
+            utilities
+                    .when(() -> EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
+                    .thenReturn(
+                            new GetTokenExpiryInfoWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);

@@ -39,8 +39,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;

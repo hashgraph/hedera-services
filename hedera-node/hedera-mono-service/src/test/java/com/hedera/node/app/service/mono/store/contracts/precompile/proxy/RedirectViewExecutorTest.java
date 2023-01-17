@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
@@ -51,7 +52,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
@@ -164,10 +164,16 @@ class RedirectViewExecutorTest {
     void computeAllowanceOf() {
         prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        try (MockedStatic<EvmAllowancePrecompile> utilities = Mockito.mockStatic(EvmAllowancePrecompile.class)) {
-            final var allowanceWrapper = new TokenAllowanceWrapper<>(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
-            utilities.when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
-                .thenReturn(allowanceWrapper);
+        try (MockedStatic<EvmAllowancePrecompile> utilities =
+                Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+            final var allowanceWrapper =
+                    new TokenAllowanceWrapper<>(
+                            fungibleTokenAddress.toArrayUnsafe(),
+                            accountAddress.toArrayUnsafe(),
+                            spenderAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
+                    .thenReturn(allowanceWrapper);
             given(tokenAccessor.staticAllowanceOf(any(), any(), any())).willReturn(123L);
             given(evmEncodingFacade.encodeAllowance(123L)).willReturn(answer);
 
@@ -179,14 +185,18 @@ class RedirectViewExecutorTest {
     void computeApprovedSpenderOf() {
         prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
-        try (MockedStatic<EvmGetApprovedPrecompile> utilities = Mockito.mockStatic(EvmGetApprovedPrecompile.class)) {
-            final var getApprovedWrapper = new GetApprovedWrapper<>(nonfungibleTokenAddress.toArrayUnsafe(), 123L);
-            utilities.when(() -> EvmGetApprovedPrecompile.decodeGetApproved(any()))
-                .thenReturn(getApprovedWrapper);
+        try (MockedStatic<EvmGetApprovedPrecompile> utilities =
+                Mockito.mockStatic(EvmGetApprovedPrecompile.class)) {
+            final var getApprovedWrapper =
+                    new GetApprovedWrapper<>(nonfungibleTokenAddress.toArrayUnsafe(), 123L);
+            utilities
+                    .when(() -> EvmGetApprovedPrecompile.decodeGetApproved(any()))
+                    .thenReturn(getApprovedWrapper);
             given(evmEncodingFacade.encodeGetApproved(any())).willReturn(answer);
-            given(tokenAccessor.staticApprovedSpenderOf(nonfungibleTokenAddress,
-                getApprovedWrapper.serialNo()))
-                .willReturn(Address.ALTBN128_ADD);
+            given(
+                            tokenAccessor.staticApprovedSpenderOf(
+                                    nonfungibleTokenAddress, getApprovedWrapper.serialNo()))
+                    .willReturn(Address.ALTBN128_ADD);
 
             assertEquals(Pair.of(gas, answer), subject.computeCosted());
         }
@@ -196,11 +206,16 @@ class RedirectViewExecutorTest {
     void computeOperatorCheck() {
         prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
-        try (MockedStatic<EvmIsApprovedForAllPrecompile> utilities = Mockito.mockStatic(EvmIsApprovedForAllPrecompile.class)) {
+        try (MockedStatic<EvmIsApprovedForAllPrecompile> utilities =
+                Mockito.mockStatic(EvmIsApprovedForAllPrecompile.class)) {
             final var isApproveForAll =
-                new IsApproveForAllWrapper<>(nonfungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
-            utilities.when(() -> EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(any()))
-                .thenReturn(isApproveForAll);
+                    new IsApproveForAllWrapper<>(
+                            nonfungibleTokenAddress.toArrayUnsafe(),
+                            accountAddress.toArrayUnsafe(),
+                            spenderAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(any()))
+                    .thenReturn(isApproveForAll);
 
             given(tokenAccessor.staticIsOperator(any(), any(), any())).willReturn(true);
             given(evmEncodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
@@ -213,11 +228,18 @@ class RedirectViewExecutorTest {
     void revertsFrameAndReturnsNullOnRevertingException() {
         prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        try (MockedStatic<EvmAllowancePrecompile> utilities = Mockito.mockStatic(EvmAllowancePrecompile.class)) {
-            final var allowanceWrapper = new TokenAllowanceWrapper<>(fungibleTokenAddress.toArrayUnsafe(), accountAddress.toArrayUnsafe(), spenderAddress.toArrayUnsafe());
-            utilities.when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
-                .thenReturn(allowanceWrapper);
-            given(tokenAccessor.staticAllowanceOf(any(), any(), any())).willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
+        try (MockedStatic<EvmAllowancePrecompile> utilities =
+                Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+            final var allowanceWrapper =
+                    new TokenAllowanceWrapper<>(
+                            fungibleTokenAddress.toArrayUnsafe(),
+                            accountAddress.toArrayUnsafe(),
+                            spenderAddress.toArrayUnsafe());
+            utilities
+                    .when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
+                    .thenReturn(allowanceWrapper);
+            given(tokenAccessor.staticAllowanceOf(any(), any(), any()))
+                    .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
@@ -255,9 +277,11 @@ class RedirectViewExecutorTest {
 
         final var result = 1L;
 
-        try (MockedStatic<EvmBalanceOfPrecompile> utilities = Mockito.mockStatic(EvmBalanceOfPrecompile.class)) {
-            utilities.when(() -> EvmBalanceOfPrecompile.decodeBalanceOf(nestedInput))
-                .thenReturn(balanceOfWrapper);
+        try (MockedStatic<EvmBalanceOfPrecompile> utilities =
+                Mockito.mockStatic(EvmBalanceOfPrecompile.class)) {
+            utilities
+                    .when(() -> EvmBalanceOfPrecompile.decodeBalanceOf(nestedInput))
+                    .thenReturn(balanceOfWrapper);
             given(balanceOfWrapper.account()).willReturn(accountAddress.toArray());
             given(tokenAccessor.balanceOf(any(), any())).willReturn(result);
             given(evmEncodingFacade.encodeBalance(result)).willReturn(answer);
@@ -273,9 +297,11 @@ class RedirectViewExecutorTest {
         final var result = Address.fromHexString("0x000000000000013");
         final var serialNum = 1L;
 
-        try (MockedStatic<EvmOwnerOfPrecompile> utilities = Mockito.mockStatic(EvmOwnerOfPrecompile.class)) {
-            utilities.when(() -> EvmOwnerOfPrecompile.decodeOwnerOf(nestedInput))
-                .thenReturn(ownerOfAndTokenURIWrapper);
+        try (MockedStatic<EvmOwnerOfPrecompile> utilities =
+                Mockito.mockStatic(EvmOwnerOfPrecompile.class)) {
+            utilities
+                    .when(() -> EvmOwnerOfPrecompile.decodeOwnerOf(nestedInput))
+                    .thenReturn(ownerOfAndTokenURIWrapper);
             given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
             given(tokenAccessor.ownerOf(nonfungibleTokenAddress, serialNum)).willReturn(result);
             given(tokenAccessor.canonicalAddress(result)).willReturn(result);
@@ -291,12 +317,17 @@ class RedirectViewExecutorTest {
         final var result = "some metadata";
         final var serialNum = 1L;
 
-        try (MockedStatic<EvmTokenURIPrecompile> utilities = Mockito.mockStatic(EvmTokenURIPrecompile.class)) {
-            utilities.when(() -> EvmTokenURIPrecompile.decodeTokenUriNFT(nestedInput))
-                .thenReturn(ownerOfAndTokenURIWrapper);
+        try (MockedStatic<EvmTokenURIPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenURIPrecompile.class)) {
+            utilities
+                    .when(() -> EvmTokenURIPrecompile.decodeTokenUriNFT(nestedInput))
+                    .thenReturn(ownerOfAndTokenURIWrapper);
             given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
             given(evmEncodingFacade.encodeTokenUri(result)).willReturn(answer);
-            given(tokenAccessor.metadataOf(nonfungibleTokenAddress, ownerOfAndTokenURIWrapper.serialNo())).willReturn(result);
+            given(
+                            tokenAccessor.metadataOf(
+                                    nonfungibleTokenAddress, ownerOfAndTokenURIWrapper.serialNo()))
+                    .willReturn(result);
 
             assertEquals(Pair.of(gas, answer), subject.computeCosted());
         }
