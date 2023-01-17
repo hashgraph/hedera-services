@@ -29,6 +29,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Instant;
@@ -49,6 +50,7 @@ class ServicesIssListenerTest {
     @Mock private IssEventInfo issEventInfo;
     @Mock private IssNotification issNotification;
     @Mock private Platform platform;
+    @Mock private AutoCloseableWrapper<SwirldState> wrapper;
 
     @LoggingTarget private LogCaptor logCaptor;
 
@@ -62,6 +64,7 @@ class ServicesIssListenerTest {
     @Test
     void doesntNotifyIfOtherNodeHasIss() {
         given(issNotification.getIssType()).willReturn(IssNotification.IssType.OTHER_ISS);
+
         subject.notify(issNotification);
 
         assertTrue(logCaptor.warnLogs().isEmpty());
@@ -86,9 +89,9 @@ class ServicesIssListenerTest {
         givenNoticeMeta();
 
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+        given(wrapper.get()).willReturn(state);
+        given(platform.getLatestImmutableState()).willReturn(wrapper);
 
         subject.notify(issNotification);
 
@@ -98,6 +101,7 @@ class ServicesIssListenerTest {
         verify(issEventInfo).decrementRoundsToLog();
         assertThat(logCaptor.errorLogs(), contains(desired));
         verify(state).logSummary();
+        verify(wrapper).close();
     }
 
     @Test
@@ -105,18 +109,18 @@ class ServicesIssListenerTest {
         givenNoticeMeta();
 
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+        given(wrapper.get()).willReturn(state);
+        given(platform.getLatestImmutableState()).willReturn(wrapper);
 
         // when:
         subject.notify(issNotification);
 
         // then:
-        var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
         verify(issEventInfo).alert(consensusTime);
         verify(issEventInfo, never()).decrementRoundsToLog();
         verify(state, never()).logSummary();
+        verify(wrapper).close();
     }
 
     private void givenNoticeMeta() {
