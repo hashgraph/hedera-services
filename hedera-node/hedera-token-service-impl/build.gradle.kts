@@ -37,5 +37,4 @@ dependencies {
     testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
     testImplementation(testLibs.mockito.inline)
     testImplementation(project(mapOf("path" to ":hedera-node:hedera-app-spi")))
-    testImplementation(project(mapOf("path" to ":hedera-node:hedera-app-spi")))
 }
