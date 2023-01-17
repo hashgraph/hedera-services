@@ -311,8 +311,7 @@ public class CryptoDeleteSuite extends HapiSuite {
                                                     .sigMapPrefixes(
                                                             uniqueWithFullPrefixesFor(
                                                                     SECP_256K1_SOURCE_KEY))
-                                                    .signedBy(SECP_256K1_SOURCE_KEY)
-                                                    .via("blabla");
+                                                    .signedBy(SECP_256K1_SOURCE_KEY);
 
                                     final var op4 =
                                             cryptoCreate(ACCOUNT)
