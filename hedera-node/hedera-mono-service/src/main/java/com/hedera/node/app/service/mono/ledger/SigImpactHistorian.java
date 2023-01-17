@@ -242,8 +242,7 @@ public class SigImpactHistorian {
         return now.getEpochSecond() + dynamicProperties.changeHistorianMemorySecs() + 1;
     }
 
-    /* --- Only used for unit tests --- */
-    Instant getNow() {
+    public Instant getNow() {
         return now;
     }
 
