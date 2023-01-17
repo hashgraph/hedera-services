@@ -30,7 +30,7 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
- * Hedera adapted version of the {@link CallOperation} for version EVM v0.32
+ * Hedera adapted version of the {@link CallOperation} for version EVM v0.34
  *
  * <p>Performs an existence check on the {@link Address} to be called. If the account does not exist
  * or is deleted and value is being transferred, execution is allowed to attempt a lazy create.
