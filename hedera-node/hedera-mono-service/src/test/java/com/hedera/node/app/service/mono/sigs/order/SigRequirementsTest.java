@@ -237,6 +237,7 @@ import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenario
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
+import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
@@ -4701,7 +4702,7 @@ public class SigRequirementsTest {
     @Test
     void getsTokenRevokeKycWithMissingToken() throws Throwable {
         // given:
-        setupFor(REVOKE_WITH_MISSING_TOKEN);
+        setupFor(REVOKE_WITH_INVALID_TOKEN);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -6484,13 +6485,5 @@ public class SigRequirementsTest {
                             throw new AssertionError("All keys should be mappable!");
                         })
                 .collect(toList());
-    }
-
-    public static Key sanityRestored(HederaKey jKey) {
-        try {
-            return JKey.mapJKey((JKey) jKey);
-        } catch (Exception ignore) {
-            throw new AssertionError("All keys should be mappable!");
-        }
     }
 }
