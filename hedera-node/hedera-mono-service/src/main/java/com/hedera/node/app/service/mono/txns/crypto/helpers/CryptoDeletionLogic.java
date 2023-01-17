@@ -16,12 +16,15 @@
 package com.hedera.node.app.service.mono.txns.crypto.helpers;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -56,6 +59,8 @@ public class CryptoDeletionLogic {
         validateFalse(ledger.isDetached(id), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         validateFalse(ledger.isDetached(beneficiary), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
+        validateTrue(ledger.allTokenBalancesVanish(id), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+
         ledger.delete(id, beneficiary);
         sigImpactHistorian.markEntityChanged(id.getAccountNum());
 
@@ -63,6 +68,11 @@ public class CryptoDeletionLogic {
         if (!aliasIfAny.isEmpty()) {
             ledger.clearAlias(id);
             aliasManager.unlink(aliasIfAny);
+            final var maybeAddress = aliasManager.keyAliasToEVMAddress(aliasIfAny);
+            if (maybeAddress != null) {
+                aliasManager.unlink(ByteString.copyFrom(maybeAddress));
+                sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
+            }
             sigImpactHistorian.markAliasChanged(aliasIfAny);
         }
         return id;

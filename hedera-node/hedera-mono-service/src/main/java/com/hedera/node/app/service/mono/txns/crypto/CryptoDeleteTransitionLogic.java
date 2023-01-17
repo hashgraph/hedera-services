@@ -15,7 +15,15 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -24,6 +32,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoDelete transaction, and the conditions
@@ -33,6 +43,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
+    private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
     private final CryptoDeletionLogic deletionLogic;
     private final TransactionContext txnCtx;
 
@@ -46,10 +57,22 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         final var op = txnCtx.accessor().getTxn().getCryptoDelete();
-        final var deleted = deletionLogic.performCryptoDeleteFor(op);
+        try {
+            final var deleted = deletionLogic.performCryptoDeleteFor(op);
 
-        txnCtx.recordBeneficiaryOfDeleted(
-                deleted.getAccountNum(), deletionLogic.getLastBeneficiary().getAccountNum());
+            txnCtx.recordBeneficiaryOfDeleted(
+                    deleted.getAccountNum(), deletionLogic.getLastBeneficiary().getAccountNum());
+            txnCtx.setStatus(SUCCESS);
+        } catch (MissingEntityException mae) {
+            txnCtx.setStatus(INVALID_ACCOUNT_ID);
+        } catch (DeletedAccountException dae) {
+            txnCtx.setStatus(ACCOUNT_DELETED);
+        } catch (InvalidTransactionException iae) {
+            txnCtx.setStatus(iae.getResponseCode());
+        } catch (Exception e) {
+            log.warn("Avoidable exception!", e);
+            txnCtx.setStatus(FAIL_INVALID);
+        }
     }
 
     @Override

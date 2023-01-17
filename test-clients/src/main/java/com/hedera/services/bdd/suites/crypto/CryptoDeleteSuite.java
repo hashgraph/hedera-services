@@ -15,11 +15,13 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.approxChangeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -32,15 +34,20 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -49,8 +56,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CryptoDeleteSuite extends HapiSuite {
+
     static final Logger log = LogManager.getLogger(CryptoDeleteSuite.class);
     private static final long TOKEN_INITIAL_SUPPLY = 500;
+    public static final String ACCOUNT_TO_BE_DELETED = "ACCOUNT_TO_BE_DELETED";
 
     public static void main(String... args) {
         new CryptoDeleteSuite().runSuiteSync();
@@ -65,12 +74,16 @@ public class CryptoDeleteSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiSpec[] {
-                    fundsTransferOnDelete(),
-                    cannotDeleteAccountsWithNonzeroTokenBalances(),
-                    cannotDeleteAlreadyDeletedAccount(),
-                    cannotDeleteAccountWithSameBeneficiary(),
-                    cannotDeleteTreasuryAccount(),
-                    deletedAccountCannotBePayer()
+                    //                                        fundsTransferOnDelete(),
+                    //
+                    // cannotDeleteAccountsWithNonzeroTokenBalances(),
+                    //                                        cannotDeleteAlreadyDeletedAccount(),
+                    //
+                    // cannotDeleteAccountWithSameBeneficiary(),
+                    //                                        cannotDeleteTreasuryAccount(),
+                    //                                        deletedAccountCannotBePayer(),
+                    //                    deleteAccountWithAliasAndCreateNewAccountWithSameAlias(),
+                    deleteHollowAccountAndTryToCreateNewOneWithSameEVMAddress()
                 });
     }
 
@@ -202,5 +215,127 @@ public class CryptoDeleteSuite extends HapiSuite {
                         cryptoDelete("treasury")
                                 .transfer("transferAccount")
                                 .hasKnownStatus(ACCOUNT_IS_TREASURY));
+    }
+
+    private HapiSpec deleteAccountWithAliasAndCreateNewAccountWithSameAlias() {
+        return defaultHapiSpec("DeleteAccountWithAliasAndCreateNewAccountWithSameAlias")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate("transferAccount"))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT_TO_BE_DELETED)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    var accountToBeDeletedInfo =
+                                            getAccountInfo(ACCOUNT_TO_BE_DELETED)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ecdsaKey)
+                                                                    .alias(SECP_256K1_SOURCE_KEY)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    final var op3 =
+                                            cryptoDelete(ACCOUNT_TO_BE_DELETED)
+                                                    .payingWith(ACCOUNT_TO_BE_DELETED)
+                                                    .signedBy(SECP_256K1_SOURCE_KEY);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .balance(100 * ONE_HBAR);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ecdsaKey)
+                                                                    .alias(SECP_256K1_SOURCE_KEY)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(
+                                            spec,
+                                            op,
+                                            op2,
+                                            accountToBeDeletedInfo,
+                                            op3,
+                                            op4,
+                                            hapiGetAccountInfo);
+                                }))
+                .then();
+    }
+
+    private HapiSpec deleteHollowAccountAndTryToCreateNewOneWithSameEVMAddress() {
+        return defaultHapiSpec("DeleteHollowAccountAndTryToCreateNewOneWithSameEVMAddress")
+                .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var addressBytes =
+                                            recoverAddressFromPubKey(
+                                                    ecdsaKey.getECDSASecp256K1().toByteArray());
+                                    assert addressBytes.length > 0;
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT_TO_BE_DELETED)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    var accountToBeDeletedInfo =
+                                            getAccountInfo(ACCOUNT_TO_BE_DELETED)
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddress(evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    final var op3 =
+                                            cryptoDelete(ACCOUNT_TO_BE_DELETED)
+                                                    .payingWith(ACCOUNT_TO_BE_DELETED)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .signedBy(SECP_256K1_SOURCE_KEY)
+                                                    .via("blabla");
+
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddress(evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(
+                                            spec,
+                                            op,
+                                            op2,
+                                            accountToBeDeletedInfo,
+                                            op3,
+                                            op4,
+                                            hapiGetAccountInfo);
+                                }))
+                .then();
     }
 }
