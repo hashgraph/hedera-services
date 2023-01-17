@@ -33,7 +33,7 @@ import java.util.Map;
 import org.mockito.Mockito;
 
 // NOTE: This class is duplicated in more than one service module.
-// It should be deleted once we find where to keep it.
+// !!!!!!!!!!🔥🔥🔥 It should be deleted once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
