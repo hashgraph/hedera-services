@@ -316,7 +316,7 @@ public class FileSignTool {
         // extract latest app version from system property if available
         final String appVersionString = System.getProperty(APP_VERSION);
         if (appVersionString != null) {
-            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(".");
+            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
             if (versions.length >= 3) {
                 try {
                     fileHeader =
@@ -336,8 +336,6 @@ public class FileSignTool {
             }
         }
         LOGGER.info(MARKER, "Record stream file header is {}", Arrays.toString(fileHeader));
-        System.out.println(" header " +  Arrays.toString(fileHeader));
-        System.out.println(" appVersionString " +  appVersionString);
 
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(
