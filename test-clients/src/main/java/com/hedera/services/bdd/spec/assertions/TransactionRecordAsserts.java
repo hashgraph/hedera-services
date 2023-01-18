@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,26 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                                         spec.registry().getTxnId(expectedTxn),
                                         txnId,
                                         "Wrong txnId!");
+                            } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts consensusTimeImpliedByNonce(
+            final Timestamp parentTime, final int nonce) {
+        this.<Timestamp>registerTypedProvider(
+                "consensusTimestamp",
+                spec ->
+                        actualTime -> {
+                            try {
+                                final var expectedTime =
+                                        parentTime.toBuilder()
+                                                .setNanos(parentTime.getNanos() + nonce)
+                                                .build();
+                                Assertions.assertEquals(expectedTime, actualTime);
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
