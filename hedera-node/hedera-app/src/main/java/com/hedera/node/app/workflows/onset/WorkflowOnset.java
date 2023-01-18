@@ -89,6 +89,24 @@ public class WorkflowOnset {
         return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
     }
 
+    /**
+     * Check the validity of the provided {@link Transaction}
+     *
+     * @param ctx the {@link SessionContext}
+     * @param transaction the {@link Transaction} that needs to be checked
+     * @return an {@link OnsetResult} with the parsed and checked entities
+     * @throws PreCheckException if the data is not valid
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public OnsetResult doParseAndCheck(
+            @NonNull final SessionContext ctx, @NonNull final Transaction transaction)
+            throws PreCheckException {
+        requireNonNull(ctx);
+        requireNonNull(transaction);
+
+        return doParseAndCheck(ctx, () -> transaction);
+    }
+
     @SuppressWarnings("deprecation")
     private OnsetResult doParseAndCheck(
             @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier)
@@ -97,7 +115,7 @@ public class WorkflowOnset {
         // 1. Parse the transaction object
         final Transaction tx;
         try {
-            tx = txSupplier.parse();
+            tx = txSupplier.supply();
         } catch (InvalidProtocolBufferException e) {
             throw new PreCheckException(INVALID_TRANSACTION);
         }
@@ -134,12 +152,13 @@ public class WorkflowOnset {
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(txBody, errorCode, signatureMap, functionality);
+        return new OnsetResult(
+                txBody, bodyBytes.toByteArray(), errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface
-    private interface TransactionSupplier {
-        Transaction parse() throws InvalidProtocolBufferException;
+    public interface TransactionSupplier {
+        Transaction supply() throws InvalidProtocolBufferException;
     }
 
     private static <T> T parse(

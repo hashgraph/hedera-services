@@ -28,26 +28,26 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code Dispatcher} provides functionality to forward pre-check, pre-handle, and handle-requests
- * to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
+ * handle-requests to the appropriate handler
  */
-public class Dispatcher {
+public class TransactionDispatcher {
 
-    private final Handlers handlers;
+    private final TransactionHandlers handlers;
 
     private final StoreCache storeCache;
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
 
     /**
-     * Constructor of {@code Dispatcher}
+     * Constructor of {@code TransactionDispatcher}
      *
-     * @param handlers a {@link Handlers} record with all available handlers
+     * @param handlers a {@link TransactionHandlers} record with all available handlers
      * @param storeCache a {@link StoreCache} that maintains stores for all active {@link
      *     HederaState}s
      * @throws NullPointerException if one of the parameters is {@code null}
      */
-    public Dispatcher(
-            @NonNull final Handlers handlers,
+    public TransactionDispatcher(
+            @NonNull final TransactionHandlers handlers,
             @NonNull final StoreCache storeCache,
             @NonNull final PreHandleContext preHandleContext) {
         this.handlers = requireNonNull(handlers);

@@ -15,19 +15,29 @@
  */
 package com.hedera.node.app.spi.workflows;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */
 public interface QueryHandler {
 
-    /**
-     * This method is called during the query-workflow. It does pre-checks that are specific to the
-     * operation.
-     *
-     * @param txBody the {@link TransactionBody} that needs to be validated
-     * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws PreCheckException if validation fails
-     */
-    void preCheck(@NonNull TransactionBody txBody) throws PreCheckException;
+    QueryHeader extractHeader(@NonNull Query query);
+
+    Response createEmptyResponse(@NonNull ResponseHeader header);
+
+    default boolean requiresNodePayment(@NonNull final ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    default boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
 }

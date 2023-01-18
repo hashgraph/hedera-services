@@ -63,8 +63,11 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** A record that contains all records that are available in the app */
-public record Handlers(
+/**
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.TransactionHandler}s that are
+ * available in the app
+ */
+public record TransactionHandlers(
         @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
         @NonNull ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
         @NonNull ConsensusDeleteTopicHandler consensusDeleteTopicHandler,

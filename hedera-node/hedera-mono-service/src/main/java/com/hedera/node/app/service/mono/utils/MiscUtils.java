@@ -288,6 +288,10 @@ public final class MiscUtils {
             new EnumMap<>(Query.QueryCase.class);
 
     static {
+        /*
+        CryptoGetStakersQuery cryptoGetProxyStakers = 11;
+        TransactionGetFastRecordQuery transactionGetFastRecord = 16;
+         */
         queryFunctions.put(NETWORKGETVERSIONINFO, GetVersionInfo);
         queryFunctions.put(GETBYKEY, GetByKey);
         queryFunctions.put(CONSENSUSGETTOPICINFO, ConsensusGetTopicInfo);

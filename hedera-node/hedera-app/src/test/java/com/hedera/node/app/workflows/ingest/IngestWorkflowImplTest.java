@@ -76,7 +76,12 @@ class IngestWorkflowImplTest {
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(TRANSACTION_BODY, OK, SIGNATURE_MAP, ConsensusCreateTopic);
+            new OnsetResult(
+                    TRANSACTION_BODY,
+                    TRANSACTION_BODY.toByteArray(),
+                    OK,
+                    SIGNATURE_MAP,
+                    ConsensusCreateTopic);
 
     @Mock private NodeInfo nodeInfo;
 
@@ -98,8 +103,6 @@ class IngestWorkflowImplTest {
     @Mock private SubmissionManager submissionManager;
     @Mock private HapiOpCounters opCounters;
 
-    @Mock private ByteBuffer requestBuffer;
-
     @Mock private Parser<Query> queryParser;
     @Mock private Parser<Transaction> txParser;
     @Mock private Parser<SignedTransaction> signedParser;
@@ -107,6 +110,7 @@ class IngestWorkflowImplTest {
 
     private SessionContext ctx;
     private IngestWorkflowImpl workflow;
+    private ByteBuffer requestBuffer;
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
@@ -120,6 +124,7 @@ class IngestWorkflowImplTest {
         when(storeCache.getAccountStore(state)).thenReturn(accountStore);
         when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
         when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
+        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
 
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         workflow =
@@ -270,7 +275,25 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
+        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer.array(), txBodyParser);
+        verify(opCounters).countSubmitted(ConsensusCreateTopic);
+    }
+
+    @Test
+    void testSuccessWithNonDirectByteBuffer(@Mock ByteBuffer localRequestBuffer)
+            throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+
+        // when
+        workflow.submitTransaction(ctx, localRequestBuffer, responseBuffer);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -405,7 +428,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
+        verify(submissionManager, never()).submit(any(), any(), any());
         verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -455,7 +478,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(eq(TRANSACTION_BODY), eq(requestBuffer), any());
+                .submit(eq(TRANSACTION_BODY), eq(requestBuffer.array()), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
