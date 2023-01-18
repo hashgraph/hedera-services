@@ -359,6 +359,40 @@ class HederaTracerTest {
     }
 
     @Test
+    void finalizesExceptionallyHaltedCreateFrameWithInvalidAddressReasonAsExpected() {
+        // given
+        given(messageFrame.getType()).willReturn(Type.CONTRACT_CREATION);
+        given(messageFrame.getCode()).willReturn(CodeV0.EMPTY_CODE);
+        given(messageFrame.getOriginatorAddress()).willReturn(originator);
+        given(messageFrame.getContractAddress()).willReturn(accountReceiver);
+        given(messageFrame.getRemainingGas()).willReturn(initialGas);
+        given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getValue()).willReturn(value);
+        given(messageFrame.getState()).willReturn(State.CODE_EXECUTING);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.aliases()).willReturn(contractAliases);
+        given(contractAliases.resolveForEvm(originator)).willReturn(originator);
+        given(contractAliases.resolveForEvm(accountReceiver)).willReturn(accountReceiver);
+
+        subject.init(messageFrame);
+        // when
+        given(messageFrame.getState()).willReturn(State.EXCEPTIONAL_HALT);
+        final var invalidSolidityAddress = Optional.of(INVALID_SOLIDITY_ADDRESS);
+        given(messageFrame.getExceptionalHaltReason()).willReturn(invalidSolidityAddress);
+        subject.tracePostExecution(messageFrame, operationResult);
+        // then
+        assertEquals(1, subject.getActions().size());
+        final var topLevelAction = subject.getActions().get(0);
+        assertEquals(initialGas, topLevelAction.getGasUsed());
+        assertArrayEquals(
+                invalidSolidityAddress.get().name().getBytes(StandardCharsets.UTF_8),
+                topLevelAction.getError());
+        assertEquals(EntityId.fromAddress(accountReceiver), topLevelAction.getRecipientAccount());
+        assertNull(topLevelAction.getRecipientContract());
+        assertNull(topLevelAction.getInvalidSolidityAddress());
+    }
+
+    @Test
     void clearsRecipientOfExceptionallyHaltedCreateFrame() {
         // given
         givenTracedExecutingFrame(Type.CONTRACT_CREATION);

@@ -140,6 +140,7 @@ class CallLocalEvmTxProcessorTest {
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
         var result =
                 callLocalEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY);
