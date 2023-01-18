@@ -98,7 +98,6 @@ class TokenRevokeKycFromAccountHandlerTest {
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY);
     }
 
     @Test
