@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -119,6 +120,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -1106,25 +1108,32 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     allRunFor(spec, lazyAccountInfoCheck);
+                                    final var id =
+                                            ContractID.newBuilder()
+                                                    .setContractNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getAccountNum())
+                                                    .setShardNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getShardNum())
+                                                    .setRealmNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getRealmNum())
+                                                    .build();
                                     final var payTxn =
                                             getTxnRecord(lazyCreateTxn)
                                                     .hasPriority(
                                                             recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getAccountNum())
-                                                                                    .setShardNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getShardNum())
-                                                                                    .setRealmNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getRealmNum())
-                                                                                    .build()))
+                                                                    .targetedContractId(id)
+                                                                    .contractCallResult(
+                                                                            ContractFnResultAsserts
+                                                                                    .resultWith()
+                                                                                    .contract(
+                                                                                            asContractString(
+                                                                                                    id))))
                                                     .andAllChildRecords()
                                                     .logged();
                                     final var childRecordsCheck =
