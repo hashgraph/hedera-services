@@ -24,16 +24,16 @@ import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,16 +48,16 @@ import java.util.Optional;
  */
 public class ReadableAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
-    private final State<Long, HederaAccount> accountState;
+    private final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final State<ByteString, Long> aliases;
+    private final ReadableKVState<String, Long> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
      *
      * @param states The state to use.
      */
-    public ReadableAccountStore(@NonNull final States states) {
+    public ReadableAccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }
@@ -147,7 +147,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
         if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();
         }
-        return accountState.get(accountNum);
+        return Optional.ofNullable(accountState.get(accountNum));
     }
 
     /**
@@ -166,7 +166,9 @@ public class ReadableAccountStore implements AccountKeyLookup {
                     return fromMirror(evmAddress);
                 }
             }
-            return aliases.get(alias).orElse(MISSING_NUM);
+
+            final var ret = aliases.get(alias.toStringUtf8());
+            return ret == null ? MISSING_NUM : ret;
         }
         return id.getAccountNum();
     }

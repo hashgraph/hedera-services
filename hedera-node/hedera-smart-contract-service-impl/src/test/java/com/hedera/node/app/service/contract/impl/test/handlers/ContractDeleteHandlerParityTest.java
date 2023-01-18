@@ -30,9 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +40,7 @@ class ContractDeleteHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test

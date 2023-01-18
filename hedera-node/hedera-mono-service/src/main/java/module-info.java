@@ -26,7 +26,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.contract.impl;
+            com.hedera.node.app.service.contract.impl,
+            com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.models to
@@ -86,7 +87,6 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.stream to
             com.swirlds.common;
 
-    exports com.hedera.node.app.service.mono.state.impl;
     exports com.hedera.node.app.service.mono.state.migration;
 
     requires com.hedera.hashgraph.protobuf.java.api;

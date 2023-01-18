@@ -49,7 +49,6 @@ test-clients/yahcli/assets/*.jar
 *.sh
 !run/generate-changelog.sh
 !run/new-release-branch.sh
-!run/gcr-*.sh
 !run/reset-data-saved-from.sh
 !hapi-proto/add-copyright.sh
 !hapi-proto/gen-proto-docs.sh
@@ -159,3 +158,10 @@ build
 
 /hedera-node/hapi/hedera-protobufs/
 /hedera-node/hapi/checkouts.bin
+
+# Docker setup
+!docker/*.sh
+/docker/.env
+.env
+Dockerfile
+.dockerignore
