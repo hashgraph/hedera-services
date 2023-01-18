@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -25,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
@@ -52,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -93,6 +96,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<Boolean> freezeDefault = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Consumer<String>> createdIdObs = Optional.empty();
+    @Nullable private Consumer<Address> createdAddressObs;
     private Optional<Function<HapiSpec, String>> symbolFn = Optional.empty();
     private Optional<Function<HapiSpec, String>> nameFn = Optional.empty();
     private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
@@ -122,6 +126,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
     public HapiTokenCreate exposingCreatedIdTo(final Consumer<String> obs) {
         createdIdObs = Optional.of(obs);
+        return this;
+    }
+
+    public HapiTokenCreate exposingAddressTo(final Consumer<Address> obs) {
+        createdAddressObs = obs;
         return this;
     }
 
@@ -386,6 +395,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         registry.saveTokenId(token, tokenID);
         registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
         createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(tokenID)));
+        Optional.ofNullable(createdAddressObs)
+                .ifPresent(obs -> obs.accept(idAsHeadlongAddress(tokenID)));
 
         try {
             final var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);

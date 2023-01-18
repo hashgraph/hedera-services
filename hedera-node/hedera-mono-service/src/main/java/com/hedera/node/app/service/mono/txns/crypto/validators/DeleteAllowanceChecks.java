@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,31 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
             final List<NftRemoveAllowance> nftAllowances,
             final Account payerAccount,
             final StateView view) {
+        final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
+        final var tokenStore =
+                new ReadOnlyTokenStore(
+                        accountStore,
+                        view.asReadOnlyTokenStore(),
+                        view.asReadOnlyNftStore(),
+                        view.asReadOnlyAssociationStore());
+        return deleteAllowancesValidation(nftAllowances, payerAccount, accountStore, tokenStore);
+    }
+
+    /**
+     * Validates all allowances provided in {@link
+     * com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody}
+     *
+     * @param nftAllowances given nft serials allowances to remove
+     * @param payerAccount payer for the transaction
+     * @param accountStore accounts store
+     * @param tokenStore token store
+     * @return validation response
+     */
+    public ResponseCodeEnum deleteAllowancesValidation(
+            final List<NftRemoveAllowance> nftAllowances,
+            final Account payerAccount,
+            final AccountStore accountStore,
+            final ReadOnlyTokenStore tokenStore) {
         // feature flag for allowances
         if (!isEnabled()) {
             return NOT_SUPPORTED;
@@ -73,13 +98,6 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
         if (validity != OK) {
             return validity;
         }
-        final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
-        final var tokenStore =
-                new ReadOnlyTokenStore(
-                        accountStore,
-                        view.asReadOnlyTokenStore(),
-                        view.asReadOnlyNftStore(),
-                        view.asReadOnlyAssociationStore());
         return validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
     }
 
