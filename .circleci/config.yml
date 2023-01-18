@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout 03073-immutable-regressioncontext-2
+            git checkout 03086-hederaregressioncontext
             ./gradlew assemble --scan --parallel
 
       - run:
