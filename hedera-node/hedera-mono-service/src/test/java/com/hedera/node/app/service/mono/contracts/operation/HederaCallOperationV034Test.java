@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -58,6 +59,7 @@ class HederaCallOperationV034Test {
     @Mock private BiPredicate<Address, MessageFrame> addressValidator;
     @Mock private Map<String, PrecompiledContract> precompiledContractMap;
     @Mock private GlobalDynamicProperties globalDynamicProperties;
+    @Mock private ContractAliases aliases;
 
     private final long cost = 100L;
     private HederaCallOperationV034 subject;
@@ -167,6 +169,36 @@ class HederaCallOperationV034Test {
         given(worldUpdater.get(any())).willReturn(acc);
         given(addressValidator.test(any(), any())).willReturn(false);
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.isMirror(any(Address.class))).willReturn(false);
+
+        var opRes = subject.execute(evmMsgFrame, evm);
+        assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
+    }
+
+    @Test
+    void executesAsExpectedToNonExistingWhenLazyCreateEnabledButIsMirrorAddress() {
+        commonSetup(evmMsgFrame, worldUpdater, acc);
+        given(
+                        calc.callOperationGasCost(
+                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
+                                any(), any()))
+                .willReturn(cost);
+        // and:
+        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
+        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
+        // and:
+        given(worldUpdater.get(any())).willReturn(acc);
+        given(addressValidator.test(any(), any())).willReturn(false);
+        given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.isMirror(any(Address.class))).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
@@ -201,6 +233,8 @@ class HederaCallOperationV034Test {
         given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
         given(addressValidator.test(any(), any())).willReturn(false);
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(aliases.isMirror(any(Address.class))).willReturn(false);
 
         var opRes = subject.execute(evmMsgFrame, evm);
         assertEquals(null, opRes.getHaltReason());

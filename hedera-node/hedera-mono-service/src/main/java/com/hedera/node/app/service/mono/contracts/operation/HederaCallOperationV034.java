@@ -19,6 +19,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -77,6 +78,10 @@ public class HederaCallOperationV034 extends CallOperation {
     }
 
     private boolean isLazyCreateAttempt(final MessageFrame frame) {
-        return !addressValidator.test(to(frame), frame) && value(frame).greaterThan(Wei.ZERO);
+        return !addressValidator.test(to(frame), frame)
+                && !((HederaStackedWorldStateUpdater) frame.getWorldUpdater())
+                        .aliases()
+                        .isMirror(to(frame))
+                && value(frame).greaterThan(Wei.ZERO);
     }
 }
