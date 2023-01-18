@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
+import static org.apache.commons.lang3.RandomUtils.nextBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -52,6 +54,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -150,6 +153,29 @@ class CryptoDeleteTransitionLogicTest {
         givenValidTxnCtx();
         given(ledger.alias(cryptoDeleteTxn.getCryptoDelete().getDeleteAccountID()))
                 .willReturn(ByteString.EMPTY);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(ledger).delete(target, payer);
+        verify(txnCtx).recordBeneficiaryOfDeleted(target.getAccountNum(), payer.getAccountNum());
+        verify(txnCtx).setStatus(SUCCESS);
+        verify(sigImpactHistorian).markEntityChanged(target.getAccountNum());
+    }
+
+    @Test
+    void followsHappyPathToDeleteAnAccountWithECDSAAlias() {
+        givenValidTxnCtx();
+        given(ledger.alias(cryptoDeleteTxn.getCryptoDelete().getDeleteAccountID()))
+                .willReturn(
+                        ByteString.copyFrom(new byte[] {0x02})
+                                .concat(
+                                        TxnUtils.randomUtf8ByteString(
+                                                JECDSASecp256k1Key
+                                                                .ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH
+                                                        - 1)));
+        given(aliasManager.keyAliasToEVMAddress(any())).willReturn(nextBytes(20));
 
         // when:
         subject.doStateTransition();

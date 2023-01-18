@@ -93,7 +93,6 @@ public class CryptoDeleteSuite extends HapiSuite {
     private HapiSpec deletedAccountCannotBePayer() {
         // Account Names
         String SUBMITTING_NODE_ACCOUNT = "0.0.3";
-        String ACCOUNT_TO_BE_DELETED = "toBeDeleted";
         String BENEFICIARY_ACCOUNT = "beneficiaryAccountForDeletedAccount";
 
         // Snapshot Names
