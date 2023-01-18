@@ -34,6 +34,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class DescriptorUtils {
+    public static final long MINIMUM_TINYBARS_COST = 100;
+    public static final int ADDRESS_BYTES_LENGTH = 20;
+    public static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
+    public static final int WORD_LENGTH = 32;
 
     private DescriptorUtils() {
         throw new UnsupportedOperationException("Utility class");
@@ -67,5 +71,13 @@ public class DescriptorUtils {
         final var tokenAddress = Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
         final var nestedInput = input.slice(24);
         return new RedirectTarget(nestedInput.getInt(0), tokenAddress);
+    }
+
+    public static Address addressFromBytes(final byte[] addressBytes) {
+        var bytes = Bytes.wrap(addressBytes);
+        if (addressBytes.length > ADDRESS_BYTES_LENGTH) {
+            bytes = bytes.slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
+        }
+        return Address.wrap(bytes);
     }
 }

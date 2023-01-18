@@ -29,6 +29,8 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenTypePrecompile.decodeGetTokenType;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor.asSecondsTimestamp;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
@@ -51,13 +53,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class ViewExecutor {
-
-    public static final long MINIMUM_TINYBARS_COST = 100;
-
     private final Bytes input;
     private final MessageFrame frame;
     private final EvmEncodingFacade evmEncoder;
@@ -252,9 +250,5 @@ public class ViewExecutor {
                 // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);
         }
-    }
-
-    private Address addressFromBytes(final byte[] bytes) {
-        return Address.wrap(Bytes.wrap(bytes));
     }
 }

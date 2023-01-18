@@ -25,6 +25,9 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.ADDRESS_SKIP_BYTES_LENGTH;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.WORD_LENGTH;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -49,11 +52,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class RedirectViewExecutor {
-
-    private static final int WORD_LENGTH = 32;
-    private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
-
-    public static final long MINIMUM_TINYBARS_COST = 100;
     private final Bytes input;
     private final MessageFrame frame;
     private final EvmEncodingFacade evmEncoder;

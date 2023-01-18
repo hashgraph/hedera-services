@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor.MINIMUM_TINYBARS_COST;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
@@ -67,13 +67,11 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExec
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.TokenAccessorImpl;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
@@ -93,8 +91,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -115,11 +111,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ViewExecutorTest {
 
     @Mock private MessageFrame frame;
-    @Mock private EncodingFacade encodingFacade;
     @Mock private EvmEncodingFacade evmEncodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private BlockValues blockValues;
-    @Mock private StateView stateView;
     @Mock private WorldLedgers ledgers;
     @Mock private JKey key;
     @Mock private NetworkInfo networkInfo;
@@ -146,7 +140,6 @@ class ViewExecutorTest {
             Timestamp.newBuilder().setSeconds(timestamp).build();
     private static final long gas = 100L;
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
-    private TokenInfo tokenInfo;
     private EvmTokenInfo evmTokenInfo;
     private Bytes tokenInfoEncoded;
     private Bytes isFrozenEncoded;
@@ -172,23 +165,7 @@ class ViewExecutorTest {
 
     @BeforeEach
     void setUp() {
-        tokenInfo =
-                TokenInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setSupplyTypeValue(1)
-                        .setTokenId(fungible)
-                        .setDeleted(false)
-                        .setSymbol("FT")
-                        .setName("NAME")
-                        .setMemo("MEMO")
-                        .setTreasury(
-                                EntityIdUtils.accountIdFromEvmAddress(
-                                        Address.wrap(
-                                                Bytes.fromHexString(
-                                                        "0x00000000000000000000000000000000000005cc"))))
-                        .setTotalSupply(1L)
-                        .setMaxSupply(1000L)
-                        .build();
+
         evmTokenInfo =
                 new EvmTokenInfo(
                         fromString("0x03").toByteArray(),
@@ -662,8 +639,6 @@ class ViewExecutorTest {
     private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
             customFees() {
         final var payerAccountId = asAccount("0.0.9");
-        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
-                customFees = new ArrayList<>();
         FixedFee fixedFeeInHbar =
                 new FixedFee(
                         100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
