@@ -38,11 +38,13 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.txns.crypto.helpers.CryptoDeletionLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -73,6 +75,7 @@ class CryptoDeleteTransitionLogicTest {
     private TransactionContext txnCtx;
     private SignedTxnAccessor accessor;
     private CryptoDeletionLogic deletionLogic;
+    private AliasManager aliasManager;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private CryptoDeleteTransitionLogic subject;
@@ -83,7 +86,8 @@ class CryptoDeleteTransitionLogicTest {
         ledger = mock(HederaLedger.class);
         accessor = mock(SignedTxnAccessor.class);
         sigImpactHistorian = mock(SigImpactHistorian.class);
-        deletionLogic = mock(CryptoDeletionLogic.class);
+        aliasManager = mock(AliasManager.class);
+        deletionLogic = new CryptoDeletionLogic(ledger, sigImpactHistorian, aliasManager);
 
         given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
@@ -144,6 +148,8 @@ class CryptoDeleteTransitionLogicTest {
     @Test
     void followsHappyPath() {
         givenValidTxnCtx();
+        given(ledger.alias(cryptoDeleteTxn.getCryptoDelete().getDeleteAccountID()))
+                .willReturn(ByteString.EMPTY);
 
         // when:
         subject.doStateTransition();

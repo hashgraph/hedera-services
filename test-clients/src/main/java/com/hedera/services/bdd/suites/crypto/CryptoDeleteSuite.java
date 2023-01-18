@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -50,8 +51,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOU
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,15 +78,14 @@ public class CryptoDeleteSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiSpec[] {
-                    //                                        fundsTransferOnDelete(),
-                    //
-                    // cannotDeleteAccountsWithNonzeroTokenBalances(),
-                    //                                        cannotDeleteAlreadyDeletedAccount(),
-                    //
-                    // cannotDeleteAccountWithSameBeneficiary(),
-                    //                                        cannotDeleteTreasuryAccount(),
-                    //                                        deletedAccountCannotBePayer(),
-                    //                    deleteAccountWithAliasAndCreateNewAccountWithSameAlias(),
+                    fundsTransferOnDelete(),
+                    cannotDeleteAccountsWithNonzeroTokenBalances(),
+                    cannotDeleteAlreadyDeletedAccount(),
+                    cannotDeleteAccountWithSameBeneficiary(),
+                    cannotDeleteTreasuryAccount(),
+                    deletedAccountCannotBePayer(),
+                    deleteAccountWithEcdsaAliasAndCreateNewAccountWithSameEcdsaAlias(),
+                    deleteAccountWithED25519AliasAndCreateNewAccountWithSameED25519Alias(),
                     deleteHollowAccountAndTryToCreateNewOneWithSameEVMAddress()
                 });
     }
@@ -217,8 +220,8 @@ public class CryptoDeleteSuite extends HapiSuite {
                                 .hasKnownStatus(ACCOUNT_IS_TREASURY));
     }
 
-    private HapiSpec deleteAccountWithAliasAndCreateNewAccountWithSameAlias() {
-        return defaultHapiSpec("DeleteAccountWithAliasAndCreateNewAccountWithSameAlias")
+    private HapiSpec deleteAccountWithEcdsaAliasAndCreateNewAccountWithSameEcdsaAlias() {
+        return defaultHapiSpec("DeleteAccountWithEcdsaAliasAndCreateNewAccountWithSameEcdsaAlias")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate("transferAccount"))
@@ -270,6 +273,56 @@ public class CryptoDeleteSuite extends HapiSuite {
                                             op3,
                                             op4,
                                             hapiGetAccountInfo);
+                                }))
+                .then();
+    }
+
+    private HapiSpec deleteAccountWithED25519AliasAndCreateNewAccountWithSameED25519Alias() {
+        AtomicReference<Key> ed25519Key = new AtomicReference<>();
+        return defaultHapiSpec(
+                        "DeleteAccountWithED25519AliasAndCreateNewAccountWithSameED25519Alias")
+                .given(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    ed25519Key.set(spec.registry().getKey(ED_25519_KEY));
+                                    final var op =
+                                            cryptoCreate(ACCOUNT_TO_BE_DELETED)
+                                                    .alias(ed25519Key.get().toByteString())
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ed25519Key.get().toByteString())
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    var accountToBeDeletedInfo =
+                                            getAccountInfo(ACCOUNT_TO_BE_DELETED)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ed25519Key.get())
+                                                                    .alias(ED_25519_KEY)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, op, op2, accountToBeDeletedInfo);
+                                    final var op3 =
+                                            cryptoDelete(ACCOUNT_TO_BE_DELETED)
+                                                    .payingWith(ACCOUNT_TO_BE_DELETED)
+                                                    .signedBy(ED_25519_KEY);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ed25519Key.get().toByteString())
+                                                    .balance(100 * ONE_HBAR);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(ed25519Key.get())
+                                                                    .alias(ED_25519_KEY)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, op3, op4, hapiGetAccountInfo);
                                 }))
                 .then();
     }
