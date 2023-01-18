@@ -74,6 +74,44 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             final List<NftAllowance> nftAllowances,
             final Account payerAccount,
             final StateView view) {
+
+        final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
+
+        final var tokenStore =
+                new ReadOnlyTokenStore(
+                        accountStore,
+                        view.asReadOnlyTokenStore(),
+                        view.asReadOnlyNftStore(),
+                        view.asReadOnlyAssociationStore());
+
+        return allowancesValidation(
+                cryptoAllowances,
+                tokenAllowances,
+                nftAllowances,
+                payerAccount,
+                accountStore,
+                tokenStore);
+    }
+
+    /**
+     * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+     * transactions
+     *
+     * @param cryptoAllowances crypto allowances list
+     * @param tokenAllowances fungible token allowances list
+     * @param nftAllowances nft allowances list
+     * @param payerAccount Account of the payer for the allowance approve/adjust txn.
+     * @param accountStore accounts store
+     * @param tokenStore token store
+     * @return response code after validation
+     */
+    public ResponseCodeEnum allowancesValidation(
+            final List<CryptoAllowance> cryptoAllowances,
+            final List<TokenAllowance> tokenAllowances,
+            final List<NftAllowance> nftAllowances,
+            final Account payerAccount,
+            final AccountStore accountStore,
+            final ReadOnlyTokenStore tokenStore) {
         // feature flag for allowances
         if (!isEnabled()) {
             return NOT_SUPPORTED;
@@ -84,18 +122,11 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
             return validity;
         }
 
-        final var accountStore = new AccountStore(validator, view.asReadOnlyAccountStore());
         validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
         if (validity != OK) {
             return validity;
         }
 
-        final var tokenStore =
-                new ReadOnlyTokenStore(
-                        accountStore,
-                        view.asReadOnlyTokenStore(),
-                        view.asReadOnlyNftStore(),
-                        view.asReadOnlyAssociationStore());
         validity =
                 validateFungibleTokenAllowances(
                         tokenAllowances, payerAccount, accountStore, tokenStore);

@@ -25,7 +25,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -55,8 +54,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final Provider<FeeCalculator> feeCalculator,
-            final StateView currentView) {
+            final Provider<FeeCalculator> feeCalculator) {
         super(
                 ledgers,
                 aliases,
@@ -65,8 +63,7 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils,
-                feeCalculator,
-                currentView);
+                feeCalculator);
     }
 
     @Override

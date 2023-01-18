@@ -991,7 +991,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1072,7 +1073,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1160,7 +1162,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
