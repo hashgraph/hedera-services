@@ -1397,7 +1397,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var depositAmount = 1000;
         final var payTxn = "payTxn";
 
-        return onlyPropertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
                 .preserving(
                         lazyCreationProperty,
                         contractsEvmVersionProperty,
