@@ -1397,7 +1397,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var depositAmount = 1000;
         final var payTxn = "payTxn";
 
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+        return onlyPropertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
                 .preserving(
                         lazyCreationProperty,
                         contractsEvmVersionProperty,
@@ -1426,7 +1426,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             callLazyCreateFunction,
-                                                            mirrorAddrWith(1005L))
+                                                            mirrorAddrWith(1_234_567_890L))
                                                     .sending(depositAmount)
                                                     .via(mirrorTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
