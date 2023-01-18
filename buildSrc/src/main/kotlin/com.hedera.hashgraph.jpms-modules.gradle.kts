@@ -23,7 +23,8 @@ plugins {
 
 extraJavaModuleInfo {
     failOnMissingModuleInfo.set(true)
-    
+
+    automaticModule("com.hedera.services", "com.hedera.hashgraph.protobuf.java.api")
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
