@@ -162,7 +162,6 @@ public class Create2OperationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 create2FactoryWorksAsExpected(),
-                canMergeCreate2ChildWithHollowAccount(),
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
@@ -174,7 +173,9 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor());
+                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
+                /* --- HIP 583 --- */
+                canMergeCreate2ChildWithHollowAccount());
     }
 
     @SuppressWarnings("java:S5669")

@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -50,8 +49,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
-        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(false);
@@ -70,8 +69,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
-        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(true);
@@ -102,7 +101,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         final var txn = deleteAccountTransaction(deleteAccountId, payer);
@@ -119,7 +118,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(true);
 
@@ -139,9 +138,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
-        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(accounts.get(payerNum)).willReturn(null);
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
+        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         var meta = subject.preHandle(txn, payer, store);
@@ -150,10 +149,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
-        given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
+        given(accounts.get(payerNum)).willReturn(payerAccount);
         given(payerAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.empty());
-        given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(null);
+        given(accounts.get(transferAccountNum)).willReturn(transferAccount);
 
         meta = subject.preHandle(txn, payer, store);
 
@@ -162,9 +161,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         /* ------ transferAccount missing ------ */
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
-        given(accounts.get(transferAccountNum)).willReturn(Optional.empty());
+        given(accounts.get(transferAccountNum)).willReturn(null);
 
         meta = subject.preHandle(txn, payer, store);
 
@@ -177,7 +176,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntExecuteIfAccountIdIsDefaultInstance() {
         final var keyUsed = (JKey) payerKey;
 
-        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(accounts.get(deleteAccountNum)).willReturn(deleteAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());

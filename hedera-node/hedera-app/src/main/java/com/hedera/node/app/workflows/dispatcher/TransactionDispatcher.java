@@ -85,10 +85,11 @@ public class TransactionDispatcher {
                     .preHandle(transactionBody, payer);
 
             case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler()
                     .preHandle(transactionBody, payer);
-            case CONTRACTCALL -> handlers.contractCallHandler().preHandle(transactionBody, payer);
+            case CONTRACTCALL -> handlers.contractCallHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTDELETEINSTANCE -> handlers.contractDeleteHandler()
                     .preHandle(transactionBody, payer);
             case ETHEREUMTRANSACTION -> handlers.etherumTransactionHandler()

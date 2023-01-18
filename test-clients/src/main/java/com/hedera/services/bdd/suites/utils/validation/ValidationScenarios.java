@@ -192,7 +192,7 @@ public class ValidationScenarios extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
     private static final String DEFAULT_CONFIG_LOC = "config.yml";
     public static final long TINYBARS_PER_HBAR = 100_000_000L;
-    public static final long FEE_TO_OFFER = 100 * ONE_HBAR;
+    public static final long FEE_TO_OFFER_IN_HBAR = 100;
 
     enum Scenario {
         CRYPTO,

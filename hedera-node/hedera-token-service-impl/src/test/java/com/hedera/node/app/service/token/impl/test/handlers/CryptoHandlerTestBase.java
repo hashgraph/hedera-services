@@ -24,8 +24,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
@@ -34,12 +32,12 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,10 +54,10 @@ public class CryptoHandlerTestBase {
     protected final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     protected final Long payerNum = payer.getAccountNum();
 
-    @Mock protected RebuiltStateImpl aliases;
-    @Mock protected InMemoryStateImpl accounts;
+    @Mock protected ReadableKVState<Long, MerkleAccount> aliases;
+    @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
     @Mock protected MerkleAccount payerAccount;
-    @Mock protected States states;
+    @Mock protected ReadableStates states;
     @Mock protected HederaAccountNumbers accountNumbers;
     @Mock protected HederaFileNumbers fileNumbers;
     @Mock protected CryptoSignatureWaiversImpl waivers;
@@ -69,8 +67,8 @@ public class CryptoHandlerTestBase {
 
     @BeforeEach
     void commonSetUp() {
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
+        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
         store = new ReadableAccountStore(states);
         context = new PreHandleContext(accountNumbers, fileNumbers, store);
         setUpPayer();
@@ -87,7 +85,7 @@ public class CryptoHandlerTestBase {
     }
 
     protected void setUpPayer() {
-        lenient().when(accounts.get(payerNum)).thenReturn(Optional.of(payerAccount));
+        lenient().when(accounts.get(payerNum)).thenReturn(payerAccount);
         lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
     }
 }

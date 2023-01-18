@@ -309,7 +309,9 @@ class TransactionDispatcherTest {
                                         ContractCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.contractCreateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCreateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractUpdateInstance(
@@ -322,7 +324,9 @@ class TransactionDispatcherTest {
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.contractCallHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCallHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractDeleteInstance(

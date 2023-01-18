@@ -94,6 +94,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 syntaxChecksAreAsExpected(),
                 usdFeeAsExpected(),
                 createAnAccountWithStakingFields(),
+                /* --- HIP-583 --- */
                 createAnAccountWithECDSAAlias(),
                 createAnAccountWithEVMAddress(),
                 createAnAccountWithED25519Alias(),
