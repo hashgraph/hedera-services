@@ -146,11 +146,8 @@ public class Dispatcher {
                             (innerTxn, innerPayer) ->
                                     dispatchPreHandle(state, innerTxn, innerPayer));
             case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(
-                            transactionBody,
-                            payer,
-                            storeCache.getAccountStore(state),
-                            storeCache.getScheduleStore(state));
+                    .preHandle(transactionBody, payer);
+
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
             case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer);
             case TOKENMINT -> handlers.tokenMintHandler().preHandle(transactionBody, payer);
