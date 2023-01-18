@@ -38,7 +38,7 @@ public final class Hedera {
         final var ingestWorkflow =
                 new IngestWorkflowImpl(null, null, null, null, null, null, null, null, null);
         final var queryWorkflow =
-                new QueryWorkflowImpl(null, null, null, null, null, null, null, null, null);
+                new QueryWorkflowImpl(null, null, null, null, null, null, null, null);
 
         final var metrics = createMetrics();
 

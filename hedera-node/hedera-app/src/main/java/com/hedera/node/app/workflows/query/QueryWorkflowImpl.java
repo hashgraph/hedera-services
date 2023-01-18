@@ -71,7 +71,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
-    private final QueryHandlers handlers;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker checker;
@@ -84,8 +83,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
-     * @param handlers a record with all available {@link
-     *     com.hedera.node.app.spi.workflows.QueryHandler}s
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
@@ -97,7 +94,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
-            @NonNull final QueryHandlers handlers,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
@@ -106,7 +102,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
-        this.handlers = requireNonNull(handlers);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
         this.checker = requireNonNull(checker);
@@ -137,7 +132,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
         opCounters.countReceived(functionality);
 
-        final var handler = handlers.getHandler(query);
+        final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
 
         Response response;
