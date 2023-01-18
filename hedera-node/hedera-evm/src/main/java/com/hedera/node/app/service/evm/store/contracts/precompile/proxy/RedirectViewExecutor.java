@@ -25,9 +25,8 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_SYMBOL;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.ADDRESS_SKIP_BYTES_LENGTH;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
-import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.WORD_LENGTH;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.getRedirectTarget;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -45,7 +44,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerO
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.util.Arrays;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -103,34 +101,26 @@ public class RedirectViewExecutor {
             return evmEncoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
             final var wrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
-            final var ownerAddressOrAlias =
-                    Arrays.copyOfRange(wrapper.owner(), ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-            final var spenderAddressOrAlias =
-                    Arrays.copyOfRange(wrapper.spender(), ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
             final var allowance =
                     tokenAccessor.staticAllowanceOf(
-                            Address.wrap(Bytes.wrap(ownerAddressOrAlias)),
-                            Address.wrap(Bytes.wrap(spenderAddressOrAlias)),
-                            Address.wrap(Bytes.wrap(wrapper.token())));
+                            addressFromBytes(wrapper.owner()),
+                            addressFromBytes(wrapper.spender()),
+                            addressFromBytes(wrapper.token()));
             return evmEncoder.encodeAllowance(allowance);
         } else if (selector == ABI_ID_ERC_GET_APPROVED) {
             final var wrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             final var spender =
                     tokenAccessor.staticApprovedSpenderOf(
-                            Address.wrap(Bytes.wrap(wrapper.token())), wrapper.serialNo());
+                            addressFromBytes(wrapper.token()), wrapper.serialNo());
             final var priorityAddress = tokenAccessor.canonicalAddress(spender);
             return evmEncoder.encodeGetApproved(priorityAddress);
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
             final var wrapper = EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
-            final var ownerAddressOrAlias =
-                    Arrays.copyOfRange(wrapper.owner(), ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-            final var operatorAddressOrAlias =
-                    Arrays.copyOfRange(wrapper.operator(), ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
             final var isOperator =
                     tokenAccessor.staticIsOperator(
-                            Address.wrap(Bytes.wrap(ownerAddressOrAlias)),
-                            Address.wrap(Bytes.wrap(operatorAddressOrAlias)),
-                            Address.wrap(Bytes.wrap(wrapper.token())));
+                            addressFromBytes(wrapper.owner()),
+                            addressFromBytes(wrapper.operator()),
+                            addressFromBytes(wrapper.token()));
             return evmEncoder.encodeIsApprovedForAll(isOperator);
         } else if (selector == ABI_ID_ERC_DECIMALS) {
             validateTrue(isFungibleToken, INVALID_TOKEN_ID);
@@ -141,10 +131,7 @@ public class RedirectViewExecutor {
             return evmEncoder.encodeTotalSupply(totalSupply);
         } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
             final var wrapper = EvmBalanceOfPrecompile.decodeBalanceOf(input.slice(24));
-            final var addressOrAlias =
-                    Arrays.copyOfRange(wrapper.account(), ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-            final var balance =
-                    tokenAccessor.balanceOf(Address.wrap(Bytes.wrap(addressOrAlias)), token);
+            final var balance = tokenAccessor.balanceOf(addressFromBytes(wrapper.account()), token);
             return evmEncoder.encodeBalance(balance);
         } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);
