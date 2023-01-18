@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -44,8 +49,20 @@ public class ContractCreateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup) {
+        final var op = txBody.getContractCreateInstance();
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+        final var adminKey = asHederaKey(op.getAdminKey());
+        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
+            meta.addToReqNonPayerKeys(adminKey.get());
+        }
+        if (op.hasAutoRenewAccountId()) {
+            meta.addNonPayerKey(op.getAutoRenewAccountId());
+        }
+        return meta.build();
     }
 
     /**
