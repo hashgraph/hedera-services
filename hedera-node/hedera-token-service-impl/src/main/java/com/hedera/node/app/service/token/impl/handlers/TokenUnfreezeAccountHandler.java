@@ -21,8 +21,6 @@ import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -58,11 +56,12 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
         final var op = txBody.getTokenUnfreeze();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
+        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
 
-        if (op.hasToken()) {
-            addUnfreezeKey(op.getToken(), meta, tokenStore);
+        if (!tokenMeta.failed()) {
+            tokenMeta.metadata().freezeKey().ifPresent(meta::addToReqNonPayerKeys);
         } else {
-            meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
+            meta.status(tokenMeta.failureReason());
         }
         return meta.build();
     }
@@ -78,33 +77,5 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
         throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /**
-     * Gets the token meta for a given {@link TokenID} and attempts to add a unfreeze key to the
-     * list of required keys for a given unfreeze transaction. Upon failure the status of the {@link
-     * SigTransactionMetadataBuilder} is set to the corresponding {@link ResponseCodeEnum}
-     *
-     * @param tokenId given token id
-     * @param meta given transaction metadata builder
-     * @param tokenStore Provides read-only methods for interacting with data storage for working
-     *     with Tokens.
-     */
-    public void addUnfreezeKey(
-            final TokenID tokenId,
-            final SigTransactionMetadataBuilder meta,
-            @NonNull final ReadableTokenStore tokenStore) {
-        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
-
-        if (!tokenMeta.failed()) {
-            final var freezeKey = tokenMeta.metadata().freezeKey();
-            if (freezeKey.isPresent()) {
-                meta.addToReqNonPayerKeys(freezeKey.get());
-            } else {
-                meta.status(ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY);
-            }
-        } else {
-            meta.status(tokenMeta.failureReason());
-        }
     }
 }

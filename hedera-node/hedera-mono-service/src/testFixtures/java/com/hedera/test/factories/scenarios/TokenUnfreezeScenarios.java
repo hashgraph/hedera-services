@@ -15,7 +15,6 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCreate;
 import static com.hedera.test.factories.txns.TokenUnfreezeFactory.newSignedTokenUnfreeze;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -34,27 +33,14 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
     UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenCreate().missingAdmin().get());
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze().get());
         }
     },
     UNFREEZE_WITH_INVALID_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    newSignedTokenUnfreeze()
-                            .unfreezing(MISSING_TOKEN)
-                            .nonPayerKts(TOKEN_FREEZE_KT)
-                            .get());
-        }
-    },
-    UNFREEZE_WITH_INVALID_FREEZE_KEY {
-        @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    newSignedTokenUnfreeze()
-                            .unfreezing(KNOWN_TOKEN_WITH_PAUSE)
-                            .nonPayerKts(TOKEN_FREEZE_KT)
-                            .get());
+                    newSignedTokenUnfreeze().unfreezing(MISSING_TOKEN).get());
         }
     },
 }

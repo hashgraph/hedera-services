@@ -17,7 +17,6 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.txnFrom;
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicMetaAssertions;
-import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_INVALID_FREEZE_KEY;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.UNFREEZE_WITH_MISSING_FREEZE_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenUnfreezeScenarios.VALID_UNFREEZE_WITH_EXTANT_TOKEN;
@@ -27,6 +26,7 @@ import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
@@ -70,6 +70,7 @@ class TokenUnfreezeAccountHandlerTest {
                         txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
         basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
     }
 
@@ -83,18 +84,6 @@ class TokenUnfreezeAccountHandlerTest {
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TOKEN_ID);
-    }
-
-    @Test
-    void tokenUnfreezeWithInvalidFreezeKey() {
-        final var txn = txnFrom(UNFREEZE_WITH_INVALID_FREEZE_KEY);
-
-        final var meta =
-                subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), tokenStore, accountStore);
-
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY);
     }
 
     @Test
