@@ -31,7 +31,7 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
- * Hedera adapted version of the {@link CallOperation} for version EVM v0.32
+ * Hedera adapted version of the {@link CallOperation} for version EVM v0.34
  *
  * <p>Performs an existence check on the {@link Address} to be called. If the account does not exist
  * or is deleted and value is being transferred, execution is allowed to attempt a lazy create.
@@ -42,13 +42,13 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
-public class HederaCallOperationV032 extends CallOperation {
+public class HederaCallOperationV034 extends CallOperation {
     private final EvmSigsVerifier sigsVerifier;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Map<String, PrecompiledContract> precompiledContractMap;
     private final GlobalDynamicProperties globalDynamicProperties;
 
-    public HederaCallOperationV032(
+    public HederaCallOperationV034(
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             final BiPredicate<Address, MessageFrame> addressValidator,

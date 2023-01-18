@@ -48,7 +48,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaCallOperationV032Test {
+class HederaCallOperationV034Test {
 
     @Mock private GasCalculator calc;
     @Mock private MessageFrame evmMsgFrame;
@@ -62,12 +62,12 @@ class HederaCallOperationV032Test {
     @Mock private ContractAliases aliases;
 
     private final long cost = 100L;
-    private HederaCallOperationV032 subject;
+    private HederaCallOperationV034 subject;
 
     @BeforeEach
     void setup() {
         subject =
-                new HederaCallOperationV032(
+                new HederaCallOperationV034(
                         sigsVerifier,
                         calc,
                         addressValidator,
