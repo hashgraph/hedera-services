@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -154,9 +154,9 @@ class CallEvmTxProcessorTest {
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            mcpVersion = EVM_VERSION_0_32;
+                            mcpVersion = EVM_VERSION_0_34;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
@@ -169,9 +169,9 @@ class CallEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_32;
+                            ccpVersion = EVM_VERSION_0_34;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -235,7 +235,7 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionV032EthLazyCreate() {
         givenValidMockEth();
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(aliasManager.isMirror(receiverAddress)).willReturn(false);
         var evmAccount = mock(EvmAccount.class);
@@ -263,7 +263,7 @@ class CallEvmTxProcessorTest {
     @Test
     void assertSuccessExecutionV032() {
         givenValidMockEth();
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(aliasManager.isMirror(receiverAddress)).willReturn(true);
         var evmAccount = mock(EvmAccount.class);
@@ -702,7 +702,7 @@ class CallEvmTxProcessorTest {
                 Map.of(
                         EVM_VERSION_0_30,
                         () -> messageCallProcessor,
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> messageCallProcessor);
         Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
@@ -713,9 +713,9 @@ class CallEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_32;
+                            ccpVersion = EVM_VERSION_0_34;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -1377,8 +1377,8 @@ class CallEvmTxProcessorTest {
                 .willReturn(
                         EVM_VERSION_0_30,
                         EVM_VERSION_0_30,
-                        EVM_VERSION_0_32,
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
+                        EVM_VERSION_0_34,
                         "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
@@ -1403,8 +1403,8 @@ class CallEvmTxProcessorTest {
         // version changes, dynamic set
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals(EVM_VERSION_0_32, mcpVersion);
-        assertEquals(EVM_VERSION_0_32, ccpVersion);
+        assertEquals(EVM_VERSION_0_34, mcpVersion);
+        assertEquals(EVM_VERSION_0_34, ccpVersion);
 
         // bad version
         assertThrows(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,8 +59,8 @@ public interface ContractsTestComponent {
     EVM evmV_0_30();
 
     @Singleton
-    @V_0_32
-    EVM evmV_0_32();
+    @V_0_34
+    EVM evmV_0_34();
 
     @Component.Builder
     interface Builder {

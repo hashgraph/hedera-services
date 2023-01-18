@@ -19,8 +19,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -54,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddressArray;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -71,6 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -111,6 +112,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
+import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
@@ -124,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -207,81 +210,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
-                evmLazyCreateViaSolidityCall());
-    }
-
-    private HapiSpec evmLazyCreateViaSolidityCall() {
-        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
-        final var ECDSA_KEY = "ECDSAKey";
-        final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
-        final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
-        final var lazyCreationProperty = "lazyCreation.enabled";
-        final var contractsEvmVersionProperty = "contracts.evm.version";
-        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
-        final var REVERTING_TXN = "revertingTxn";
-        final var depositAmount = 1000;
-        final var payTxn = "payTxn";
-
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
-                .preserving(
-                        lazyCreationProperty,
-                        contractsEvmVersionProperty,
-                        contractsEvmVersionDynamicProperty)
-                .given(
-                        overridingThree(
-                                lazyCreationProperty,
-                                "true",
-                                contractsEvmVersionProperty,
-                                "v0.32",
-                                contractsEvmVersionDynamicProperty,
-                                "true"),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(LAZY_CREATE_CONTRACT),
-                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            revertingCallLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .sending(depositAmount)
-                                                    .via(REVERTING_TXN)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(6_000_000),
-                                            emptyChildRecordsCheck(
-                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            callLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .via(payTxn)
-                                                    .sending(depositAmount)
-                                                    .gas(6_000_000));
-                                }))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getTxnRecord =
-                                            getTxnRecord(payTxn).andAllChildRecords().logged();
-                                    allRunFor(spec, getTxnRecord);
-                                    final var lazyAccountId =
-                                            getTxnRecord
-                                                    .getChildRecord(0)
-                                                    .getReceipt()
-                                                    .getAccountID();
-                                    final var name = "lazy";
-                                    spec.registry().saveAccountId(name, lazyAccountId);
-                                    allRunFor(
-                                            spec,
-                                            getAccountBalance(name).hasTinyBars(depositAmount));
-                                }));
+                evmLazyCreateViaSolidityCall(),
+                evmLazyCreateViaSolidityCallTooManyCreatesFails());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -1453,6 +1383,156 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     recordWith().status(NOT_SUPPORTED)));
                                 }))
                 .then();
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityCall() {
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
+        final var ECDSA_KEY = "ECDSAKey";
+        final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
+        final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
+        final var lazyCreationProperty = "lazyCreation.enabled";
+        final var contractsEvmVersionProperty = "contracts.evm.version";
+        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
+        final var REVERTING_TXN = "revertingTxn";
+        final var depositAmount = 1000;
+        final var payTxn = "payTxn";
+
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+                .preserving(
+                        lazyCreationProperty,
+                        contractsEvmVersionProperty,
+                        contractsEvmVersionDynamicProperty)
+                .given(
+                        overridingThree(
+                                lazyCreationProperty,
+                                "true",
+                                contractsEvmVersionProperty,
+                                "v0.34",
+                                contractsEvmVersionDynamicProperty,
+                                "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var mirrorTxn = "mirrorTxn";
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            callLazyCreateFunction,
+                                                            mirrorAddrWith(1_234_567_890L))
+                                                    .sending(depositAmount)
+                                                    .via(mirrorTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    mirrorTxn, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingCallLazyCreateFunction,
+                                                            asHeadlongAddress(addressBytes))
+                                                    .sending(depositAmount)
+                                                    .via(REVERTING_TXN)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            callLazyCreateFunction,
+                                                            asHeadlongAddress(addressBytes))
+                                                    .via(payTxn)
+                                                    .sending(depositAmount)
+                                                    .gas(6_000_000));
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getTxnRecord =
+                                            getTxnRecord(payTxn).andAllChildRecords().logged();
+                                    allRunFor(spec, getTxnRecord);
+                                    final var lazyAccountId =
+                                            getTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    final var name = "lazy";
+                                    spec.registry().saveAccountId(name, lazyAccountId);
+                                    allRunFor(
+                                            spec,
+                                            getAccountBalance(name).hasTinyBars(depositAmount));
+                                }));
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
+        final var ECDSA_KEY = "ECDSAKey";
+        final var ECDSA_KEY2 = "ECDSAKey2";
+        final var createTooManyHollowAccounts = "createTooManyHollowAccounts";
+        final var lazyCreationProperty = "lazyCreation.enabled";
+        final var contractsEvmVersionProperty = "contracts.evm.version";
+        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
+        final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
+        final var depositAmount = 1000;
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCallTooManyCreatesFails")
+                .preserving(
+                        lazyCreationProperty,
+                        maxPrecedingRecords,
+                        contractsEvmVersionDynamicProperty,
+                        contractsEvmVersionDynamicProperty)
+                .given(
+                        overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
+                        overridingTwo(
+                                contractsEvmVersionProperty,
+                                "v0.34",
+                                contractsEvmVersionDynamicProperty,
+                                "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var ecdsaKey2 = spec.registry().getKey(ECDSA_KEY2);
+                                    final var tmp2 = ecdsaKey2.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes2 = recoverAddressFromPubKey(tmp2);
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            createTooManyHollowAccounts,
+                                                            (Object)
+                                                                    asHeadlongAddressArray(
+                                                                            addressBytes,
+                                                                            addressBytes2))
+                                                    .sending(depositAmount)
+                                                    .via(TRANSFER_TXN)
+                                                    .gas(6_000_000)
+                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                            getAliasedAccountInfo(ecdsaKey.toByteString())
+                                                    .logged()
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                                            getAliasedAccountInfo(ecdsaKey2.toByteString())
+                                                    .logged()
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                                }))
+                .then(
+                        emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED),
+                        resetToDefault(
+                                lazyCreationProperty,
+                                contractsEvmVersionProperty,
+                                maxPrecedingRecords));
     }
 
     @Override
