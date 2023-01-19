@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.*;
-import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -183,7 +182,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
-    private static final int depositAmount = 1000;
+    private static final int DEPOSIT_AMOUNT = 1000;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -1448,7 +1447,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             LAZY_CREATE_CONTRACT,
                                                             callLazyCreateFunction,
                                                             mirrorAddrWith(1_234_567_890L))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(mirrorTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(6_000_000),
@@ -1459,7 +1458,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             LAZY_CREATE_CONTRACT,
                                                             revertingCallLazyCreateFunction,
                                                             asHeadlongAddress(address1))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(REVERTING_TXN)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(6_000_000),
@@ -1470,14 +1469,14 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             callLazyCreateFunction,
                                                             asHeadlongAddress(address1))
                                                     .via(payTxn)
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .gas(6_000_000),
                                             // .send()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             revertingSendLazyCreateFunction,
                                                             asHeadlongAddress(address2))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(sendRevertingTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(6_000_000),
@@ -1488,14 +1487,14 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             sendLazyCreateFunction,
                                                             asHeadlongAddress(address2))
                                                     .via(sendSuccessfulTxn)
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .gas(6_000_000),
                                             // .transfer()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             revertingTransferLazyCreateFunction,
                                                             asHeadlongAddress(address3))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(transferRevertingTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(6_000_000),
@@ -1506,7 +1505,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             transferLazyCreateFunction,
                                                             asHeadlongAddress(address3))
                                                     .via(transferSuccessfulTxn)
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .gas(6_000_000));
                                 }))
                 .then(
@@ -1536,7 +1535,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         spec.registry().saveAccountId(name, lazyAccountId);
         allRunFor(
                 spec,
-                getAccountBalance(name).hasTinyBars(depositAmount),
+                getAccountBalance(name).hasTinyBars(DEPOSIT_AMOUNT),
                 getAccountInfo(name)
                         .has(
                                 accountWith()
@@ -1555,7 +1554,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contractsEvmVersionProperty = "contracts.evm.version";
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
         final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
-        final var depositAmount = 1000;
         final var txn2 = "txn2";
         final var txn3 = "txn3";
         return onlyPropertyPreservingHapiSpec(
@@ -1595,7 +1593,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                     asHeadlongAddressArray(
                                                                             addressBytes,
                                                                             addressBytes2))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(TRANSFER_TXN)
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
@@ -1606,7 +1604,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                     asHeadlongAddressArray(
                                                                             addressBytes,
                                                                             addressBytes2))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(txn2)
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
@@ -1617,7 +1615,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                     asHeadlongAddressArray(
                                                                             addressBytes,
                                                                             addressBytes2))
-                                                    .sending(depositAmount)
+                                                    .sending(DEPOSIT_AMOUNT)
                                                     .via(txn3)
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
