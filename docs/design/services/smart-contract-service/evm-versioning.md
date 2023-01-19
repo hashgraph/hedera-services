@@ -41,19 +41,19 @@ qualifier.
 A standard dynamic property will be used to configure the EVM at startup (`contracts.evm.version`) and will be defaulted
 to the last activated version on mainnet in the event the value is not set.
 
-EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of hedera. for
-example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.32`. Not every hedera
-version will have a new EVM version. Only when EVM compatability is impacted for object replay will a new version be
+EVM versions will follow the format `v&lt;major>.&lt;minor>`, corresponding to the released version of Hedera. For
+example, the earliest version supported by this regime is `v0.30` with a planned update for `v0.32`. Not every Hedera
+version will have a new EVM version. Only when EVM compatibility is impacted for object replay will a new version be
 set.
 
 It is expected that there will be a new version for each major Ethereum Mainnet hard fork. A table will be kept here to
 document which major hardfork corresponds to each internal version.
 
-| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                              |
-|---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------|
-|        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                       |
-|        `v0.32` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses   |
-|              ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                             |
+| Hedera Version | Ethereum Fork                                                                                                     | Comments                                                                                                                                                                  |
+|---------------:|:------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|        `v0.30` | [London](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/london.md)     |                                                                                                                                                                           |
+|        `v0.34` | [Paris](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md)       | Replaces `DIFFICULTY` with `RANDAO`, removes errors from Invalid Solidity Addresses. Adds lazy creation (hollow account creation) capabilities in the EVM as per HIP-583. |
+|              ? | [Shanghai](https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md) | Expected Q2 2023 or later                                                                                                                                                 |
 
 ## Open Questions
 

@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -91,6 +92,8 @@ public class FileSignTool {
     /** next 48 bytes are hash384 of content of the file to be signed */
     private static final byte TYPE_FILE_HASH = 4;
 
+    private static final int DEFAULT_RECORD_STREAM_VERSION = 6;
+
     private static final String STREAM_TYPE_JSON_PROPERTY = "streamTypeJson";
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
     private static final String FILE_NAME_PROPERTY = "fileName";
@@ -99,6 +102,8 @@ public class FileSignTool {
     private static final String ALIAS_PROPERTY = "alias";
     private static final String PASSWORD_PROPERTY = "password";
     private static final String DIR_PROPERTY = "dir";
+    private static final String APP_VERSION = "appVersion";
+
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
     private static final int BYTES_COUNT_IN_INT = 4;
@@ -307,7 +312,33 @@ public class FileSignTool {
             throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException,
                     InvalidKeyException {
 
-        final int[] fileHeader = streamType.getFileHeader();
+        int[] fileHeader = streamType.getFileHeader();
+
+        // extract latest app version from system property if available
+        final String appVersionString = System.getProperty(APP_VERSION);
+        if (appVersionString != null) {
+            final String[] versions =
+                    appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
+            if (versions.length >= 3) {
+                try {
+                    fileHeader =
+                            new int[] {
+                                DEFAULT_RECORD_STREAM_VERSION,
+                                Integer.parseInt(versions[0]),
+                                Integer.parseInt(versions[1]),
+                                Integer.parseInt(versions[2]),
+                            };
+                } catch (final NumberFormatException e) {
+                    LOGGER.error(
+                            MARKER,
+                            "Error when parsing app version string {}",
+                            appVersionString,
+                            e);
+                }
+            }
+        }
+        LOGGER.info(MARKER, "Record stream file header is {}", Arrays.toString(fileHeader));
+
         try (final SerializableDataOutputStream dosMeta =
                         new SerializableDataOutputStream(
                                 new HashingOutputStream(metadataStreamDigest));
