@@ -110,7 +110,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
 
       - name: Expand Shallow Clone for SonarQube
-        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() }}
+        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() && github.repository_owner == 'hashgraph' }}
         run: |
           git fetch --unshallow --no-recurse-submodules
 
@@ -233,7 +233,7 @@ jobs:
         id: sonar-cloud
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() && github.repository_owner == 'hashgraph' }}
         run: |
           SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
           if [[ "${IS_PULL_REQUEST}" == true ]]; then
@@ -248,7 +248,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
           SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() && github.repository_owner == 'hashgraph' }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan
