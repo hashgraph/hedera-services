@@ -39,11 +39,11 @@ import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
-    @Mock protected ScheduleVirtualValue schedule;
-    @Mock protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
-    protected ReadableScheduleStore scheduleStore;
+    @Mock private ScheduleVirtualValue schedule;
+    @Mock private ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
+    private ReadableScheduleStore scheduleStore;
 
-    protected AccountID scheduleDeleter = AccountID.newBuilder().setAccountNum(3001L).build();
+    private final AccountID scheduleDeleter = AccountID.newBuilder().setAccountNum(3001L).build();
 
     @BeforeEach
     void setUp() {
