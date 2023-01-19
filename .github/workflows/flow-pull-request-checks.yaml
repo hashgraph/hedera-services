@@ -48,7 +48,7 @@ jobs:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'CI:UnitTests') || contains(github.event.pull_request.labels.*.name, 'CI:FinalChecks') }}
     steps:
       - name: Check Labels
-        uses: jesusvasquez333/verify-pr-label-action@v1.4.0
+        uses: jesusvasquez333/verify-pr-label-action@657d111bbbe13e22bbd55870f1813c699bde1401 # pin@v1.4.0
         if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
