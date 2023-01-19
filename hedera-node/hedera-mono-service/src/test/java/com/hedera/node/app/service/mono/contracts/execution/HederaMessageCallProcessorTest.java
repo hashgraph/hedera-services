@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
@@ -301,12 +300,9 @@ class HederaMessageCallProcessorTest {
         given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getValue()).willReturn(Wei.of(1000L));
         final var gasPrice = Wei.of(5);
-        given(frame.getGasPrice()).willReturn(gasPrice);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
         given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
-        final var initialGas = 1_000_000L;
-        given(frame.getRemainingGas()).willReturn(initialGas);
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
         final var creationFee = 500L;
@@ -321,54 +317,12 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).decrementRemainingGas(creationFee / gasPrice.toLong());
+        verify(frame, never()).decrementRemainingGas(anyLong());
         verify(autoCreationLogic).submitRecords(recordSubmissions);
         verify(updater)
                 .trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
         verify(frame, times(1)).getState();
-        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
-    }
-
-    @Test
-    void executesLazyCreateNotSufficientGas() {
-        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
-        given(frame.getValue()).willReturn(Wei.of(1000L));
-        final var gasPrice = Wei.of(5);
-        given(frame.getGasPrice()).willReturn(gasPrice);
-        given(frame.getWorldUpdater()).willReturn(updater);
-        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
-        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
-        final var initialGas = 50L;
-        given(frame.getRemainingGas()).willReturn(initialGas);
-        final var transactionalLedger = mock(TransactionalLedger.class);
-        given(updater.trackingAccounts()).willReturn(transactionalLedger);
-        final var change =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAccountID(
-                                        AccountID.newBuilder()
-                                                .setAlias(
-                                                        ByteStringUtils.wrapUnsafely(
-                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
-                                                .build())
-                                .build(),
-                        null);
-        final var creationFee = 500L;
-        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
-                .willReturn(autoCreationLogic);
-        given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
-                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
-
-        subject.start(frame, hederaTracer);
-
-        verify(frame).decrementRemainingGas(initialGas);
-        verify(frame).setState(EXCEPTIONAL_HALT);
-        verify(frame, times(1)).getState();
-        verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
-        verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
-        verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 
