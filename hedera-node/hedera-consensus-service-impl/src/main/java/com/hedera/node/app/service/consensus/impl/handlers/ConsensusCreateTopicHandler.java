@@ -24,10 +24,8 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import java.util.Optional;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -42,11 +40,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * @param txBody    the {@link TransactionBody} with the transaction data
-     * @param payer     the {@link AccountID} of the payer
+     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param payer the {@link AccountID} of the payer
      * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     * {@link #handle(TransactionMetadata)}
+     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
@@ -67,8 +65,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             if (!payer.equals(autoRenewAccount)) {
                 final var result = keyLookup.getKey(autoRenewAccount);
                 if (!result.failed()) {
-                    Optional.ofNullable(result.key())
-                            .map(metaBuilder::addToReqNonPayerKeys);
+                    Optional.ofNullable(result.key()).map(metaBuilder::addToReqNonPayerKeys);
                 } else {
                     metaBuilder.status(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
                 }
