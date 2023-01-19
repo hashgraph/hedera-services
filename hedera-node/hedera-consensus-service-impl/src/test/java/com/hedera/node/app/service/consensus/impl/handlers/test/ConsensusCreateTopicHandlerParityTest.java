@@ -62,8 +62,7 @@ public class ConsensusCreateTopicHandlerParityTest {
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);
 
         // when:
-        final var result =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var result = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
 
         // then:
         assertOkResponse(result);
