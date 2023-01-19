@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -125,22 +124,13 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             haltFrameAndTraceCreationResult(
                     frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
-            final var creationFeeInTinybars = lazyCreateResult.getRight();
-            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
-            if (frame.getRemainingGas() < creationFeeInGas) {
-                // ledgers won't be committed on unsuccessful frame and StackedContractAliases
-                // will revert any new aliases
-                haltFrameAndTraceCreationResult(frame, operationTracer, INSUFFICIENT_GAS);
-            } else {
-                frame.decrementRemainingGas(creationFeeInGas);
-                // track auto-creation preceding child record
-                final var recordSubmissions =
-                        infrastructureFactory.newRecordSubmissionsScopedTo(updater);
-                autoCreationLogic.submitRecords(recordSubmissions);
-                // track the lazy account so it is accessible to the EVM
-                updater.trackLazilyCreatedAccount(
-                        EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
-            }
+            // track auto-creation preceding child record
+            final var recordSubmissions =
+                    infrastructureFactory.newRecordSubmissionsScopedTo(updater);
+            autoCreationLogic.submitRecords(recordSubmissions);
+            // track the lazy account so it is accessible to the EVM
+            updater.trackLazilyCreatedAccount(
+                    EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
         }
     }
 
