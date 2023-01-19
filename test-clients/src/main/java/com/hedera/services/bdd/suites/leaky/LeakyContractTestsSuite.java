@@ -19,8 +19,8 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -135,6 +135,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -180,6 +181,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
+    private static final int depositAmount = 1000;
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -210,8 +212,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
-                evmLazyCreateViaSolidityCall(),
-                evmLazyCreateViaSolidityCallTooManyCreatesFails());
+                evmLazyCreateViaSolidityTransfers(),
+                evmLazyCreateViaSolidityTransfersTooManyCreatesFails());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -1385,17 +1387,29 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec evmLazyCreateViaSolidityCall() {
+    private HapiSpec evmLazyCreateViaSolidityTransfers() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
+        final var ECDSA_KEY2 = "ECDSAKey2";
+        final var ECDSA_KEY3 = "ECDSAKey3";
         final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
         final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
+        final var sendLazyCreateFunction = "nestedLazyCreateThenSendMoreViaSend";
+        final var revertingSendLazyCreateFunction = "nestedLazyCreateViaSendThenRevert";
+        final var transferLazyCreateFunction = "nestedLazyCreateThenSendMoreViaTransfer";
+        final var revertingTransferLazyCreateFunction = "nestedLazyCreateViaTransferThenRevert";
         final var lazyCreationProperty = "lazyCreation.enabled";
         final var contractsEvmVersionProperty = "contracts.evm.version";
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
         final var REVERTING_TXN = "revertingTxn";
-        final var depositAmount = 1000;
         final var payTxn = "payTxn";
+        final var sendRevertingTxn = "sendRevertingTxn";
+        final var sendSuccessfulTxn = "sendSuccessfulTxn";
+        final var transferRevertingTxn = "transferRevertingTxn";
+        final var transferSuccessfulTxn = "transferSuccessfulTxn";
+        final AtomicReference<byte[]> address1Reference = new AtomicReference<>();
+        final AtomicReference<byte[]> address2Reference = new AtomicReference<>();
+        final AtomicReference<byte[]> address3Reference = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
                 .preserving(
@@ -1411,21 +1425,27 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 contractsEvmVersionDynamicProperty,
                                 "true"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY3).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
                         getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var address1 = getEvmAddressFrom(ECDSA_KEY, spec);
+                                    address1Reference.set(address1);
+                                    final var address2 = getEvmAddressFrom(ECDSA_KEY2, spec);
+                                    address2Reference.set(address2);
+                                    final var address3 = getEvmAddressFrom(ECDSA_KEY3, spec);
+                                    address3Reference.set(address3);
                                     allRunFor(
                                             spec,
+                                            // .call()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             revertingCallLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
+                                                            asHeadlongAddress(address1))
                                                     .sending(depositAmount)
                                                     .via(REVERTING_TXN)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -1435,41 +1455,98 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             callLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
+                                                            asHeadlongAddress(address1))
                                                     .via(payTxn)
+                                                    .sending(depositAmount)
+                                                    .gas(6_000_000),
+                                            // .send()
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingSendLazyCreateFunction,
+                                                            asHeadlongAddress(address2))
+                                                    .sending(depositAmount)
+                                                    .via(sendRevertingTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    sendRevertingTxn, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            sendLazyCreateFunction,
+                                                            asHeadlongAddress(address2))
+                                                    .via(sendSuccessfulTxn)
+                                                    .sending(depositAmount)
+                                                    .gas(6_000_000),
+                                            // .transfer()
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingTransferLazyCreateFunction,
+                                                            asHeadlongAddress(address3))
+                                                    .sending(depositAmount)
+                                                    .via(transferRevertingTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    transferRevertingTxn, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            transferLazyCreateFunction,
+                                                            asHeadlongAddress(address3))
+                                                    .via(transferSuccessfulTxn)
                                                     .sending(depositAmount)
                                                     .gas(6_000_000));
                                 }))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var getTxnRecord =
-                                            getTxnRecord(payTxn).andAllChildRecords().logged();
-                                    allRunFor(spec, getTxnRecord);
-                                    final var lazyAccountId =
-                                            getTxnRecord
-                                                    .getChildRecord(0)
-                                                    .getReceipt()
-                                                    .getAccountID();
-                                    final var name = "lazy";
-                                    spec.registry().saveAccountId(name, lazyAccountId);
-                                    allRunFor(
-                                            spec,
-                                            getAccountBalance(name).hasTinyBars(depositAmount));
+                                    assertHollowAccount(spec, payTxn, address1Reference.get());
+                                    assertHollowAccount(
+                                            spec, sendSuccessfulTxn, address2Reference.get());
+                                    assertHollowAccount(
+                                            spec, transferSuccessfulTxn, address3Reference.get());
                                 }));
     }
 
-    private HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
+    private static byte[] getEvmAddressFrom(final String ecdsaKey, final HapiSpec spec) {
+        final var ecdsa = spec.registry().getKey(ecdsaKey);
+        final var tmp = ecdsa.getECDSASecp256K1().toByteArray();
+        return recoverAddressFromPubKey(tmp);
+    }
+
+    private static void assertHollowAccount(
+            final HapiSpec spec, final String txnRecordTxn, final byte[] evmAddress) {
+        final var txnRecord = getTxnRecord(txnRecordTxn).andAllChildRecords().logged();
+        allRunFor(spec, txnRecord);
+
+        final var lazyAccountId = txnRecord.getChildRecord(0).getReceipt().getAccountID();
+        final var name = "lazy";
+        spec.registry().saveAccountId(name, lazyAccountId);
+        allRunFor(
+                spec,
+                getAccountBalance(name).hasTinyBars(depositAmount),
+                getAccountInfo(name)
+                        .has(
+                                accountWith()
+                                        .hasEmptyKey()
+                                        .evmAddress(ByteStringUtils.wrapUnsafely(evmAddress))));
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityTransfersTooManyCreatesFails() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var ECDSA_KEY2 = "ECDSAKey2";
         final var createTooManyHollowAccounts = "createTooManyHollowAccounts";
+        final var createTooManyHollowAccountsViaTransfer = "createTooManyHollowAccountsViaTransfer";
+        final var createTooManyHollowAccountsViaSend = "createTooManyHollowAccountsViaSend";
         final var lazyCreationProperty = "lazyCreation.enabled";
         final var contractsEvmVersionProperty = "contracts.evm.version";
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
         final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
         final var depositAmount = 1000;
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCallTooManyCreatesFails")
+        final var txn2 = "txn2";
+        final var txn3 = "txn3";
+        return onlyPropertyPreservingHapiSpec(
+                        "evmLazyCreateViaSolidityTransfersTooManyCreatesFails")
                 .preserving(
                         lazyCreationProperty,
                         maxPrecedingRecords,
@@ -1509,6 +1586,28 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN)
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            createTooManyHollowAccountsViaSend,
+                                                            (Object)
+                                                                    asHeadlongAddressArray(
+                                                                            addressBytes,
+                                                                            addressBytes2))
+                                                    .sending(depositAmount)
+                                                    .via(txn2)
+                                                    .gas(6_000_000)
+                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            createTooManyHollowAccountsViaTransfer,
+                                                            (Object)
+                                                                    asHeadlongAddressArray(
+                                                                            addressBytes,
+                                                                            addressBytes2))
+                                                    .sending(depositAmount)
+                                                    .via(txn3)
+                                                    .gas(6_000_000)
+                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
                                             getAliasedAccountInfo(ecdsaKey.toByteString())
                                                     .logged()
                                                     .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
@@ -1518,6 +1617,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 }))
                 .then(
                         emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED),
+                        emptyChildRecordsCheck(txn2, MAX_CHILD_RECORDS_EXCEEDED),
+                        emptyChildRecordsCheck(txn3, MAX_CHILD_RECORDS_EXCEEDED),
                         resetToDefault(
                                 lazyCreationProperty,
                                 contractsEvmVersionProperty,

@@ -20,6 +20,32 @@
   {
     "inputs": [
       {
+        "internalType": "address payable[]",
+        "name": "_addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "createTooManyHollowAccountsViaSend",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable[]",
+        "name": "_addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "createTooManyHollowAccountsViaTransfer",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "token",
         "type": "address"
@@ -189,6 +215,58 @@
       }
     ],
     "name": "nestedLazyCreateThenSendMore",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "nestedLazyCreateThenSendMoreViaSend",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "nestedLazyCreateThenSendMoreViaTransfer",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "nestedLazyCreateViaSendThenRevert",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "nestedLazyCreateViaTransferThenRevert",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
