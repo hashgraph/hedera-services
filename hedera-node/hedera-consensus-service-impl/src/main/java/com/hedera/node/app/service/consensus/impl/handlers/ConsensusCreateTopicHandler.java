@@ -22,7 +22,11 @@ import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
+import java.util.Optional;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -38,11 +42,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
+     * @param txBody    the {@link TransactionBody} with the transaction data
+     * @param payer     the {@link AccountID} of the payer
      * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
@@ -54,10 +58,21 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var op = txBody.getConsensusCreateTopic();
         final var adminKey = asHederaKey(op.getAdminKey());
+        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
         final var submitKey = asHederaKey(op.getSubmitKey());
-        if (adminKey.isPresent() || submitKey.isPresent()) {
-            adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
-            submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.getAutoRenewAccount();
+            if (!payer.equals(autoRenewAccount)) {
+                final var result = keyLookup.getKey(autoRenewAccount);
+                if (!result.failed()) {
+                    Optional.ofNullable(result.key())
+                            .map(metaBuilder::addToReqNonPayerKeys);
+                } else {
+                    metaBuilder.status(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+                }
+            }
         }
 
         return metaBuilder.build();

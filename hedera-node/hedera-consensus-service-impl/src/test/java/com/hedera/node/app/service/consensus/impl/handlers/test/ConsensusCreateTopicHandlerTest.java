@@ -75,7 +75,7 @@ class ConsensusCreateTopicHandlerTest {
                 .build();
     }
 
-    private static void assertOkResponse(TransactionMetadata result) {
+    static void assertOkResponse(TransactionMetadata result) {
         assertThat(result.status()).isEqualTo(ResponseCodeEnum.OK);
         assertThat(result.failed()).isFalse();
     }
@@ -203,6 +203,7 @@ class ConsensusCreateTopicHandlerTest {
         final var inputTxn = newCreateTxn(SIMPLE_KEY_A, SIMPLE_KEY_B);
 
         // when/then:
+        //noinspection DataFlowIssue : explicitly passing null as a test param
         final ThrowableAssert.ThrowingCallable toRun =
                 () -> subject.preHandle(inputTxn, null, keyFinder);
         assertThatThrownBy(toRun).isInstanceOf(NullPointerException.class);
@@ -222,6 +223,8 @@ class ConsensusCreateTopicHandlerTest {
         assertThat(result.payerKey()).isEqualTo(payerKey);
         assertThat(result.requiredNonPayerKeys()).isEmpty();
     }
+
+    // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
 
     private HederaKey mockPayerLookup() {
         return mockPayerLookup(KeyUtils.A_COMPLEX_KEY);
