@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
     private final String EVM_VERSION_0_30 = "v0.30";
-    private final String EVM_VERSION_0_32 = "v0.32";
+    private final String EVM_VERSION_0_34 = "v0.34";
     @Mock private PricesAndFeesProvider livePricesSource;
     @Mock private HederaEvmMutableWorldState worldState;
     @Mock private EvmProperties globalDynamicProperties;
@@ -120,9 +120,9 @@ class HederaEvmTxProcessorTest {
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            mcpVersion = EVM_VERSION_0_32;
+                            mcpVersion = EVM_VERSION_0_34;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
@@ -135,9 +135,9 @@ class HederaEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_32;
+                            ccpVersion = EVM_VERSION_0_34;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -389,7 +389,7 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void testEvmVersionLoading() {
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32, "vDoesn'tExist");
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34, "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock(0L);
@@ -412,8 +412,8 @@ class HederaEvmTxProcessorTest {
         // version changes, dynamic set
         evmTxProcessor.execute(
                 sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
-        assertEquals(EVM_VERSION_0_32, mcpVersion);
-        assertEquals(EVM_VERSION_0_32, ccpVersion);
+        assertEquals(EVM_VERSION_0_34, mcpVersion);
+        assertEquals(EVM_VERSION_0_34, ccpVersion);
 
         // bad version
         assertThrows(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ class ContractsModuleTest {
 
     @Test
     void logOperationsAreProvided() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
             Code legacyCode = CodeFactory.createCode(testCode, Hash.hash(testCode), 0, false);
             final var log0 = evm.operationAtOffset(legacyCode, 0);
@@ -157,7 +157,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOverwritesDifficulty() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -183,7 +183,7 @@ class ContractsModuleTest {
 
     @Test
     void largePrngSeedTrimsAsExpected() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -214,7 +214,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOutOfGas() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -256,7 +256,7 @@ class ContractsModuleTest {
     @Test
     void chainId() {
         Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
                     evm.operationAtOffset(
                             CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
@@ -278,7 +278,7 @@ class ContractsModuleTest {
 
     @Test
     void chainIdOutOfGas() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
                     evm.operationAtOffset(
                             CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
@@ -305,7 +305,7 @@ class ContractsModuleTest {
 
     @Test
     void balanceGoodAddress() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var balanceOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);

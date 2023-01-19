@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1593,7 +1593,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         return Address.wrap(Address.toChecksumAddress("0x" + addr));
     }
 
-    private Address mirrorAddrWith(final long num) {
+    public static Address mirrorAddrWith(final long num) {
         return Address.wrap(
                 Address.toChecksumAddress(
                         new BigInteger(1, HapiPropertySource.asSolidityAddress(0, 0, num))));

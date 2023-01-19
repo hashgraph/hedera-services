@@ -46,7 +46,7 @@ class ContractsV032ModuleTest {
 
         final var precompileAddress = "0x5";
         final var addressValidator =
-                ContractsV_0_32Module.provideAddressValidator(
+                ContractsV_0_34Module.provideAddressValidator(
                         Map.of(precompileAddress, new SHA256PrecompiledContract(null)));
 
         assertFalse(addressValidator.test(nonExistingAddress, frame));
