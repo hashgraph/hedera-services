@@ -66,6 +66,12 @@ public class ProviderRun extends UtilOp {
                 .forEach(type -> counts.put(type, new AtomicInteger()));
     }
 
+    public ProviderRun lasting(final long duration, final TimeUnit unit) {
+        this.unitSupplier = () -> unit;
+        this.durationSupplier = () -> duration;
+        return this;
+    }
+
     public ProviderRun lasting(LongSupplier durationSupplier, Supplier<TimeUnit> unitSupplier) {
         this.unitSupplier = unitSupplier;
         this.durationSupplier = durationSupplier;

@@ -26,10 +26,12 @@ import picocli.CommandLine.ParentCommand;
         subcommands = {
             HelpCommand.class,
             BalanceCommand.class,
+            InfoCommand.class,
             RekeyCommand.class,
             SendCommand.class,
             CreateCommand.class,
-            StakeCommand.class
+            StakeCommand.class,
+            UpdateCommand.class
         },
         description = "Performs account operations")
 public class AccountsCommand implements Callable<Integer> {

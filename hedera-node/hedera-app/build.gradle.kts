@@ -55,5 +55,11 @@ dependencies {
     itestCompileOnly(libs.spotbugs.annotations)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
     testImplementation(testLibs.bundles.testing)
+    testCompileOnly(libs.spotbugs.annotations)
+}
+
+tasks.withType<Test> {
+    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 }

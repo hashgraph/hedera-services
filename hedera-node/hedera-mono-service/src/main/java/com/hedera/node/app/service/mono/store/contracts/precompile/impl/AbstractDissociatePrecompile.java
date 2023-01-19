@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -52,7 +51,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     protected Dissociation dissociateOp;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
-    protected final StateView currentView;
 
     protected AbstractDissociatePrecompile(
             final WorldLedgers ledgers,
@@ -62,8 +60,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final Provider<FeeCalculator> feeCalculator,
-            final StateView currentView) {
+            final Provider<FeeCalculator> feeCalculator) {
         this.ledgers = ledgers;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
@@ -72,7 +69,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
         this.pricingUtils = pricingUtils;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.feeCalculator = feeCalculator;
-        this.currentView = currentView;
     }
 
     @Override
