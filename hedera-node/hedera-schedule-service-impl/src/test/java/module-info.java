@@ -8,6 +8,7 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires org.mockito.junit.jupiter;
     requires com.hedera.node.app.service.mono.testFixtures;
     requires org.apache.commons.lang3;
+    requires org.apache.commons.codec;
 
     opens com.hedera.node.app.service.schedule.impl.test to
             org.junit.platform.commons,

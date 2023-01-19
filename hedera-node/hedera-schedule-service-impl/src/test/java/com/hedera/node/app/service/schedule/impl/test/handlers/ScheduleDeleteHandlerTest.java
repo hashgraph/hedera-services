@@ -20,27 +20,30 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
+import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
-    @Mock protected JKey adminJKey;
-    //    @Mock protected ScheduleVirtualValue schedule;
-    //    public static SchedulableTransactionBody scheduledTxn;
-
+    @Mock protected ScheduleVirtualValue schedule;
     @Mock protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
     protected ReadableScheduleStore scheduleStore;
+
+    protected AccountID scheduleDeleter = AccountID.newBuilder().setAccountNum(3001L).build();
 
     @BeforeEach
     void setUp() {
@@ -51,91 +54,71 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
 
     @Test
-    void scheduleDeleteHappyPath() {
+    void scheduleDeleteHappyPath() throws DecoderException {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
-        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore);
-        assertEquals(scheduler, meta.payer());
-        //        assertEquals(schedulerKey, meta.payerKey());
-        assertEquals(List.of(), meta.requiredNonPayerKeys());
-        assertEquals(OK, meta.status());
+        given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
+        given(keyLookup.getKey(scheduleDeleter))
+                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
+
+        final var scheduleDeleteMeta =
+                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
+        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
+        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
+        assertEquals(OK, scheduleDeleteMeta.status());
     }
 
-    //    @Test
-    //    void scheduleDeleteFailsIfScheduleMissing() {
-    //        final var txn = scheduleSignTransaction();
-    //        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.empty());
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore);
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(null, meta.payerKey());
-    //        assertEquals(null, meta.scheduledMeta());
-    //        assertEquals(INVALID_SCHEDULE_ID, meta.status());
-    //        assertTrue(meta instanceof InvalidTransactionMetadata);
-    //    }
+    @Test
+    // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
+    void scheduleDeleteFailsIfScheduleMissing() {
+        final var txn = scheduleDeleteTransaction();
+        givenSetupForScheduleDelete(txn);
 
-    //    @Test
-    //    void scheduleDeleteVanillaWithOptionalPayerSet() {
-    //        final var txn = scheduleSignTransaction();
-    //        givenSetupForScheduleSign(txn);
-    //        scheduledMeta = new SigTransactionMetadata(scheduledTxn, payer, OK, adminKey,
-    // List.of());
-    //
-    //        given(schedule.hasExplicitPayer()).willReturn(true);
-    //        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
-    //        given(keyLookup.getKey(scheduler))
-    //                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-    //        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
-    //
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore);
-    //
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(schedulerKey, meta.payerKey());
-    //        assertEquals(scheduledMeta, meta.scheduledMeta());
-    //        assertEquals(adminKey, meta.scheduledMeta().payerKey());
-    //        assertEquals(OK, meta.status());
-    //        verify(dispatcher).dispatch(scheduledTxn, payer);
-    //    }
+        final var scheduleDeleteMeta =
+                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
+        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
+        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
+        assertEquals(INVALID_SCHEDULE_ID, scheduleDeleteMeta.status());
+        assertTrue(scheduleDeleteMeta instanceof InvalidTransactionMetadata);
+    }
 
-    //    @Test
-    //    void scheduleDeleteForNotSchedulableFails() {
-    //        final var txn = scheduleSignTransaction();
-    //
-    //        scheduledTxn =
-    //                TransactionBody.newBuilder()
-    //                        .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
-    //                        .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
-    //                        .build();
-    //
-    //
-    // given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
-    //        given(keyLookup.getKey(scheduler))
-    //                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-    //        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-    //        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
-    //        given(schedule.hasExplicitPayer()).willReturn(false);
-    //
-    //        final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore);
-    //        assertEquals(scheduler, meta.payer());
-    //        assertEquals(schedulerKey, meta.payerKey());
-    //        assertEquals(List.of(), meta.requiredNonPayerKeys());
-    //        assertTrue(meta.scheduledMeta() instanceof InvalidTransactionMetadata);
-    //        assertTrue(meta.scheduledMeta().txnBody().hasScheduleCreate());
-    //        assertEquals(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, meta.scheduledMeta().status());
-    //        assertEquals(scheduler, meta.scheduledMeta().payer());
-    //        assertEquals(OK, meta.status());
-    //    }
+    @Test
+    // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
+    void scheduleDeleteScheduleIsImmutable() {
+        final var txn = scheduleDeleteTransaction();
+        givenSetupForScheduleDelete(txn);
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
-    //    @Test
-    //    void scheduleDeleteNotInWhiteList() {
-    //        final var txn = scheduleTxnNotRecognized();
-    //        TransactionMetadata result =
-    //                subject.preHandle(txn, payer, keyLookup, scheduleStore);
-    //        assertTrue(result instanceof InvalidTransactionMetadata);
-    //        assertEquals(txn, result.txnBody());
-    //        assertEquals(payer, result.payer());
-    //        assertEquals(INVALID_SCHEDULE_ID, result.status());
-    //    }
+        final var scheduleDeleteMeta =
+                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
+        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
+        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
+        assertEquals(SCHEDULE_IS_IMMUTABLE, scheduleDeleteMeta.status());
+    }
+
+    @Test
+    // when the delete schedule tx is not signed with admin key of scheduled tx,
+    // then fail with INVALID_SIGNATURE
+    void scheduleDeleteFailWhenNotSignedWithAdminKey() throws DecoderException {
+        final var txn = scheduleDeleteTransaction();
+        givenSetupForScheduleDelete(txn);
+
+        Key key =
+                Key.newBuilder()
+                        .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaabbbbbbbbbb"))
+                        .build();
+        given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
+        given(keyLookup.getKey(scheduleDeleter))
+                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
+
+        final var scheduleDeleteMeta =
+                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
+        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
+        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
+        assertEquals(INVALID_SIGNATURE, scheduleDeleteMeta.status());
+    }
 
     @Test
     void handleNotImplemented() {
@@ -143,16 +126,10 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     private void givenSetupForScheduleDelete(TransactionBody txn) {
-        //        scheduledTxn = SchedulableTransactionBody.newBuilder()
-        //                .setTransactionFee(123L)
-        //                .setCryptoDelete(
-        //                        CryptoDeleteTransactionBody.newBuilder()
-        //                                .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
-        //                                .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
-        //                .build();
         scheduledTxn =
                 TransactionBody.newBuilder()
-                        .setTransactionID(TransactionID.newBuilder().setAccountID(payer).build())
+                        .setTransactionID(
+                                TransactionID.newBuilder().setAccountID(scheduler).build())
                         .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
                         .build();
         scheduledMeta =
@@ -162,52 +139,15 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                                 txn.getTransactionID()),
                         scheduler,
                         OK,
-                        adminKey,
+                        schedulerKey,
                         List.of());
-        //        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-        given(keyLookup.getKey(scheduler))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        //        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
-        //        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
     }
 
     private TransactionBody scheduleDeleteTransaction() {
         return TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
+                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduleDeleter))
                 .setScheduleDelete(
                         ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleID))
                 .build();
     }
-
-    //    public static TransactionBody scheduleCreateTxnWith(
-    //            final Key scheduleAdminKey,
-    //            final AccountID payer,
-    //            final AccountID scheduler,
-    //            final Timestamp validStart,
-    //            final Timestamp expirationTime,
-    //            final Boolean waitForExpiry) {
-    //        final var creation =
-    //                ScheduleCreateTransactionBody.newBuilder()
-    //                        .setScheduledTransactionBody(scheduledTxn);
-    //        if (scheduleAdminKey != null) {
-    //            creation.setAdminKey(scheduleAdminKey);
-    //        }
-    //        if (payer != null) {
-    //            creation.setPayerAccountID(payer);
-    //        }
-    //        if (expirationTime != null) {
-    //            creation.setExpirationTime(expirationTime);
-    //        }
-    //        if (waitForExpiry != null) {
-    //            creation.setWaitForExpiry(waitForExpiry);
-    //        }
-    //        return TransactionBody.newBuilder()
-    //                .setTransactionID(
-    //                        TransactionID.newBuilder()
-    //                                .setTransactionValidStart(validStart)
-    //                                .setAccountID(scheduler)
-    //                                .build())
-    //                .setScheduleCreate(creation)
-    //                .build();
-    //    }
 }

@@ -59,10 +59,9 @@ public class ScheduleDeleteHandler implements TransactionHandler {
             return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
         }
 
-        //        // check for SCHEDULE_PENDING_EXPIRATION
-        //        // maybe do nothing in this case?
-        //
-        //        // check for SCHEDULE_ALREADY_DELETED, SCHEDULE_ALREADY_EXECUTED errors
+        // No need to check for SCHEDULE_PENDING_EXPIRATION, SCHEDULE_ALREADY_DELETED,
+        // SCHEDULE_ALREADY_EXECUTED
+        // if any of these are the case then the scheduled tx would not be present in scheduleStore
 
         // check whether schedule was created with an admin key
         // if it wasn't, the schedule can't be deleted
@@ -83,8 +82,8 @@ public class ScheduleDeleteHandler implements TransactionHandler {
                 return new InvalidTransactionMetadata(
                         txn,
                         payer,
-                        INVALID_SIGNATURE); // I'm not sure whether this is the correct code to
-            // return here
+                        INVALID_SIGNATURE); // I'm not sure whether this is the correct code
+            // no need to add adminKey to required keys b/c it's also the payer key so already there
         }
 
         final var meta =
