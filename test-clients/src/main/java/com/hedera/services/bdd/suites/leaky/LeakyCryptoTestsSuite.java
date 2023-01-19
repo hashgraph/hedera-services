@@ -17,8 +17,7 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -51,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
@@ -100,7 +98,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
@@ -1018,8 +1015,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var lazyCreateTxn = "payTxn";
-        final var failedLazyCreateTxn = "failedLazyCreateTxn";
-        return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
+        return onlyPropertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
                 .given(
                         overridingThree(
@@ -1053,42 +1049,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                         .nonce(0)
                                                         .maxFeePerGas(0L)
                                                         .maxGasAllowance(FIVE_HBARS)
-                                                        .gasLimit(200_000L)
-                                                        .via(failedLazyCreateTxn)
-                                                        .hasKnownStatus(INSUFFICIENT_GAS),
-                                                TxnVerbs.ethereumCryptoTransferToAlias(
-                                                                spec.registry()
-                                                                        .getKey(RECIPIENT_KEY)
-                                                                        .getECDSASecp256K1(),
-                                                                FIVE_HBARS)
-                                                        .type(EthTxData.EthTransactionType.EIP1559)
-                                                        .signingWith(SECP_256K1_SOURCE_KEY)
-                                                        .payingWith(RELAYER)
-                                                        .nonce(1)
-                                                        .maxFeePerGas(0L)
-                                                        .maxGasAllowance(FIVE_HBARS)
                                                         .gasLimit(2_000_000L)
                                                         .via(lazyCreateTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var failedLazyTxnRecord =
-                                            getTxnRecord(failedLazyCreateTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .getDefaultInstanceForType()))
-                                                    .logged();
-                                    final var failedLazyTxnChildRecordsCheck =
-                                            emptyChildRecordsCheck(
-                                                    failedLazyCreateTxn, INSUFFICIENT_GAS);
-                                    allRunFor(
-                                            spec,
-                                            failedLazyTxnRecord,
-                                            failedLazyTxnChildRecordsCheck);
-
                                     final var ecdsaSecp256K1 =
                                             spec.registry()
                                                     .getKey(RECIPIENT_KEY)

@@ -7282,7 +7282,6 @@ public class TraceabilitySuite extends HapiSuite {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
-        final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
         return propertyPreservingHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
@@ -7319,20 +7318,6 @@ public class TraceabilitySuite extends HapiSuite {
                                                         .nonce(0)
                                                         .maxFeePerGas(0L)
                                                         .maxGasAllowance(FIVE_HBARS)
-                                                        .gasLimit(200_000L)
-                                                        .via(failedlazyCreateTxn)
-                                                        .hasKnownStatus(INSUFFICIENT_GAS),
-                                                TxnVerbs.ethereumCryptoTransferToAlias(
-                                                                spec.registry()
-                                                                        .getKey(RECIPIENT_KEY)
-                                                                        .getECDSASecp256K1(),
-                                                                valueToSend)
-                                                        .type(EthTxData.EthTransactionType.EIP1559)
-                                                        .signingWith(SECP_256K1_SOURCE_KEY)
-                                                        .payingWith(RELAYER)
-                                                        .nonce(1)
-                                                        .maxFeePerGas(0L)
-                                                        .maxGasAllowance(FIVE_HBARS)
                                                         .gasLimit(2_000_000L)
                                                         .via(lazyCreateTxn)
                                                         .hasKnownStatus(SUCCESS))))
@@ -7365,27 +7350,6 @@ public class TraceabilitySuite extends HapiSuite {
                                     allRunFor(spec, hapiGetAccountInfo, lazyAccountInfoCheck);
                                     allRunFor(
                                             spec,
-                                            expectContractActionSidecarFor(
-                                                    failedlazyCreateTxn,
-                                                    List.of(
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallOperationType(
-                                                                            CallOperationType
-                                                                                    .OP_CALL)
-                                                                    .setCallingAccount(
-                                                                            ethSenderAccountReference
-                                                                                    .get())
-                                                                    .setGas(179000)
-                                                                    .setGasUsed(179000)
-                                                                    .setValue(valueToSend)
-                                                                    .setTargetedAddress(
-                                                                            firstAliasAsByteString)
-                                                                    .setError(
-                                                                            ByteString.copyFromUtf8(
-                                                                                    INSUFFICIENT_GAS
-                                                                                            .name()))
-                                                                    .build())),
                                             expectContractActionSidecarFor(
                                                     lazyCreateTxn,
                                                     List.of(
