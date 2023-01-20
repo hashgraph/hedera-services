@@ -211,7 +211,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
                 evmLazyCreateViaSolidityCall(),
-                evmLazyCreateViaSolidityCallTooManyCreatesFails());
+                evmLazyCreateViaSolidityCallTooManyCreatesFails(),
+                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -1533,6 +1534,22 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 lazyCreationProperty,
                                 contractsEvmVersionProperty,
                                 maxPrecedingRecords));
+    }
+
+    private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
+        return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
+                .preserving("contracts.allowAutoAssociations")
+                .given(overriding("contracts.allowAutoAssociations", "false"))
+                .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .then(
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .maxAutomaticTokenAssociations(5)
+                                .hasPrecheck(NOT_SUPPORTED),
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
+                        contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .newMaxAutomaticAssociations(5)
+                                .hasPrecheck(NOT_SUPPORTED),
+                        contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
     }
 
     @Override
