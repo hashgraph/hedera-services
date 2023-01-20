@@ -180,7 +180,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
-    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY =
+            "contracts.allowAutoAssociations";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
