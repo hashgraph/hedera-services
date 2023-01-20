@@ -44,13 +44,13 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Optional<EvmTokenInfo> evmInfoForToken(Address token, ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(final Address token, final ByteString ledgerId) {
         return trackingLedgers.evmInfoForToken(tokenIdFromEvmAddress(token), ledgerId);
     }
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(
-            final Address token, long serialNo, final ByteString ledgerId) {
+            final Address token, final long serialNo, final ByteString ledgerId) {
         final var target =
                 NftID.newBuilder()
                         .setSerialNumber(serialNo)
@@ -60,44 +60,44 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public boolean isTokenAddress(Address address) {
+    public boolean isTokenAddress(final Address address) {
         return trackingLedgers.isTokenAddress(address);
     }
 
     @Override
-    public boolean isFrozen(Address account, Address token) {
+    public boolean isFrozen(final Address account, final Address token) {
         return trackingLedgers.isFrozen(
                 accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public boolean defaultFreezeStatus(Address token) {
+    public boolean defaultFreezeStatus(final Address token) {
         return trackingLedgers.defaultFreezeStatus(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public boolean defaultKycStatus(Address token) {
+    public boolean defaultKycStatus(final Address token) {
         return trackingLedgers.defaultKycStatus(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public boolean isKyc(Address account, Address token) {
+    public boolean isKyc(final Address account, final Address token) {
         return trackingLedgers.isKyc(
                 accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public Optional<List<CustomFee>> infoForTokenCustomFees(Address token) {
+    public Optional<List<CustomFee>> infoForTokenCustomFees(final Address token) {
         return trackingLedgers.infoForTokenCustomFees(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public TokenType typeOf(Address token) {
+    public TokenType typeOf(final Address token) {
         return trackingLedgers.typeOf(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public EvmKey keyOf(Address token, TokenKeyType keyType) {
+    public EvmKey keyOf(final Address token, final TokenKeyType keyType) {
         final var key =
                 trackingLedgers.keyOf(
                         tokenIdFromEvmAddress(token), TokenProperty.valueOf(keyType.name()));
@@ -106,33 +106,33 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public String nameOf(Address token) {
+    public String nameOf(final Address token) {
         return trackingLedgers.nameOf(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public String symbolOf(Address token) {
+    public String symbolOf(final Address token) {
         return trackingLedgers.symbolOf(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public long totalSupplyOf(Address token) {
+    public long totalSupplyOf(final Address token) {
         return trackingLedgers.totalSupplyOf(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public int decimalsOf(Address token) {
+    public int decimalsOf(final Address token) {
         return trackingLedgers.decimalsOf(tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public long balanceOf(Address account, Address token) {
+    public long balanceOf(final Address account, final Address token) {
         return trackingLedgers.balanceOf(
                 accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
     }
 
     @Override
-    public long staticAllowanceOf(Address owner, Address spender, Address token) {
+    public long allowanceOf(final Address owner, final Address spender, final Address token) {
         return trackingLedgers.staticAllowanceOf(
                 accountIdFromEvmAddress(owner),
                 accountIdFromEvmAddress(spender),
@@ -140,12 +140,12 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
+    public Address approvedSpenderOf(final Address nft, final long serialNo) {
         return trackingLedgers.staticApprovedSpenderOf(nftIdOf(nft, serialNo));
     }
 
     @Override
-    public boolean staticIsOperator(Address owner, Address operator, Address token) {
+    public boolean isOperator(final Address owner, final Address operator, final Address token) {
         return trackingLedgers.staticIsOperator(
                 accountIdFromEvmAddress(owner),
                 accountIdFromEvmAddress(operator),
@@ -158,7 +158,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public Address canonicalAddress(Address addressOrAlias) {
+    public Address canonicalAddress(final Address addressOrAlias) {
         return trackingLedgers.canonicalAddress(addressOrAlias);
     }
 
@@ -167,7 +167,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         return trackingLedgers.metadataOf(nftIdOf(nft, serialNo));
     }
 
-    private NftId nftIdOf(Address token, long serialNo) {
+    private NftId nftIdOf(final Address token, final long serialNo) {
         return fromGrpc(tokenIdFromEvmAddress(token), serialNo);
     }
 }

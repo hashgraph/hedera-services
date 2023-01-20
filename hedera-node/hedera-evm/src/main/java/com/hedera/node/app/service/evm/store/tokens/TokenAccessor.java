@@ -56,11 +56,11 @@ public interface TokenAccessor {
 
     long balanceOf(final Address account, final Address token);
 
-    long staticAllowanceOf(final Address owner, final Address spender, final Address token);
+    long allowanceOf(final Address owner, final Address spender, final Address token);
 
-    Address staticApprovedSpenderOf(final Address nft, long serialNo);
+    Address approvedSpenderOf(final Address nft, long serialNo);
 
-    boolean staticIsOperator(final Address owner, final Address operator, final Address token);
+    boolean isOperator(final Address owner, final Address operator, final Address token);
 
     Address ownerOf(final Address nft, long serialNo);
 

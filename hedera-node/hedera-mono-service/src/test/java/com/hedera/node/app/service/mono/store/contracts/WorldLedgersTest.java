@@ -300,7 +300,7 @@ class WorldLedgersTest {
         given(staticEntityAccess.allowanceOf(ownerId, spenderId, fungibleToken)).willReturn(123L);
         assertEquals(
                 123L,
-                tokenAccessor.staticAllowanceOf(
+                tokenAccessor.allowanceOf(
                         asTypedEvmAddress(ownerId),
                         asTypedEvmAddress(spenderId),
                         asTypedEvmAddress(fungibleToken)));
@@ -315,8 +315,7 @@ class WorldLedgersTest {
         tokenAccessor = new TokenAccessorImpl(worldLedgers);
 
         given(staticEntityAccess.approvedSpenderOf(nftId)).willReturn(Address.ALTBN128_ADD);
-        assertEquals(
-                Address.ALTBN128_ADD, tokenAccessor.staticApprovedSpenderOf(nftAddress, serialNo));
+        assertEquals(Address.ALTBN128_ADD, tokenAccessor.approvedSpenderOf(nftAddress, serialNo));
     }
 
     @Test
@@ -330,7 +329,7 @@ class WorldLedgersTest {
 
         given(staticEntityAccess.isOperator(ownerId, spenderId, nft)).willReturn(true);
         assertTrue(
-                tokenAccessor.staticIsOperator(
+                tokenAccessor.isOperator(
                         asTypedEvmAddress(ownerId),
                         asTypedEvmAddress(spenderId),
                         asTypedEvmAddress(nft)));
