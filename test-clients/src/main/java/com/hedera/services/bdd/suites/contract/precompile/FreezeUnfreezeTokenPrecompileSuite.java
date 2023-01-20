@@ -492,7 +492,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final String spenderAlias = "spenderAlias";
 
-        return defaultHapiSpec("GrantRevokeKycSpec")
+        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall")
                 .given(
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
