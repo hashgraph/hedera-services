@@ -15,18 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
@@ -40,8 +28,9 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Optional;
+import com.swirlds.common.utility.CommonUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,17 +38,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static com.hedera.test.utils.IdUtils.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class ReadableAccountStoreTest {
     @Mock private ReadableKVState aliases;
     @Mock private ReadableKVState accounts;
-
     @Mock private MerkleAccount account;
     @Mock private ReadableStates states;
     private final Key payerKey = KeyUtils.A_COMPLEX_KEY;
+    private final Key contractKey = KeyUtils.A_COMPLEX_KEY;
     private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
+    private final HederaKey contractHederaKey = asHederaKey(contractKey).get();
     private final AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
+    final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+    final ContractID contractAlias = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(evmAddress)).build();
+    private final ContractID contract = asContract("0.0.1234");
     private final AccountID payer = asAccount("0.0.3");
     private final Long payerNum = 3L;
     private static final String ACCOUNTS = "ACCOUNTS";
@@ -85,6 +88,87 @@ class ReadableAccountStoreTest {
         assertFalse(result.failed());
         assertNull(result.failureReason());
         assertEquals(payerHederaKey, result.key());
+    }
+
+    @Test
+    void getsKeyIfEvmAddress() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
+        given(account.isSmartContract()).willReturn(true);
+
+        final var result = subject.getKey(contractAlias);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(contractHederaKey, result.key());
+    }
+
+    @Test
+    void getsNullKeyIfMissingEvmAddress() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(null);
+
+        var result = subject.getKey(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void getsNullKeyIfMissingContract() {
+        given(accounts.get(contract.getContractNum())).willReturn(null);
+
+        var result = subject.getKey(contract);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contract);
+
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void failsIfNotSmartContract() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+
+        var result = subject.getKey(contractAlias);
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertEquals(null, result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertEquals(null, result.key());
+    }
+
+    @Test
+    void failsIfContractDeleted() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.isDeleted()).willReturn(true);
+
+        var result = subject.getKey(contractAlias);
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertEquals(null, result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+        assertTrue(result.failed());
+        assertEquals(INVALID_CONTRACT_ID, result.failureReason());
+        assertEquals(null, result.key());
     }
 
     @Test
