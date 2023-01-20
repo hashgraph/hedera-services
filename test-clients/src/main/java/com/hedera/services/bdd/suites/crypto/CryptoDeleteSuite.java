@@ -132,7 +132,10 @@ public class CryptoDeleteSuite extends HapiSuite {
                 .given(
                         cryptoCreate(ACCOUNT_TO_BE_DELETED),
                         cryptoCreate(TRANSFER_ACCOUNT).balance(0L))
-                .when(cryptoDelete("toBeDeleted").transfer(TRANSFER_ACCOUNT).via("deleteTxn"))
+                .when(
+                        cryptoDelete(ACCOUNT_TO_BE_DELETED)
+                                .transfer(TRANSFER_ACCOUNT)
+                                .via("deleteTxn"))
                 .then(
                         getAccountInfo(TRANSFER_ACCOUNT).has(accountWith().balance(B)),
                         getTxnRecord("deleteTxn")
