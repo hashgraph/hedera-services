@@ -29,9 +29,11 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
@@ -396,6 +398,28 @@ public class ViewExecutorTest {
 
             assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
         }
+    }
+
+    @Test
+    void computeGetTokenCustomFeesThrowsWhenTokenDoesNotExists() {
+        final var input = prerequisites(ABI_ID_GET_TOKEN_CUSTOM_FEES, fungibleTokenAddress);
+
+        try (MockedStatic<EvmTokenGetCustomFeesPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenGetCustomFeesPrecompile.class)) {
+            utilities
+                    .when(() -> EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
+                    .thenReturn(
+                            new TokenGetCustomFeesWrapper<>(fungibleTokenAddress.toArrayUnsafe()));
+
+            assertEquals(Pair.of(gas, null), subject.computeCosted());
+            verify(frame).setState(MessageFrame.State.REVERT);
+        }
+    }
+
+    @Test
+    void computeCostedNOT_SUPPORTED() {
+        prerequisites(0xffffffff, fungibleTokenAddress);
+        assertNull(subject.computeCosted().getRight());
     }
 
     Bytes prerequisites(final int descriptor, final Bytes tokenAddress) {

@@ -277,17 +277,17 @@ public class RedirectViewExecutorTest {
         prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
         try (MockedStatic<EvmAllowancePrecompile> utilities =
-            Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+                Mockito.mockStatic(EvmAllowancePrecompile.class)) {
             final var allowanceWrapper =
-                new TokenAllowanceWrapper<>(
-                    fungibleTokenAddress.toArrayUnsafe(),
-                    accountAddress.toArrayUnsafe(),
-                    spenderAddress.toArrayUnsafe());
+                    new TokenAllowanceWrapper<>(
+                            fungibleTokenAddress.toArrayUnsafe(),
+                            accountAddress.toArrayUnsafe(),
+                            spenderAddress.toArrayUnsafe());
             utilities
-                .when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
-                .thenReturn(allowanceWrapper);
+                    .when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
+                    .thenReturn(allowanceWrapper);
             given(tokenAccessor.staticAllowanceOf(any(), any(), any()))
-                .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
+                    .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
 
             assertEquals(Pair.of(gas, null), subject.computeCosted());
             verify(frame).setState(MessageFrame.State.REVERT);
