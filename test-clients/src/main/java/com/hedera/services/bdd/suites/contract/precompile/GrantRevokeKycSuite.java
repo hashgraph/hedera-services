@@ -20,13 +20,16 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -93,7 +96,7 @@ public class GrantRevokeKycSuite extends HapiSuite {
     }
 
     List<HapiSpec> positiveSpecs() {
-        return List.of(grantRevokeKycSpec());
+        return List.of(grantRevokeKycSpec(), grantRevokeKycSpecWithAliasLocalCall());
     }
 
     private HapiSpec grantRevokeKycFail() {
@@ -460,5 +463,45 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                                                                         .HAPI_IS_KYC)
                                                                         .withIsKyc(false)
                                                                         .withStatus(SUCCESS)))));
+    }
+
+    private HapiSpec grantRevokeKycSpecWithAliasLocalCall() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
+        final String spenderAlias = "spenderAlias";
+
+        return defaultHapiSpec("grantRevokeKycSpecWithAliasLocalCall")
+                .given(
+                        newKeyNamed(KYC_KEY),
+                        newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
+                                .via("autoAccountSpender"),
+                        getAliasedAccountInfo(spenderAlias)
+                                .exposingContractAccountIdTo(spenderAutoCreatedAccountId::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .kycKey(KYC_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(GRANT_REVOKE_KYC_CONTRACT),
+                        contractCreate(GRANT_REVOKE_KYC_CONTRACT))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCallLocal(
+                                                        GRANT_REVOKE_KYC_CONTRACT,
+                                                        IS_KYC_GRANTED,
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(vanillaTokenID.get())),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                spenderAutoCreatedAccountId
+                                                                        .get())))))
+                .then();
     }
 }
