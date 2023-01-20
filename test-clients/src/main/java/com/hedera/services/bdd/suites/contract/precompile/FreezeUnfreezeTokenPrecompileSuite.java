@@ -489,19 +489,19 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
 
     private HapiSpec isFrozenHappyPathWithAliasLocalCall() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
-        final String spenderAlias = "spenderAlias";
+        final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
+        final String accountAlias = "accountAlias";
 
         return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall")
                 .given(
                         newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(accountAlias).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
-                                                GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
-                                .via("autoAccountSpender"),
-                        getAliasedAccountInfo(spenderAlias)
-                                .exposingContractAccountIdTo(spenderAutoCreatedAccountId::set),
+                                                GENESIS, accountAlias, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getAliasedAccountInfo(accountAlias)
+                                .exposingContractAccountIdTo(autoCreatedAccountId::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
@@ -522,8 +522,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                         HapiParserUtil.asHeadlongAddress(
                                                                 asAddress(vanillaTokenID.get())),
                                                         HapiParserUtil.asHeadlongAddress(
-                                                                spenderAutoCreatedAccountId
-                                                                        .get())))))
+                                                                autoCreatedAccountId.get())))))
                 .then();
     }
 }
