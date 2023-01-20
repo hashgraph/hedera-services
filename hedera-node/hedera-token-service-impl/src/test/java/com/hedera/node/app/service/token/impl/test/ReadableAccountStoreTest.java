@@ -16,6 +16,8 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -47,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
@@ -311,6 +314,84 @@ class ReadableAccountStoreTest {
 
         assertFalse(result.failed());
         assertNull(result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void getsNullKeyFromContractIfReceiverKeyNotRequired() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
+        given(account.isSmartContract()).willReturn(true);
+        given(account.isReceiverSigRequired()).willReturn(false);
+
+        final var result = subject.getKeyIfReceiverSigRequired(contractAlias);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void failsIfKeyIsJContractIDKey() {
+        final var mockKey = mock(JContractIDKey.class);
+
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn(mockKey);
+        given(account.isSmartContract()).willReturn(true);
+
+        var result = subject.getKey(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void failsIfKeyIsEmpty() {
+        final var key = new JEd25519Key(new byte[0]);
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn(key);
+        given(account.isSmartContract()).willReturn(true);
+
+        var result = subject.getKey(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
+        assertNull(result.key());
+    }
+
+    @Test
+    void failsIfKeyIsNull() {
+        given(aliases.get(contractAlias.getEvmAddress().toStringUtf8())).willReturn(contract.getContractNum());
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn(null);
+        given(account.isSmartContract()).willReturn(true);
+
+        var result = subject.getKey(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(contractAlias);
+
+        assertTrue(result.failed());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, result.failureReason());
         assertNull(result.key());
     }
 
