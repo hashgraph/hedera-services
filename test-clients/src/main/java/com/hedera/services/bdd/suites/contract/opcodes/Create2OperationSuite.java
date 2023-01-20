@@ -162,6 +162,7 @@ public class Create2OperationSuite extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 create2FactoryWorksAsExpected(),
+                payableCreate2WorksAsExpected(),
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
@@ -405,6 +406,31 @@ public class Create2OperationSuite extends HapiSuite {
                 .then(
                         //						tokenDissociate(contract, token)
                         getContractInfo(contract).logged());
+    }
+
+    private HapiSpec payableCreate2WorksAsExpected() {
+        final var contract = "PayableCreate2Deploy";
+        AtomicReference<String> tcMirrorAddr2 = new AtomicReference<>();
+        AtomicReference<String> tcAliasAddr2 = new AtomicReference<>();
+
+        return defaultHapiSpec("PayableCreate2WorksAsExpected")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract).payingWith(GENESIS).gas(1_000_000))
+                .when(
+                        contractCall(contract, "testPayableCreate")
+                                .sending(100L)
+                                .via("testCreate2"),
+                        captureOneChildCreate2MetaFor(
+                                "Test contract create2",
+                                "testCreate2",
+                                tcMirrorAddr2,
+                                tcAliasAddr2))
+                .then(
+                        sourcing(
+                                () ->
+                                        getContractInfo(tcMirrorAddr2.get())
+                                                .has(contractWith().balance(100))));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2867
