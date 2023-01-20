@@ -208,7 +208,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                         precompilePricingUtils::computeViewFunctionGas,
                         new TokenAccessorImpl(
                                 proxyUpdater.trackingLedgers(),
-                                currentView.getNetworkInfo().ledgerId()));
+                                currentView.getNetworkInfo().ledgerId(),
+                                proxyUpdater::unaliased));
             }
         }
         final var result = computePrecompile(input, frame);

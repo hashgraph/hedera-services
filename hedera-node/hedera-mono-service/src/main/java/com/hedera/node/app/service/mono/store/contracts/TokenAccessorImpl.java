@@ -34,15 +34,21 @@ import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.NftID;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import org.hyperledger.besu.datatypes.Address;
 
 public class TokenAccessorImpl implements TokenAccessor {
     private final WorldLedgers trackingLedgers;
     private final ByteString ledgerId;
+    UnaryOperator<byte[]> aliasResolver;
 
-    public TokenAccessorImpl(final WorldLedgers trackingLedgers, ByteString ledgerId) {
+    public TokenAccessorImpl(
+            final WorldLedgers trackingLedgers,
+            ByteString ledgerId,
+            UnaryOperator<byte[]> aliasResolver) {
         this.trackingLedgers = trackingLedgers;
         this.ledgerId = ledgerId;
+        this.aliasResolver = aliasResolver;
     }
 
     @Override
@@ -68,7 +74,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean isFrozen(Address account, Address token) {
         return trackingLedgers.isFrozen(
-                accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
+                tokenIdFromEvmAddress(token));
     }
 
     @Override
@@ -84,7 +91,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean isKyc(Address account, Address token) {
         return trackingLedgers.isKyc(
-                accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
+                tokenIdFromEvmAddress(token));
     }
 
     @Override
@@ -129,14 +137,15 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long balanceOf(Address account, Address token) {
         return trackingLedgers.balanceOf(
-                accountIdFromEvmAddress(account), tokenIdFromEvmAddress(token));
+                accountIdFromEvmAddress(aliasResolver.apply(account.toArrayUnsafe())),
+                tokenIdFromEvmAddress(token));
     }
 
     @Override
     public long staticAllowanceOf(Address owner, Address spender, Address token) {
         return trackingLedgers.staticAllowanceOf(
-                accountIdFromEvmAddress(owner),
-                accountIdFromEvmAddress(spender),
+                accountIdFromEvmAddress(aliasResolver.apply(owner.toArrayUnsafe())),
+                accountIdFromEvmAddress(aliasResolver.apply(spender.toArrayUnsafe())),
                 tokenIdFromEvmAddress(token));
     }
 
@@ -148,8 +157,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean staticIsOperator(Address owner, Address operator, Address token) {
         return trackingLedgers.staticIsOperator(
-                accountIdFromEvmAddress(owner),
-                accountIdFromEvmAddress(operator),
+                accountIdFromEvmAddress(aliasResolver.apply(owner.toArrayUnsafe())),
+                accountIdFromEvmAddress(aliasResolver.apply(operator.toArrayUnsafe())),
                 tokenIdFromEvmAddress(token));
     }
 

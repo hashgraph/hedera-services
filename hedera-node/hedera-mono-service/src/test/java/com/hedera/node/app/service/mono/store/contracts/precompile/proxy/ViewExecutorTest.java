@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -610,7 +611,7 @@ class ViewExecutorTest {
         given(updater.trackingLedgers()).willReturn(ledgers);
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var ledgers = updater.trackingLedgers();
-        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId);
+        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId, a -> a);
         this.subject =
                 new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
         return input;
@@ -630,7 +631,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var ledgers = updater.trackingLedgers();
-        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId);
+        final var tokenAccessor = new TokenAccessorImpl(ledgers, ledgerId, identity());
         this.subject =
                 new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, tokenAccessor);
         return input;

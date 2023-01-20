@@ -44,6 +44,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1062,7 +1063,7 @@ class WorldLedgersTest {
     }
 
     private void tokenAccessor() {
-        tokenAccessor = new TokenAccessorImpl(worldLedgers, ledgerId);
+        tokenAccessor = new TokenAccessorImpl(worldLedgers, ledgerId, identity());
     }
 
     private static final int decimals = 666666;
