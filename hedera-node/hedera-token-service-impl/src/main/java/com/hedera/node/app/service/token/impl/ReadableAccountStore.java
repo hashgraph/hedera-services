@@ -213,10 +213,10 @@ public class ReadableAccountStore implements AccountKeyLookup {
                 var evmKeyAliasAddress = keyAliasToEVMAddress(alias);
                 if (evmKeyAliasAddress != null) {
                     entityNum = aliases.get(ByteString.copyFrom(evmAddress).toStringUtf8());
-                    if (entityNum == null) {
-                        entityNum = MISSING_NUM;
-                    }
                 }
+            }
+            if (entityNum == null) {
+                return MISSING_NUM;
             }
             return entityNum;
         } else {

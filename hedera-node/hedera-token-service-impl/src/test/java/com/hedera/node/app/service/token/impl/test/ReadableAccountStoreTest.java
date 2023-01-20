@@ -19,13 +19,11 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -237,9 +235,15 @@ class ReadableAccountStoreTest {
         given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn(null);
 
-        assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
+        var result = subject.getKey(payer);
+        assertTrue(result.failed());
+        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
+
+        result = subject.getKeyIfReceiverSigRequired(payer);
+        assertTrue(result.failed());
+        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
+        assertNull(result.key());
     }
 
     @Test
@@ -250,13 +254,13 @@ class ReadableAccountStoreTest {
         var result = subject.getKey(payer);
 
         assertTrue(result.failed());
-        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
         result = subject.getKeyIfReceiverSigRequired(payer);
 
         assertTrue(result.failed());
-        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
+        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
     }
 
