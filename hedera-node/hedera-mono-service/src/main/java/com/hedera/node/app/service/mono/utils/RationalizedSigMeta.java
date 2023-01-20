@@ -144,7 +144,7 @@ public class RationalizedSigMeta {
     }
 
     public void replacePayerHollowKeyIfNeeded() {
-        if (!payerReqSig.hasHollowKey()) return;
+        if (payerReqSig == null || !payerReqSig.hasHollowKey()) return;
 
         final var targetEvmAddress = payerReqSig.getHollowKey().getEvmAddress();
         for (final var sig : rationalizedSigs) {
