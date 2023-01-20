@@ -2,6 +2,9 @@ module com.hedera.node.app {
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
     requires com.swirlds.common;
+    requires com.swirlds.merkle;
+    requires com.swirlds.jasperdb;
+    requires com.swirlds.virtualmap;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;

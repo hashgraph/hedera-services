@@ -26,7 +26,7 @@ public class Network {
 
     long bootstrap;
     long defaultNode = DEFAULT_NODE;
-    long defaultFeeInHbars = ValidationScenarios.FEE_TO_OFFER;
+    long defaultFeeInHbars = ValidationScenarios.FEE_TO_OFFER_IN_HBAR;
     long defaultNodePaymentInTinybars = 100;
     long ensureScenarioPayerHbars = DEFAULT_INITIAL_HBARS;
 

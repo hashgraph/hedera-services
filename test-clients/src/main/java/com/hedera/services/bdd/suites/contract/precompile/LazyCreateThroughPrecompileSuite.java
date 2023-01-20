@@ -551,7 +551,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
         return Address.wrap(Address.toChecksumAddress("0x" + addr));
     }
 
-    private Address mirrorAddrWith(final long num) {
+    public static Address mirrorAddrWith(final long num) {
         return Address.wrap(
                 Address.toChecksumAddress(
                         new BigInteger(1, HapiPropertySource.asSolidityAddress(0, 0, num))));

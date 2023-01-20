@@ -32,15 +32,14 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -55,11 +54,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class ReadableAccountStoreTest {
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
+    @Mock private ReadableKVState aliases;
+    @Mock private ReadableKVState accounts;
 
     @Mock private MerkleAccount account;
-    @Mock private States states;
+    @Mock private ReadableStates states;
     private final Key payerKey = KeyUtils.A_COMPLEX_KEY;
     private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     private final AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
@@ -79,8 +78,8 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfAlias() {
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(aliases.get(payerAlias.getAlias().toStringUtf8())).willReturn(payerNum);
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(payerAlias);
@@ -92,7 +91,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfAccount() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(payer);
@@ -104,7 +103,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingAlias() {
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
+        given(aliases.get(payerAlias.getAlias().toStringUtf8())).willReturn(null);
 
         final var result = subject.getKey(payerAlias);
 
@@ -115,7 +114,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfMissingAccount() {
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(accounts.get(payerNum)).willReturn(null);
 
         final var result = subject.getKey(payer);
 
@@ -131,7 +130,7 @@ class ReadableAccountStoreTest {
         final var mirrorAccount =
                 asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
 
         final var result = subject.getKey(mirrorAccount);
@@ -148,7 +147,7 @@ class ReadableAccountStoreTest {
         final var mirrorAccount =
                 asAliasAccount(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()));
 
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(accounts.get(payerNum)).willReturn(null);
 
         final var result = subject.getKey(mirrorAccount);
 
@@ -159,8 +158,8 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfPayerAliasAndReceiverSigRequired() {
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(aliases.get(payerAlias.getAlias().toStringUtf8())).willReturn(payerNum);
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
@@ -173,7 +172,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsKeyIfPayerAccountAndReceiverSigRequired() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(true);
 
@@ -186,7 +185,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromReceiverSigRequiredIfMissingAlias() {
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.empty());
+        given(aliases.get(payerAlias.getAlias().toStringUtf8())).willReturn(null);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
 
@@ -197,7 +196,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromReceiverSigRequiredIfMissingAccount() {
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(accounts.get(payerNum)).willReturn(null);
 
         final var result = subject.getKeyIfReceiverSigRequired(payer);
 
@@ -208,8 +207,8 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyIfAndReceiverSigNotRequired() {
-        given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(aliases.get(payerAlias.getAlias().toStringUtf8())).willReturn(payerNum);
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
@@ -222,7 +221,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void getsNullKeyFromAccountIfReceiverKeyNotRequired() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
@@ -235,7 +234,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsKeyValidationWhenKeyReturnedIsNull() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn(null);
 
         assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
@@ -245,7 +244,7 @@ class ReadableAccountStoreTest {
 
     @Test
     void failsKeyValidationWhenKeyReturnedIsEmpty() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn(new JKeyList());
 
         var result = subject.getKey(payer);
@@ -265,7 +264,7 @@ class ReadableAccountStoreTest {
     @Test
     void getAccount() {
         // given
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getMemo()).willReturn("");
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.getExpiry()).willReturn(5L);
@@ -323,7 +322,7 @@ class ReadableAccountStoreTest {
     @Test
     void getsEmptyAccount() {
         // given
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(accounts.get(payerNum)).willReturn(account);
         given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.getMemo()).willReturn("");
 
@@ -361,7 +360,7 @@ class ReadableAccountStoreTest {
     @SuppressWarnings("unchecked")
     @Test
     void getsEmptyOptionalIfMissingAccount() {
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(accounts.get(payerNum)).willReturn(null);
 
         final Optional<Account> result = subject.getAccount(payer);
 
