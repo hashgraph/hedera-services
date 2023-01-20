@@ -29,7 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class EvmInfrastructureFactoryTest {
+class EvmInfrastructureFactoryTest {
 
     @Mock private MessageFrame frame;
     @Mock private EvmEncodingFacade evmEncoder;
