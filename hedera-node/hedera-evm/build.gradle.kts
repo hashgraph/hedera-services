@@ -58,4 +58,5 @@ dependencies {
     implementation(libs.javax.inject)
 
     testImplementation(testLibs.mockito.jupiter)
+    testImplementation(testLibs.mockito.inline)
 }
