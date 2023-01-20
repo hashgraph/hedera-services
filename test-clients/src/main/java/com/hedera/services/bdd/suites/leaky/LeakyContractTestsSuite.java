@@ -1064,9 +1064,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
                 .given(
                         overridingThree(
-                                "entities.limitTokenAssociations", "true",
-                                "tokens.maxPerAccount", "" + 1,
-                                CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "true"))
+                                "entities.limitTokenAssociations",
+                                "true",
+                                "tokens.maxPerAccount",
+                                "" + 1,
+                                CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
+                                "true"))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),

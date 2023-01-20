@@ -404,6 +404,17 @@ class ContractUpdateTransitionLogicTest {
     }
 
     @Test
+    void acceptsTxnWithMaxAssociationsIfFlagEnabled() {
+        givenValidTxnCtxWithMaxAssociations();
+
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
+
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
+    }
+
+    @Test
     void updateMaxAutomaticAssociationsFailWithMaxLessThanAlreadyExisting() {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenValidTxnCtxWithMaxAssociations();
