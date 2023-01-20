@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 import static com.hedera.test.utils.IdUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -239,6 +241,49 @@ class ReadableAccountStoreTest {
         assertTrue(result.failed());
         assertEquals(INVALID_ACCOUNT_ID, result.failureReason());
         assertNull(result.key());
+    }
+
+    @Test
+    void getsMirrorAddressNumForContract() {
+        final var num = EntityNum.fromLong(contract.getContractNum());
+        final Address mirrorAddress = num.toEvmAddress();
+        final var mirrorAccount = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(mirrorAddress.toArrayUnsafe()))
+                .build();
+
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
+        given(account.isSmartContract()).willReturn(true);
+
+        final var result = subject.getKey(mirrorAccount);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(contractHederaKey, result.key());
+    }
+
+    @Test
+    void derivesEVMAddressIfNotMirror() {
+        final var aliasBytes = Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+        final var ecdsaAlias = ByteString.copyFrom(aliasBytes);
+        final var mirrorAccount = ContractID.newBuilder()
+                .setEvmAddress(ecdsaAlias)
+                .build();
+        final var evmAddress = keyAliasToEVMAddress(ecdsaAlias);
+        final var evmAddressString = ByteString.copyFrom(evmAddress).toStringUtf8();
+
+        given(aliases.get(ecdsaAlias.toStringUtf8())).willReturn(null);
+        given(aliases.get(evmAddressString)).willReturn(contract.getContractNum());
+
+        given(accounts.get(contract.getContractNum())).willReturn(account);
+        given(account.getAccountKey()).willReturn((JKey) contractHederaKey);
+        given(account.isSmartContract()).willReturn(true);
+
+        final var result = subject.getKey(mirrorAccount);
+
+        assertFalse(result.failed());
+        assertNull(result.failureReason());
+        assertEquals(contractHederaKey, result.key());
     }
 
     @Test
