@@ -51,6 +51,12 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     /** The "real" key, such as AccountID. */
     private K key;
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    public OnDiskKey() {
+        md = null;
+        serdes = null;
+    }
+
     /**
      * Creates a new OnDiskKey. Used by {@link OnDiskKeySerializer}.
      *
@@ -103,7 +109,8 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
 
     @Override
     public long getClassId() {
-        return md.onDiskKeyClassId();
+        // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
+        return md == null ? 0x2929238293892373L : md.onDiskKeyClassId();
     }
 
     @Override

@@ -17,9 +17,9 @@ copyFilesToUpdateNode() {
   ssh -t -t -o StrictHostKeyChecking=no  -i $KEY_FILE  $USER@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/$USER/remoteExperiment/data/diskFs/0.0.7" >> shell.log 2>&1
   scp -o StrictHostKeyChecking=no -i $KEY_FILE -r -p data/diskFs/0.0.3/* $USER@$UPDATE_NODE_IP_ADDRESS:/home/$USER/remoteExperiment/data/diskFs/0.0.7 >> shell.log 2>&1
   echo "Copying File0.0.150 to the update Node" >> shell.log 2>&1
-  ssh -t -t -o StrictHostKeyChecking=no  -i $KEY_FILE  $USER@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/$USER/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/" >> shell.log 2>&1
-  scp -o StrictHostKeyChecking=no -i $KEY_FILE -r -p data/saved/com.hedera.services.ServicesMain/0/123/ \
-    $USER@$UPDATE_NODE_IP_ADDRESS:~/remoteExperiment/data/saved/com.hedera.services.ServicesMain/4/  >> shell.log 2>&1
+  ssh -t -t -o StrictHostKeyChecking=no  -i $KEY_FILE  $USER@$UPDATE_NODE_IP_ADDRESS "mkdir -p  /home/$USER/remoteExperiment/data/saved/com.hedera.node.app.ServicesMain/4/" >> shell.log 2>&1
+  scp -o StrictHostKeyChecking=no -i $KEY_FILE -r -p data/saved/com.hedera.node.app.ServicesMain/0/123/ \
+    $USER@$UPDATE_NODE_IP_ADDRESS:~/remoteExperiment/data/saved/com.hedera.node.app.ServicesMain/4/  >> shell.log 2>&1
   echo "Copying saved state files to the update Node"  >> shell.log 2>&1
 }
 

@@ -36,7 +36,7 @@ This will both,
 
 ## Starting a local single-node network
 
-Now browse to `com.hedera.node.app.service.mono.ServicesMain`. Its
+Now browse to `com.hedera.node.app.ServicesMain`. Its
 `main` method starts a single node network of Hedera Service by
 calling `com.swirlds.platform.Browser#main`, which is the
 entrypoint to bootstrap the Platform app named by the

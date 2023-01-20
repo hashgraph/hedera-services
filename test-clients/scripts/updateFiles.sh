@@ -22,7 +22,7 @@ NEW_MARKER="new version jar"
 function updateServiceMainJava
 {
     # replace a line in ServicesMain.java
-    sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+    sed -i -e s/'init finished'/'new version jar'/g  ../hedera-node/src/main/java/com/hedera/node/app/ServicesMain.java
 
     # rebuild jar files and use timestamp to tell which jar files have been updated
     cd ../hedera-node
@@ -42,7 +42,7 @@ function updateServiceMainJava
     find . -type f -name "H*.jar" -newermt "$beforeTime" -exec rsync -R {} $TARGET_DIR \;
 
 
-    git checkout ../hedera-node/src/main/java/com/hedera/services/ServicesMain.java
+    git checkout ../hedera-node/src/main/java/com/hedera/node/app/ServicesMain.java
 
     # rebuild after checkout to recover binary
     mvn install -DskipTests

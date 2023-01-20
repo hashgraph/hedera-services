@@ -50,6 +50,13 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     private final Serdes<K> serdes;
     private final StateMetadata<K, ?> md;
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    public OnDiskKeySerializer() {
+        classId = 0x9992382838283411L; // BAD!!
+        serdes = null;
+        md = null;
+    }
+
     public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
         this.classId = md.onDiskKeySerializerClassId();
         this.md = Objects.requireNonNull(md);

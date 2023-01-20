@@ -45,6 +45,12 @@ public class OnDiskValue<V> implements VirtualValue {
     private V value;
     private boolean immutable = false;
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    public OnDiskValue() {
+        this.serdes = null;
+        this.md = null;
+    }
+
     public OnDiskValue(@NonNull final StateMetadata<?, V> md) {
         this.md = md;
         this.serdes = md.stateDefinition().valueSerdes();
@@ -114,7 +120,8 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return md.onDiskValueClassId();
+        // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
+        return md == null ? 8837746626372L : md.onDiskValueClassId();
     }
 
     /** {@inheritDoc} */

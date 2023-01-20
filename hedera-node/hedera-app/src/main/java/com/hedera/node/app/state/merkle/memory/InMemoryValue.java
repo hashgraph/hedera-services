@@ -41,6 +41,11 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /** The actual value. For example, it could be an Account or SmartContract. */
     private V val;
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    public InMemoryValue() {
+        md = null;
+    }
+
     /**
      * Used by the deserialization system to create an {@link InMemoryValue} that does not yet have
      * a value. Normally this should not be used.
@@ -81,7 +86,8 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return md.inMemoryValueClassId();
+        // Null `md` for ConstructableRegistry, TO BE REMOVED ASAP
+        return md == null ? 0x657483284563728L : md.inMemoryValueClassId();
     }
 
     /** {@inheritDoc} */

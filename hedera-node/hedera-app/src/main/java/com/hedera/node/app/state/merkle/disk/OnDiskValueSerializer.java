@@ -32,6 +32,11 @@ import java.util.Objects;
 public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
     private final StateMetadata<?, V> md;
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    public OnDiskValueSerializer() {
+        md = null;
+    }
+
     /**
      * Create a new instance. This is created at registration time, it doesn't need to serialize
      * anything to disk.
@@ -43,7 +48,8 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return md.onDiskValueSerializerClassId();
+        // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
+        return md == null ? 0x3992113882234885L : md.onDiskValueSerializerClassId();
     }
 
     /** {@inheritDoc} */
