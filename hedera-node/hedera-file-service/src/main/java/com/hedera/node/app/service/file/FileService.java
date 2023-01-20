@@ -26,11 +26,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface FileService extends Service {
+    String NAME = "FileService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return FileService.class.getSimpleName();
+        return NAME;
     }
 
     /**

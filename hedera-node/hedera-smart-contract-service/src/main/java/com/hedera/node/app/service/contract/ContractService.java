@@ -26,11 +26,12 @@ import java.util.ServiceLoader;
  * Contract Service</a>.
  */
 public interface ContractService extends Service {
+    String NAME = "ContractService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return ContractService.class.getSimpleName();
+        return NAME;
     }
 
     /**

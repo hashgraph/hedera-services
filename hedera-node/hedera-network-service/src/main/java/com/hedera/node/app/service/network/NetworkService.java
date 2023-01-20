@@ -26,11 +26,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface NetworkService extends Service {
+    String NAME = "NetworkService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return NetworkService.class.getSimpleName();
+        return NAME;
     }
 
     /**

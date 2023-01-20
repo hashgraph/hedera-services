@@ -26,11 +26,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface ConsensusService extends Service {
+    String NAME = "ConsensusService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return ConsensusService.class.getSimpleName();
+        return NAME;
     }
 
     /**

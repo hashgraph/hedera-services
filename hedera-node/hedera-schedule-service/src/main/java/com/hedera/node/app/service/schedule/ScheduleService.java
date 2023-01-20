@@ -26,11 +26,12 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface ScheduleService extends Service {
+    String NAME = "ScheduleService";
 
     @NonNull
     @Override
     default String getServiceName() {
-        return ScheduleService.class.getSimpleName();
+        return NAME;
     }
 
     /**
