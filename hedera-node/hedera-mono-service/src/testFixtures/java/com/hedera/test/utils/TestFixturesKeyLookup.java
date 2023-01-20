@@ -44,8 +44,11 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
         final var account = accounts.get(accountNumOf(idOrAlias));
+        if (account == null) {
+            return withFailureReason(INVALID_ACCOUNT_ID);
+        }
         return Optional.of(account.getAccountKey())
-                .map(this::validateAccountKey)
+                .map(key -> validateKey(key, false))
                 .orElse(withFailureReason(INVALID_ACCOUNT_ID));
     }
 
@@ -56,7 +59,7 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
             return withFailureReason(INVALID_ACCOUNT_ID);
         } else {
             return Optional.of(account.getAccountKey())
-                    .map(this::validateAccountKey)
+                    .map(key -> validateKey(key, false))
                     .filter(reason -> reason.failed() || account.isReceiverSigRequired())
                     .orElse(PRESENT_BUT_NOT_REQUIRED);
         }
@@ -90,14 +93,6 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
                 return PRESENT_BUT_NOT_REQUIRED;
             }
         }
-    }
-
-    private KeyOrLookupFailureReason validateContractKey(final JKey key) {
-        return validateKey(key, true);
-    }
-
-    private KeyOrLookupFailureReason validateAccountKey(final JKey key) {
-        return validateKey(key, false);
     }
 
     private KeyOrLookupFailureReason validateKey(final JKey key, final boolean isContractKey) {

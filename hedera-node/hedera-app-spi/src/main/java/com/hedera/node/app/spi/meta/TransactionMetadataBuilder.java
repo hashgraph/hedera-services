@@ -144,7 +144,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
     }
 
     public T addNonPayerKey(@NonNull final ContractID id) {
-        if (isNotNeeded(Objects.requireNonNull(asAccount(id)))) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return self();
         }
         final var result = keyLookup.getKey(id);
@@ -208,6 +208,13 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 || payerKey == null;
     }
 
+    private boolean isNotNeeded(@NonNull final ContractID id) {
+        return id.equals(ContractID.getDefaultInstance())
+                || designatesContractRemoval(id)
+                || status != OK
+                || payerKey == null;
+    }
+
     /**
      * Checks if the accountId is a sentinel id 0.0.0
      *
@@ -219,6 +226,13 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 && id.getRealmNum() == 0
                 && id.getAccountNum() == 0
                 && id.getAlias().isEmpty();
+    }
+
+    private boolean designatesContractRemoval(@NonNull final ContractID id) {
+        return id.getShardNum() == 0
+                && id.getRealmNum() == 0
+                && id.getContractNum() == 0
+                && id.getEvmAddress().isEmpty();
     }
 
     /**

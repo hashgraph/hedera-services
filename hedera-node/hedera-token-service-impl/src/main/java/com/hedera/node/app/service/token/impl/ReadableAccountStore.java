@@ -15,15 +15,16 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
 import static com.hedera.node.app.service.token.impl.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.token.impl.util.AliasUtils.fromMirror;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -48,9 +49,9 @@ import java.util.Optional;
  */
 public class ReadableAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<Long, MerkleAccount> accountState;
+    protected final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final ReadableKVState<String, Long> aliases;
+    protected final ReadableKVState<String, Long> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
@@ -92,7 +93,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     /** {@inheritDoc} */
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias) {
-        final var optContract = getAccountLeaf(asAccount(idOrAlias));
+        final var optContract = getContractLeaf(idOrAlias);
         if (optContract.isEmpty()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
@@ -107,7 +108,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
             @NonNull final ContractID idOrAlias) {
-        final var optContract = getAccountLeaf(asAccount(idOrAlias));
+        final var optContract = getContractLeaf(idOrAlias);
         if (optContract.isEmpty()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
@@ -135,8 +136,9 @@ public class ReadableAccountStore implements AccountKeyLookup {
         return getAccountLeaf(idOrAlias).map(accountLeaf -> mapAccount(idOrAlias, accountLeaf));
     }
 
+    /*Helper methods */
     /**
-     * Returns the account leaf for the given account number. If the account doesn't exist returns
+     * Returns the account leaf for the given account id. If the account doesn't exist returns
      * {@code Optional.empty()}
      *
      * @param id given account number
@@ -154,12 +156,12 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * Get account number if the provided account id is an alias. If not, returns the account's
      * number
      *
-     * @param id provided account id
+     * @param idOrAlias provided account id
      * @return account number
      */
-    private Long getAccountNum(final AccountID id) {
-        if (isAlias(id)) {
-            final var alias = id.getAlias();
+    private Long getAccountNum(final AccountID idOrAlias) {
+        if (isAlias(idOrAlias)) {
+            final var alias = idOrAlias.getAlias();
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = alias.toByteArray();
                 if (isMirror(evmAddress)) {
@@ -170,7 +172,56 @@ public class ReadableAccountStore implements AccountKeyLookup {
             final var ret = aliases.get(alias.toStringUtf8());
             return ret == null ? MISSING_NUM : ret;
         }
-        return id.getAccountNum();
+        return idOrAlias.getAccountNum();
+    }
+
+    /**
+     * Returns the contract leaf for the given contract id. If the contract doesn't exist returns
+     * {@code Optional.empty()}
+     *
+     * @param id given contract number
+     * @return merkle leaf for the given contract number
+     */
+    private Optional<HederaAccount> getContractLeaf(final ContractID id) {
+        final var contractNum = getContractNum(id);
+        if (contractNum.equals(MISSING_NUM)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(accountState.get(contractNum));
+    }
+
+    /**
+     * Get contract number if the provided contract id is an evm address. If not, returns the
+     * contract's number
+     *
+     * @param idOrAlias provided account id
+     * @return account number
+     */
+    private Long getContractNum(final ContractID idOrAlias) {
+        if (isAlias(idOrAlias)) {
+            final var alias = idOrAlias.getEvmAddress();
+            final var evmAddress = alias.toByteArray();
+            if (isMirror(evmAddress)) {
+                return numOfMirror(evmAddress);
+            }
+            var entityNum = aliases.get(alias.toStringUtf8());
+            // We don't want to treat a Key-derived alias as "missing" if its auto-created account
+            // would collide with an existing EVM address; so check for that case now
+            if (alias.size() > EVM_ADDRESS_LEN && entityNum == null) {
+                // if we don't find entity num for key alias we can try to derive EVM address from
+                // it and look it up
+                var evmKeyAliasAddress = keyAliasToEVMAddress(alias);
+                if (evmKeyAliasAddress != null) {
+                    entityNum = aliases.get(ByteString.copyFrom(evmAddress).toStringUtf8());
+                    if (entityNum == null) {
+                        entityNum = MISSING_NUM;
+                    }
+                }
+            }
+            return entityNum;
+        } else {
+            return idOrAlias.getContractNum();
+        }
     }
 
     private KeyOrLookupFailureReason validateKey(
