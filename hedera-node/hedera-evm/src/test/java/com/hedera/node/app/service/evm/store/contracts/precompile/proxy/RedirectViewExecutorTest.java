@@ -27,11 +27,15 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
@@ -259,6 +263,34 @@ public class RedirectViewExecutorTest {
                     .willReturn(result);
 
             assertEquals(Pair.of(gas, answer), subject.computeCosted());
+        }
+    }
+
+    @Test
+    void computeCostedNOT_SUPPORTED() {
+        prerequisites(0xffffffff, fungibleTokenAddress);
+        assertNull(subject.computeCosted().getRight());
+    }
+
+    @Test
+    void revertsFrameAndReturnsNullOnRevertingException() {
+        prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
+
+        try (MockedStatic<EvmAllowancePrecompile> utilities =
+            Mockito.mockStatic(EvmAllowancePrecompile.class)) {
+            final var allowanceWrapper =
+                new TokenAllowanceWrapper<>(
+                    fungibleTokenAddress.toArrayUnsafe(),
+                    accountAddress.toArrayUnsafe(),
+                    spenderAddress.toArrayUnsafe());
+            utilities
+                .when(() -> EvmAllowancePrecompile.decodeTokenAllowance(any()))
+                .thenReturn(allowanceWrapper);
+            given(tokenAccessor.staticAllowanceOf(any(), any(), any()))
+                .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
+
+            assertEquals(Pair.of(gas, null), subject.computeCosted());
+            verify(frame).setState(MessageFrame.State.REVERT);
         }
     }
 
