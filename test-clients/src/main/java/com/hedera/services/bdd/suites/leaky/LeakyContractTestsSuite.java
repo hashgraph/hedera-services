@@ -180,6 +180,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
+    private final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -1065,7 +1066,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         overridingThree(
                                 "entities.limitTokenAssociations", "true",
                                 "tokens.maxPerAccount", "" + 1,
-                                "contracts.allowAutoAssociations", "true"))
+                                CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "true"))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
@@ -1317,7 +1318,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var DELEGATE_KEY = "contractKey";
         final var NOT_SUPPORTED_TXN = "notSupportedTxn";
         final var TOTAL_SUPPLY = 1_000;
-        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY;
 
         return propertyPreservingHapiSpec("lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled")
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
@@ -1538,8 +1539,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
         return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
-                .preserving("contracts.allowAutoAssociations")
-                .given(overriding("contracts.allowAutoAssociations", "false"))
+                .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "false"))
                 .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .then(
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
