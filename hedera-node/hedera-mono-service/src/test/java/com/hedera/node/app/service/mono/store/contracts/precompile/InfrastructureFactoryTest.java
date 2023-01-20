@@ -149,18 +149,6 @@ class InfrastructureFactoryTest {
                         entityCreator);
     }
 
-    //    @Test
-    //    void canCreateViewExecutor() {
-    //        final var fakeInput = Bytes.of(1, 2, 3);
-    //        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
-    //        given(worldStateUpdater.trackingLedgers()).willReturn(ledgers);
-    //        assertInstanceOf(
-    //                ViewExecutor.class,
-    //                subject.newViewExecutor(
-    //                        fakeInput, frame, evmEncoder, gasCalculator,
-    // view.getNetworkInfo().ledgerId()));
-    //    }
-
     @Test
     void canCreateSideEffects() {
         assertInstanceOf(SideEffectsTracker.class, subject.newSideEffects());
@@ -302,15 +290,6 @@ class InfrastructureFactoryTest {
                         accounts,
                         tokenRelsLedger));
     }
-
-    //    @Test
-    //    void canCreateNewRedirectExecutor() {
-    //        given(frame.getWorldUpdater()).willReturn(worldStateUpdater);
-    //
-    //        assertInstanceOf(
-    //                RedirectViewExecutor.class,
-    //                subject.newRedirectExecutor(Bytes.EMPTY, frame, gasCalculator));
-    //    }
 
     @Test
     void canCreateNewApproveAllowanceLogic() {

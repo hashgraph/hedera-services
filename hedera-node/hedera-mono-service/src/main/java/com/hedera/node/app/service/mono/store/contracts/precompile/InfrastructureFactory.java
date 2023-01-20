@@ -258,21 +258,6 @@ public class InfrastructureFactory {
                 feeDistribution);
     }
 
-    //    public
-    // com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor
-    // newRedirectExecutor(
-    //        final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-    //        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
-    //    }
-    //
-    //    public ViewExecutor newViewExecutor(
-    //        final Bytes input,
-    //        final MessageFrame frame,
-    //        final ViewGasCalculator gasCalculator,
-    //        final StateView stateView) {
-    //        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, stateView);
-    //    }
-
     public ApproveAllowanceLogic newApproveAllowanceLogic(
             final AccountStore accountStore, final TypedTokenStore tokenStore) {
         return new ApproveAllowanceLogic(accountStore, tokenStore, dynamicProperties);
