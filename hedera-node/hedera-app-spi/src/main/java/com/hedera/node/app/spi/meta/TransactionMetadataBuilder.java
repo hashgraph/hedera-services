@@ -173,7 +173,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
     }
 
     public T addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        if (isNotNeeded(Objects.requireNonNull(asAccount(id)))) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return self();
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
@@ -208,8 +208,16 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 || payerKey == null;
     }
 
+    /**
+     * Checks if the metadata is already failed. In this case no need to look up that contract's key
+     * If the payer key has not been set we don't add other keys.
+     *
+     * @param id given contract
+     * @return true if the lookup is not needed, false otherwise
+     */
     private boolean isNotNeeded(@NonNull final ContractID id) {
-        return id.equals(ContractID.getDefaultInstance())
+        return id.equals(ContractID.getDefaultInstance()) // should we check payerAccountNum
+                // ==id.getAccountNum ?
                 || designatesContractRemoval(id)
                 || status != OK
                 || payerKey == null;
@@ -228,6 +236,12 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 && id.getAlias().isEmpty();
     }
 
+    /**
+     * Checks if the contractId is a sentinel id 0.0.0
+     *
+     * @param id given contractId
+     * @return true if the given contractId is
+     */
     private boolean designatesContractRemoval(@NonNull final ContractID id) {
         return id.getShardNum() == 0
                 && id.getRealmNum() == 0
@@ -256,14 +270,6 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 this.requiredNonPayerKeys.add(result.key());
             }
         }
-    }
-
-    private AccountID asAccount(final ContractID cid) {
-        return AccountID.newBuilder()
-                .setRealmNum(cid.getRealmNum())
-                .setShardNum(cid.getShardNum())
-                .setAccountNum(cid.getContractNum())
-                .build();
     }
 
     /**

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
@@ -77,7 +78,6 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -198,6 +198,7 @@ class AutoCreationLogicTest {
             throws InvalidProtocolBufferException, DecoderException {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         final var key = Key.parseFrom(ecdsaKeyBytes);
+        final var pretendAddress = keyAliasToEVMAddress(ecKeyAlias);
         final var evmAddress =
                 ByteString.copyFrom(
                         EthSigsUtils.recoverAddressFromPubKey(
@@ -205,8 +206,6 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
-        final var pretendAddress = Address.BLS12_G2MUL.toArray();
-        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -421,6 +420,7 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var cryptoCreateAccount =
                 TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
+        given(mockCryptoCreate.getAlias()).willReturn(edKeyAlias);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
                 .willReturn(cryptoCreateAccount);
 
