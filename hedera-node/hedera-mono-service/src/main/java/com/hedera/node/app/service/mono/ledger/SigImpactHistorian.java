@@ -156,7 +156,7 @@ public class SigImpactHistorian {
      * @param entityNum the changed entity
      */
     public void markEntityChanged(final long entityNum) {
-        requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+        if (now == null) return;
         entityChangeTimes.put(entityNum, now);
         entityChangeExpiries.track(entityNum, expirySec());
     }
@@ -242,7 +242,8 @@ public class SigImpactHistorian {
         return now.getEpochSecond() + dynamicProperties.changeHistorianMemorySecs() + 1;
     }
 
-    public Instant getNow() {
+    /* --- Only used for unit tests --- */
+    Instant getNow() {
         return now;
     }
 

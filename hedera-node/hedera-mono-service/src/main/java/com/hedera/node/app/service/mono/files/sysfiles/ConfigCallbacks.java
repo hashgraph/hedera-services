@@ -94,9 +94,7 @@ public class ConfigCallbacks {
     public Consumer<ServicesConfigurationList> propertiesCb() {
         return config -> {
             propertySources.reloadFrom(config);
-            if (sigImpactHistorian.getNow() != null) {
-                sigImpactHistorian.markEntityChanged(fileNumbers.applicationProperties());
-            }
+            sigImpactHistorian.markEntityChanged(fileNumbers.applicationProperties());
             dynamicProps.reload();
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
