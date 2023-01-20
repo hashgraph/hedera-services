@@ -7362,7 +7362,9 @@ public class TraceabilitySuite extends HapiSuite {
                                                                             ethSenderAccountReference
                                                                                     .get())
                                                                     .setGas(1_979_000)
-                                                                    .setGasUsed(555_112)
+                                                                    // no gas used apart from
+                                                                    // charging for the intrinsic
+                                                                    // gas
                                                                     .setValue(valueToSend)
                                                                     .setRecipientAccount(
                                                                             lazyAccountIdReference
