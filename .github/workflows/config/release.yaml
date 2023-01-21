@@ -1,0 +1,10 @@
+release:
+  branching:
+    execution:
+      time: "07:40:00"
+    schedule:
+      - on: "2023-01-27"
+        name: release/0.35
+        initial-tag:
+          create: true
+          name: v0.35.0-alpha.2
