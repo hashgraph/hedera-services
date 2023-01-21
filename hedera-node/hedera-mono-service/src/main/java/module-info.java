@@ -27,7 +27,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app.service.contract.impl.test;
+            com.hedera.node.app.service.contract.impl.test,
+            com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.models to

@@ -8,4 +8,5 @@ open module com.hedera.node.app.service.consensus.impl.test {
     requires org.mockito.junit.jupiter;
     requires org.assertj.core;
     requires com.google.protobuf;
+    requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
 }
