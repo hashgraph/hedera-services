@@ -19,7 +19,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.*;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,10 +49,13 @@ public class ScheduleDeleteHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableScheduleStore scheduleStore) {
+        final var metaBuilder =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txn).payerKeyFor(payer);
         final var op = txn.getScheduleDelete();
         final var id = op.getScheduleID();
 
-        // check for INVALID_SCHEDULE_ID
+        // check for a missing schedule. A schedule with this id could have never existed,
+        // or it could have already been executed or deleted
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
             return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
@@ -70,26 +72,11 @@ public class ScheduleDeleteHandler implements TransactionHandler {
             return new InvalidTransactionMetadata(txn, payer, SCHEDULE_IS_IMMUTABLE);
         }
 
-        // check whether payer key for this tx matches the admin key for underlying scheduled
-        // transaction
-        final KeyOrLookupFailureReason payerKeyOrLookupFailure = keyLookup.getKey(payer);
-        if (payerKeyOrLookupFailure.failed()) {
-            return new InvalidTransactionMetadata(
-                    txn, payer, payerKeyOrLookupFailure.failureReason());
-        } else {
-            var payerKey = payerKeyOrLookupFailure.key();
-            if (!adminKey.get().equals(payerKey))
-                return new InvalidTransactionMetadata(
-                        txn,
-                        payer,
-                        INVALID_SIGNATURE); // I'm not sure whether this is the correct code
-            // no need to add adminKey to required keys b/c it's also the payer key so already there
-        }
+        // add admin key of the original ScheduleCreate tx
+        // to the list of keys required to execute this ScheduleDelete tx
+        metaBuilder.addToReqNonPayerKeys(adminKey.get());
 
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txn).payerKeyFor(payer);
-
-        return meta.build();
+        return metaBuilder.build();
     }
 
     /**

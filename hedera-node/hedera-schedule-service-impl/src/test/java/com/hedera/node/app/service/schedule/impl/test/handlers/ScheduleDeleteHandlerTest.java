@@ -20,7 +20,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
@@ -65,7 +64,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var scheduleDeleteMeta =
                 subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
         assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
+        assertEquals(List.of(adminKey), scheduleDeleteMeta.requiredNonPayerKeys());
         assertEquals(OK, scheduleDeleteMeta.status());
     }
 
@@ -75,10 +74,11 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
 
+        given(keyLookup.getKey(scheduleDeleter))
+                .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         final var scheduleDeleteMeta =
                 subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
         assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
         assertEquals(INVALID_SCHEDULE_ID, scheduleDeleteMeta.status());
         assertTrue(scheduleDeleteMeta instanceof InvalidTransactionMetadata);
     }
@@ -88,27 +88,6 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     void scheduleDeleteScheduleIsImmutable() {
         final var txn = scheduleDeleteTransaction();
         givenSetupForScheduleDelete(txn);
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
-
-        final var scheduleDeleteMeta =
-                subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
-        assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
-        assertEquals(SCHEDULE_IS_IMMUTABLE, scheduleDeleteMeta.status());
-    }
-
-    @Test
-    // when the delete schedule tx is not signed with admin key of scheduled tx,
-    // then fail with INVALID_SIGNATURE
-    void scheduleDeleteFailWhenNotSignedWithAdminKey() throws DecoderException {
-        final var txn = scheduleDeleteTransaction();
-        givenSetupForScheduleDelete(txn);
-
-        Key key =
-                Key.newBuilder()
-                        .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaabbbbbbbbbb"))
-                        .build();
-        given(schedule.adminKey()).willReturn(Optional.of(JKey.mapKey(key)));
         given(keyLookup.getKey(scheduleDeleter))
                 .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
@@ -116,8 +95,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final var scheduleDeleteMeta =
                 subject.preHandle(txn, scheduleDeleter, keyLookup, scheduleStore);
         assertEquals(scheduleDeleter, scheduleDeleteMeta.payer());
-        assertEquals(List.of(), scheduleDeleteMeta.requiredNonPayerKeys());
-        assertEquals(INVALID_SIGNATURE, scheduleDeleteMeta.status());
+        assertEquals(SCHEDULE_IS_IMMUTABLE, scheduleDeleteMeta.status());
+        assertTrue(scheduleDeleteMeta instanceof InvalidTransactionMetadata);
     }
 
     @Test
