@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -64,8 +63,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             final var autoRenewAccount = op.getAutoRenewAccount();
             if (!payer.equals(autoRenewAccount)) {
                 final var result = keyLookup.getKey(autoRenewAccount);
-                if (!result.failed()) {
-                    Optional.ofNullable(result.key()).map(metaBuilder::addToReqNonPayerKeys);
+                if (!result.failed() && result.key() != null) {
+                    metaBuilder.addToReqNonPayerKeys(result.key());
                 } else {
                     metaBuilder.status(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
                 }
