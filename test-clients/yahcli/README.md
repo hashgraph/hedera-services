@@ -1,4 +1,4 @@
-# Yahcli v0.3.8
+# Yahcli v0.4.0
 Yahcli (_Yet Another Hedera Command Line Interface_) supports DevOps
 actions against the Hedera networks listed in a _config.yml_ file.
 
@@ -81,14 +81,14 @@ not appear in the _config.yml_, then we **must** explicitly give its node
 account via the `-a` option. So with the above _config.yml_, it is enough to do,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 2 -n previewnet \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 2 -n previewnet \
 > -i 35.231.208.148
 ```
 
 ...since the ip `35.231.208.148` is in the _config.yml_. But to use an IP not
 in the _config.yml_, we must also specify the node account, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 2 -n previewnet \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 2 -n previewnet \
 > -i 35.199.15.177 -a 4
 ```
 
@@ -115,7 +115,7 @@ use with that network. :guard: &nbsp; If there is no corresponding
 `account{num}.pass` for a PEM file, please be ready to enter 
 the passphrase interactively in the console. For example,
 ```
-$ docker run -it -v $(pwd):/launch yahcli:0.3.8 -p 2 sysfiles download all 
+$ docker run -it -v $(pwd):/launch yahcli:0.4.0 -p 2 sysfiles download all 
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file localhost/keys/account2.pem: 
 ```
@@ -133,7 +133,7 @@ Note that yahcli does not support multi-sig accounts.
 
 To list all available commands,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 help
 ``` 
 
 :information_desk_person: &nbsp; Since the only key we have for previewnet
@@ -142,7 +142,7 @@ when running against this network.
 
 To download the fee schedules from previewnet given the config above, we run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 2 -n previewnet sysfiles download fees
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 2 -n previewnet sysfiles download fees
 Targeting previewnet, paying with 0.0.2
 Downloading the fees...OK
 $ ls previewnet/sysfiles/
@@ -154,7 +154,7 @@ To see more options for the `download` subcommand (including a custom download d
 we run,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 sysfiles download help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 sysfiles download help
 ```
 
 The remaining sections of this document focus on specific use cases.
@@ -162,13 +162,13 @@ The remaining sections of this document focus on specific use cases.
 # Getting account balances
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previewnet -p 2 accounts balance 56 50
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n previewnet -p 2 accounts balance 56 50
 ```
 
 # Getting account information
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previewnet -p 2 accounts info 56 50
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n previewnet -p 2 accounts info 56 50
 ```
 
 # Sending account funds
@@ -182,7 +182,7 @@ You can send hbar in denominations of `tinybar`, `hbar`, or `kilobar`.
 The default denomination is `hbar`. To change the memo for the `CryptoTransfer`, use the `--memo` option.
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previewnet -p 2 accounts send --denomination hbar --to 58 --memo "Yes or no" 1_000_000
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n previewnet -p 2 accounts send --denomination hbar --to 58 --memo "Yes or no" 1_000_000
 ```
 
 ## Sending fungible HTS units
@@ -195,14 +195,14 @@ for USDC) means that the `1.23` amount below corresponds to `1_230_000` units of
 USDC fungible token type.
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n stabletestnet -p 2 accounts send -d 0.0.2276691 --to 58 --memo "Hello" 1.23
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n stabletestnet -p 2 accounts send -d 0.0.2276691 --to 58 --memo "Hello" 1.23
 ```
 
 # Creating a new account
 You can also create an entirely new account with an optional initial balance (default `0`) and memo (default blank).
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previewnet -p 2 accounts create -d hbar -a 1 --memo "Who danced between"
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n previewnet -p 2 accounts create -d hbar -a 1 --memo "Who danced between"
 
 ```
 
@@ -232,7 +232,7 @@ localhost
 
 We first download the existing address book,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 ```
@@ -262,12 +262,12 @@ files, respectively.
 
 And now we upload the new address book, this time using the address book admin `0.0.55` as the payer:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 55 sysfiles upload address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 55 sysfiles upload address-book
 ```
 
 Finally we re-download the book to see that the hex-encoded cert hash and RSA public key were uploaded as expected:
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 sysfiles download address-book
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 sysfiles download address-book
 Targeting localhost, paying with 0.0.2
 Downloading the address-book...OK
 $ tail -17 localhost/sysfiles/addressBook.json 
@@ -305,21 +305,21 @@ localhost/sysfiles/
 
 Then proceed as with any other `sysfiles upload` command, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 sysfiles upload software-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 sysfiles upload software-zip
 ...
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 sysfiles upload telemetry-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 sysfiles upload telemetry-zip
 ...
 ```
 
-:repeat:&nbsp;Since `yahcli:0.3.8` you can add the `--restart-from-failure` option like,
+:repeat:&nbsp;Since `yahcli:0.4.0` you can add the `--restart-from-failure` option like,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 sysfiles upload software-zip --restart-from-failure
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 sysfiles upload software-zip --restart-from-failure
 ```
 
 If the hash of the file on the network matches the hash of a prefix of the bytes you're uploading, then yahcli will
 automatically restart the upload after that prefix. For example,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 sysfiles upload software-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 sysfiles upload software-zip
 Log level is WARN
 Targeting localhost, paying with 0.0.2
 .i. Continuing upload for 0.0.150 with 34 appends already finished (out of 97 appends required)
@@ -330,7 +330,7 @@ Targeting localhost, paying with 0.0.2
 
 You can also directly check the SHA-384 hash of a special file with the `sysfiles hash-check` subcommand,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 sysfiles hash-check software-zip
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 sysfiles hash-check software-zip
 ```
 
 ### Recovering from a failed special file upload
@@ -343,7 +343,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localh
 Services will be validated by type; to see all supported options, run,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 validate help
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 validate help
 ```
 
 # Preparing an NMT software upgrade
@@ -354,7 +354,7 @@ SHA-384 hash of this ZIP must be given so the nodes can validate the integrity o
 staging its artifacts for NMT to use. This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 prepare-upgrade \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 prepare-upgrade \
 > --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
 ```
 
@@ -366,7 +366,7 @@ SHA-384 hash of this ZIP must be known so the nodes can validate the integrity o
 staging its artifacts for NMT to use.  This looks like,
 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 upgrade-telemetry \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 upgrade-telemetry \
 > --upgrade-zip-hash 8ec75ab44b6c8ccac4a6e7f7d77b5a66280cad8d8a86ed961975a3bea597613f83af9075f65786bf9101d50047ca768f \
 > --start-time 2022-01-01.00:00:00
 ```
@@ -379,21 +379,21 @@ software upgrade.
 
 A vanilla freeze with no NMT upgrade only includes the start time, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 freeze \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 freeze \
 > --start-time 2022-01-01.00:00:00
 ```
 
 While a freeze that should trigger a staged NMT upgrade uses the `freeze-upgrade` variant,
 which **must** repeat the hash of the intended update, 
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 freeze-upgrade \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 freeze-upgrade \
 > --upgrade-zip-hash 5d3b0e619d8513dfbf606ef00a2e83ba97d736f5f5ba61561d895ea83a6d4c34fce05d6cd74c83ec171f710e37e12aab
 > --start-time 2021-09-09.20:11:13 
 ```
 
 To abort a scheduled freeze, simply use the `freeze-abort` command,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 58 freeze-abort 
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 58 freeze-abort 
 ```
 
 # Updating account keys
@@ -403,7 +403,7 @@ can be either PEM files or BIP-39 mnemonics.)
 
 Our first example uses a randomly generated new key,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 2 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 2 -n localhost \
 > accounts rekey --gen-new-key 57
 Targeting localhost, paying with 0.0.2
 .i. Exported a newly generated key in PEM format to localhost/keys/account57.pem
@@ -425,7 +425,7 @@ localhost/keys
 
 For the next example, we specify an existing PEM file, and enter its passphrase when prompted,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 57 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 57 -n localhost \
 > accounts rekey -k new-account57.pem 57
 Targeting localhost, paying with 0.0.2
 Please enter the passphrase for key file new-account55.pem: 
@@ -437,7 +437,7 @@ In our final example, we replace the `0.0.57` key from a mnemonic,
 ```
 $ cat new-account57.words
 goddess maze eternal small normal october ... author
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -p 57 -n localhost \
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -p 57 -n localhost \
 > accounts rekey -k new-account57.words 57
 Targeting localhost, paying with 0.0.2
 .i. Exported key from new-account55 to localhost/keys/account57.pem
@@ -446,7 +446,7 @@ Targeting localhost, paying with 0.0.2
 
 # Get version info
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previewnet -p 2 version
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n previewnet -p 2 version
 ```
 
 # Generate a new Ed25519 key
@@ -454,7 +454,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n previe
 You can use yahcli to generate a new Ed25519 key in PEM and mnemonic forms; note that 
 ECDSA(secp256k1) keys are not yet supported. The most common pattern will likely be,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 keys gen-new -p novel.pem
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 keys gen-new -p novel.pem
 .i. Generating a new key @ novel.pem
 .i.  - The public key is: 4351607d4a00821e6cbd8e8c186bfa3a2b8fdb5ca81cf1e5f84e95a86875fd84
 .i.  - Passphrase @ novel.pass
@@ -475,15 +475,15 @@ generated passphrase in a _.pass_ file.
 
 If you have a PEM or mnemonic file for an Ed25519 key pair and need to extract the public key, you can run,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 keys print-public -p novel.pem -x PkpcBBYCjd7K
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 keys print-public -p novel.pem -x PkpcBBYCjd7K
 .i. The public key @ novel.pem is: 4351607d4a00821e6cbd8e8c186bfa3a2b8fdb5ca81cf1e5f84e95a86875fd84
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 keys print-public -p novel.words
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 keys print-public -p novel.words
 .i. The public key @ novel.words is: 4351607d4a00821e6cbd8e8c186bfa3a2b8fdb5ca81cf1e5f84e95a86875fd84 
 ```
 
 If you need both the public and private keys, use instead the `print-keys` subcommand,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 keys print-keys -p novel.pem -x PkpcBBYCjd7K
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 keys print-keys -p novel.pem -x PkpcBBYCjd7K
 .i. The public key @ novel.pem is : 4351607d4a00821e6cbd8e8c186bfa3a2b8fdb5ca81cf1e5f84e95a86875fd84
 .i. The private key @ novel.pem is: ea52bce1ad54a88e156f50840e856b941f9b0db09266660c953cd14205546ca2
 .i.   -> With DER prefix; 302e020100300506032b657004220420ea52bce1ad54a88e156f50840e856b941f9b0db09266660c953cd14205546ca2
@@ -494,11 +494,11 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 keys prin
 You can elect to stake to either a node or another account. With no other arguments, the `accounts stake` subcommand 
 updates the payer account's election. For example,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 accounts stake --to-node-id 0
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 accounts stake --to-node-id 0
 ...
 .i. SUCCESS - account 0.0.2 is now staked to NODE 0
 
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 accounts stake --to-account-num 1001
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 accounts stake --to-account-num 1001
 ...
 .i. SUCCESS - account 0.0.2 is now staked to ACCOUNT 0.0.1001
 ```
@@ -510,7 +510,7 @@ PEM or mnemonic form. For example,
 ```
 $ ls localhost/keys/account1001.*
 localhost/keys/account1001.pass		localhost/keys/account1001.pem		localhost/keys/account1001.words
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localhost -p 2 accounts stake --to-node-id 0 1001
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n localhost -p 2 accounts stake --to-node-id 0 1001
 ...
 .i. SUCCESS - account 0.0.1001 is now staked to NODE 0
 ```
@@ -520,7 +520,7 @@ $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n localh
 With any of the above commands, you can add the `--start-declining-rewards` or `--stop-declining-rewards` option to
 set the corresponding field in the underlying HAPI `CryptoUpdate`. For example,
 ```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 -n stabletestnet -p 45949104 accounts stake --start-declining-rewards --to-node-id 2
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 -n stabletestnet -p 45949104 accounts stake --start-declining-rewards --to-node-id 2
 Log level is WARN
 Targeting stabletestnet, paying with 0.0.45949104
 
@@ -544,13 +544,13 @@ decline_reward {
 You can schedule a transaction to be signed by the recipient of the transaction. For example,
 ```
 Use accounts create -S to create a new receiver account with signature required 0.0.R
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
 
 Use accounts send --schedule to schedule a transfer to 0.0.R, and create a transaction 0.0.T that has been scheduled
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts send --denomination hbar --to 0.0.R --memo "test" 8
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts send --denomination hbar --to 0.0.R --memo "test" 8
 
 Use  schedule sign scheduleId T paying with account 0.0.R to trigger the transfer
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId T
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId T
 
 ```
 
@@ -560,28 +560,28 @@ You can schedule a transaction to update key list for targeted account by multip
 
 ```
 Use accounts create to create a new account with signature required 0.0.R
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
 
 Use accounts create -S to create a new account with signature required 0.0.T
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
 
 Use accounts create -S to create a new account with signature required 0.0.S (This account we will change the key list)
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 accounts create -m test -r 2 -a 5 -S
 
 Use key get public keys to get public keys of 0.0.R and 0.0.T
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountR.pem -x {passphrase}
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountT.pem -x {passphrase}
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountR.pem -x {passphrase}
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 keys print-public -p ~/accountT.pem -x {passphrase}
 
 copyu them to text file each public key in seperate line (example: account.txt)
 
 Use accounts update --schedule to schedule a key replacement for 0.0.S using the file path for the keys and targeted account. (This is trx Z)
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts update --pathKeys ~/account.txt --targetAccount S --memo "test update"
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 2 --schedule accounts update --pathKeys ~/account.txt --targetAccount S --memo "test update"
 
 Use  schedule sign scheduleId T paying with account 0.0.R, 0.0.T and 0.0.S to sign the replacemnt of the keys
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId Z
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.T schedule sign --scheduleId Z
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.S schedule sign --scheduleId Z 
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.R schedule sign --scheduleId Z
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.T schedule sign --scheduleId Z
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml -a 3 -n localhost -p 0.0.S schedule sign --scheduleId Z 
 
 Use info account S to check the key list of the account
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.3.8 --config /test-clients/yahcli/config.yml  -a 3 -n localhost -p 2 accounts info S
+$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.0 --config /test-clients/yahcli/config.yml  -a 3 -n localhost -p 2 accounts info S
 ```
