@@ -40,7 +40,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class EvmHTSPrecompiledContractTest {
+class EvmHTSPrecompiledContractTest {
 
     @Mock private MessageFrame messageFrame;
     @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
