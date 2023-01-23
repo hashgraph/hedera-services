@@ -248,6 +248,31 @@ class TransactionDispatcherTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void testDataNotSetFails() {
+        // given
+        final var txBody = TransactionBody.newBuilder().build();
+        final var payer = AccountID.newBuilder().build();
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, txBody, payer))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void testNodeStakeUpdateFails() {
+        // given
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setNodeStakeUpdate(NodeStakeUpdateTransactionBody.getDefaultInstance())
+                        .build();
+        final var payer = AccountID.newBuilder().build();
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(state, txBody, payer))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testPreHandleWithPayer(

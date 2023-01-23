@@ -31,6 +31,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class QueryDispatcher {
 
+    private static final String QUERY_NOT_SET = "Query not set";
+
     private final QueryHandlers handlers;
 
     /**
@@ -77,7 +79,7 @@ public class QueryDispatcher {
             case TRANSACTIONGETRECORD -> handlers.transactionGetRecordHandler();
             case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler();
 
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException("Query not set");
+            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 
@@ -133,7 +135,7 @@ public class QueryDispatcher {
             case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler()
                     .validate(query);
 
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException("Query not set");
+            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         }
     }
 
@@ -143,6 +145,7 @@ public class QueryDispatcher {
             @NonNull final ResponseHeader header) {
         requireNonNull(state);
         requireNonNull(query);
+        requireNonNull(header);
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
@@ -193,7 +196,7 @@ public class QueryDispatcher {
             case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler()
                     .findResponse(query, header);
 
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException("Query not set");
+            case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
 }

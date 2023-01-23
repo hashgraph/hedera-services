@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.query;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -114,6 +113,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SessionContext session,
             @NonNull final ByteBuffer requestBuffer,
             @NonNull final ByteBuffer responseBuffer) {
+        requireNonNull(session);
+        requireNonNull(requestBuffer);
+        requireNonNull(responseBuffer);
 
         // 1. Parse and check header
         final Query query;
@@ -134,13 +136,20 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
+        if (queryHeader == null) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        }
 
         Response response;
+        long fee = 0L;
         try (final var wrappedState = stateAccessor.get()) {
             // Do some general pre-checks
             if (nodeInfo.isSelfZeroStake()) {
                 // Zero stake nodes are currently not supported
                 throw new PreCheckException(INVALID_NODE_ACCOUNT);
+            }
+            if (currentPlatformStatus.get() != ACTIVE) {
+                throw new PreCheckException(PLATFORM_NOT_ACTIVE);
             }
             if (UNSUPPORTED_RESPONSE_TYPES.contains(queryHeader.getResponseType())) {
                 throw new PreCheckException(NOT_SUPPORTED);
@@ -155,16 +164,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var paymentRequired = handler.requiresNodePayment(queryHeader.getResponseType());
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
-            long fee = 0L;
             if (paymentRequired) {
                 // 3.i Validate CryptoTransfer
-                if (currentPlatformStatus.get() != ACTIVE) {
-                    throw new PreCheckException(PLATFORM_NOT_ACTIVE);
-                }
                 allegedPayment = queryHeader.getPayment();
-                if (allegedPayment == null) {
-                    throw new PreCheckException(INSUFFICIENT_TX_FEE);
-                }
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
                 final var payer = txBody.getTransactionID().getAccountID();
 
@@ -210,16 +212,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
             final var header =
-                    createResponseHeader(queryHeader.getResponseType(), e.responseCode());
+                    createResponseHeader(queryHeader.getResponseType(), e.responseCode(), fee);
             response = handler.createEmptyResponse(header);
         }
 
         responseBuffer.put(response.toByteArray());
-    }
-
-    private static ResponseHeader createResponseHeader(
-            @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode) {
-        return createResponseHeader(type, responseCode, 0L);
     }
 
     private static ResponseHeader createResponseHeader(

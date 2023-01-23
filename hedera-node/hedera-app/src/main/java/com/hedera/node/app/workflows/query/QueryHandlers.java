@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetAccountNftInfosHa
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
-import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.workflows.query.handlers.GetAccountDetailsHandler;
 import com.hedera.node.app.workflows.query.handlers.GetByKeyHandler;
 import com.hedera.node.app.workflows.query.handlers.GetExecutionTimeHandler;
@@ -41,7 +40,6 @@ import com.hedera.node.app.workflows.query.handlers.GetVersionInfoHandler;
 import com.hedera.node.app.workflows.query.handlers.TransactionGetFastRecordHandler;
 import com.hedera.node.app.workflows.query.handlers.TransactionGetReceiptHandler;
 import com.hedera.node.app.workflows.query.handlers.TransactionGetRecordHandler;
-import com.hederahashgraph.api.proto.java.Query;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -73,43 +71,4 @@ public record QueryHandlers(
         @NonNull GetExecutionTimeHandler networkGetExecutionTimeHandler,
         @NonNull TransactionGetReceiptHandler transactionGetReceiptHandler,
         @NonNull TransactionGetRecordHandler transactionGetRecordHandler,
-        @NonNull TransactionGetFastRecordHandler transactionGetFastRecordHandler) {
-
-    public QueryHandler getHandler(@NonNull final Query query) {
-        return switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> consensusGetTopicInfoHandler;
-
-            case GETBYSOLIDITYID -> contractGetBySolidityIDHandler;
-            case CONTRACTCALLLOCAL -> contractCallLocalHandler;
-            case CONTRACTGETINFO -> contractGetInfoHandler;
-            case CONTRACTGETBYTECODE -> contractGetBytecodeHandler;
-            case CONTRACTGETRECORDS -> contractGetRecordsHandler;
-
-            case CRYPTOGETACCOUNTBALANCE -> cryptoGetAccountBalanceHandler;
-            case CRYPTOGETINFO -> cryptoGetAccountInfoHandler;
-            case CRYPTOGETACCOUNTRECORDS -> cryptoGetAccountRecordsHandler;
-            case CRYPTOGETLIVEHASH -> cryptoGetLiveHashHandler;
-            case CRYPTOGETPROXYSTAKERS -> cryptoGetStakersHandler;
-
-            case FILEGETCONTENTS -> fileGetContentsHandler;
-            case FILEGETINFO -> fileGetInfoHandler;
-
-            case SCHEDULEGETINFO -> scheduleGetInfoHandler;
-
-            case TOKENGETINFO -> tokenGetInfoHandler;
-            case TOKENGETACCOUNTNFTINFOS -> tokenGetAccountNftInfosHandler;
-            case TOKENGETNFTINFO -> tokenGetNftInfoHandler;
-            case TOKENGETNFTINFOS -> tokenGetNftInfosHandler;
-
-            case ACCOUNTDETAILS -> getAccountDetailsHandler;
-            case GETBYKEY -> getByKeyHandler;
-            case NETWORKGETVERSIONINFO -> getVersionInfoHandler;
-            case NETWORKGETEXECUTIONTIME -> networkGetExecutionTimeHandler;
-            case TRANSACTIONGETRECEIPT -> transactionGetReceiptHandler;
-            case TRANSACTIONGETRECORD -> transactionGetRecordHandler;
-            case TRANSACTIONGETFASTRECORD -> transactionGetFastRecordHandler;
-
-            case QUERY_NOT_SET -> throw new UnsupportedOperationException("Query not set");
-        };
-    }
-}
+        @NonNull TransactionGetFastRecordHandler transactionGetFastRecordHandler) {}

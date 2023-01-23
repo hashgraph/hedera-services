@@ -123,10 +123,11 @@ class IngestWorkflowImplTest {
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
         when(storeCache.getAccountStore(state)).thenReturn(accountStore);
         when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
-        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
 
+        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
+        when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
+
         workflow =
                 new IngestWorkflowImpl(
                         nodeInfo,
@@ -284,6 +285,7 @@ class IngestWorkflowImplTest {
             throws PreCheckException, InvalidProtocolBufferException {
         // given
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+        when(onset.parseAndCheck(ctx, localRequestBuffer)).thenReturn(ONSET_RESULT);
 
         // when
         workflow.submitTransaction(ctx, localRequestBuffer, responseBuffer);

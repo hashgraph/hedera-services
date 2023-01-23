@@ -40,7 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class QueryChecker {
 
     private final WorkflowOnset onset;
-    private final HederaAccountNumbers accountNums;
+    private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
     private final HapiOpPermissions hapiOpPermissions;
     private final CryptoTransferHandler cryptoTransferHandler;
@@ -49,26 +49,42 @@ public class QueryChecker {
      * Constructor of {@code QueryChecker}
      *
      * @param onset the {@link WorkflowOnset} that (eventually) pre-processes the CryptoTransfer
-     * @param accountNums
-     * @param queryFeeCheck
-     * @param hapiOpPermissions
-     * @param cryptoTransferHandler
+     * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special
+     *     accounts
+     * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
+     * @param hapiOpPermissions the {@link HapiOpPermissions} that checks permissions for a query
+     * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
+     *     {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
     public QueryChecker(
             @NonNull final WorkflowOnset onset,
-            @NonNull final HederaAccountNumbers accountNums,
+            @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
             @NonNull final HapiOpPermissions hapiOpPermissions,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
-        this.onset = onset;
-        this.accountNums = requireNonNull(accountNums);
+        this.onset = requireNonNull(onset);
+        this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
         this.hapiOpPermissions = requireNonNull(hapiOpPermissions);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
     }
 
+    /**
+     * Validates the {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is contained in
+     * a query
+     *
+     * @param session the {@link SessionContext} with all parsers
+     * @param txn the {@link Transaction} that needs to be checked
+     * @return the {@link TransactionBody} that was found in the transaction
+     * @throws PreCheckException if validation fails
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
     public TransactionBody validateCryptoTransfer(
-            final SessionContext session, final Transaction txn) throws PreCheckException {
+            @NonNull final SessionContext session, @NonNull final Transaction txn)
+            throws PreCheckException {
+        requireNonNull(session);
+        requireNonNull(txn);
         final var onsetResult = onset.doParseAndCheck(session, txn);
         if (onsetResult.functionality() != HederaFunctionality.CryptoTransfer) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
@@ -78,6 +94,16 @@ public class QueryChecker {
         return txBody;
     }
 
+    /**
+     * Validates the account balances needed in a query
+     *
+     * @param payer the {@link AccountID} of the query's payer
+     * @param txBody the {@link TransactionBody} of the {@link
+     *     com.hederahashgraph.api.proto.java.CryptoTransfer}
+     * @param fee the fee that needs to be paid
+     * @throws InsufficientBalanceException if validation fails
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
     public void validateAccountBalances(
             @NonNull final AccountID payer, @NonNull final TransactionBody txBody, final long fee)
             throws InsufficientBalanceException {
@@ -92,7 +118,7 @@ public class QueryChecker {
             throw new InsufficientBalanceException(xfersStatus, fee);
         }
 
-        if (accountNums.isSuperuser(payer.getAccountNum())) {
+        if (accountNumbers.isSuperuser(payer.getAccountNum())) {
             return;
         }
 
@@ -104,6 +130,14 @@ public class QueryChecker {
         }
     }
 
+    /**
+     * Checks the permission required for a query
+     *
+     * @param functionality the {@link HederaFunctionality} of the query
+     * @param payer the {@link AccountID} of the payer and whose permissions are checked
+     * @throws PreCheckException if permissions are not sufficient
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
     public void checkPermissions(
             @NonNull final HederaFunctionality functionality, @NonNull final AccountID payer)
             throws PreCheckException {
