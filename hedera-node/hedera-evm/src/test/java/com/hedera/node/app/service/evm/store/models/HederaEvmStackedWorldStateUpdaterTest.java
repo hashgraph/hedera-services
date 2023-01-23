@@ -63,6 +63,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void updaterTest() {
+        assertEquals(tokenAccessor, hederaEvmStackedWorldStateUpdater.tokenAccessor());
         assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
         assertEquals(
                 hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());

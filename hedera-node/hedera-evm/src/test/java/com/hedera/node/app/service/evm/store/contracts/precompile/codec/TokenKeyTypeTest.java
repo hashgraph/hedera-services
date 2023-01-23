@@ -16,11 +16,13 @@
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
-public class TokenKeyTypeTest {
+class TokenKeyTypeTest {
 
     @Test
     void test() {
@@ -45,5 +47,8 @@ public class TokenKeyTypeTest {
         assertEquals(
                 TokenKeyType.PAUSE_KEY,
                 new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 64).tokenKeyType());
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 5).tokenKeyType());
     }
 }
