@@ -95,7 +95,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
         }
-        if (!"HTS".equals(contract.getName())) {
+        if (!"HTS".equals(contract.getName()) && !"EvmHTS".equals(contract.getName())) {
             output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
