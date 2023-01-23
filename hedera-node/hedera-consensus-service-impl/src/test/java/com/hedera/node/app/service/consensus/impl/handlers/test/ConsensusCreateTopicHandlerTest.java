@@ -197,6 +197,30 @@ class ConsensusCreateTopicHandlerTest {
     }
 
     @Test
+    @DisplayName("Fails if auto account is returned with a null key")
+    void autoAccountKeyIsNull() {
+        // given:
+        given(keyFinder.getKey(any()))
+                .willReturn(KeyOrLookupFailureReason.withKey(null)); // Any error response code
+        final var inputTxn =
+                TransactionBody.newBuilder()
+                        .setTransactionID(
+                                TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build())
+                        .setConsensusCreateTopic(
+                                ConsensusCreateTopicTransactionBody.newBuilder()
+                                        .setAutoRenewAccount(IdUtils.asAccount("0.0.1234"))
+                                        .build())
+                        .build();
+
+        // when:
+        final var result = subject.preHandle(inputTxn, ACCOUNT_ID_3, keyFinder);
+
+        // then:
+        assertThat(result.status()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThat(result.failed()).isTrue();
+    }
+
+    @Test
     @DisplayName("Fails if payer is null")
     void nullPayer() {
         // given:
