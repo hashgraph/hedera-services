@@ -69,6 +69,7 @@ public class ViewExecutor {
     private final ViewGasCalculator gasCalculator;
     private final StateView stateView;
     private final WorldLedgers ledgers;
+    private final HederaStackedWorldStateUpdater updater;
 
     public ViewExecutor(
             final Bytes input,
@@ -83,7 +84,7 @@ public class ViewExecutor {
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
-        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         this.ledgers = updater.trackingLedgers();
     }
 
@@ -150,7 +151,7 @@ public class ViewExecutor {
                 return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
             }
             case ABI_ID_IS_FROZEN -> {
-                final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, a -> a);
+                final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, updater::unaliased);
 
                 validateTrueOrRevert(
                         ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
@@ -181,7 +182,7 @@ public class ViewExecutor {
                 return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
-                final var wrapper = IsKycPrecompile.decodeIsKyc(input, a -> a);
+                final var wrapper = IsKycPrecompile.decodeIsKyc(input, updater::unaliased);
 
                 validateTrueOrRevert(
                         ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
