@@ -33,13 +33,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetAccountNftInfosHa
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
-import com.hedera.node.app.workflows.query.handlers.GetAccountDetailsHandler;
-import com.hedera.node.app.workflows.query.handlers.GetByKeyHandler;
-import com.hedera.node.app.workflows.query.handlers.GetExecutionTimeHandler;
-import com.hedera.node.app.workflows.query.handlers.GetVersionInfoHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetFastRecordHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetReceiptHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetRecordHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -60,15 +59,14 @@ public record QueryHandlers(
         @NonNull CryptoGetStakersHandler cryptoGetStakersHandler,
         @NonNull FileGetContentsHandler fileGetContentsHandler,
         @NonNull FileGetInfoHandler fileGetInfoHandler,
+        @NonNull NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler,
+        @NonNull NetworkGetByKeyHandler networkGetByKeyHandler,
+        @NonNull NetworkGetExecutionTimeHandler networkGetExecutionTimeHandler,
+        @NonNull NetworkGetVersionInfoHandler networkGetVersionInfoHandler,
+        @NonNull NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler,
+        @NonNull NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler,
         @NonNull ScheduleGetInfoHandler scheduleGetInfoHandler,
         @NonNull TokenGetInfoHandler tokenGetInfoHandler,
         @NonNull TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
         @NonNull TokenGetNftInfoHandler tokenGetNftInfoHandler,
-        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler,
-        @NonNull GetAccountDetailsHandler getAccountDetailsHandler,
-        @NonNull GetVersionInfoHandler getVersionInfoHandler,
-        @NonNull GetByKeyHandler getByKeyHandler,
-        @NonNull GetExecutionTimeHandler networkGetExecutionTimeHandler,
-        @NonNull TransactionGetReceiptHandler transactionGetReceiptHandler,
-        @NonNull TransactionGetRecordHandler transactionGetRecordHandler,
-        @NonNull TransactionGetFastRecordHandler transactionGetFastRecordHandler) {}
+        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler) {}

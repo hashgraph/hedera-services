@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.schedule.impl.handlers;
 
+import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hederahashgraph.api.proto.java.Query;
@@ -24,19 +25,18 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleGetInfo}.
  */
-public class ScheduleGetInfoHandler implements QueryHandler {
+public class ScheduleGetInfoHandler extends PaidQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        final var content = query.getScheduleGetInfo();
-        if (content == null) {
-            throw new IllegalArgumentException("Query does not match expected type: " + query);
-        }
-        return content.getHeader();
+        requireNonNull(query);
+        return query.getScheduleGetInfo().getHeader();
     }
 
     @Override

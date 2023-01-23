@@ -35,7 +35,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
@@ -115,7 +115,7 @@ public final class HandlersFactory {
                 new FileSystemDeleteHandler(),
                 new FileSystemUndeleteHandler(),
                 new FreezeHandler(),
-                new UncheckedSubmitHandler(),
+                new NetworkUncheckedSubmitHandler(),
                 new ScheduleCreateHandler(),
                 new ScheduleSignHandler(),
                 new ScheduleDeleteHandler(),

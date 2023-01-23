@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceResponse;
@@ -25,35 +26,24 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoGetAccountBalance}.
  */
-public class CryptoGetAccountBalanceHandler implements QueryHandler {
+public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        final var content = query.getCryptogetAccountBalance();
-        if (content == null) {
-            throw new IllegalArgumentException("Query does not match expected type: " + query);
-        }
-        return content.getHeader();
+        requireNonNull(query);
+        return query.getCryptogetAccountBalance().getHeader();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
         final var response = CryptoGetAccountBalanceResponse.newBuilder().setHeader(header);
         return Response.newBuilder().setCryptogetAccountBalance(response).build();
-    }
-
-    @Override
-    public boolean requiresNodePayment(@NonNull final ResponseType responseType) {
-        return false;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
-        return false;
     }
 
     /**

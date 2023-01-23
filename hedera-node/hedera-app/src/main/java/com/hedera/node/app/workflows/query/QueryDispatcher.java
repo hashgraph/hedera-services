@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
+    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED = "TransactionGetFastRecord is not supported";
 
     private final QueryHandlers handlers;
 
@@ -45,6 +46,13 @@ public class QueryDispatcher {
         this.handlers = requireNonNull(handlers);
     }
 
+    /**
+     * Returns the {@link QueryHandler} for a given {@link Query}
+     *
+     * @param query the {@link Query} for which the {@link QueryHandler} is requested
+     * @return the {@code QueryHandler} for the query
+     */
+    @NonNull
     public QueryHandler getHandler(@NonNull final Query query) {
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler();
@@ -64,6 +72,13 @@ public class QueryDispatcher {
             case FILEGETCONTENTS -> handlers.fileGetContentsHandler();
             case FILEGETINFO -> handlers.fileGetInfoHandler();
 
+            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler();
+            case GETBYKEY -> handlers.networkGetByKeyHandler();
+            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler();
+            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler();
+            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler();
+            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler();
+
             case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler();
 
             case TOKENGETINFO -> handlers.tokenGetInfoHandler();
@@ -71,14 +86,7 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler();
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler();
 
-            case ACCOUNTDETAILS -> handlers.getAccountDetailsHandler();
-            case GETBYKEY -> handlers.getByKeyHandler();
-            case NETWORKGETVERSIONINFO -> handlers.getVersionInfoHandler();
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler();
-            case TRANSACTIONGETRECEIPT -> handlers.transactionGetReceiptHandler();
-            case TRANSACTIONGETRECORD -> handlers.transactionGetRecordHandler();
-            case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler();
-
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -91,7 +99,6 @@ public class QueryDispatcher {
      * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    @NonNull
     public void dispatchValidate(@NonNull final HederaState state, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(state);
@@ -117,6 +124,14 @@ public class QueryDispatcher {
             case FILEGETCONTENTS -> handlers.fileGetContentsHandler().validate(query);
             case FILEGETINFO -> handlers.fileGetInfoHandler().validate(query);
 
+            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().validate(query);
+            case GETBYKEY -> handlers.networkGetByKeyHandler().validate(query);
+            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler().validate(query);
+            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
+                    .validate(query);
+            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler().validate(query);
+            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler().validate(query);
+
             case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler().validate(query);
 
             case TOKENGETINFO -> handlers.tokenGetInfoHandler().validate(query);
@@ -125,20 +140,19 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().validate(query);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().validate(query);
 
-            case ACCOUNTDETAILS -> handlers.getAccountDetailsHandler().validate(query);
-            case GETBYKEY -> handlers.getByKeyHandler().validate(query);
-            case NETWORKGETVERSIONINFO -> handlers.getVersionInfoHandler().validate(query);
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
-                    .validate(query);
-            case TRANSACTIONGETRECEIPT -> handlers.transactionGetReceiptHandler().validate(query);
-            case TRANSACTIONGETRECORD -> handlers.transactionGetRecordHandler().validate(query);
-            case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler()
-                    .validate(query);
-
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         }
     }
 
+    /**
+     * Dispatch a {@code findResponse()}-request. The call is forwarded to the correct handler, which takes care of the specific functionality
+     *
+     * @param state the {@link HederaState} that should be used for the request
+     * @param query the actual {@link Query}
+     * @param header the {@link ResponseHeader} that should be used in the response, if it is successful
+     * @return the {@link Response} with the requested answer
+     */
     public Response dispatchFindResponse(
             @NonNull final HederaState state,
             @NonNull final Query query,
@@ -175,6 +189,17 @@ public class QueryDispatcher {
             case FILEGETCONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
             case FILEGETINFO -> handlers.fileGetInfoHandler().findResponse(query, header);
 
+            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
+            case GETBYKEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
+            case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
+                    .findResponse(query, header);
+            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
+                    .findResponse(query, header);
+            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler()
+                    .findResponse(query, header);
+            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler()
+                    .findResponse(query, header);
+
             case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler().findResponse(query, header);
 
             case TOKENGETINFO -> handlers.tokenGetInfoHandler().findResponse(query, header);
@@ -183,19 +208,7 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
 
-            case ACCOUNTDETAILS -> handlers.getAccountDetailsHandler().findResponse(query, header);
-            case GETBYKEY -> handlers.getByKeyHandler().findResponse(query, header);
-            case NETWORKGETVERSIONINFO -> handlers.getVersionInfoHandler()
-                    .findResponse(query, header);
-            case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
-                    .findResponse(query, header);
-            case TRANSACTIONGETRECEIPT -> handlers.transactionGetReceiptHandler()
-                    .findResponse(query, header);
-            case TRANSACTIONGETRECORD -> handlers.transactionGetRecordHandler()
-                    .findResponse(query, header);
-            case TRANSACTIONGETFASTRECORD -> handlers.transactionGetFastRecordHandler()
-                    .findResponse(query, header);
-
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

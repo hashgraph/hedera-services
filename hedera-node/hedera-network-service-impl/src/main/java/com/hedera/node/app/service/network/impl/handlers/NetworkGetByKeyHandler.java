@@ -13,36 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.workflows.query.handlers;
+package com.hedera.node.app.service.network.impl.handlers;
 
+import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
+import com.hederahashgraph.api.proto.java.GetByKeyResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#GetAccountDetails}.
+ * com.hederahashgraph.api.proto.java.HederaFunctionality#GetByKey}.
  */
-public class GetAccountDetailsHandler implements QueryHandler {
+public class NetworkGetByKeyHandler extends PaidQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        final var content = query.getAccountDetails();
-        if (content == null) {
-            throw new IllegalArgumentException("Query does not match expected type: " + query);
-        }
-        return content.getHeader();
+        requireNonNull(query);
+        return query.getGetByKey().getHeader();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = GetAccountDetailsResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setAccountDetails(response).build();
+        final var response = GetByKeyResponse.newBuilder().setHeader(header);
+        return Response.newBuilder().setGetByKey(response).build();
     }
 
     /**

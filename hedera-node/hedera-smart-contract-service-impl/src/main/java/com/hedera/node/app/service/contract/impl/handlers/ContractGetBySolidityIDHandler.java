@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -24,19 +24,20 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#GetBySolidityID}.
  */
-public class ContractGetBySolidityIDHandler implements QueryHandler {
+public class ContractGetBySolidityIDHandler extends PaidQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        final var content = query.getGetBySolidityID();
-        if (content == null) {
-            throw new IllegalArgumentException("Query does not match expected type: " + query);
-        }
-        return content.getHeader();
+        requireNonNull(query);
+        return query.getGetBySolidityID().getHeader();
     }
 
     @Override

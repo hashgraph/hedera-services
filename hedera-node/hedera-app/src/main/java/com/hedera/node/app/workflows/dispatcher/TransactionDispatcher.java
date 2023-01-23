@@ -127,7 +127,7 @@ public class TransactionDispatcher {
 
             case FREEZE -> handlers.freezeHandler().preHandle(transactionBody, payer);
 
-            case UNCHECKEDSUBMIT -> handlers.uncheckedSubmitHandler()
+            case UNCHECKEDSUBMIT -> handlers.networkUncheckedSubmitHandler()
                     .preHandle(transactionBody, payer);
 
             case SCHEDULECREATE -> handlers.scheduleCreateHandler()

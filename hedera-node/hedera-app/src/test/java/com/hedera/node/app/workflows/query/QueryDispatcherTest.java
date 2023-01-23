@@ -42,13 +42,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.query.handlers.GetAccountDetailsHandler;
-import com.hedera.node.app.workflows.query.handlers.GetByKeyHandler;
-import com.hedera.node.app.workflows.query.handlers.GetExecutionTimeHandler;
-import com.hedera.node.app.workflows.query.handlers.GetVersionInfoHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetFastRecordHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetReceiptHandler;
-import com.hedera.node.app.workflows.query.handlers.TransactionGetRecordHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -73,7 +72,6 @@ import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import java.util.function.Function;
@@ -88,7 +86,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class QueryDispatcherTest {
+class QueryDispatcherTest {
     @Mock private ConsensusGetTopicInfoHandler consensusGetTopicInfoHandler;
     @Mock private ContractGetBySolidityIDHandler contractGetBySolidityIDHandler;
     @Mock private ContractCallLocalHandler contractCallLocalHandler;
@@ -102,18 +100,17 @@ public class QueryDispatcherTest {
     @Mock private CryptoGetStakersHandler cryptoGetStakersHandler;
     @Mock private FileGetContentsHandler fileGetContentsHandler;
     @Mock private FileGetInfoHandler fileGetInfoHandler;
+    @Mock private NetworkGetAccountDetailsHandler networkGetAccountDetailsHandler;
+    @Mock private NetworkGetByKeyHandler networkGetByKeyHandler;
+    @Mock private NetworkGetExecutionTimeHandler networkGetExecutionTimeHandler;
+    @Mock private NetworkGetVersionInfoHandler networkGetVersionInfoHandler;
+    @Mock private NetworkTransactionGetReceiptHandler networkTransactionGetReceiptHandler;
+    @Mock private NetworkTransactionGetRecordHandler networkTransactionGetRecordHandler;
     @Mock private ScheduleGetInfoHandler scheduleGetInfoHandler;
     @Mock private TokenGetInfoHandler tokenGetInfoHandler;
     @Mock private TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler;
     @Mock private TokenGetNftInfoHandler tokenGetNftInfoHandler;
     @Mock private TokenGetNftInfosHandler tokenGetNftInfosHandler;
-    @Mock private GetAccountDetailsHandler getAccountDetailsHandler;
-    @Mock private GetVersionInfoHandler getVersionInfoHandler;
-    @Mock private GetByKeyHandler getByKeyHandler;
-    @Mock private GetExecutionTimeHandler networkGetExecutionTimeHandler;
-    @Mock private TransactionGetReceiptHandler transactionGetReceiptHandler;
-    @Mock private TransactionGetRecordHandler transactionGetRecordHandler;
-    @Mock private TransactionGetFastRecordHandler transactionGetFastRecordHandler;
 
     private QueryHandlers handlers;
 
@@ -136,18 +133,17 @@ public class QueryDispatcherTest {
                         cryptoGetStakersHandler,
                         fileGetContentsHandler,
                         fileGetInfoHandler,
+                        networkGetAccountDetailsHandler,
+                        networkGetByKeyHandler,
+                        networkGetExecutionTimeHandler,
+                        networkGetVersionInfoHandler,
+                        networkTransactionGetReceiptHandler,
+                        networkTransactionGetRecordHandler,
                         scheduleGetInfoHandler,
                         tokenGetInfoHandler,
                         tokenGetAccountNftInfosHandler,
                         tokenGetNftInfoHandler,
-                        tokenGetNftInfosHandler,
-                        getAccountDetailsHandler,
-                        getVersionInfoHandler,
-                        getByKeyHandler,
-                        networkGetExecutionTimeHandler,
-                        transactionGetReceiptHandler,
-                        transactionGetRecordHandler,
-                        transactionGetFastRecordHandler);
+                        tokenGetNftInfosHandler);
 
         dispatcher = new QueryDispatcher(handlers);
     }
@@ -474,11 +470,11 @@ public class QueryDispatcherTest {
                                 .setAccountDetails(GetAccountDetailsQuery.getDefaultInstance())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
-                                QueryHandlers::getAccountDetailsHandler,
-                        (Verification) h -> verify(h.getAccountDetailsHandler()).validate(any()),
+                                QueryHandlers::networkGetAccountDetailsHandler,
+                        (Verification) h -> verify(h.networkGetAccountDetailsHandler()).validate(any()),
                         (Verification)
                                 h ->
-                                        verify(h.getAccountDetailsHandler())
+                                        verify(h.networkGetAccountDetailsHandler())
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
@@ -486,15 +482,15 @@ public class QueryDispatcherTest {
                                         NetworkGetVersionInfoQuery.getDefaultInstance())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
-                                QueryHandlers::getVersionInfoHandler,
-                        (Verification) h -> verify(h.getVersionInfoHandler()).validate(any()),
+                                QueryHandlers::networkGetVersionInfoHandler,
+                        (Verification) h -> verify(h.networkGetVersionInfoHandler()).validate(any()),
                         (Verification)
-                                h -> verify(h.getVersionInfoHandler()).findResponse(any(), any())),
+                                h -> verify(h.networkGetVersionInfoHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder().setGetByKey(GetByKeyQuery.getDefaultInstance()).build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::getByKeyHandler,
-                        (Verification) h -> verify(h.getByKeyHandler()).validate(any()),
-                        (Verification) h -> verify(h.getByKeyHandler()).findResponse(any(), any())),
+                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetByKeyHandler,
+                        (Verification) h -> verify(h.networkGetByKeyHandler()).validate(any()),
+                        (Verification) h -> verify(h.networkGetByKeyHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
                                 .setNetworkGetExecutionTime(
@@ -514,12 +510,12 @@ public class QueryDispatcherTest {
                                         TransactionGetReceiptQuery.getDefaultInstance())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
-                                QueryHandlers::transactionGetReceiptHandler,
+                                QueryHandlers::networkTransactionGetReceiptHandler,
                         (Verification)
-                                h -> verify(h.transactionGetReceiptHandler()).validate(any()),
+                                h -> verify(h.networkTransactionGetReceiptHandler()).validate(any()),
                         (Verification)
                                 h ->
-                                        verify(h.transactionGetReceiptHandler())
+                                        verify(h.networkTransactionGetReceiptHandler())
                                                 .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
@@ -527,24 +523,11 @@ public class QueryDispatcherTest {
                                         TransactionGetRecordQuery.getDefaultInstance())
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
-                                QueryHandlers::transactionGetRecordHandler,
-                        (Verification) h -> verify(h.transactionGetRecordHandler()).validate(any()),
+                                QueryHandlers::networkTransactionGetRecordHandler,
+                        (Verification) h -> verify(h.networkTransactionGetRecordHandler()).validate(any()),
                         (Verification)
                                 h ->
-                                        verify(h.transactionGetRecordHandler())
-                                                .findResponse(any(), any())),
-                Arguments.of(
-                        Query.newBuilder()
-                                .setTransactionGetFastRecord(
-                                        TransactionGetFastRecordQuery.getDefaultInstance())
-                                .build(),
-                        (Function<QueryHandlers, QueryHandler>)
-                                QueryHandlers::transactionGetFastRecordHandler,
-                        (Verification)
-                                h -> verify(h.transactionGetFastRecordHandler()).validate(any()),
-                        (Verification)
-                                h ->
-                                        verify(h.transactionGetFastRecordHandler())
+                                        verify(h.networkTransactionGetRecordHandler())
                                                 .findResponse(any(), any())));
     }
 

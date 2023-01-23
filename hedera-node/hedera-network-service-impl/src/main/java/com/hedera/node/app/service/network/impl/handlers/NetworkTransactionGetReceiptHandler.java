@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.workflows.query.handlers;
+package com.hedera.node.app.service.network.impl.handlers;
 
+import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hederahashgraph.api.proto.java.Query;
@@ -22,39 +23,27 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TransactionGetFastRecordResponse;
+import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#TransactionGetFastRecord}. TODO: link with
- * right HederaFunctionality
+ * com.hederahashgraph.api.proto.java.HederaFunctionality#TransactionGetReceipt}.
  */
-public class TransactionGetFastRecordHandler implements QueryHandler {
+public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
-        final var content = query.getTransactionGetFastRecord();
-        if (content == null) {
-            throw new IllegalArgumentException("Query does not match expected type: " + query);
-        }
-        return content.getHeader();
+        requireNonNull(query);
+        return query.getTransactionGetReceipt().getHeader();
     }
 
     @Override
     public Response createEmptyResponse(@NonNull final ResponseHeader header) {
-        final var response = TransactionGetFastRecordResponse.newBuilder().setHeader(header);
-        return Response.newBuilder().setTransactionGetFastRecord(response).build();
-    }
-
-    @Override
-    public boolean requiresNodePayment(@NonNull final ResponseType responseType) {
-        return false;
-    }
-
-    @Override
-    public boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
-        return false;
+        final var response = TransactionGetReceiptResponse.newBuilder().setHeader(header);
+        return Response.newBuilder().setTransactionGetReceipt(response).build();
     }
 
     /**

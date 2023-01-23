@@ -15,10 +15,6 @@
  */
 package com.hedera.node.app.spi.workflows;
 
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -29,15 +25,40 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */
 public interface QueryHandler {
 
+    /**
+     * Extract the {@link QueryHeader} from a given {@link Query}
+     *
+     * @param query the {@link Query} that contains the header
+     * @return the {@link QueryHeader} that was specified in the query
+     * @throws NullPointerException if {@code query} is {@code null}
+     */
     QueryHeader extractHeader(@NonNull Query query);
 
+    /**
+     * Creates an empty {@link Response} with a provided header.
+     * This is typically used, if an error occurred.
+     *
+     * @param header the {@link ResponseHeader} that needs to be included
+     * @return the created {@link Response}
+     * @throws NullPointerException if {@code header} is {@code null}
+     */
     Response createEmptyResponse(@NonNull ResponseHeader header);
 
-    default boolean requiresNodePayment(@NonNull final ResponseType responseType) {
-        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
-    }
+    /**
+     * Returns {@code true}, if a query associated with this handler requires a payment
+     *
+     * @param responseType the {@link ResponseType} of a query, because payment can depend on the response type
+     * @return {@code true} if payment is required, {@code false} otherwise
+     * @throws NullPointerException if {@code responseType} is {@code null}
+     */
+    boolean requiresNodePayment(@NonNull final ResponseType responseType);
 
-    default boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType) {
-        return COST_ANSWER == responseType;
-    }
+    /**
+     * Returns {@code true}, if a query associated with this handler returns only the costs
+     *
+     * @param responseType the {@link ResponseType} of a query, because the result can depend on the response type
+     * @return {@code true} if only costs need to returned, {@code false} otherwise
+     * @throws NullPointerException if {@code responseType} is {@code null}
+     */
+    boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType);
 }

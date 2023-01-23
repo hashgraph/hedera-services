@@ -37,7 +37,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
@@ -120,7 +120,7 @@ class TransactionDispatcherTest {
 
     @Mock private FreezeHandler freezeHandler;
 
-    @Mock private UncheckedSubmitHandler uncheckedSubmitHandler;
+    @Mock private NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
 
     @Mock private ScheduleCreateHandler scheduleCreateHandler;
     @Mock private ScheduleSignHandler scheduleSignHandler;
@@ -182,7 +182,7 @@ class TransactionDispatcherTest {
                         fileSystemDeleteHandler,
                         fileSystemUndeleteHandler,
                         freezeHandler,
-                        uncheckedSubmitHandler,
+                        networkUncheckedSubmitHandler,
                         scheduleCreateHandler,
                         scheduleSignHandler,
                         scheduleDeleteHandler,
@@ -478,7 +478,7 @@ class TransactionDispatcherTest {
                                 .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.uncheckedSubmitHandler()).preHandle(any(), any())),
+                                h -> verify(h.networkUncheckedSubmitHandler()).preHandle(any(), any())),
 
                 // schedule
                 Arguments.of(

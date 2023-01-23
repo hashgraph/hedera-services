@@ -129,7 +129,7 @@ class QueryWorkflowImplTest {
         query =
                 Query.newBuilder()
                         .setFileGetInfo(
-                                FileGetInfoQuery.newBuilder().setHeader(queryHeader).build())
+                                FileGetInfoQuery.newBuilder().setHeader(queryHeader))
                         .build();
         when(queryParser.parseFrom(requestBuffer)).thenReturn(query);
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
