@@ -7,11 +7,15 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 ## Goals
 - Add list of evmAddress values known as “Virtual Address” to Hedera accounts which govern the address the EVM observes for a given account transaction
 - Hedera Accounts can add, disable and remove virtual address entries as desired
-- The Hedera network will validate ownership by extracting the public key from the signature and comparing the calculated public address to the evmAddress passed in on addition of the virtual address and will maintain an `evmAddress -> accountId` map thereafter
+- The Hedera network will:
+  - Validate ownership by extracting the public key from the signature and comparing the calculated public address to the `evmAddress` passed in on addition of the virtual address
+  - Maintain an `evmAddress -> accountId` map thereafter
 - Contract accounts may utilize the `evmAddress` to store their address in accordance with `CREATE` and `CREATE2` EVM operations
+- Perform seamless state migration of accounts and contracts so that by default they benefit from the introduction of virtual addresses
 - Restoring HIP 32’s consistency so that account aliases will have only key based values
 
 ## Non Goals
+- Support removal of virtual addresses between accounts
 - Support transferring of virtual addresses between accounts
 
 ## Architecture
@@ -29,10 +33,15 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 - Implement logic to rebuild the `evmAddress -> accountId` map from state e.g. similar to `AliasManager.rebuildAliasesMap` implementation
 - Update `AliasManager.rebuildAliasesMap` method to work only for EC/ED key bytes aliases 
 
+#### Introduce special system account
+- Create new system account for exposed keys/addresses from Ethereum tools and external chains that will be used to ensure that no such keys/addresses will be allowed 
+- The limitation for accounts to have a maximum limit of virtual addresses will not be applicable to this system account i.e. this account will have unbounded list of virtual addresses 
+
 #### State migration
 - Create new class in `com.hedera.node.app.service.mono.state.migration` that implements the migration logic for the accounts and contracts
 - During migration all `evmAddress` entries that are currently in `AliasManager` map should be moved to the `evmAddress -> accountId` map
 - After migration is done the `AliasManager` map should contain only key based alias entries
+- The migration is not reversible so if data expected in the new version of the state is missing we should fall back to the way we retrieve data from the old version of the state
 - Migration steps are described [here](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#alias-to-virtual-account-migration)
 
 ### Transactions
@@ -49,15 +58,18 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 - `ContractCreate/ContractCall` that result in new contract creation should add an Ethereum public address `evmAddress` for `CREATE` & `CREATE2` to `contract.account.virtualAddresses`
 - Update `ContractCreateTransitionLogic/ContractCallTransitionLogic` implementations to parse the `virtual_address_override` value from the transaction body and determine the appropriate Ethereum public address `evmAddress` per transaction as described [here](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#transaction-evm-address-value)
 
+#### Externalize changes through transaction records
+- All relevant details will be exposed in record files as described in the table from [HAPI changes section](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#hapi-changes) of HIP-631
+
 ### Queries
 - Update `GetAccountInfoAnswer.responseGiven` to return the virtual addresses list for an account
 - Introduce new `CryptoGetAccountVirtualAddressesQuery` in order to return unbounded list of virtual addresses for an account
 
 ### Global properties
-Create the following properties to configure the virtual addresses' behavior:
-- `virtualAddresses.maxNumber` - the maximum number of virtual addresses per account
-- `virtualAddresses.canDisable` - toggle for the ability to disable virtual accounts
-- `virtualAddresses.canRemove` - toggle for the ability to remove virtual accounts
+- Create the following properties to configure the virtual addresses' behavior:
+  - `virtualAddresses.maxNumber` - the maximum number of virtual addresses per account
+  - `virtualAddresses.canDisable` - toggle for the ability to disable virtual accounts
+  - `virtualAddresses.canRemove` - toggle for the ability to remove virtual accounts (will not be needed initially since removal is not a goal)
 
 ## Phases of development
 
@@ -96,15 +108,17 @@ The development will be done in iterative phases that build on previous ones. Pr
   - Support `virtual_address_override` logic for `ContractCreate` and `ContractCall` transaction
 - Phase 4
   - Support virtual address disabling on `CryptoUpdate`
-  - Design virtual address deletion & transfer
+  - Design virtual address removal & transfer
 
 ## Acceptance Tests
 
 ### Positive Tests
 - `CryptoCreate` with `ECDSA key` should create an account with single virtual address and make it the default virtual address
 - `CryptoCreate` with `ECDSA key alias` should create an account with single virtual address and make it the default virtual address
+- `CryptoCreate` with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
 - `CryptoCreate` with `evmAddress` should create a hollow account with single virtual address and make it the default virtual address
 - `CryptoTransfer` with `ECDSA key alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
+- `CryptoTransfer` with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
 - `CryptoTransfer` with `evmAddress` to a non-existing account should lazy-create a hollow account with single virtual address and make it the default virtual address
 - `EthereumTransaction` to a non-existing account with `tx.to` EVM address value should lazy-create a hollow account with single virtual address and make it the default virtual address
 - `ContractCreate/ContractCall` for an account with a default virtual address should use that address in the EVM
@@ -116,8 +130,6 @@ The development will be done in iterative phases that build on previous ones. Pr
 - `CryptoGetInfoQuery` for an existing account should return the virtual addresses list for the account
 
 ### Negative Tests
-- CryptoCreate with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
-- CryptoTransfer with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
 - Virtual address update for a contracts should fail, ensuring contract accounts immutability
 - Any transaction using an `evmAddress` that is in the not-allowed list should fail
-- CryptoUpdate with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
+- `CryptoUpdate` with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
