@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKENS;
@@ -66,6 +68,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungiblePause;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleWipe;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.getTokenExpiryInfoWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
@@ -92,6 +95,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -101,8 +105,14 @@ import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -145,14 +155,15 @@ import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -182,6 +193,7 @@ class HTSPrecompiledContractTest {
     @Mock private ExpiringCreations creator;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
+    @Mock private TokenAccessor tokenAccessor;
 
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
@@ -191,8 +203,9 @@ class HTSPrecompiledContractTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private InfrastructureFactory infrastructureFactory;
+    @Mock private EvmInfrastructureFactory evmInfrastructureFactory;
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TokenInfoWrapper<TokenID> tokenInfoWrapper;
+    @Mock private TokenInfoWrapper<byte[]> tokenInfoWrapper;
     @Mock private AccessorFactory accessorFactory;
     @Mock private NetworkInfo networkInfo;
 
@@ -253,6 +266,7 @@ class HTSPrecompiledContractTest {
                         resourceCosts,
                         stateView,
                         accessorFactory);
+        evmHTSPrecompiledContract = new EvmHTSPrecompiledContract(evmInfrastructureFactory);
         subject =
                 new HTSPrecompiledContract(
                         dynamicProperties,
@@ -330,109 +344,111 @@ class HTSPrecompiledContractTest {
         assertNull(result.getValue());
     }
 
-    //    @Test
-    //    void computeCostedWorksForRedirectView() {
-    //        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
-    //        given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-    //        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
-    //        given(messageFrame.isStatic()).willReturn(true);
-    //        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-    //        given(worldUpdater.isInTransaction()).willReturn(false);
-    //
-    //        final var redirectViewExecutor =
-    //                new RedirectViewExecutor(
-    //                        input,
-    //                        messageFrame,
-    //                        evmEncoder,
-    //                        precompilePricingUtils::computeViewFunctionGas);
-    //        given(infrastructureFactory.newRedirectExecutor(any(), any(), any()))
-    //                .willReturn(redirectViewExecutor);
-    //        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-    //                .willReturn(mockFeeObject);
-    //        given(
-    //                        feeCalculator.estimatedGasPriceInTinybars(
-    //                                HederaFunctionality.ContractCall,
-    //                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
-    //                .willReturn(1L);
-    //        given(mockFeeObject.getNodeFee()).willReturn(1L);
-    //        given(mockFeeObject.getNetworkFee()).willReturn(1L);
-    //        given(mockFeeObject.getServiceFee()).willReturn(1L);
-    //
-    //        final var name = "name";
-    //        given(wrappedLedgers.nameOf(fungible)).willReturn(name);
-    //        given(evmEncoder.encodeName(name)).willReturn(Bytes.of(1));
-    //
-    //        final var result = subject.computeCosted(input, messageFrame);
-    //
-    //        verify(messageFrame, never()).setRevertReason(any());
-    //        assertEquals(Bytes.of(1), result.getValue());
-    //    }
+    @Test
+    void computeCostedWorksForRedirectView() {
+        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
+        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
+        given(messageFrame.isStatic()).willReturn(true);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.isInTransaction()).willReturn(false);
 
-    //    @Test
-    //    void computeCostedWorksForView() {
-    //        EvmTokenInfo evmTokenInfo =
-    //                new EvmTokenInfo(
-    //                        fromString("0x03").toByteArray(),
-    //                        1,
-    //                        false,
-    //                        "FT",
-    //                        "NAME",
-    //                        "MEMO",
-    //                        Address.wrap(
-    //
-    // Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
-    //                        1L,
-    //                        1000L,
-    //                        0,
-    //                        0L);
-    //
-    //        final Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
-    //        tokenInfoPrecompile
-    //                .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
-    //                .thenReturn(tokenInfoWrapper);
-    //        given(tokenInfoWrapper.token()).willReturn(fungible);
-    //        given(messageFrame.isStatic()).willReturn(true);
-    //        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-    //        given(worldUpdater.isInTransaction()).willReturn(false);
-    //        given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
-    //        final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
-    //        final var ledgers = updater.trackingLedgers();
-    //        final var tokenAccessor = new TokenAccessorImpl(ledgers);
-    //        final var viewExecutor =
-    //                new ViewExecutor(
-    //                        input,
-    //                        messageFrame,
-    //                        evmEncoder,
-    //                        precompilePricingUtils::computeViewFunctionGas,
-    //                        tokenAccessor);
-    //        given(infrastructureFactory.newViewExecutor(any(), any(), any(), any()))
-    //                .willReturn(viewExecutor);
-    //        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
-    //                .willReturn(mockFeeObject);
-    //        given(
-    //                        feeCalculator.estimatedGasPriceInTinybars(
-    //                                HederaFunctionality.ContractCall,
-    //                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
-    //                .willReturn(1L);
-    //        given(mockFeeObject.getNodeFee()).willReturn(1L);
-    //        given(mockFeeObject.getNetworkFee()).willReturn(1L);
-    //        given(mockFeeObject.getServiceFee()).willReturn(1L);
-    //
-    //        given(stateView.getNetworkInfo()).willReturn(networkInfo);
-    //        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-    //        given(wrappedLedgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
-    //                .willReturn(Optional.of(evmTokenInfo));
-    //        final var encodedResult =
-    //                Bytes.fromHexString(
-    //
-    // "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
-    //        given(evmEncoder.encodeGetTokenInfo(any())).willReturn(encodedResult);
-    //
-    //        final var result = subject.computeCosted(input, messageFrame);
-    //
-    //        verify(messageFrame, never()).setRevertReason(any());
-    //        assertEquals(encodedResult, result.getValue());
-    //    }
+        final var redirectViewExecutor =
+                new RedirectViewExecutor(
+                        input,
+                        messageFrame,
+                        evmEncoder,
+                        precompilePricingUtils::computeViewFunctionGas,
+                        tokenAccessor);
+        given(evmInfrastructureFactory.newRedirectExecutor(any(), any(), any(), any()))
+                .willReturn(redirectViewExecutor);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                .willReturn(mockFeeObject);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall,
+                                Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
+                .willReturn(1L);
+        given(mockFeeObject.getNodeFee()).willReturn(1L);
+        given(mockFeeObject.getNetworkFee()).willReturn(1L);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+
+        final var name = "name";
+        given(tokenAccessor.nameOf(any())).willReturn(name);
+        given(evmEncoder.encodeName(name)).willReturn(Bytes.of(1));
+
+        final var result = subject.computeCosted(input, messageFrame);
+
+        verify(messageFrame, never()).setRevertReason(any());
+        assertEquals(Bytes.of(1), result.getValue());
+    }
+
+    @Test
+    void computeCostedWorksForView() {
+        EvmTokenInfo evmTokenInfo =
+                new EvmTokenInfo(
+                        fromString("0x03").toByteArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
+
+        try (MockedStatic<EvmTokenInfoPrecompile> utilities =
+                Mockito.mockStatic(EvmTokenInfoPrecompile.class)) {
+
+            final Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
+            utilities
+                    .when(() -> EvmTokenInfoPrecompile.decodeGetTokenInfo(input))
+                    .thenReturn(tokenInfoWrapper);
+            given(tokenInfoWrapper.token()).willReturn(fungibleTokenAddr.toArrayUnsafe());
+            given(messageFrame.isStatic()).willReturn(true);
+            given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+            given(worldUpdater.isInTransaction()).willReturn(false);
+            given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
+            final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+            final var ledgers = updater.trackingLedgers();
+            final var viewExecutor =
+                    new ViewExecutor(
+                            input,
+                            messageFrame,
+                            evmEncoder,
+                            precompilePricingUtils::computeViewFunctionGas,
+                            tokenAccessor);
+            given(evmInfrastructureFactory.newViewExecutor(any(), any(), any(), any()))
+                    .willReturn(viewExecutor);
+            given(feeCalculator.estimatePayment(any(), any(), any(), any(), any()))
+                    .willReturn(mockFeeObject);
+            given(
+                            feeCalculator.estimatedGasPriceInTinybars(
+                                    HederaFunctionality.ContractCall,
+                                    Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
+                    .willReturn(1L);
+            given(mockFeeObject.getNodeFee()).willReturn(1L);
+            given(mockFeeObject.getNetworkFee()).willReturn(1L);
+            given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+            given(stateView.getNetworkInfo()).willReturn(networkInfo);
+            given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+            given(tokenAccessor.evmInfoForToken(any())).willReturn(Optional.of(evmTokenInfo));
+            final var encodedResult =
+                    Bytes.fromHexString(
+                            "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
+            given(evmEncoder.encodeGetTokenInfo(any())).willReturn(encodedResult);
+
+            final var result = subject.computeCosted(input, messageFrame);
+
+            verify(messageFrame, never()).setRevertReason(any());
+            assertEquals(encodedResult, result.getValue());
+        }
+    }
 
     Bytes prerequisitesForRedirect(final int descriptor) {
         given(messageFrame.getBlockValues()).willReturn(blockValues);
