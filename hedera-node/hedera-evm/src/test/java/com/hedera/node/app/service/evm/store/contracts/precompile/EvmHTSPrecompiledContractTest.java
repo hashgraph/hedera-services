@@ -69,6 +69,19 @@ class EvmHTSPrecompiledContractTest {
     }
 
     @Test
+    void computeCostedWrongInput() {
+        final Bytes input = prerequisites(0x3c4dd32c);
+        given(messageFrame.isStatic()).willReturn(true);
+        final var result =
+                evmHTSPrecompiledContract.computeCosted(
+                        input, messageFrame, viewGasCalculator, tokenAccessor);
+
+        assertEquals(Bytes.EMPTY, result.getValue());
+        assertEquals("EvmHTS", evmHTSPrecompiledContract.getName());
+        assertEquals(0, evmHTSPrecompiledContract.gasRequirement(input));
+    }
+
+    @Test
     void computeCostedWorksForRedirectView() {
         final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
         given(messageFrame.isStatic()).willReturn(true);
