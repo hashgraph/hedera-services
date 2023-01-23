@@ -47,8 +47,8 @@ class TokenKeyTypeTest {
         assertEquals(
                 TokenKeyType.PAUSE_KEY,
                 new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 64).tokenKeyType());
-        assertThrows(
-                InvalidTransactionException.class,
-                () -> new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 5).tokenKeyType());
+
+        final var wrapper = new GetTokenKeyWrapper<>(Bytes.EMPTY.toArray(), 5);
+        assertThrows(InvalidTransactionException.class, wrapper::tokenKeyType);
     }
 }

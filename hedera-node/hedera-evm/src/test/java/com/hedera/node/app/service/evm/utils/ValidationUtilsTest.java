@@ -40,18 +40,22 @@ class ValidationUtilsTest {
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateTrue(false, MEMO_TOO_LONG));
+        validateTrue(true, MEMO_TOO_LONG);
         final var falseExCapturedByCodeAndMsg =
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateTrue(false, INVALID_TOKEN_BURN_AMOUNT, "Should be true!"));
+        validateTrue(true, INVALID_TOKEN_BURN_AMOUNT, "Should be true!");
         final var trueExCapturedByCode =
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateFalse(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
+        validateFalse(false, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
         final var trueExCapturedByCodeAndMsg =
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateFalse(true, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!"));
+        validateFalse(false, TOKEN_HAS_NO_SUPPLY_KEY, "Should be false!");
 
         assertEquals(MEMO_TOO_LONG, falseExCapturedByCode.getResponseCode());
         assertEquals(INVALID_TOKEN_BURN_AMOUNT, falseExCapturedByCodeAndMsg.getResponseCode());
@@ -71,6 +75,8 @@ class ValidationUtilsTest {
                 assertThrows(
                         InvalidTransactionException.class,
                         () -> validateFalseOrRevert(true, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
+        validateFalseOrRevert(false, CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
+        validateTrueOrRevert(true, INVALID_ALLOWANCE_OWNER_ID);
         assertTrue(capturedEx.isReverting());
         assertTrue(trueExCapturedByCode.isReverting());
         final var reason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
