@@ -373,6 +373,7 @@ class EvmEncodingFacadeTest {
                         null,
                         fromHexString("0x03"));
         assertEquals(Address.ZERO, nftInfoWithoutSpender.getSpender());
+        assertEquals(fromHexString("0x03").length, nftInfoWithoutSpender.getLedgerId().length);
 
         final var nftInfo =
                 new EvmNftInfo(
