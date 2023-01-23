@@ -32,7 +32,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
-    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED = "TransactionGetFastRecord is not supported";
+    private static final String GET_FAST_RECORD_IS_NOT_SUPPORTED =
+            "TransactionGetFastRecord is not supported";
 
     private final QueryHandlers handlers;
 
@@ -86,7 +87,8 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler();
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler();
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
@@ -129,8 +131,10 @@ public class QueryDispatcher {
             case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler().validate(query);
             case NETWORKGETEXECUTIONTIME -> handlers.networkGetExecutionTimeHandler()
                     .validate(query);
-            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler().validate(query);
-            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler().validate(query);
+            case TRANSACTIONGETRECEIPT -> handlers.networkTransactionGetReceiptHandler()
+                    .validate(query);
+            case TRANSACTIONGETRECORD -> handlers.networkTransactionGetRecordHandler()
+                    .validate(query);
 
             case SCHEDULEGETINFO -> handlers.scheduleGetInfoHandler().validate(query);
 
@@ -140,17 +144,20 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().validate(query);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().validate(query);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         }
     }
 
     /**
-     * Dispatch a {@code findResponse()}-request. The call is forwarded to the correct handler, which takes care of the specific functionality
+     * Dispatch a {@code findResponse()}-request. The call is forwarded to the correct handler,
+     * which takes care of the specific functionality
      *
      * @param state the {@link HederaState} that should be used for the request
      * @param query the actual {@link Query}
-     * @param header the {@link ResponseHeader} that should be used in the response, if it is successful
+     * @param header the {@link ResponseHeader} that should be used in the response, if it is
+     *     successful
      * @return the {@link Response} with the requested answer
      */
     public Response dispatchFindResponse(
@@ -189,7 +196,8 @@ public class QueryDispatcher {
             case FILEGETCONTENTS -> handlers.fileGetContentsHandler().findResponse(query, header);
             case FILEGETINFO -> handlers.fileGetInfoHandler().findResponse(query, header);
 
-            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler().findResponse(query, header);
+            case ACCOUNTDETAILS -> handlers.networkGetAccountDetailsHandler()
+                    .findResponse(query, header);
             case GETBYKEY -> handlers.networkGetByKeyHandler().findResponse(query, header);
             case NETWORKGETVERSIONINFO -> handlers.networkGetVersionInfoHandler()
                     .findResponse(query, header);
@@ -208,7 +216,8 @@ public class QueryDispatcher {
             case TOKENGETNFTINFO -> handlers.tokenGetNftInfoHandler().findResponse(query, header);
             case TOKENGETNFTINFOS -> handlers.tokenGetNftInfosHandler().findResponse(query, header);
 
-            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(GET_FAST_RECORD_IS_NOT_SUPPORTED);
+            case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
+                    GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }

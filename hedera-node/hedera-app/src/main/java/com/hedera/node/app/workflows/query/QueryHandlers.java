@@ -23,6 +23,12 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
@@ -33,12 +39,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetAccountNftInfosHa
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

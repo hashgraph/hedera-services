@@ -128,8 +128,7 @@ class QueryWorkflowImplTest {
         final var queryHeader = QueryHeader.newBuilder().setPayment(payment).build();
         query =
                 Query.newBuilder()
-                        .setFileGetInfo(
-                                FileGetInfoQuery.newBuilder().setHeader(queryHeader))
+                        .setFileGetInfo(FileGetInfoQuery.newBuilder().setHeader(queryHeader))
                         .build();
         when(queryParser.parseFrom(requestBuffer)).thenReturn(query);
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);

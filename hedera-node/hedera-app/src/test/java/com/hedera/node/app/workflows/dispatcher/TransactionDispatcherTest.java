@@ -478,7 +478,9 @@ class TransactionDispatcherTest {
                                 .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.networkUncheckedSubmitHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.networkUncheckedSubmitHandler())
+                                                .preHandle(any(), any())),
 
                 // schedule
                 Arguments.of(

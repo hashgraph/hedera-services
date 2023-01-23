@@ -29,6 +29,12 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractGetInfoHandler
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetRecordsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleGetInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
@@ -42,12 +48,6 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetAccountDetailsHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetByKeyHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetExecutionTimeHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkGetVersionInfoHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetReceiptHandler;
-import com.hedera.node.app.service.network.impl.handlers.NetworkTransactionGetRecordHandler;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -471,7 +471,8 @@ class QueryDispatcherTest {
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetAccountDetailsHandler,
-                        (Verification) h -> verify(h.networkGetAccountDetailsHandler()).validate(any()),
+                        (Verification)
+                                h -> verify(h.networkGetAccountDetailsHandler()).validate(any()),
                         (Verification)
                                 h ->
                                         verify(h.networkGetAccountDetailsHandler())
@@ -483,14 +484,19 @@ class QueryDispatcherTest {
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkGetVersionInfoHandler,
-                        (Verification) h -> verify(h.networkGetVersionInfoHandler()).validate(any()),
                         (Verification)
-                                h -> verify(h.networkGetVersionInfoHandler()).findResponse(any(), any())),
+                                h -> verify(h.networkGetVersionInfoHandler()).validate(any()),
+                        (Verification)
+                                h ->
+                                        verify(h.networkGetVersionInfoHandler())
+                                                .findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder().setGetByKey(GetByKeyQuery.getDefaultInstance()).build(),
-                        (Function<QueryHandlers, QueryHandler>) QueryHandlers::networkGetByKeyHandler,
+                        (Function<QueryHandlers, QueryHandler>)
+                                QueryHandlers::networkGetByKeyHandler,
                         (Verification) h -> verify(h.networkGetByKeyHandler()).validate(any()),
-                        (Verification) h -> verify(h.networkGetByKeyHandler()).findResponse(any(), any())),
+                        (Verification)
+                                h -> verify(h.networkGetByKeyHandler()).findResponse(any(), any())),
                 Arguments.of(
                         Query.newBuilder()
                                 .setNetworkGetExecutionTime(
@@ -512,7 +518,9 @@ class QueryDispatcherTest {
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkTransactionGetReceiptHandler,
                         (Verification)
-                                h -> verify(h.networkTransactionGetReceiptHandler()).validate(any()),
+                                h ->
+                                        verify(h.networkTransactionGetReceiptHandler())
+                                                .validate(any()),
                         (Verification)
                                 h ->
                                         verify(h.networkTransactionGetReceiptHandler())
@@ -524,7 +532,8 @@ class QueryDispatcherTest {
                                 .build(),
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::networkTransactionGetRecordHandler,
-                        (Verification) h -> verify(h.networkTransactionGetRecordHandler()).validate(any()),
+                        (Verification)
+                                h -> verify(h.networkTransactionGetRecordHandler()).validate(any()),
                         (Verification)
                                 h ->
                                         verify(h.networkTransactionGetRecordHandler())
