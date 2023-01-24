@@ -33,7 +33,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     void preHandleCryptoCreateVanilla() {
         final var txn = createAccountTransaction(true);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         basicMetaAssertions(meta, 1, false, OK);
@@ -46,7 +50,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var expectedMeta =
                 new SigTransactionMetadataBuilder(store).payerKeyFor(payer).txnBody(txn).build();
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));

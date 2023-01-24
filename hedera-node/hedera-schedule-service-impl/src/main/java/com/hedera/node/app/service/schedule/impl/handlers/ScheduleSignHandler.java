@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
@@ -24,10 +25,13 @@ import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -39,34 +43,29 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key resolution
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
+     *                will be passed to {@link #handle(TransactionMetadata)}
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public ScheduleTransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+    public void preHandle(
+            @NonNull final ScheduleSigTransactionMetadataBuilder meta,
             @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final PreHandleDispatcher dispatcher) {
+        requireNonNull(meta);
+        requireNonNull(scheduleStore);
+        requireNonNull(dispatcher);
+        final var txn = meta.getTxn();
         final var op = txn.getScheduleSign();
         final var id = op.getScheduleID();
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
+            meta.status(INVALID_SCHEDULE_ID);
+            return;
         }
-
-        final var meta =
-                new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(payer);
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
@@ -75,7 +74,6 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
 
         final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
         meta.scheduledMeta(innerMeta);
-        return meta.build();
     }
 
     /**
@@ -88,6 +86,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -56,7 +57,11 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(payerKey, meta.payerKey());
         assertIterableEquals(List.of(ownerKey), meta.requiredNonPayerKeys());
@@ -68,7 +73,11 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var meta = subject.preHandle(txn, owner, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(owner);
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(ownerKey, meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
@@ -79,13 +88,21 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         var txn = cryptoDeleteAllowanceTransaction(owner);
         given(accounts.get(owner.getAccountNum())).willReturn(null);
 
-        var meta = subject.preHandle(txn, owner, store);
+        var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(owner);
+        subject.preHandle(builder);
+        var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         txn = cryptoDeleteAllowanceTransaction(payer);
-        meta = subject.preHandle(txn, payer, store);
+        builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
         assertEquals(payerKey, meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());

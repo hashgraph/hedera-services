@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -37,7 +38,11 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         final var txn = contractCallTransaction();
         given(keyLookup.getKey(payer))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertEquals(null, meta.payerKey());
     }
@@ -46,7 +51,11 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Succeeds for valid payer account")
     void validPayer() {
         final var txn = contractCallTransaction();
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(payerKey, meta.payerKey());
     }
@@ -54,7 +63,11 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Test
     void callHandle() {
         final var txn = contractCallTransaction();
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
     }
 

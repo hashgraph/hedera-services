@@ -16,14 +16,18 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -37,25 +41,17 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link ReadableAccountStore} with the current data
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
+     *                will be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var op = txn.getCryptoDeleteAllowance();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+    public void preHandle(@NonNull final TransactionMetadataBuilder<?> meta) {
+        requireNonNull(meta);
+        final var op = meta.getTxn().getCryptoDeleteAllowance();
         // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.getNftAllowancesList()) {
             meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
         }
-        return meta.build();
     }
 
     /**
@@ -68,6 +64,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

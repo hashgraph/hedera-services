@@ -22,7 +22,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * An implementation of {@link TransactionMetadata} for cases when a failure with a specific {@link
@@ -45,18 +49,27 @@ public record InvalidTransactionMetadata(
         requireNonNull(status);
     }
 
+    @NonNull
     @Override
     public List<HederaKey> requiredNonPayerKeys() {
         return List.of();
     }
 
+    @Nullable
     @Override
     public HederaKey payerKey() {
         return null;
     }
 
+    @Nullable
     @Override
     public TransactionMetadata scheduledMeta() {
         return null;
+    }
+
+    @NonNull
+    @Override
+    public List<ReadKeys> readKeys() {
+        return List.of();
     }
 }

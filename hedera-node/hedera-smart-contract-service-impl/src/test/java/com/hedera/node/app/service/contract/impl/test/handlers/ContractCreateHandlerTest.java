@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +36,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Adds valid admin key")
     void validAdminKey() {
         final var txn = contractCreateTransaction(adminKey, null);
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(payerKey, meta.payerKey());
         //        FUTURE: uncomment this after JKey removal
@@ -48,7 +53,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var txn = contractCreateTransaction(adminKey, null);
         given(keyLookup.getKey(payer))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertEquals(null, meta.payerKey());
     }
@@ -57,7 +66,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("admin key with contractID is not added")
     void adminKeyWithContractID() {
         final var txn = contractCreateTransaction(adminContractKey, null);
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(payerKey, meta.payerKey());
     }
@@ -66,7 +79,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account key is added")
     void autoRenewAccountIdAdded() {
         final var txn = contractCreateTransaction(adminContractKey, autoRenewAccountId);
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(payerKey, meta.payerKey());
         assertEquals(List.of(autoRenewHederaKey), meta.requiredNonPayerKeys());
@@ -76,7 +93,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account key is not added when it is sentinel value")
     void autoRenewAccountIdAsSentinelNotAdded() {
         final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(payerKey, meta.payerKey());
         assertEquals(List.of(), meta.requiredNonPayerKeys());
@@ -86,7 +107,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account and adminKey both added")
     void autoRenewAccountIdAndAdminBothAdded() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         basicMetaAssertions(meta, 2, false, OK);
         assertEquals(payerKey, meta.payerKey());
         //        FUTURE: uncomment this after JKey removal
@@ -97,7 +122,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Test
     void callHandle() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var meta = subject.preHandle(txn, txn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(txn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
     }
 

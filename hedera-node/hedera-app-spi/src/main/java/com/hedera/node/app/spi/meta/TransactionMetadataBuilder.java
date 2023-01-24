@@ -27,8 +27,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Base abstract class for constructing {@link TransactionMetadata} by collecting information that
@@ -37,8 +40,10 @@ import java.util.Objects;
  *
  * <p>NOTE : This class is designed to be subclassed
  */
+@SuppressWarnings("UnusedReturnValue")
 public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBuilder<T>> {
     protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
+    protected final List<TransactionMetadata.ReadKeys> readKeys = new ArrayList<>();
     protected HederaKey payerKey;
     protected ResponseCodeEnum status = OK;
     protected TransactionBody txn;
@@ -47,6 +52,24 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
 
     protected TransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
         this.keyLookup = Objects.requireNonNull(keyLookup);
+    }
+
+    /**
+     * Getter for the {@link TransactionBody}
+     *
+     * @return the {@link TransactionBody} that was previously set
+     */
+    public TransactionBody getTxn() {
+        return txn;
+    }
+
+    /**
+     * Getter for the payer
+     *
+     * @return the {@link AccountID} of the payer
+     */
+    public AccountID getPayer() {
+        return payer;
     }
 
     /**
@@ -109,6 +132,20 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      */
     public T txnBody(@NonNull TransactionBody txn) {
         this.txn = Objects.requireNonNull(txn);
+        return self();
+    }
+
+    /**
+     * Adds a {@link Set} of read keys for a {@link com.hedera.node.app.spi.state.ReadableKVState}
+     *
+     * @param statesKey the key of the {@link com.hedera.node.app.spi.state.ReadableStates}
+     * @param stateKey the key of the {@link com.hedera.node.app.spi.state.ReadableKVState}
+     * @param readKeys the read keys
+     *
+     * @return builder object
+     */
+    public T addReadKeys(final String statesKey, final String stateKey, final Set<? extends Comparable<?>> readKeys) {
+        this.readKeys.add(new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys));
         return self();
     }
 
@@ -231,7 +268,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      *
      * @return a new {@link SigTransactionMetadata}
      */
-    protected abstract TransactionMetadata build();
+    public abstract TransactionMetadata build();
 
     /**
      * Returns the builder object.

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
@@ -46,8 +47,11 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAutoRenew() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(theTxn)
+                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
@@ -56,8 +60,11 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateNoAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(theTxn)
+                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
@@ -66,8 +73,11 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateDeprecatedAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(theTxn)
+                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
@@ -76,8 +86,11 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var builder = new SigTransactionMetadataBuilder(keyLookup)
+                .txnBody(theTxn)
+                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(DEFAULT_ADMIN_KT.asKey()));

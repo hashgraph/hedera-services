@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -57,7 +58,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         assertEquals(payerKey, meta.payerKey());
@@ -77,7 +82,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         basicMetaAssertions(meta, 2, false, OK);
@@ -89,7 +98,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(payer, payer);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         basicMetaAssertions(meta, 0, false, OK);
@@ -106,7 +119,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, payer);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         assertEquals(payerKey, meta.payerKey());
@@ -124,7 +141,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(payer, transferAccountId);
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         basicMetaAssertions(meta, 1, false, OK);
@@ -143,7 +164,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        var meta = subject.preHandle(txn, payer, store);
+        var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
@@ -154,7 +179,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(deleteAccountNum)).willReturn(null);
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
 
-        meta = subject.preHandle(txn, payer, store);
+        builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        meta = builder.build();
 
         basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
         assertEquals(payerKey, meta.payerKey());
@@ -165,7 +194,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(accounts.get(transferAccountNum)).willReturn(null);
 
-        meta = subject.preHandle(txn, payer, store);
+        builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        meta = builder.build();
 
         basicMetaAssertions(meta, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
         assertEquals(payerKey, meta.payerKey());
@@ -181,7 +214,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
 
-        final var meta = subject.preHandle(txn, payer, store);
+        final var builder = new SigTransactionMetadataBuilder(store)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+        subject.preHandle(builder);
+        final var meta = builder.build();
 
         assertEquals(txn, meta.txnBody());
         basicMetaAssertions(meta, 1, false, OK);

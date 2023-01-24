@@ -34,7 +34,9 @@ import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
+import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -61,13 +63,18 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         scheduler,
                         OK,
                         schedulerKey,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(schedulerKey, meta.payerKey());
@@ -98,13 +105,18 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         scheduler,
                         OK,
                         schedulerKey,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 0, false, OK);
         assertEquals(schedulerKey, meta.payerKey());
@@ -127,10 +139,15 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         scheduler,
                         OK,
                         schedulerKey,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertEquals(scheduledMeta, meta.scheduledMeta());
@@ -149,12 +166,17 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         scheduler,
                         OK,
                         schedulerKey,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(eq(scheduledTxn), any())).willReturn(scheduledMeta);
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(schedulerKey, meta.payerKey());
@@ -179,12 +201,17 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         scheduler,
                         OK,
                         schedulerKey,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 0, false, OK);
         basicMetaAssertions(meta.scheduledMeta(), 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
@@ -207,10 +234,15 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         payer,
                         INVALID_ACCOUNT_ID,
                         schedulerKey,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
 
-        final var meta = subject.preHandle(txn, scheduler, keyLookup, dispatcher);
+        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(scheduler);
+        subject.preHandle(builder, dispatcher);
+        final var meta = builder.build();
 
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(schedulerKey, meta.payerKey());

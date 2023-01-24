@@ -22,7 +22,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Metadata collected when scheduled transactions are handled as part of "pre-handle" needed for
@@ -33,20 +37,25 @@ import java.util.Objects;
  * @param payer payer for the top-level transaction
  * @param status status of the top-level transaction
  * @param payerKey payer key for the top-level transaction
+ * @param readKeys keys that were read during pre-handle
  * @param requiredNonPayerKeys required non-payer keys for the top-level transaction
  * @param scheduledMeta metadata for the scheduled transaction
  */
 public record ScheduleSigTransactionMetadata(
         @NonNull TransactionBody txnBody,
         @NonNull AccountID payer,
-        ResponseCodeEnum status,
+        @NonNull ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        List<HederaKey> requiredNonPayerKeys,
+        @NonNull List<HederaKey> requiredNonPayerKeys,
+        @NonNull List<ReadKeys> readKeys,
         @NonNull TransactionMetadata scheduledMeta)
         implements ScheduleTransactionMetadata {
     public ScheduleSigTransactionMetadata {
-        Objects.requireNonNull(txnBody);
-        Objects.requireNonNull(payer);
-        Objects.requireNonNull(scheduledMeta);
+        requireNonNull(txnBody);
+        requireNonNull(payer);
+        requireNonNull(status);
+        requireNonNull(requiredNonPayerKeys);
+        requireNonNull(readKeys);
+        requireNonNull(scheduledMeta);
     }
 }

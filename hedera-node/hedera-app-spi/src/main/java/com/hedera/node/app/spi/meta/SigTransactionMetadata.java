@@ -22,7 +22,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -34,16 +38,19 @@ import java.util.Objects;
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
  * @param requiredNonPayerKeys list of keys that are required to sign the transaction, in addition
  *     to payer key
+ * @param readKeys the keys that were read during pre-handle
  */
 public record SigTransactionMetadata(
         @NonNull TransactionBody txnBody,
         @NonNull AccountID payer,
         ResponseCodeEnum status,
         @Nullable HederaKey payerKey,
-        List<HederaKey> requiredNonPayerKeys)
+        List<HederaKey> requiredNonPayerKeys,
+        List<ReadKeys> readKeys)
         implements TransactionMetadata {
     public SigTransactionMetadata {
-        Objects.requireNonNull(txnBody);
-        Objects.requireNonNull(payer);
+        requireNonNull(txnBody);
+        requireNonNull(payer);
+        requireNonNull(readKeys);
     }
 }

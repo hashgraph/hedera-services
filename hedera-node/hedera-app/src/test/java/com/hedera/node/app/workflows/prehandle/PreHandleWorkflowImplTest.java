@@ -23,8 +23,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.Dispatcher;
@@ -53,7 +56,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
@@ -80,7 +85,9 @@ class PreHandleWorkflowImplTest {
             supplier -> CompletableFuture.completedFuture(supplier.get());
 
     @BeforeEach
-    void setup() throws PreCheckException {
+    void setup(
+            @Mock(strictness = Mock.Strictness.LENIENT) TransactionMetadataBuilder<?> metadataBuilder
+    ) throws PreCheckException {
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final AccountID payerID = AccountID.newBuilder().build();
@@ -96,7 +103,12 @@ class PreHandleWorkflowImplTest {
         final OnsetResult onsetResult = new OnsetResult(txBody, OK, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        when(dispatcher.dispatchPreHandle(state, txBody, payerID)).thenReturn(metadata);
+        when(metadataBuilder.build()).thenReturn(metadata);
+        doAnswer(invocation -> {
+            final var context = (PreHandleWorkflowContext) invocation.getArguments()[0];
+            context.setMetadataBuilder(metadataBuilder);
+            return null;
+        }).when(dispatcher).dispatchPreHandle(any());
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
@@ -186,7 +198,7 @@ class PreHandleWorkflowImplTest {
                 .succeedsWithin(Duration.ofMillis(100))
                 .isInstanceOf(ErrorTransactionMetadata.class)
                 .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
-        verify(dispatcher, never()).dispatchPreHandle(eq(state), any(), any());
+        verify(dispatcher, never()).dispatchPreHandle(any());
     }
 
     @Test
@@ -214,6 +226,6 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(dispatcher).dispatchPreHandle(eq(state), eq(txBody), any());
+        verify(dispatcher).dispatchPreHandle(any());
     }
 }

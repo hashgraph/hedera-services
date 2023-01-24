@@ -19,7 +19,14 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -42,6 +49,7 @@ public interface TransactionMetadata {
      *
      * @return the status of the transaction.
      */
+    @NonNull
     ResponseCodeEnum status();
 
     /**
@@ -49,6 +57,7 @@ public interface TransactionMetadata {
      *
      * @return transaction that is being pre-handled
      */
+    @Nullable
     TransactionBody txnBody();
 
     /**
@@ -57,6 +66,7 @@ public interface TransactionMetadata {
      *
      * @return keys needed for validating signing requirements
      */
+    @NonNull
     List<HederaKey> requiredNonPayerKeys();
 
     /**
@@ -64,6 +74,7 @@ public interface TransactionMetadata {
      *
      * @return payer for the transaction
      */
+    @Nullable
     AccountID payer();
 
     /**
@@ -71,5 +82,31 @@ public interface TransactionMetadata {
      *
      * @return payer key to sign the transaction
      */
+    @Nullable
     HederaKey payerKey();
+
+    /**
+     * A {@link Map} of all read keys.
+     *
+     * <p>The map contains a {@code Map} for each {@link com.hedera.node.app.spi.state.ReadableStates}
+     * that was created during pre-handle, indexed by their {@code statesKey}.
+     *
+     * <p>The contained {@code Maps} keep a {@link Set} of all read keys for each
+     * {@link com.hedera.node.app.spi.state.ReadableKVState}, indexed by the {@code stateKey}.
+     *
+     * @return a data structure with all keys that were read during pre-handle
+     */
+    @NonNull
+    List<ReadKeys> readKeys();
+
+    record ReadKeys(
+            @NonNull String statesKey,
+            @NonNull String stateKey,
+            @NonNull Set<? extends Comparable<?>> readKeys) {
+        public ReadKeys {
+            requireNonNull(statesKey);
+            requireNonNull(stateKey);
+            requireNonNull(readKeys);
+        }
+    }
 }
