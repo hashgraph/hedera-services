@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -49,9 +50,9 @@ import java.util.Optional;
  */
 public class ReadableAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
-    protected final ReadableKVState<Long, MerkleAccount> accountState;
+    private final ReadableKVState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    protected final ReadableKVState<String, Long> aliases;
+    private final ReadableKVState<String, Long> aliases;
 
     /**
      * Create a new {@link ReadableAccountStore} instance.
@@ -66,6 +67,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     /** {@inheritDoc} */
     @Override
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
+        Objects.requireNonNull(idOrAlias);
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
             return withFailureReason(INVALID_ACCOUNT_ID);
@@ -77,6 +79,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
             @NonNull final AccountID idOrAlias) {
+        Objects.requireNonNull(idOrAlias);
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
             return withFailureReason(INVALID_ACCOUNT_ID);
@@ -93,6 +96,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     /** {@inheritDoc} */
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias) {
+        Objects.requireNonNull(idOrAlias);
         final var optContract = getContractLeaf(idOrAlias);
         if (optContract.isEmpty()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -108,6 +112,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
             @NonNull final ContractID idOrAlias) {
+        Objects.requireNonNull(idOrAlias);
         final var optContract = getContractLeaf(idOrAlias);
         if (optContract.isEmpty()) {
             return withFailureReason(INVALID_CONTRACT_ID);
@@ -159,7 +164,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * @param idOrAlias provided account id
      * @return account number
      */
-    private Long getAccountNum(final AccountID idOrAlias) {
+    private Long getAccountNum(@NonNull final AccountID idOrAlias) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
             if (alias.size() == EVM_ADDRESS_SIZE) {
@@ -182,7 +187,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
      * @param id given contract number
      * @return merkle leaf for the given contract number
      */
-    private Optional<HederaAccount> getContractLeaf(final ContractID id) {
+    private Optional<HederaAccount> getContractLeaf(@NonNull final ContractID id) {
         final var contractNum = getContractNum(id);
         if (contractNum.equals(MISSING_NUM)) {
             return Optional.empty();

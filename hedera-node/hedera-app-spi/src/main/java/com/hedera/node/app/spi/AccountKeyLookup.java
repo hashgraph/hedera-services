@@ -17,6 +17,7 @@ package com.hedera.node.app.spi;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An interface used for looking up Keys on the account. NOTE: This class can be modified to return
@@ -32,7 +33,8 @@ public interface AccountKeyLookup {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKey(final AccountID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKey(@NonNull final AccountID idOrAlias);
 
     /**
      * Fetches the account's key from given accountID and returns the keys if the account has
@@ -46,7 +48,8 @@ public interface AccountKeyLookup {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias);
 
     /**
      * Fetches the contract's key from given contractID. If the key could not be fetched as the
@@ -56,7 +59,8 @@ public interface AccountKeyLookup {
      * @param idOrAlias contract id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKey(final ContractID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias);
 
     /**
      * Fetches the contract's key from given contractID and returns the keys if the account has
@@ -70,5 +74,6 @@ public interface AccountKeyLookup {
      * @param idOrAlias contract id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final ContractID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias);
 }
