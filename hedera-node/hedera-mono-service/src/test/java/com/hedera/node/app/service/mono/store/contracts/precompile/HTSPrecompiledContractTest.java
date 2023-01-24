@@ -124,23 +124,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiAssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.PausePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpausePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -221,6 +205,7 @@ class HTSPrecompiledContractTest {
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
     private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     private MockedStatic<BurnPrecompile> burnPrecompile;
+    private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     @Mock private AssetsLoader assetLoader;
 
     private static final long viewTimestamp = 10L;
@@ -289,6 +274,7 @@ class HTSPrecompiledContractTest {
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
         burnPrecompile = Mockito.mockStatic(BurnPrecompile.class);
+        balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
     }
 
     @AfterEach
@@ -309,6 +295,7 @@ class HTSPrecompiledContractTest {
         updateTokenExpiryInfoPrecompile.close();
         ercTransferPrecompile.close();
         burnPrecompile.close();
+        balanceOfPrecompile.close();
     }
 
     private ByteString fromString(final String value) {
@@ -1051,6 +1038,36 @@ class HTSPrecompiledContractTest {
 
         // then
         assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+    }
+
+    @Test
+    void computeCallsCorrectImplementationForExplicitRedirectTokenCall() {
+        // given
+        givenFrameContext();
+        final Bytes input =
+                Bytes.fromHexString(
+                        // explicit redirectForToken input (normal encoding)
+                        "0x618dc65e000000000000000000000000000000000000000000000000000000000000043c0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002470a08231000000000000000000000000000000000000000000000000000000000000043b00000000000000000000000000000000000000000000000000000000");
+        balanceOfPrecompile
+                // the input passed in the actual decoding method should be in redirect form (packed
+                // encoding)
+                .when(
+                        () ->
+                                BalanceOfPrecompile.decodeBalanceOf(
+                                        eq(
+                                                Bytes.fromHexString(
+                                                        "0x70a08231000000000000000000000000000000000000000000000000000000000000043b")),
+                                        any()))
+                .thenReturn(HTSTestsUtil.balanceOfWrapper);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof BalanceOfPrecompile);
     }
 
     @Test
