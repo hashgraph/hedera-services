@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout 03094-circleci-cli-2
+            git checkout 03094-circleci-cli-3
 
             ./gradlew assemble --scan --parallel
 
