@@ -22,9 +22,9 @@ import com.swirlds.common.system.address.AddressBook;
 
 public interface SystemAccountsCreator {
     /**
-     * Called in ServicesMain#init(Platform, NodeId) to ensure the network has all expected
-     * system accounts, especially when starting from genesis; not really a migration path, may be
-     * better placed in {@code com.hedera.node.app.service.mono.ServicesState#internalInit()}.
+     * Called in ServicesMain#init(Platform, NodeId) to ensure the network has all expected system
+     * accounts, especially when starting from genesis; not really a migration path, may be better
+     * placed in {@code com.hedera.node.app.service.mono.ServicesState#internalInit()}.
      *
      * @param backingAccounts the ledger accounts
      * @param addressBook the current address book

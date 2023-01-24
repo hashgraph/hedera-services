@@ -105,7 +105,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
-    public MerkleHederaState() { }
+    public MerkleHederaState() {}
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.

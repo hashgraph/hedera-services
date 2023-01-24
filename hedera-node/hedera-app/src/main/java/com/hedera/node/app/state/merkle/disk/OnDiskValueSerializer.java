@@ -32,6 +32,7 @@ import java.util.Objects;
 public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x3992113882234885L;
+
     private final StateMetadata<?, V> md;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP

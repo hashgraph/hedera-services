@@ -42,6 +42,7 @@ import java.util.Objects;
 public class OnDiskValue<V> implements VirtualValue {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x8837746626372L;
+
     private final Serdes<V> serdes;
     private final StateMetadata<?, V> md;
     private V value;
