@@ -34,7 +34,6 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
@@ -69,9 +68,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
         given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, scheduleStore, dispatcher);
         final var meta = builder.build();
         assertEquals(scheduler, meta.payer());
@@ -87,9 +87,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(null);
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, scheduleStore, dispatcher);
         final var meta = builder.build();
         assertEquals(scheduler, meta.payer());
@@ -103,7 +104,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignVanillaWithOptionalPayerSet() {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
-        scheduledMeta = new SigTransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), List.of());
+        scheduledMeta =
+                new SigTransactionMetadata(scheduledTxn, payer, OK, adminKey, List.of(), List.of());
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
@@ -111,9 +113,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, scheduleStore, dispatcher);
         final var meta = builder.build();
 
@@ -142,9 +145,10 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, scheduleStore, dispatcher);
         final var meta = builder.build();
         assertEquals(scheduler, meta.payer());
@@ -159,12 +163,12 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void scheduleSignNotInWhiteList() {
-        given(keyLookup.getKey(payer))
-                .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         final var txn = scheduleTxnNotRecognized();
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer);
         subject.preHandle(builder, scheduleStore, dispatcher);
         final var result = builder.build();
         assertTrue(result instanceof InvalidTransactionMetadata);

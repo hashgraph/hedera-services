@@ -47,9 +47,10 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAutoRenew() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(theTxn)
-                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(theTxn)
+                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -60,9 +61,10 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateNoAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(theTxn)
-                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(theTxn)
+                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -73,9 +75,10 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateDeprecatedAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(theTxn)
-                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(theTxn)
+                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -86,9 +89,10 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(theTxn)
-                .payerKeyFor(theTxn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(theTxn)
+                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
 

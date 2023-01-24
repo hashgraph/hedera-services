@@ -57,9 +57,8 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
@@ -73,9 +72,8 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(owner);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(owner);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
@@ -88,9 +86,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         var txn = cryptoDeleteAllowanceTransaction(owner);
         given(accounts.get(owner.getAccountNum())).willReturn(null);
 
-        var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(owner);
+        var builder = new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(owner);
         subject.preHandle(builder);
         var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -98,9 +94,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         txn = cryptoDeleteAllowanceTransaction(payer);
-        builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        builder = new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);

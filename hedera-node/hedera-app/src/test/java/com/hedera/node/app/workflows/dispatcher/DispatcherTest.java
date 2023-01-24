@@ -44,9 +44,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowContext;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -197,18 +195,21 @@ class DispatcherTest {
     void testDispatchWithIllegalParameters() {
         // given
         final var payer = AccountID.newBuilder().build();
-        final var invalidSystemDelete = PreHandleWorkflowContext.of(
-                TransactionBody.newBuilder()
-                        .setSystemDelete(SystemDeleteTransactionBody.getDefaultInstance())
-                        .build(),
-                payer,
-                state);
-        final var invalidSystemUndelete = PreHandleWorkflowContext.of(
-                TransactionBody.newBuilder()
-                        .setSystemUndelete(SystemUndeleteTransactionBody.getDefaultInstance())
-                        .build(),
-                payer,
-                state);
+        final var invalidSystemDelete =
+                PreHandleWorkflowContext.of(
+                        TransactionBody.newBuilder()
+                                .setSystemDelete(SystemDeleteTransactionBody.getDefaultInstance())
+                                .build(),
+                        payer,
+                        state);
+        final var invalidSystemUndelete =
+                PreHandleWorkflowContext.of(
+                        TransactionBody.newBuilder()
+                                .setSystemUndelete(
+                                        SystemUndeleteTransactionBody.getDefaultInstance())
+                                .build(),
+                        payer,
+                        state);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null))
@@ -223,7 +224,8 @@ class DispatcherTest {
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testPreHandleWithPayer(
-            final TransactionBody txBody, final BiConsumer<Handlers, TransactionMetadataBuilder<?>> verification) {
+            final TransactionBody txBody,
+            final BiConsumer<Handlers, TransactionMetadataBuilder<?>> verification) {
         // given
         final var payer = AccountID.newBuilder().build();
         final var context = PreHandleWorkflowContext.of(txBody, payer, state);
@@ -283,8 +285,7 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.contractCreateHandler())
-                                                .preHandle(meta)),
+                                        verify(handlers.contractCreateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractUpdateInstance(
@@ -292,16 +293,14 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.contractUpdateHandler())
-                                        .preHandle(meta)),
+                                        verify(handlers.contractUpdateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.contractCallHandler())
-                                                .preHandle(meta)),
+                                        verify(handlers.contractCallHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractDeleteInstance(
@@ -317,7 +316,8 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.etherumTransactionHandler()).preHandle(meta)),
+                                        verify(handlers.etherumTransactionHandler())
+                                                .preHandle(meta)),
 
                 // crypto
                 Arguments.of(
@@ -327,8 +327,7 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.cryptoCreateHandler())
-                                                .preHandle(meta)),
+                                        verify(handlers.cryptoCreateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoUpdateAccount(
@@ -353,8 +352,7 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.cryptoDeleteHandler())
-                                                .preHandle(meta)),
+                                        verify(handlers.cryptoDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoApproveAllowance(
@@ -380,7 +378,8 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
-                                        verify(handlers.cryptoAddLiveHashHandler()).preHandle(meta)),
+                                        verify(handlers.cryptoAddLiveHashHandler())
+                                                .preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setCryptoDeleteLiveHash(
@@ -472,44 +471,52 @@ class DispatcherTest {
                                 .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenCreateHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenCreateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenUpdateHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenUpdateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenMintHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenMintHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenBurnHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenBurnHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenDeleteHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenAccountWipeHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenAccountWipeHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenFreeze(
                                         TokenFreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenFreezeAccountHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenFreezeAccountHandler())
+                                                .preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUnfreeze(
@@ -568,13 +575,15 @@ class DispatcherTest {
                                 .setTokenPause(TokenPauseTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenPauseHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenPauseHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUnpause(TokenUnpauseTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
 
                 // util
                 Arguments.of(
@@ -582,7 +591,8 @@ class DispatcherTest {
                                 .setUtilPrng(UtilPrngTransactionBody.getDefaultInstance())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.utilPrngHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.utilPrngHandler()).preHandle(meta)),
 
                 // mixed
                 Arguments.of(
@@ -604,7 +614,8 @@ class DispatcherTest {
                                                 .build())
                                 .build(),
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
-                                (handlers, meta) -> verify(handlers.fileSystemDeleteHandler()).preHandle(meta)),
+                                (handlers, meta) ->
+                                        verify(handlers.fileSystemDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setSystemUndelete(
@@ -626,7 +637,6 @@ class DispatcherTest {
                         (BiConsumer<Handlers, TransactionMetadataBuilder<?>>)
                                 (handlers, meta) ->
                                         verify(handlers.fileSystemUndeleteHandler())
-                                                .preHandle(meta))
-        );
+                                                .preHandle(meta)));
     }
 }

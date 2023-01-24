@@ -18,18 +18,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -42,8 +34,8 @@ public class CryptoCreateHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
-     *                will be passed to {@link #handle(TransactionMetadata)}
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final TransactionMetadataBuilder<?> meta) {

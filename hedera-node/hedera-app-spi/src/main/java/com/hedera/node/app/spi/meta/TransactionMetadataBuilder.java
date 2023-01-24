@@ -27,9 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -141,10 +139,12 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param statesKey the key of the {@link com.hedera.node.app.spi.state.ReadableStates}
      * @param stateKey the key of the {@link com.hedera.node.app.spi.state.ReadableKVState}
      * @param readKeys the read keys
-     *
      * @return builder object
      */
-    public T addReadKeys(final String statesKey, final String stateKey, final Set<? extends Comparable<?>> readKeys) {
+    public T addReadKeys(
+            final String statesKey,
+            final String stateKey,
+            final Set<? extends Comparable<?>> readKeys) {
         this.readKeys.add(new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys));
         return self();
     }

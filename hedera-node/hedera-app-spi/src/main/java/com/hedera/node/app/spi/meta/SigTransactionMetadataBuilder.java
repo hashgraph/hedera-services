@@ -15,15 +15,11 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Collections;
-import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.AccountKeyLookup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Builds {@link SigTransactionMetadata} by collecting information that is needed when transactions
@@ -48,7 +44,13 @@ public class SigTransactionMetadataBuilder
     public TransactionMetadata build() {
         requireNonNull(txn, "Transaction body is required to build SigTransactionMetadata");
         requireNonNull(payer, "Payer is required to build SigTransactionMetadata");
-        return new SigTransactionMetadata(txn, payer, status, payerKey, unmodifiableList(requiredNonPayerKeys), unmodifiableList(readKeys));
+        return new SigTransactionMetadata(
+                txn,
+                payer,
+                status,
+                payerKey,
+                unmodifiableList(requiredNonPayerKeys),
+                unmodifiableList(readKeys));
     }
 
     @Override

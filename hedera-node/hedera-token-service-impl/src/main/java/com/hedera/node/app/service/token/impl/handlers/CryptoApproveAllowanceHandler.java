@@ -19,16 +19,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -41,8 +35,8 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
-     *                will be passed to {@link #handle(TransactionMetadata)}
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final TransactionMetadataBuilder<?> meta) {

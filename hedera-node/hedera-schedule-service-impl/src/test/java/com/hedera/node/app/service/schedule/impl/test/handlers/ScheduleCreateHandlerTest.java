@@ -36,7 +36,6 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -70,9 +69,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 
@@ -112,9 +112,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 
@@ -143,9 +144,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         List.of());
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 
@@ -172,9 +174,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 
@@ -207,9 +210,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 
@@ -238,9 +242,10 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         List.of());
         given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
 
-        final var builder = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(scheduler);
+        final var builder =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(scheduler);
         subject.preHandle(builder, dispatcher);
         final var meta = builder.build();
 

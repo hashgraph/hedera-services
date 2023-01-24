@@ -58,9 +58,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -82,9 +81,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -98,9 +96,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(payer, payer);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -119,9 +116,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, payer);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -141,9 +137,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(payer, transferAccountId);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 
@@ -164,9 +159,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        var builder = new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -179,9 +172,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(deleteAccountNum)).willReturn(null);
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
 
-        builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        builder = new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         meta = builder.build();
 
@@ -194,9 +185,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(accounts.get(transferAccountNum)).willReturn(null);
 
-        builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        builder = new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         meta = builder.build();
 
@@ -214,9 +203,8 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
 

@@ -19,18 +19,12 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -45,8 +39,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate} transaction, returning
      * the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
-     *                will be passed to {@link #handle(TransactionMetadata)}
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}

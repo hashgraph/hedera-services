@@ -89,9 +89,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 3, false, OK);
@@ -104,9 +103,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(owner.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
@@ -120,9 +118,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(owner);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(owner);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
@@ -137,9 +134,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 3, false, OK);
@@ -154,9 +150,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder);
         final var meta = builder.build();
         assertEquals(payerKey, meta.payerKey());

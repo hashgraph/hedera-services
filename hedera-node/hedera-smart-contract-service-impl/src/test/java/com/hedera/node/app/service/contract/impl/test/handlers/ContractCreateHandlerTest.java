@@ -36,9 +36,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Adds valid admin key")
     void validAdminKey() {
         final var txn = contractCreateTransaction(adminKey, null);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
@@ -53,9 +54,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var txn = contractCreateTransaction(adminKey, null);
         given(keyLookup.getKey(payer))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -66,9 +68,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("admin key with contractID is not added")
     void adminKeyWithContractID() {
         final var txn = contractCreateTransaction(adminContractKey, null);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
@@ -79,9 +82,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account key is added")
     void autoRenewAccountIdAdded() {
         final var txn = contractCreateTransaction(adminContractKey, autoRenewAccountId);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
@@ -93,9 +97,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account key is not added when it is sentinel value")
     void autoRenewAccountIdAsSentinelNotAdded() {
         final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
@@ -107,9 +112,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("autoRenew account and adminKey both added")
     void autoRenewAccountIdAndAdminBothAdded() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 2, false, OK);
@@ -122,9 +128,10 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Test
     void callHandle() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));

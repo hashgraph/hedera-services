@@ -15,18 +15,17 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle". This happens with
@@ -88,11 +87,12 @@ public interface TransactionMetadata {
     /**
      * A {@link Map} of all read keys.
      *
-     * <p>The map contains a {@code Map} for each {@link com.hedera.node.app.spi.state.ReadableStates}
-     * that was created during pre-handle, indexed by their {@code statesKey}.
+     * <p>The map contains a {@code Map} for each {@link
+     * com.hedera.node.app.spi.state.ReadableStates} that was created during pre-handle, indexed by
+     * their {@code statesKey}.
      *
-     * <p>The contained {@code Maps} keep a {@link Set} of all read keys for each
-     * {@link com.hedera.node.app.spi.state.ReadableKVState}, indexed by the {@code stateKey}.
+     * <p>The contained {@code Maps} keep a {@link Set} of all read keys for each {@link
+     * com.hedera.node.app.spi.state.ReadableKVState}, indexed by the {@code stateKey}.
      *
      * @return a data structure with all keys that were read during pre-handle
      */

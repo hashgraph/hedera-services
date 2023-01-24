@@ -15,14 +15,12 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import static java.util.Collections.unmodifiableList;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Collections;
 import java.util.Objects;
-
-import static java.util.Collections.unmodifiableList;
 
 /**
  * Metadata collected when schedule transactions are handled as part of "pre-handle" needed for
@@ -63,7 +61,13 @@ public class ScheduleSigTransactionMetadataBuilder
                 "Scheduled transaction metadata is required"
                         + " to build ScheduleSigTransactionMetadata");
         return new ScheduleSigTransactionMetadata(
-                txn, payer, status, payerKey, unmodifiableList(requiredNonPayerKeys), unmodifiableList(readKeys), scheduledTxnMeta);
+                txn,
+                payer,
+                status,
+                payerKey,
+                unmodifiableList(requiredNonPayerKeys),
+                unmodifiableList(readKeys),
+                scheduledTxnMeta);
     }
 
     @Override

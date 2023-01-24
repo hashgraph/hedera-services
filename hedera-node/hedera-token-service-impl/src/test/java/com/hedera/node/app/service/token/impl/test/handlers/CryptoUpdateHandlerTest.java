@@ -52,9 +52,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 2, false, OK);
@@ -70,9 +69,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
@@ -86,9 +84,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 1, false, OK);
@@ -104,9 +101,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(updateAccountId);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(updateAccountId);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -121,9 +117,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(updateAccountId);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(updateAccountId);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -138,9 +133,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var builder = new SigTransactionMetadataBuilder(store)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var builder =
+                new SigTransactionMetadataBuilder(store).txnBody(txn).payerKeyFor(payer);
         subject.preHandle(builder, waivers);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);

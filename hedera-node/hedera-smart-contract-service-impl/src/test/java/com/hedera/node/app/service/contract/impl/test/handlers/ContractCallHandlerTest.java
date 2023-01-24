@@ -38,9 +38,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
         final var txn = contractCallTransaction();
         given(keyLookup.getKey(payer))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -51,9 +52,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Succeeds for valid payer account")
     void validPayer() {
         final var txn = contractCallTransaction();
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         basicMetaAssertions(meta, 0, false, OK);
@@ -63,9 +65,10 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @Test
     void callHandle() {
         final var txn = contractCallTransaction();
-        final var builder = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(txn.getTransactionID().getAccountID());
+        final var builder =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(txn.getTransactionID().getAccountID());
         subject.preHandle(builder);
         final var meta = builder.build();
         assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));

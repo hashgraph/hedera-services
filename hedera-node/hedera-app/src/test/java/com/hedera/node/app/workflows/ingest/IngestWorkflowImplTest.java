@@ -41,13 +41,9 @@ import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.entity.AccountImpl;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -65,7 +61,6 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +73,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
-
 
     @Mock private NodeInfo nodeInfo;
 
@@ -93,6 +87,7 @@ class IngestWorkflowImplTest {
 
     @Mock(strictness = LENIENT)
     ReadableAccountStore accountStore;
+
     @Mock Account account;
 
     @Mock private IngestChecker checker;
@@ -119,7 +114,8 @@ class IngestWorkflowImplTest {
         final var transactionID = TransactionID.newBuilder().setAccountID(accountID);
         transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID).build();
         signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult = new OnsetResult(transactionBody, OK, signatureMap, ConsensusCreateTopic);
+        final var onsetResult =
+                new OnsetResult(transactionBody, OK, signatureMap, ConsensusCreateTopic);
 
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
@@ -358,7 +354,8 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore) throws PreCheckException, InvalidProtocolBufferException {
+    void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore)
+            throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
@@ -374,7 +371,6 @@ class IngestWorkflowImplTest {
         verify(submissionManager, never()).submit(transactionBody, requestBuffer, txBodyParser);
         verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
     }
-
 
     @Test
     void testPayerSignatureFails() throws PreCheckException, InvalidProtocolBufferException {

@@ -15,16 +15,13 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -42,8 +39,8 @@ public class CryptoAddLiveHashHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that
-     *                will be passed to {@link #handle(TransactionMetadata)}
+     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(@NonNull final TransactionMetadataBuilder<?> meta) {

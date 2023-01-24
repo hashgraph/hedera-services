@@ -24,8 +24,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * An implementation of {@link TransactionMetadata} for cases when an error has occurred.

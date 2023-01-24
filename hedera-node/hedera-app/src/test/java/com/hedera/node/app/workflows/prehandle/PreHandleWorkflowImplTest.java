@@ -23,9 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -56,9 +54,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
@@ -86,8 +82,9 @@ class PreHandleWorkflowImplTest {
 
     @BeforeEach
     void setup(
-            @Mock(strictness = Mock.Strictness.LENIENT) TransactionMetadataBuilder<?> metadataBuilder
-    ) throws PreCheckException {
+            @Mock(strictness = Mock.Strictness.LENIENT)
+                    TransactionMetadataBuilder<?> metadataBuilder)
+            throws PreCheckException {
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final AccountID payerID = AccountID.newBuilder().build();
@@ -104,11 +101,15 @@ class PreHandleWorkflowImplTest {
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
         when(metadataBuilder.build()).thenReturn(metadata);
-        doAnswer(invocation -> {
-            final var context = (PreHandleWorkflowContext) invocation.getArguments()[0];
-            context.setMetadataBuilder(metadataBuilder);
-            return null;
-        }).when(dispatcher).dispatchPreHandle(any());
+        doAnswer(
+                        invocation -> {
+                            final var context =
+                                    (PreHandleWorkflowContext) invocation.getArguments()[0];
+                            context.setMetadataBuilder(metadataBuilder);
+                            return null;
+                        })
+                .when(dispatcher)
+                .dispatchPreHandle(any());
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);

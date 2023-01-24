@@ -18,9 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
-import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -30,14 +28,10 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -135,7 +129,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var context = PreHandleWorkflowContext.of(txBody, payerID, state);
             dispatcher.dispatchPreHandle(context);
             if (context.getMetadataBuilder() == null) {
-                throw new IllegalStateException("Dispatcher did not set a TransactionMetadataBuilder");
+                throw new IllegalStateException(
+                        "Dispatcher did not set a TransactionMetadataBuilder");
             }
 
             // 3. Prepare signature-data
@@ -145,10 +140,21 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // TODO: Verify signature via the platform once this functionality was implemented
 
             // 5. Return TransactionMetadata
-            context.getUsedStates().forEach((statesKey, readableStates) -> {
-                readableStates.stateKeys().forEach(
-                        stateKey -> context.getMetadataBuilder().addReadKeys(statesKey, stateKey, readableStates.get(stateKey).readKeys()));
-            });
+            context.getUsedStates()
+                    .forEach(
+                            (statesKey, readableStates) -> {
+                                readableStates
+                                        .stateKeys()
+                                        .forEach(
+                                                stateKey ->
+                                                        context.getMetadataBuilder()
+                                                                .addReadKeys(
+                                                                        statesKey,
+                                                                        stateKey,
+                                                                        readableStates
+                                                                                .get(stateKey)
+                                                                                .readKeys()));
+                            });
 
             return context.getMetadataBuilder().build();
 
