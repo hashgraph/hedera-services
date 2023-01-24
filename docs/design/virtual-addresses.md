@@ -142,25 +142,4 @@ The development will be done in iterative phases that build on previous ones. Pr
   - Design virtual address removal & transfer
 
 ## Acceptance Tests
-
-### Positive Tests
-- `CryptoCreate` with `ECDSA key` should create an account with single virtual address and make it the default virtual address
-- `CryptoCreate` with `ECDSA key alias` should create an account with single virtual address and make it the default virtual address
-- `CryptoCreate` with `evmAddress alias` should create an account with single virtual address and make it the default virtual address
-- `CryptoCreate` with `evmAddress` should create a hollow account with single virtual address and make it the default virtual address
-- `CryptoTransfer` with `ECDSA key alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
-- `CryptoTransfer` with `evmAddress alias` to a non-existing account should auto-create an account with single virtual address and make it the default virtual address
-- `CryptoTransfer` with `evmAddress` to a non-existing account should lazy-create a hollow account with single virtual address and make it the default virtual address
-- `EthereumTransaction` to a non-existing account with `tx.to` EVM address value should lazy-create a hollow account with single virtual address and make it the default virtual address
-- `ContractCreate/ContractCall` for an account with a default virtual address should use that address in the EVM
-- `ContractCreate/ContractCall` with `virtual_address_override` address value should use that address in the EVM
-- `ContractCreate/ContractCall` resulting in creation of a new contract should add the CREATE/CREATE2 EVM address value to `contract.account.virtualAddresses`
-- `CryptoUpdate` with `virtual_address_update.add.address` for an existing account should add a new virtual address, if `virtual_address_update.add.is_default` is set to `true` the added address should become the default virtual address
-- `CryptoUpdate` with `virtual_address_update.disable` value that is present in the virtual address list for an existing account should disable the virtual address
-- `CryptoUpdate` with `virtual_address_update.remove` value that is present in the virtual address list for an existing account should remove the virtual address from the list
-- `CryptoGetInfoQuery` for an existing account should return the virtual addresses list for the account
-
-### Negative Tests
-- Virtual address update for a contracts should fail, ensuring contract accounts immutability
-- Any transaction using an `evmAddress` that is in the not-allowed list should fail
-- `CryptoUpdate` with `virtual_address_update.disable/remove` value that matches the default virtual address should fail
+All tests are described in [the test plan document](https://github.com/hashgraph/hedera-services/blob/develop/docs/test-plans/hip-631.md).
