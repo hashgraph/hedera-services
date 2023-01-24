@@ -34,7 +34,7 @@ public class TokenExpiryInfo {
     }
 
     public Address getAutoRenewAccount() {
-        return autoRenewAccount;
+        return autoRenewAccount != null ? autoRenewAccount : Address.ZERO;
     }
 
     public long getAutoRenewPeriod() {
