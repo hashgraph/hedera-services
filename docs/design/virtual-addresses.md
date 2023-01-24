@@ -11,8 +11,10 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
   - Validate ownership by extracting the public key from the signature and comparing the calculated public address to the `evmAddress` passed in on addition of the virtual address
   - Maintain an `evmAddress -> accountId` map thereafter
 - Contract accounts may utilize the `evmAddress` to store their address in accordance with `CREATE` and `CREATE2` EVM operations
+- Restore HIP 32's consistency
+  - The values of the account aliases will only contain EC/ED key bytes (as in HIP 32)
+  - The values of the account aliases will no longer contain EVM addresses
 - Perform seamless state migration of accounts and contracts so that by default they benefit from the introduction of virtual addresses
-- Restoring HIP 32’s consistency so that account aliases will have only key based values
 
 ## Non Goals
 - Support removal of virtual addresses between accounts
@@ -21,11 +23,31 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 ## Architecture
 
 ### Account state updates
-- Update `HederaAccount` interface and its implementations (`MerkleAccount` & `OnDiskAccount`) to have the ability to read/write virtual addresses and default virtual address
+- Update `HederaAccount` interface to have the ability to:
+  - Read/write virtual addresses
+  - Read/write a default virtual address
+  - Track nonce values for each virtual address
+```
+public interface HederaAccount {
+...
+
+	Set<ByteString> getVirtualAddresses();
+
+	void setVirtualAddresses(Set<ByteString> virtualAddresses);
+
+	ByteString getDefaultVirtualAddress;
+
+	void setDefaultVirtualAddress(ByteString virtualAddress);
+
+	void setVirtualAddressNonce(ByteString virtualAddress, long nonce);
+
+	long getVirtualAddressNonce(ByteString virtualAddress);
+
+}
+```
+- Implement methods from `HederaAccount` interface in `MerkleAccount` and `OnDiskAccount` classes
 - Update `MerkleAccountState` with matching changes as in `HederaAccount`
-- Nonce management
-  - Update account state definition to track nonce value for each virtual address
-  - Nonce updates will be externalized by adding a map `ContractId -> nonce` in message `ContractFunctionResult` that will be populated in the top-level transaction records.
+  - Define a field to store the virtual address to nonce map of type `Map<ByteString, Long>`
 
 #### Separate EVM address lookup from aliases
 - Introduce a new class for managing `evmAddress -> accountId` in-memory map
@@ -59,7 +81,14 @@ Virtual addresses will resolve the issue of account EVM compatibility and identi
 - Update `ContractCreateTransitionLogic/ContractCallTransitionLogic` implementations to parse the `virtual_address_override` value from the transaction body and determine the appropriate Ethereum public address `evmAddress` per transaction as described [here](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#transaction-evm-address-value)
 
 #### Externalize changes through transaction records
-- All relevant details will be exposed in record files as described in the table from [HAPI changes section](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#hapi-changes) of HIP-631
+- All virtual address values will be exposed in record files as described in the table from [HAPI changes section](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#hapi-changes) of HIP-631
+- Contract nonce updates will be externalized by adding a map `ContractId -> nonce` in `ContractFunctionResult` message that will be populated in the top-level transaction records
+  - We can keep a `ContractId -> nonce` map inside `TxnAwareRecordsHistorian`, it would be updated on each call to `AbstractRecordingCreateOperation` even if the contract creation operation does not succeed
+  - When the ledgers `commit()` are executed, and we go to `TxnAwareRecordsHistorian.saveExpirableTransactionRecords` method we can save the constructed map to the top-level `RecordStreamObject`
+  - This would be done via setting it inside it's `ExpirableTxnRecord` in the corresponding `EvmFnResult` field
+    - `contractCreateResult` if the top level transaction was `ContractCreate`
+    - `contractCallResult` if the top level transaction was `ContractCall`
+- Tracking nonces for EOAs for EthereumTransactions is not changed
 
 ### Queries
 - Update `GetAccountInfoAnswer.responseGiven` to return the virtual addresses list for an account
@@ -78,6 +107,7 @@ The development will be done in iterative phases that build on previous ones. Pr
 - Phase 0
   - Protobuf changes:
     - Add virtual addresses list to `AccountInfo` proto (already added)
+    - Add a `ContractId -> nonce` map in message `ContractFunctionResult` in order to externalize contract nonce updates
   - Create design doc and test plan
 - Phase 1
   - Implement changes to state
@@ -91,6 +121,7 @@ The development will be done in iterative phases that build on previous ones. Pr
 - Phase 2
   - Protobuf changes
     - Add `virtual_address_override` to `ContractCall` and `ContractCreate` transactions
+  - Support virtual address addition on `CryptoUpdate`
   - Account migration
     - All ECDSA accounts with an alias get a single virtual address
     - All ECDSA accounts with `evmAddress` stored in alias path get a single virtual address 
