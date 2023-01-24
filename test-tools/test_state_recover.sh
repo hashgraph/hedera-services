@@ -14,7 +14,7 @@ set -eE
 
 trap ' print_banner "TEST FAILED" ' ERR 
 
-PACKAGE="com.hedera.node.app.ServicesMain"
+PACKAGE="com.hedera.services.ServicesMain"
 CLIENT="mvn exec:java -Dexec.mainClass=com.hedera.services.bdd.suites.perf.CryptoTransferLoadTest -Dexec.args='10 2 2' -Dexec.cleanupDaemonThreads=false"
 
 platform='unknown'

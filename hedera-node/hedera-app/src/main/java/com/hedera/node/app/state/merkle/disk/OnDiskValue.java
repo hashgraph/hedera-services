@@ -40,12 +40,15 @@ import java.util.Objects;
  * @param <V> The type of the value (business object) held in this merkel data structure
  */
 public class OnDiskValue<V> implements VirtualValue {
+    @Deprecated(forRemoval = true)
+    private static final long CLASS_ID = 0x8837746626372L;
     private final Serdes<V> serdes;
     private final StateMetadata<?, V> md;
     private V value;
     private boolean immutable = false;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
     public OnDiskValue() {
         this.serdes = null;
         this.md = null;
@@ -121,7 +124,7 @@ public class OnDiskValue<V> implements VirtualValue {
     @Override
     public long getClassId() {
         // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
-        return md == null ? 8837746626372L : md.onDiskValueClassId();
+        return md == null ? CLASS_ID : md.onDiskValueClassId();
     }
 
     /** {@inheritDoc} */

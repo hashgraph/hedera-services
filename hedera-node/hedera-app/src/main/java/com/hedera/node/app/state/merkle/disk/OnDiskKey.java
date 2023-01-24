@@ -44,6 +44,8 @@ import java.util.Objects;
  * @param <K> The type of key
  */
 public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
+    @Deprecated(forRemoval = true)
+    private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */
     private final StateMetadata<K, ?> md;
     /** The {@link Serdes} used for handling serialization for the "real" key. */
@@ -52,6 +54,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     private K key;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
     public OnDiskKey() {
         md = null;
         serdes = null;
@@ -110,7 +113,7 @@ public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDi
     @Override
     public long getClassId() {
         // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
-        return md == null ? 0x2929238293892373L : md.onDiskKeyClassId();
+        return md == null ? CLASS_ID : md.onDiskKeyClassId();
     }
 
     @Override

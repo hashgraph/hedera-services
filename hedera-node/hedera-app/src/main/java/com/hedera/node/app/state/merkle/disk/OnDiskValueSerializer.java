@@ -30,9 +30,12 @@ import java.util.Objects;
  * @param <V> The type of the value in the virtual map
  */
 public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
+    @Deprecated(forRemoval = true)
+    private static final long CLASS_ID = 0x3992113882234885L;
     private final StateMetadata<?, V> md;
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
     public OnDiskValueSerializer() {
         md = null;
     }
@@ -49,7 +52,7 @@ public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<
     @Override
     public long getClassId() {
         // SHOULD NOT ALLOW md TO BE NULL, but ConstructableRegistry has foiled me.
-        return md == null ? 0x3992113882234885L : md.onDiskValueSerializerClassId();
+        return md == null ? CLASS_ID : md.onDiskValueSerializerClassId();
     }
 
     /** {@inheritDoc} */

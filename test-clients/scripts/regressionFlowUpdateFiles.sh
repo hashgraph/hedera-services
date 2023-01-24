@@ -18,7 +18,7 @@ updateServiceMainJava()
     mvn -T 2C $MVN_OPTION install -DskipTests
 
     # replace a line in ServicesMain.java
-    sed -i -e s/'init finished'/'new version jar'/g  hedera-node/src/main/java/com/hedera/node/app/ServicesMain.java
+    sed -i -e s/'init finished'/'new version jar'/g  hedera-node/src/main/java/com/hedera/services/ServicesMain.java
     beforeTime=`date +'%Y-%m-%d %H:%M:%S'`
 
     cd hedera-node/ # only build service
@@ -48,7 +48,7 @@ updateServiceMainJava()
         echo "Running on CIRCLECI, no need to restore"
     else
         echo "Restore source code and jar files"
-        git checkout src/main/java/com/hedera/node/app/ServicesMain.java
+        git checkout src/main/java/com/hedera/services/ServicesMain.java
 
         # rebuild after checkout to recover binary
         mvn -T 2C $MVN_OPTION install -DskipTests
