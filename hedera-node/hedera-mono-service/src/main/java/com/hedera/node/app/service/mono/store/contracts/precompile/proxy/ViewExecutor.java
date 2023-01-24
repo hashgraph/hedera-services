@@ -222,7 +222,8 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -230,9 +231,9 @@ public class ViewExecutor {
 
                 final var expiryInfo =
                         new TokenExpiryInfo(
-                                tokenInfo.getExpiry().getSeconds(),
-                                EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
-                                tokenInfo.getAutoRenewPeriod().getSeconds());
+                                tokenInfo.getExpiry(),
+                                tokenInfo.getAutoRenewAccount(),
+                                tokenInfo.getAutoRenewPeriod());
 
                 return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }

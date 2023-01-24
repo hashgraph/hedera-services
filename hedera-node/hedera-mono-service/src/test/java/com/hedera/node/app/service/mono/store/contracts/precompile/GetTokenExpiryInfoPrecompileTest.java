@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -38,6 +37,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -61,11 +61,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetToken
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 import java.util.Optional;
@@ -168,12 +165,21 @@ class GetTokenExpiryInfoPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper<>(tokenMerkleId);
-        final var tokenInfo =
-                TokenInfo.newBuilder()
-                        .setExpiry(Timestamp.newBuilder().setSeconds(442L).build())
-                        .setAutoRenewAccount(payer)
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(555L))
-                        .build();
+        final var evmTokenInfo =
+                new EvmTokenInfo(
+                        Bytes.fromHexString("0x03").toArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
+
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
@@ -185,8 +191,8 @@ class GetTokenExpiryInfoPrecompileTest {
         given(evmEncoder.encodeGetTokenExpiryInfo(any())).willReturn(successResult);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -222,7 +228,7 @@ class GetTokenExpiryInfoPrecompileTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.evmInfoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
 
         givenMinimalContextForSuccessfulCall(pretendArguments);

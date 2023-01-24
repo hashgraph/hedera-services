@@ -31,6 +31,8 @@ import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_CO
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
@@ -353,28 +355,27 @@ class WorldLedgersTest {
     void staticTokenInfoWorks() {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
 
-        given(staticEntityAccess.infoForToken(fungibleToken)).willReturn(Optional.of(tokenInfo));
-        given(tokenInfo.getPauseStatus()).willReturn(Paused);
-        given(tokenInfo.getMemo()).willReturn(tokenMemo);
-        given(tokenInfo.getTokenId()).willReturn(fungibleToken);
-        given(tokenInfo.getSymbol()).willReturn("UnfrozenToken");
-        given(tokenInfo.getName()).willReturn("UnfrozenTokenName");
-        given(tokenInfo.getTreasury()).willReturn(accountID);
-        given(tokenInfo.getTotalSupply()).willReturn(100L);
-        given(tokenInfo.getDecimals()).willReturn(1);
-        given(tokenInfo.getCustomFeesList()).willReturn(grpcCustomFees);
+        given(staticEntityAccess.evmInfoForToken(fungibleToken))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmTokenInfo.isPaused()).willReturn(Paused.getNumber() == 1);
+        given(evmTokenInfo.getMemo()).willReturn(tokenMemo);
+        given(evmTokenInfo.getSymbol()).willReturn("UnfrozenToken");
+        given(evmTokenInfo.getName()).willReturn("UnfrozenTokenName");
+        given(evmTokenInfo.getTreasury()).willReturn(asTypedEvmAddress(accountID));
+        given(evmTokenInfo.getTotalSupply()).willReturn(100L);
+        given(evmTokenInfo.getDecimals()).willReturn(1);
+        given(evmTokenInfo.getCustomFees()).willReturn(evmCustomFees(grpcCustomFees));
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
 
-        assertEquals(Paused, tokenInfo.getPauseStatus());
+        assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
-        assertEquals(fungibleToken, tokenInfo.getTokenId());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
         assertEquals(token.name(), tokenInfo.getName());
-        assertEquals(token.treasury().toGrpcAccountId(), tokenInfo.getTreasury());
+        assertEquals(token.treasury().toEvmAddress(), tokenInfo.getTreasury());
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
-        assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+        assertEquals(evmCustomFees(token.grpcFeeSchedule()), tokenInfo.getCustomFees());
     }
 
     @Test
@@ -415,17 +416,16 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
 
-        assertEquals(Paused, tokenInfo.getPauseStatus());
+        assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
-        assertEquals(fungibleToken, tokenInfo.getTokenId());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
         assertEquals(token.name(), tokenInfo.getName());
-        assertEquals(token.treasury().toGrpcAccountId(), tokenInfo.getTreasury());
+        assertEquals(token.treasury().toEvmAddress(), tokenInfo.getTreasury());
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
-        assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+        assertEquals(evmCustomFees(token.grpcFeeSchedule()), tokenInfo.getCustomFees());
     }
 
     @Test
@@ -440,7 +440,7 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorksForMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId);
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId);
         assertEquals(Optional.empty(), tokenInfo);
     }
 
@@ -484,10 +484,10 @@ class WorldLedgersTest {
         final var tokenNftInfo = subject.evmNftInfo(nftId, ledgerId).get();
 
         assertEquals(nftId.getSerialNumber(), tokenNftInfo.getSerialNumber());
-        assertEquals(EntityIdUtils.asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
+        assertEquals(asTypedEvmAddress(accountID), tokenNftInfo.getAccount());
         assertEquals(fromJava(nftCreation).toGrpc().getSeconds(), tokenNftInfo.getCreationTime());
         assertArrayEquals(nftMeta, tokenNftInfo.getMetadata());
-        assertEquals(EntityIdUtils.asTypedEvmAddress(spenderId), tokenNftInfo.getSpender());
+        assertEquals(asTypedEvmAddress(spenderId), tokenNftInfo.getSpender());
     }
 
     @Test

@@ -506,8 +506,8 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(evmEncodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
@@ -522,7 +522,8 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId())).willReturn(Optional.empty());
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);

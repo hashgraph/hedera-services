@@ -77,7 +77,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -161,18 +160,6 @@ public class WorldLedgers {
                 return Optional.empty();
             }
             return Optional.of(asEvmTokenInfo(token, ledgerId));
-        }
-    }
-
-    public Optional<TokenInfo> infoForToken(final TokenID tokenId, final ByteString ledgerId) {
-        if (staticEntityAccess != null) {
-            return staticEntityAccess.infoForToken(tokenId);
-        } else {
-            final var token = tokensLedger.getImmutableRef(tokenId);
-            if (token == null) {
-                return Optional.empty();
-            }
-            return Optional.of(token.asTokenInfo(tokenId, ledgerId));
         }
     }
 
