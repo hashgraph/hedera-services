@@ -121,6 +121,7 @@ class AdapterUtils {
     // !!!!!!!!!!🔥🔥🔥 It should be deleted once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final ScheduleVirtualValue schedule = mock(ScheduleVirtualValue.class);
+
     @SuppressWarnings("unchecked")
     private static final ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById =
             (ReadableKVStateBase<Long, ScheduleVirtualValue>) mock(ReadableKVStateBase.class);
@@ -142,7 +143,7 @@ class AdapterUtils {
                 mockStates(java.util.Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
         final var mockStates = mock(ReadableStates.class);
         keysToMock.forEach((key, state) -> given(mockStates.get(key)).willReturn(state));
