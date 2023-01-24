@@ -20,8 +20,8 @@ import com.swirlds.common.crypto.VerificationStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Given a non-cryptographic key, returns whether it should be considered to have signed at the
- * current checkpoint.
+ * Given a Hedera key, returns whether it should be considered to have signed at the current
+ * checkpoint.
  *
  * <p>The EVM system contracts need this interface to allow the {@link SignatureVerifier} to
  * correctly test keys of type {@code contractID} and {@code delegatable_contract_id}.
@@ -30,7 +30,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * to detect valid signatures already added to the scheduled transaction, perhaps long ago, and not
  * present in the current transaction's {@code SignatureMap}.
  *
- * <p>
+ * <p>The {@code FileDelete} transaction handler needs this interface to provide "revocation
+ * service" semantics; i.e. such that if the target file's admin key is a {@code KeyList}, then a
+ * single signature in that list suffices to remove it.
  */
 @FunctionalInterface
 public interface OverrideSignatureVerifier {
