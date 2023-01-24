@@ -64,8 +64,8 @@ class ReadableAccountStoreTest {
     private final HederaKey payerHederaKey = asHederaKey(payerKey).get();
     private final HederaKey contractHederaKey = asHederaKey(contractKey).get();
     private final AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));
-    final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
-    final ContractID contractAlias =
+    private final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
+    private final ContractID contractAlias =
             ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(evmAddress)).build();
     private final ContractID contract = asContract("0.0.1234");
     private final AccountID payer = asAccount("0.0.3");

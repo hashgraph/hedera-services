@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -97,15 +98,13 @@ public class ReadableAccountStore implements AccountKeyLookup {
     @Override
     public KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias) {
         Objects.requireNonNull(idOrAlias);
-        final var optContract = getContractLeaf(idOrAlias);
-        if (optContract.isEmpty()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
+        final var contract = getContractLeaf(idOrAlias);
+        final var validity = basicContractValidations(contract);
+
+        if (validity != OK) {
+            return withFailureReason(validity);
         }
-        final var contract = optContract.get();
-        if (contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-        return validateKey(contract.getAccountKey(), true);
+        return validateKey(contract.get().getAccountKey(), true);
     }
 
     /** {@inheritDoc} */
@@ -113,18 +112,15 @@ public class ReadableAccountStore implements AccountKeyLookup {
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(
             @NonNull final ContractID idOrAlias) {
         Objects.requireNonNull(idOrAlias);
-        final var optContract = getContractLeaf(idOrAlias);
-        if (optContract.isEmpty()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
+        final var contract = getContractLeaf(idOrAlias);
+        final var validity = basicContractValidations(contract);
+
+        if (validity != OK) {
+            return withFailureReason(validity);
         }
 
-        final var contract = optContract.get();
-        if (contract.isDeleted() || !contract.isSmartContract()) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        }
-
-        final var responseIgnoringSigReq = validateKey(contract.getAccountKey(), true);
-        if (responseIgnoringSigReq.failed() || contract.isReceiverSigRequired()) {
+        final var responseIgnoringSigReq = validateKey(contract.get().getAccountKey(), true);
+        if (responseIgnoringSigReq.failed() || contract.get().isReceiverSigRequired()) {
             return responseIgnoringSigReq;
         }
         return PRESENT_BUT_NOT_REQUIRED;
@@ -141,7 +137,19 @@ public class ReadableAccountStore implements AccountKeyLookup {
         return getAccountLeaf(idOrAlias).map(accountLeaf -> mapAccount(idOrAlias, accountLeaf));
     }
 
-    /*Helper methods */
+    /* Helper methods */
+
+    private ResponseCodeEnum basicContractValidations(Optional<HederaAccount> optContract) {
+        if (optContract.isEmpty()) {
+            return INVALID_CONTRACT_ID;
+        }
+        final var contract = optContract.get();
+        if (contract.isDeleted() || !contract.isSmartContract()) {
+            return INVALID_CONTRACT_ID;
+        }
+        return OK;
+    }
+
     /**
      * Returns the account leaf for the given account id. If the account doesn't exist returns
      * {@code Optional.empty()}
@@ -196,7 +204,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
     }
 
     /**
-     * Get contract number if the provided contract id is an evm address. If not, returns the
+     * Gets contract's number if the provided contract id is an evm address. If not, returns the
      * contract's number
      *
      * @param idOrAlias provided account id

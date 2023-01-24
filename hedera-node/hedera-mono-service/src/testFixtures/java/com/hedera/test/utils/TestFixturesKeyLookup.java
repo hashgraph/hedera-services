@@ -73,16 +73,13 @@ public class TestFixturesKeyLookup implements AccountKeyLookup {
         } else if (account.isDeleted() || !account.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         }
-        final var key = account.getAccountKey();
-        return validateKey(key, true);
+        return validateKey(account.getAccountKey(), true);
     }
 
     @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(ContractID idOrAlias) {
         final var account = accounts.get(accountNumOf(asAccount(idOrAlias)));
-        if (account == null) {
-            return withFailureReason(INVALID_CONTRACT_ID);
-        } else if (account.isDeleted() || !account.isSmartContract()) {
+        if (account == null || account.isDeleted() || !account.isSmartContract()) {
             return withFailureReason(INVALID_CONTRACT_ID);
         } else {
             final var key = account.getAccountKey();
