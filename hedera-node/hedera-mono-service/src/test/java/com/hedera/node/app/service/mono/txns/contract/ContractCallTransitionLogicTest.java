@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -280,7 +280,7 @@ class ContractCallTransitionLogicTest {
                 .willReturn(EntityNum.fromLong(666L));
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         // when:
         subject.doStateTransitionOperation(
                 accessor.getTxn(),
@@ -339,7 +339,7 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
 
         // when:
         subject.doStateTransitionOperation(
@@ -376,7 +376,7 @@ class ContractCallTransitionLogicTest {
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
 
         // when:
         assertFailsWith(
@@ -475,7 +475,7 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
                 .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(properties.isAutoCreationEnabled()).willReturn(false);
 
         final var txn = accessor.getTxn();
@@ -510,7 +510,7 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadContract(EntityNum.MISSING_NUM.toId()))
                 .willThrow(InvalidTransactionException.class);
         given(aliasManager.lookupIdBy(alias)).willReturn(EntityNum.MISSING_NUM);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(false);
 
@@ -549,7 +549,7 @@ class ContractCallTransitionLogicTest {
                 .willReturn(EntityNum.fromLong(666L));
         given(properties.isAutoCreationEnabled()).willReturn(true);
         given(properties.isLazyCreationEnabled()).willReturn(true);
-        given(properties.evmVersion()).willReturn(EVM_VERSION_0_32);
+        given(properties.evmVersion()).willReturn(EVM_VERSION_0_34);
         // when:
         assertThrows(
                 InvalidTransactionException.class,
