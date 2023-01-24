@@ -220,14 +220,6 @@ class StaticEntityAccessTest {
     }
 
     @Test
-    void infoForToken() {
-        given(stateView.infoForToken(tokenId)).willReturn(Optional.of(tokenInfo));
-
-        final var tokenInfo = subject.infoForToken(tokenId);
-        assertNotNull(tokenInfo.get());
-    }
-
-    @Test
     void infoForNftToken() {
         final var nftId =
                 NftID.newBuilder()
