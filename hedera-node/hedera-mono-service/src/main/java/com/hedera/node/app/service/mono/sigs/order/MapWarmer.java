@@ -21,6 +21,7 @@ import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.Executor;
@@ -86,8 +87,25 @@ public class MapWarmer {
 
     public void warmTokenRel(EntityNumVirtualKey tokenRelKey) {
         if (tokenRelsAdapter.get().areOnDisk()) {
-            submitToThreadpool(tokenRelsAdapter.get().getOnDiskRels(), tokenRelKey);
+            threadpool.execute(newTokenRelRunnable(tokenRelKey));
         }
+    }
+
+    private Runnable newTokenRelRunnable(EntityNumVirtualKey tokenRelKey) {
+        return () -> {
+            final var vmap = tokenRelsAdapter.get().getOnDiskRels();
+            if (vmap != null) {
+                final var hederaTokenRel = vmap.get(tokenRelKey);
+                if (hederaTokenRel != null) {
+                    vmap.warm(
+                            EntityNumVirtualKey.from(EntityNum.fromLong(hederaTokenRel.getPrev())));
+                    vmap.warm(
+                            EntityNumVirtualKey.from(EntityNum.fromLong(hederaTokenRel.getNext())));
+                }
+            } else if (log.isDebugEnabled()) {
+                log.debug("no-op 'warm' called on tokenRel {}", tokenRelKey);
+            }
+        };
     }
 
     private <T extends VirtualKey<? super T>> void submitToThreadpool(
