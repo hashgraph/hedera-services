@@ -37,7 +37,7 @@ $ run/reset-data-saved-from.sh \
 ```
 
 This should copy the state files into five node-scoped subdirectories under
-_hedera-node/data/saved/com.hedera.node.app.ServicesMain_.
+_hedera-node/data/saved/com.hedera.services.ServicesMain_.
 
 ### Restoring the PostgreSQL state
 

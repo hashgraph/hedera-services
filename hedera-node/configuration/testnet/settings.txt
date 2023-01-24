@@ -27,4 +27,4 @@ waitAtStartup,                                 false
 jasperDb.storagePath,                          /opt/hgcapp/services-hedera/HapiApp2.0/data/saved
 jasperDb.iteratorInputBufferBytes,             16777216
 virtualMap.preferredFlushQueueSize,            10000
-state.mainClassNameOverride,                   com.hedera.node.app.ServicesMain
+state.mainClassNameOverride,                   com.hedera.services.ServicesMain

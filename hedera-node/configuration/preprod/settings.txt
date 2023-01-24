@@ -27,4 +27,4 @@ jasperDb.storagePath,                          /opt/hgcapp/services-hedera/HapiA
 jasperDb.iteratorInputBufferBytes,             16777216
 virtualMap.preferredFlushQueueSize,            10000
 prometheusEndpointEnabled,                     true
-state.mainClassNameOverride,                   com.hedera.node.app.ServicesMain
+state.mainClassNameOverride,                   com.hedera.services.ServicesMain
