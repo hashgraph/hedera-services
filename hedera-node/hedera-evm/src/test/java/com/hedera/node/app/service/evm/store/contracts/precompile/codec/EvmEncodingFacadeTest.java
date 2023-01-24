@@ -416,8 +416,11 @@ class EvmEncodingFacadeTest {
         final var expiry = 1667817996L;
         final var autoRenewPeriod = 7776000L;
         final var expiryTokenWrapper = new TokenExpiryInfo(expiry, Address.ZERO, autoRenewPeriod);
+        final var expiryTokenWrapper2 = new TokenExpiryInfo(expiry, null, autoRenewPeriod);
         final var decodedResult = subject.encodeGetTokenExpiryInfo(expiryTokenWrapper);
+        final var decodedResult2 = subject.encodeGetTokenExpiryInfo(expiryTokenWrapper2);
         assertEquals(RETURN_GET_EXPIRY_INFO_FOR_TOKEN, decodedResult);
+        assertEquals(RETURN_GET_EXPIRY_INFO_FOR_TOKEN, decodedResult2);
     }
 
     private EvmTokenInfo tokenInfo() {
