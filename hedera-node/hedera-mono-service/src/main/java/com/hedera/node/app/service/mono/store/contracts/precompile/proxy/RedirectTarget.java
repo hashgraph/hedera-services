@@ -16,5 +16,6 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.tuweni.bytes.Bytes;
 
-public record RedirectTarget(int descriptor, TokenID tokenId) {}
+public record RedirectTarget(int descriptor, TokenID tokenId, Bytes massagedInput) {}

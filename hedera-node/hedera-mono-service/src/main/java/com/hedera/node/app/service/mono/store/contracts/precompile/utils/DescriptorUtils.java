@@ -15,25 +15,27 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_KEY;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.*;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.getSlicedAddressBytes;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectTarget;
 import org.apache.tuweni.bytes.Bytes;
 
 public class DescriptorUtils {
+
+    public static final Function REDIRECT_FOR_TOKEN_FUNCTION =
+            new Function("redirectForToken(address,bytes)");
+    public static final Bytes REDIRECT_FOR_TOKEN_SELECTOR =
+            Bytes.wrap(REDIRECT_FOR_TOKEN_FUNCTION.selector());
+    public static final ABIType<Tuple> REDIRECT_FOR_TOKEN_DECODER =
+            TypeFactory.create("(bytes32,bytes)");
+
     public static boolean isTokenProxyRedirect(final Bytes input) {
         return ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
     }
@@ -57,11 +59,31 @@ public class DescriptorUtils {
         };
     }
 
-    public static RedirectTarget getRedirectTarget(final Bytes input) {
-        final var tokenAddress = input.slice(4, 20);
+    public static RedirectTarget getRedirectTarget(Bytes input) {
+        final var finalInput = getFinalInput(input);
+        final var tokenAddress = finalInput.slice(4, 20);
         final var tokenId = tokenIdFromEvmAddress(tokenAddress.toArrayUnsafe());
-        final var nestedInput = input.slice(24);
-        return new RedirectTarget(nestedInput.getInt(0), tokenId);
+        final var nestedInput = finalInput.slice(24);
+        return new RedirectTarget(nestedInput.getInt(0), tokenId, finalInput);
+    }
+
+    private static Bytes getFinalInput(final Bytes input) {
+        try {
+            // try decoding the input to see if redirectForToken() was called explicitly
+            // if so, massage it to a normal redirect input
+            final var tuple =
+                    EvmDecodingFacade.decodeFunctionCall(
+                            input, REDIRECT_FOR_TOKEN_SELECTOR, REDIRECT_FOR_TOKEN_DECODER);
+            final var massagedInput =
+                    com.google.common.primitives.Bytes.concat(
+                            Bytes.ofUnsignedInt(ABI_ID_REDIRECT_FOR_TOKEN).toArrayUnsafe(),
+                            getSlicedAddressBytes(tuple.get(0)).toArrayUnsafe(),
+                            tuple.get(1));
+            return Bytes.of(massagedInput);
+        } catch (Exception e) {
+            // any exception thrown means the input is from a redirect
+            return input;
+        }
     }
 
     private DescriptorUtils() {

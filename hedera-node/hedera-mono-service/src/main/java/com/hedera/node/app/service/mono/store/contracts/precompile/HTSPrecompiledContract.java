@@ -255,7 +255,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
     }
 
-    void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         this.precompile = null;
         this.transactionBody = null;
 
@@ -547,6 +547,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                         final var isFungibleToken =
                                 TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
                         final var nestedFunctionSelector = target.descriptor();
+                        if (target.massagedInput() != null) {
+                            input = target.massagedInput();
+                        }
                         yield switch (nestedFunctionSelector) {
                             case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(
                                     tokenId,
