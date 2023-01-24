@@ -189,7 +189,7 @@ public interface ContractsV_0_34Module {
     @Provides
     @Singleton
     @IntoSet
-    @ContractsModule.V_0_30
+    @ContractsModule.V_0_34
     static Operation bindBalanceOperation(
             GasCalculator gasCalculator,
             @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator) {
