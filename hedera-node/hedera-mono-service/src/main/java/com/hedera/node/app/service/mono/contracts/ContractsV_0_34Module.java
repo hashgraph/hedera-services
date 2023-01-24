@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.*;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_34;
@@ -184,6 +184,46 @@ public interface ContractsV_0_34Module {
             final Map<String, PrecompiledContract> precompiledContractMap) {
         return new HederaStaticCallOperation(
                 gasCalculator, sigsVerifier, addressValidator, precompiledContractMap);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ContractsModule.V_0_30
+    static Operation bindBalanceOperation(
+            GasCalculator gasCalculator,
+            @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaBalanceOperation(gasCalculator, addressValidator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ContractsModule.V_0_34
+    static Operation bindExtCodeCopyOperation(
+            GasCalculator gasCalculator,
+            @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeCopyOperation(gasCalculator, addressValidator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ContractsModule.V_0_34
+    static Operation bindExtCodeHashOperation(
+            GasCalculator gasCalculator,
+            @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeHashOperation(gasCalculator, addressValidator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ContractsModule.V_0_34
+    static Operation bindExtCodeSizeOperation(
+            GasCalculator gasCalculator,
+            @ContractsModule.V_0_34 BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeSizeOperation(gasCalculator, addressValidator);
     }
 
     @Provides
