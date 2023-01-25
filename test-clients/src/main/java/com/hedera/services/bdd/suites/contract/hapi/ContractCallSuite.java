@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -864,7 +863,7 @@ public class ContractCallSuite extends HapiSuite {
         // Valid UTF-8 bytes cannot include 0xff
         final var hexedNonUtf8Meta = "ff";
 
-        return onlyDefaultHapiSpec("Erc721TokenUriAndHtsNftInfoSeeSameMetadata")
+        return defaultHapiSpec("Erc721TokenUriAndHtsNftInfoSeeSameMetadata")
                 .given(
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
@@ -922,7 +921,8 @@ public class ContractCallSuite extends HapiSuite {
                                     // But the ERC721 method returns the Unicode replacement
                                     // character
                                     final var ercMetadata = decoder.decode(ercResult.toByteArray());
-                                    Assertions.assertEquals("efbfbd", CommonUtils.hex(ercMetadata.get(0)));
+                                    Assertions.assertEquals(
+                                            "efbfbd", CommonUtils.hex(ercMetadata.get(0)));
                                 }));
     }
 
