@@ -1,5 +1,6 @@
 module com.hedera.node.app {
     opens com.hedera.node.app;
+
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
     requires com.swirlds.common;

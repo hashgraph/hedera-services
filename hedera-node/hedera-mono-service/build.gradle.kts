@@ -118,4 +118,3 @@ tasks.processResources {
         }
     }
 }
-
