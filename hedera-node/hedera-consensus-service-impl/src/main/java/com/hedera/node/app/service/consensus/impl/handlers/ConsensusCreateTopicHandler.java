@@ -61,14 +61,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccount = op.getAutoRenewAccount();
-            if (!payer.equals(autoRenewAccount)) {
-                final var result = keyLookup.getKey(autoRenewAccount);
-                if (!result.failed() && result.key() != null) {
-                    metaBuilder.addToReqNonPayerKeys(result.key());
-                } else {
-                    metaBuilder.status(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-                }
-            }
+            metaBuilder.addNonPayerKey(
+                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }
 
         return metaBuilder.build();

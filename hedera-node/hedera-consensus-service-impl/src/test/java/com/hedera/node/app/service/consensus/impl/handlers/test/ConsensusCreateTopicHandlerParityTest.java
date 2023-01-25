@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ConsensusCreateTopicHandlerParityTest {
@@ -53,7 +52,6 @@ class ConsensusCreateTopicHandlerParityTest {
     }
 
     @Test
-    @DisplayName("")
     void getsConsensusCreateTopicNoAdminKeyOrAutoRenewAccount() {
         // given:
         final var txn = txnFrom(CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO);

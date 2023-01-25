@@ -17,8 +17,10 @@ package com.hedera.node.app.service.consensus.impl.handlers.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
@@ -200,15 +202,20 @@ class ConsensusCreateTopicHandlerTest {
     @DisplayName("Fails if auto account is returned with a null key")
     void autoAccountKeyIsNull() {
         // given:
-        given(keyFinder.getKey((AccountID) any()))
-                .willReturn(KeyOrLookupFailureReason.withKey(null)); // Any error response code
+        mockPayerLookup();
+        final var acct1234 = IdUtils.asAccount("0.0.1234");
+        given(keyFinder.getKey(acct1234))
+                .willReturn(
+                        KeyOrLookupFailureReason.withFailureReason(
+                                ResponseCodeEnum
+                                        .ACCOUNT_ID_DOES_NOT_EXIST)); // Any error response code
         final var inputTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
                                 TransactionID.newBuilder().setAccountID(ACCOUNT_ID_3).build())
                         .setConsensusCreateTopic(
                                 ConsensusCreateTopicTransactionBody.newBuilder()
-                                        .setAutoRenewAccount(IdUtils.asAccount("0.0.1234"))
+                                        .setAutoRenewAccount(acct1234)
                                         .build())
                         .build();
 
@@ -246,6 +253,15 @@ class ConsensusCreateTopicHandlerTest {
         assertOkResponse(result);
         assertThat(result.payerKey()).isEqualTo(payerKey);
         assertThat(result.requiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Handle method not implemented")
+    void handleNotImplemented() {
+        // expect:
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.handle(mock(TransactionMetadata.class)));
     }
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
