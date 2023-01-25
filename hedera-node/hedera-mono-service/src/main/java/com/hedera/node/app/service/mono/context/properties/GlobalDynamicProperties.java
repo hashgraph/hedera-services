@@ -163,6 +163,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
     private LegacyContractIdActivations legacyContractIdActivations;
+    private Set<Long> knownRelayers;
+    private boolean removeEvmLazyCreationGasCharge;
 
     @Inject
     public GlobalDynamicProperties(
@@ -334,6 +336,9 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         legacyContractIdActivations =
                 properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        knownRelayers = properties.getKnownRelayersProperty(CONTRACTS_EVM_KNOWN_RELAYERS);
+        removeEvmLazyCreationGasCharge =
+                properties.getBooleanProperty(CONTRACTS_EVM_REMOVE_LAZY_CREATION_GAS_CHARGE);
     }
 
     public int maxTokensPerAccount() {
@@ -802,5 +807,13 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isImplicitCreationEnabled() {
         return autoCreationEnabled && lazyCreationEnabled;
+    }
+
+    public Set<Long> getKnownRelayers() {
+        return knownRelayers;
+    }
+
+    public boolean isEvmLazyCreationGasChargeRemoved() {
+        return removeEvmLazyCreationGasCharge;
     }
 }

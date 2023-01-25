@@ -137,6 +137,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
                 .address(to)
                 .contract(to)
                 .inputData(Bytes.EMPTY)
+                .contextVariables(createContextVariables())
                 .code(CodeFactory.createCode(payload, Hash.hash(payload), 0, false))
                 .build();
     }

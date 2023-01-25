@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
@@ -124,6 +125,13 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             haltFrameAndTraceCreationResult(
                     frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
+            final var chargingSucceeded = chargeCreationFee(frame, lazyCreateResult.getRight());
+            if (!chargingSucceeded) {
+                // ledgers won't be committed on unsuccessful frame and StackedContractAliases
+                // will revert any new aliases
+                haltFrameAndTraceCreationResult(frame, operationTracer, INSUFFICIENT_GAS);
+                return;
+            }
             // track auto-creation preceding child record
             final var recordSubmissions =
                     infrastructureFactory.newRecordSubmissionsScopedTo(updater);
@@ -132,6 +140,29 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             updater.trackLazilyCreatedAccount(
                     EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
         }
+    }
+
+    private boolean chargeCreationFee(final MessageFrame frame, final long creationFeeInTinybars) {
+        final var topLevelFrame = frame.getMessageFrameStack().peekLast();
+        if (((Boolean)
+                topLevelFrame.getContextVariable(
+                        FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))) {
+            final var remainingAllowance =
+                    (AllowanceWrapper)
+                            topLevelFrame.getContextVariable(
+                                    FrameContextVariables.REMAINING_ALLOWANCE);
+            if (remainingAllowance.getValue() < creationFeeInTinybars) {
+                return false;
+            }
+            remainingAllowance.decrement(creationFeeInTinybars);
+        } else {
+            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
+            if (frame.getRemainingGas() < creationFeeInGas) {
+                return false;
+            }
+            frame.decrementRemainingGas(creationFeeInGas);
+        }
+        return true;
     }
 
     @NonNull

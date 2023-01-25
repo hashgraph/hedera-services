@@ -131,6 +131,9 @@ public class PropertyNames {
             "contracts.precompile.atomicCryptoTransfer.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
+    public static final String CONTRACTS_EVM_KNOWN_RELAYERS = "contracts.evm.knownRelayers";
+    public static final String CONTRACTS_EVM_REMOVE_LAZY_CREATION_GAS_CHARGE =
+            "contracts.evm.removeLazyCreationGasCharge";
     public static final String FILES_MAX_NUM = "files.maxNumber";
     public static final String FILES_MAX_SIZE_KB = "files.maxSizeKb";
     public static final String HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB =

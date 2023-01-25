@@ -38,6 +38,7 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  */
 
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.service.mono.contracts.execution.FrameContextVariables;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -90,7 +91,7 @@ public final class GasCalculatorHederaUtil {
 
     public static HederaFunctionality getFunctionType(MessageFrame frame) {
         MessageFrame rootFrame = frame.getMessageFrameStack().getLast();
-        return rootFrame.getContextVariable("HederaFunctionality");
+        return rootFrame.getContextVariable(FrameContextVariables.HEDERA_FUNCTIONALITY);
     }
 
     @SuppressWarnings("unused")

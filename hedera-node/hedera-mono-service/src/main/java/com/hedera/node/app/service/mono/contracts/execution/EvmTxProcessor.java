@@ -57,6 +57,8 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
  */
 abstract class EvmTxProcessor extends HederaEvmTxProcessor {
 
+    private LazyCreateChargingContext lazyCreateChargingContext;
+
     protected EvmTxProcessor(
             final LivePricesSource livePricesSource,
             final GlobalDynamicProperties dynamicProperties,
@@ -136,6 +138,14 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         relayer == null ? null : relayer.getId().asEvmAddress(),
                         (HederaWorldState.Updater) updater);
 
+        if (!isStatic) {
+            lazyCreateChargingContext =
+                    new LazyCreateChargingContext(
+                            relayer != null,
+                            relayer,
+                            maxGasAllowanceInTinybars,
+                            chargingResult.allowanceCharged());
+        }
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
         final HederaTracer hederaTracer =
@@ -169,7 +179,23 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final long refunded = gasLimit - gasUsed + sbhRefund;
             final Wei refundedWei = Wei.of(refunded * gasPrice);
             if (refundedWei.greaterThan(Wei.ZERO)) {
-                final var allowanceCharged = chargingResult.allowanceCharged();
+                var allowanceCharged = chargingResult.allowanceCharged();
+                final var remainingAllowanceAfterEvmEx =
+                        (AllowanceWrapper)
+                                initialFrame.getContextVariable(
+                                        FrameContextVariables.REMAINING_ALLOWANCE);
+                if (remainingAllowanceAfterEvmEx != null) {
+                    final var initialAllowanceInEvm =
+                            maxGasAllowanceInTinybars - allowanceCharged.toLong();
+                    final var spentAllowanceDuringExecution =
+                            initialAllowanceInEvm - remainingAllowanceAfterEvmEx.getValue();
+                    if (spentAllowanceDuringExecution > 0) {
+                        updater.getOrCreateSenderAccount(relayer.canonicalAddress())
+                                .getMutable()
+                                .decrementBalance(Wei.of(spentAllowanceDuringExecution));
+                        allowanceCharged = allowanceCharged.add(spentAllowanceDuringExecution);
+                    }
+                }
                 final var chargedRelayer = chargingResult.relayer();
                 if (chargedRelayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
                     // If allowance has been charged, we always try to refund relayer first
@@ -237,6 +263,28 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         }
     }
 
+    protected Map<String, Object> createContextVariables() {
+        final var globalDynamicProperties = (GlobalDynamicProperties) dynamicProperties;
+        final var knownRelayers = globalDynamicProperties.getKnownRelayers();
+        final var chargeFromAllowance =
+                lazyCreateChargingContext.isEthTxn()
+                        && (knownRelayers.isEmpty()
+                                || knownRelayers.contains(
+                                        lazyCreateChargingContext.relayer().getId().num()))
+                        && ((GlobalDynamicProperties) dynamicProperties)
+                                .isEvmLazyCreationGasChargeRemoved();
+
+        return Map.of(
+                FrameContextVariables.HEDERA_FUNCTIONALITY,
+                getFunctionType(),
+                FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE,
+                chargeFromAllowance,
+                FrameContextVariables.REMAINING_ALLOWANCE,
+                new AllowanceWrapper(
+                        lazyCreateChargingContext.initialAllowance()
+                                - lazyCreateChargingContext.allowanceChargedForGas().toLong()));
+    }
+
     private boolean isSideCarTypeEnabled(final SidecarType sidecarType) {
         return ((GlobalDynamicProperties) dynamicProperties)
                 .enabledSidecars()
@@ -285,12 +333,12 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 mutableSender.decrementBalance(gasCost);
             } else {
                 final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
+                final var relayerCanAffordAllowance =
+                        mutableRelayer.getBalance().compareTo((gasAllowance)) >= 0;
+                validateTrue(relayerCanAffordAllowance, INSUFFICIENT_PAYER_BALANCE);
                 if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
                     // If sender set gas price to 0, relayer pays all the fees
                     validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
-                    final var relayerCanAffordGas =
-                            mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
-                    validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableRelayer.decrementBalance(gasCost);
                     allowanceCharged = gasCost;
                 } else if (userOfferedGasPrice
@@ -310,9 +358,6 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     final var remainingFee = gasCost.subtract(senderFee);
                     validateTrue(
                             gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
-                    validateTrue(
-                            mutableRelayer.getBalance().compareTo(remainingFee) >= 0,
-                            INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(senderFee);
                     mutableRelayer.decrementBalance(remainingFee);
                     allowanceCharged = remainingFee;

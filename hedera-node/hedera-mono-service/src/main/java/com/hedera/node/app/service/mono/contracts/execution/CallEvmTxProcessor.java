@@ -152,6 +152,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 .address(to)
                 .contract(to)
                 .inputData(payload)
+                .contextVariables(createContextVariables())
                 .code(code == null ? CodeV0.EMPTY_CODE : code)
                 .build();
     }

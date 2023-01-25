@@ -91,6 +91,11 @@ public interface PropertySource {
                             StakeStartupHelper.RecomputeType.class,
                             StakeStartupHelper.RecomputeType::valueOf,
                             s);
+    Function<String, Object> AS_CS_LONGS =
+            s ->
+                    s.isEmpty()
+                            ? Collections.emptySet()
+                            : Arrays.stream(s.split(",")).map(Long::valueOf).collect(toSet());
 
     static <E extends Enum<E>> Set<E> asEnumSet(
             final Class<E> type, final Function<String, E> valueOf, final String csv) {
@@ -139,6 +144,11 @@ public interface PropertySource {
 
     @SuppressWarnings("unchecked")
     default Set<SidecarType> getSidecarsProperty(String name) {
+        return getTypedProperty(Set.class, name);
+    }
+
+    @SuppressWarnings("unchecked")
+    default Set<Long> getKnownRelayersProperty(String name) {
         return getTypedProperty(Set.class, name);
     }
 
