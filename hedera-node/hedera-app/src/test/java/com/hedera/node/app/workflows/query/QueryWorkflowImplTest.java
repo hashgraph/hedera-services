@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -66,7 +67,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,7 +87,7 @@ class QueryWorkflowImplTest {
     private CurrentPlatformStatus currentPlatformStatus;
 
     @Mock(strictness = LENIENT)
-    private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
 
     @Mock private ThrottleAccumulator throttleAccumulator;
     @Mock private SubmissionManager submissionManager;
@@ -121,7 +122,7 @@ class QueryWorkflowImplTest {
     @BeforeEach
     void setup() throws InvalidProtocolBufferException, PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-        when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
 
         requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         payment = Transaction.newBuilder().build();
