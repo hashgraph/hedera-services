@@ -60,7 +60,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         if (isAdminSigRequired(op)) {
             meta.addNonPayerKey(op.getContractID());
         }
-        if (hasNonDeprecatedAdminKey(op)) {
+        if (hasCryptoAdminKey(op)) {
             final var key = asHederaKey(op.getAdminKey());
             key.ifPresent(meta::addToReqNonPayerKeys);
         }
@@ -73,14 +73,14 @@ public class ContractUpdateHandler implements TransactionHandler {
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
         return !op.hasExpirationTime()
-                || hasNonDeprecatedAdminKey(op)
+                || hasCryptoAdminKey(op)
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
                 || op.getMemo().length() > 0;
     }
 
-    private boolean hasNonDeprecatedAdminKey(final ContractUpdateTransactionBody op) {
+    private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
         return op.hasAdminKey() && !op.getAdminKey().hasContractID();
     }
 
