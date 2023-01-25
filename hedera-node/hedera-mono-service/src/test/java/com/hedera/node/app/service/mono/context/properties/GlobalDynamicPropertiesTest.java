@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -114,6 +115,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
+        assertTrue(subject.isEvmLazyCreationGasChargeRemoved());
     }
 
     @Test
@@ -235,6 +237,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(evmVersions[1], subject.evmVersion());
         assertEquals(contractIdActivations, subject.legacyContractIdActivations());
         assertEquals(entityScaleFactors, subject.entityScaleFactors());
+        assertEquals(Set.of(55L), subject.getKnownRelayers());
     }
 
     @Test
@@ -275,6 +278,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
         assertFalse(subject.isImplicitCreationEnabled());
+        assertFalse(subject.isEvmLazyCreationGasChargeRemoved());
     }
 
     @Test
@@ -383,6 +387,7 @@ class GlobalDynamicPropertiesTest {
         assertEquals(66L, subject.exchangeRateGasReq());
         assertEquals(Set.of(SidecarType.CONTRACT_BYTECODE), subject.enabledSidecars());
         assertEquals(evmVersions[0], subject.evmVersion());
+        assertEquals(Collections.emptySet(), subject.getKnownRelayers());
     }
 
     private void givenPropsWithSeed(int i) {
@@ -552,6 +557,10 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(entityScaleFactors);
         given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
                 .willReturn((i + 91) % 2 == 0);
+        given(properties.getKnownRelayersProperty(CONTRACTS_EVM_KNOWN_RELAYERS))
+                .willReturn((i + 92) % 2 == 0 ? Collections.emptySet() : Set.of(55L));
+        given(properties.getBooleanProperty(CONTRACTS_EVM_REMOVE_LAZY_CREATION_GAS_CHARGE))
+                .willReturn((i + 93) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

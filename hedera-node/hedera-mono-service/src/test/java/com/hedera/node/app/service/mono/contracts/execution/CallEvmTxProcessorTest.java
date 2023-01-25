@@ -19,6 +19,7 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYB
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -234,9 +235,15 @@ class CallEvmTxProcessorTest {
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
         var senderMutableAccount = mock(MutableAccount.class);
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
         givenSenderWithBalance(350_000L);
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+
         var result =
                 callEvmTxProcessor.executeEth(
                         sender,
@@ -260,10 +267,15 @@ class CallEvmTxProcessorTest {
         given(aliasManager.isMirror(receiverAddress)).willReturn(false);
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
-        var senderMutableAccount = mock(MutableAccount.class);
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
         givenSenderWithBalance(350_000L);
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+
         var result =
                 callEvmTxProcessor.executeEth(
                         sender,
@@ -289,9 +301,15 @@ class CallEvmTxProcessorTest {
         var evmAccount = mock(EvmAccount.class);
         given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
         var senderMutableAccount = mock(MutableAccount.class);
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
         givenSenderWithBalance(350_000L);
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+
         var result =
                 callEvmTxProcessor.executeEth(
                         sender,
@@ -319,6 +337,13 @@ class CallEvmTxProcessorTest {
 
     @Test
     void missingCodeBecomesEmptyInInitialFrame() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
+        givenSenderWithBalance(350_000L);
+
         MessageFrame.Builder protoFrame =
                 MessageFrame.builder()
                         .messageFrameStack(new ArrayDeque<>())
@@ -335,6 +360,7 @@ class CallEvmTxProcessorTest {
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(hash -> null);
 
+        callEvmTxProcessor.execute(sender, receiverAddress, 100, 100, Bytes.EMPTY, Instant.now());
         var messageFrame =
                 callEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L);
 
@@ -555,12 +581,18 @@ class CallEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(HederaFunctionality.ContractCall, callEvmTxProcessor.getFunctionType());
+        assertEquals(ContractCall, callEvmTxProcessor.getFunctionType());
     }
 
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
+        givenSenderWithBalance(350_000L);
         doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
         given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
         given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
@@ -581,7 +613,9 @@ class CallEvmTxProcessorTest {
                         .completer(__ -> {})
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
+
         // when:
+        callEvmTxProcessor.execute(sender, receiverAddress, 100, 100, Bytes.EMPTY, Instant.now());
         MessageFrame buildMessageFrame =
                 callEvmTxProcessor.buildInitialFrame(
                         commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
@@ -589,6 +623,114 @@ class CallEvmTxProcessorTest {
         // expect:
         assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
         assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
+    }
+
+    @Test
+    void assertContextVariables() {
+        // setup:
+        givenValidMockEth();
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
+        givenSenderWithBalance(350_000L);
+        doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
+        given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
+        given(transaction.getValue()).willReturn(Wei.of(1L));
+        final MessageFrame.Builder commonInitialFrame =
+                MessageFrame.builder()
+                        .messageFrameStack(mock(Deque.class))
+                        .maxStackSize(MAX_STACK_SIZE)
+                        .worldUpdater(mock(WorldUpdater.class))
+                        .initialGas(GAS_LIMIT)
+                        .originator(sender.getId().asEvmAddress())
+                        .gasPrice(Wei.ZERO)
+                        .sender(sender.getId().asEvmAddress())
+                        .value(Wei.of(transaction.getValue().getAsBigInteger()))
+                        .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
+                        .blockValues(mock(BlockValues.class))
+                        .depth(0)
+                        .completer(__ -> {})
+                        .miningBeneficiary(Address.ZERO)
+                        .blockHashLookup(h -> null);
+        final var wrappedRelayerAccount = mock(EvmAccount.class);
+        final var mutableRelayerAccount = mock(MutableAccount.class);
+        given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
+        given(livePricesSource.currentGasPrice(any(Instant.class), any(HederaFunctionality.class)))
+                .willReturn(0L);
+
+        final long allowance = ONE_HBAR * 2;
+        callEvmTxProcessor.executeEth(
+                sender,
+                receiverAddress,
+                100,
+                100,
+                Bytes.EMPTY,
+                Instant.now(),
+                BigInteger.ZERO,
+                relayer,
+                allowance);
+
+        given(globalDynamicProperties.getKnownRelayers())
+                .willReturn(Collections.emptySet())
+                .willReturn(Set.of(5555L))
+                .willReturn(Set.of(relayer.getId().num()));
+        given(globalDynamicProperties.isEvmLazyCreationGasChargeRemoved()).willReturn(true);
+
+        // when:
+        MessageFrame buildMessageFrame =
+                callEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+        assertEquals(
+                ContractCall,
+                buildMessageFrame.getContextVariable(FrameContextVariables.HEDERA_FUNCTIONALITY));
+        assertEquals(
+                true,
+                buildMessageFrame.getContextVariable(
+                        FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE));
+        assertEquals(
+                allowance,
+                ((AllowanceWrapper)
+                                buildMessageFrame.getContextVariable(
+                                        FrameContextVariables.REMAINING_ALLOWANCE))
+                        .getValue());
+
+        MessageFrame buildMessageFrame2 =
+                callEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+        assertEquals(
+                ContractCall,
+                buildMessageFrame2.getContextVariable(FrameContextVariables.HEDERA_FUNCTIONALITY));
+        assertEquals(
+                false,
+                buildMessageFrame2.getContextVariable(
+                        FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE));
+        assertEquals(
+                allowance,
+                ((AllowanceWrapper)
+                                buildMessageFrame2.getContextVariable(
+                                        FrameContextVariables.REMAINING_ALLOWANCE))
+                        .getValue());
+
+        MessageFrame buildMessageFrame3 =
+                callEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+        assertEquals(
+                ContractCall,
+                buildMessageFrame3.getContextVariable(FrameContextVariables.HEDERA_FUNCTIONALITY));
+        assertEquals(
+                true,
+                buildMessageFrame3.getContextVariable(
+                        FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE));
+        assertEquals(
+                allowance,
+                ((AllowanceWrapper)
+                                buildMessageFrame3.getContextVariable(
+                                        FrameContextVariables.REMAINING_ALLOWANCE))
+                        .getValue());
     }
 
     @Test
@@ -996,6 +1138,9 @@ class CallEvmTxProcessorTest {
         final int gasLimit = 1000;
         final var userOfferedGasPrice =
                 BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -1022,7 +1167,6 @@ class CallEvmTxProcessorTest {
         given(wrappedSenderAccount.getMutable()).willReturn(mutableSenderAccount);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
                 .willReturn(wrappedSenderAccount);
-        given(mutableSenderAccount.getBalance()).willReturn(Wei.of(ONE_HBAR * 100));
         final var wrappedRelayerAccount = mock(EvmAccount.class);
         final var mutableRelayerAccount = mock(MutableAccount.class);
         given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
@@ -1120,6 +1264,7 @@ class CallEvmTxProcessorTest {
         given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
         given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
                 .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
         final long gasPrice = 40L;
         given(
                         livePricesSource.currentGasPrice(
@@ -1211,6 +1356,7 @@ class CallEvmTxProcessorTest {
         given(wrappedRelayerAccount.getMutable()).willReturn(mutableRelayerAccount);
         given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
                 .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
         final long gasPrice = 40L;
         given(
                         livePricesSource.currentGasPrice(
@@ -1269,6 +1415,9 @@ class CallEvmTxProcessorTest {
         final int gasLimit = 1000;
         final var userOfferedGasPrice =
                 BigInteger.valueOf(offeredGasPrice).multiply(WEIBARS_TO_TINYBARS);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(wrappedRelayerAccount);
+        given(mutableRelayerAccount.getBalance()).willReturn(Wei.of(100 * ONE_HBAR));
 
         assertThrows(
                 InvalidTransactionException.class,
@@ -1295,8 +1444,7 @@ class CallEvmTxProcessorTest {
         final var receiverAddress = receiver.getId().asEvmAddress();
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         final long gasPrice = 10L;
-        given(livePricesSource.currentGasPrice(consensusTime, HederaFunctionality.ContractCall))
-                .willReturn(gasPrice);
+        given(livePricesSource.currentGasPrice(consensusTime, ContractCall)).willReturn(gasPrice);
 
         var result =
                 callEvmTxProcessor.execute(

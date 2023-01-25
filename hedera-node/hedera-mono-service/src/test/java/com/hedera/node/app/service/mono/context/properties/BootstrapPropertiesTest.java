@@ -112,6 +112,8 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
                     entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
                     entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
+                    entry(CONTRACTS_EVM_KNOWN_RELAYERS, Set.of(5L, 650L)),
+                    entry(CONTRACTS_EVM_REMOVE_LAZY_CREATION_GAS_CHARGE, true),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
                     entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, 500_000_000L),

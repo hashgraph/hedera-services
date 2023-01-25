@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -295,14 +296,17 @@ class HederaMessageCallProcessorTest {
     }
 
     @Test
-    void executesLazyCreate() {
+    void executesLazyCreateViaGasCharging() {
         given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
         given(frame.getValue()).willReturn(Wei.of(1000L));
         final var gasPrice = Wei.of(5);
+        given(frame.getGasPrice()).willReturn(gasPrice);
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
         given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 1_000_000L;
+        given(frame.getRemainingGas()).willReturn(initialGas);
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
         final var creationFee = 500L;
@@ -314,15 +318,143 @@ class HederaMessageCallProcessorTest {
                         autoCreationLogic.create(
                                 BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
                 .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+        final var messageFrameStack = mock(Deque.class);
+        given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.peekLast()).willReturn(frame);
+        given(frame.getContextVariable(FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))
+                .willReturn(false);
 
         subject.start(frame, hederaTracer);
 
-        verify(frame, never()).decrementRemainingGas(anyLong());
+        verify(frame).decrementRemainingGas(creationFee / gasPrice.toLong());
         verify(autoCreationLogic).submitRecords(recordSubmissions);
         verify(updater)
                 .trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
         verify(frame, times(1)).getState();
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+    }
+
+    @Test
+    void executesLazyCreateViaAllowanceCharging() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        final var gasPrice = Wei.of(5);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 1_000_000L;
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final var creationFee = 500L;
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(infrastructureFactory.newRecordSubmissionsScopedTo(updater))
+                .willReturn(recordSubmissions);
+        given(
+                        autoCreationLogic.create(
+                                BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
+                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+        final var messageFrameStack = mock(Deque.class);
+        given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.peekLast()).willReturn(frame);
+        given(frame.getContextVariable(FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))
+                .willReturn(true);
+        final var allowanceWrapper = new AllowanceWrapper(1000);
+        given(frame.getContextVariable(FrameContextVariables.REMAINING_ALLOWANCE))
+                .willReturn(allowanceWrapper);
+
+        subject.start(frame, hederaTracer);
+
+        verify(autoCreationLogic).submitRecords(recordSubmissions);
+        verify(updater)
+                .trackLazilyCreatedAccount(
+                        EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
+        verify(frame, times(1)).getState();
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+        assertEquals(500, allowanceWrapper.getValue());
+    }
+
+    @Test
+    void executesLazyCreateViaAllowanceChargingNotEnoughAllowance() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final var creationFee = 500L;
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(
+                        autoCreationLogic.create(
+                                BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
+                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+        final var messageFrameStack = mock(Deque.class);
+        given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.peekLast()).willReturn(frame);
+        given(frame.getContextVariable(FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))
+                .willReturn(true);
+        final var allowanceWrapper = new AllowanceWrapper(400);
+        given(frame.getContextVariable(FrameContextVariables.REMAINING_ALLOWANCE))
+                .willReturn(allowanceWrapper);
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).setState(EXCEPTIONAL_HALT);
+        verify(frame, times(1)).getState();
+        verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+        verifyNoMoreInteractions(autoCreationLogic);
+        verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
+        assertEquals(400, allowanceWrapper.getValue());
+    }
+
+    @Test
+    void executesLazyCreateNotSufficientGas() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        final var gasPrice = Wei.of(5);
+        given(frame.getGasPrice()).willReturn(gasPrice);
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+        final var initialGas = 50L;
+        given(frame.getRemainingGas()).willReturn(initialGas);
+        final var transactionalLedger = mock(TransactionalLedger.class);
+        given(updater.trackingAccounts()).willReturn(transactionalLedger);
+        final var change =
+                BalanceChange.changingHbar(
+                        AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder()
+                                                .setAlias(
+                                                        ByteStringUtils.wrapUnsafely(
+                                                                RECIPIENT_ADDRESS.toArrayUnsafe()))
+                                                .build())
+                                .build(),
+                        null);
+        final var creationFee = 500L;
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
+                .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
+        final var messageFrameStack = mock(Deque.class);
+        given(frame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrameStack.peekLast()).willReturn(frame);
+        given(frame.getContextVariable(FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))
+                .willReturn(false);
+
+        subject.start(frame, hederaTracer);
+
+        verify(frame).decrementRemainingGas(initialGas);
+        verify(frame).setState(EXCEPTIONAL_HALT);
+        verify(frame, times(1)).getState();
+        verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+        verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessorTest.ONE_HBAR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -162,6 +163,13 @@ class CreateEvmTxProcessorTest {
         given(aliasManager.resolveForEvm(receiver.getId().asEvmAddress()))
                 .willReturn(receiver.getId().asEvmAddress());
 
+        final EvmAccount relayerMock = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress()))
+                .willReturn(relayerMock);
+        final var mutableRelayer = mock(MutableAccount.class);
+        given(relayerMock.getMutable()).willReturn(mutableRelayer);
+        given(mutableRelayer.getBalance()).willReturn(Wei.of(ONE_HBAR * 10));
+
         var result =
                 createEvmTxProcessor.executeEth(
                         sender,
@@ -258,6 +266,8 @@ class CreateEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
+        givenValidMock(350_000L, true);
+        givenAliasMock();
         doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
         given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
         given(transaction.getValue()).willReturn(Wei.of(1L));
@@ -278,6 +288,13 @@ class CreateEvmTxProcessorTest {
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
         // when:
+        createEvmTxProcessor.execute(
+                sender,
+                receiver.getId().asEvmAddress(),
+                33_333L,
+                1234L,
+                Bytes.EMPTY,
+                consensusTime);
         MessageFrame buildMessageFrame =
                 createEvmTxProcessor.buildInitialFrame(
                         commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
