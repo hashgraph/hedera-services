@@ -1015,7 +1015,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var lazyCreateTxn = "payTxn";
-        return onlyPropertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
+        return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
                 .given(
                         overridingThree(
@@ -1049,7 +1049,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                         .nonce(0)
                                                         .maxFeePerGas(0L)
                                                         .maxGasAllowance(FIVE_HBARS)
-                                                        .gasLimit(2_000_000L)
+                                                        .gasLimit(21_000) // intentionally small
+                                                        // amount of gas so that
+                                                        // relayer pays for lazy
+                                                        // create
                                                         .via(lazyCreateTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(

@@ -39,22 +39,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddressArray;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -120,17 +108,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -183,6 +161,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final int DEPOSIT_AMOUNT = 1000;
+    private static final String RECIPIENT_KEY = "lazyAccountRecipient";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -214,6 +193,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
                 evmLazyCreateViaSolidityTransfers(),
+                evmLazyCreateViaSolidityTransfersViaEthereumTxn(),
                 evmLazyCreateViaSolidityTransfersTooManyCreatesFails());
     }
 
@@ -1396,9 +1376,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
         final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
         final var sendLazyCreateFunction = "nestedLazyCreateThenSendMoreViaSend";
-        final var revertingSendLazyCreateFunction = "nestedLazyCreateViaSendThenRevert";
         final var transferLazyCreateFunction = "nestedLazyCreateThenSendMoreViaTransfer";
-        final var revertingTransferLazyCreateFunction = "nestedLazyCreateViaTransferThenRevert";
         final var lazyCreationProperty = "lazyCreation.enabled";
         final var contractsEvmVersionProperty = "contracts.evm.version";
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
@@ -1443,6 +1421,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     final var mirrorTxn = "mirrorTxn";
                                     allRunFor(
                                             spec,
+                                            // non-existing mirror address should not be lazy
+                                            // created
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             callLazyCreateFunction,
@@ -1474,7 +1454,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             // .send()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
-                                                            revertingSendLazyCreateFunction,
+                                                            sendLazyCreateFunction,
                                                             asHeadlongAddress(address2))
                                                     .sending(DEPOSIT_AMOUNT)
                                                     .via(sendRevertingTxn)
@@ -1492,7 +1472,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                             // .transfer()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
-                                                            revertingTransferLazyCreateFunction,
+                                                            transferLazyCreateFunction,
                                                             asHeadlongAddress(address3))
                                                     .sending(DEPOSIT_AMOUNT)
                                                     .via(transferRevertingTxn)
@@ -1507,6 +1487,179 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .via(transferSuccessfulTxn)
                                                     .sending(DEPOSIT_AMOUNT)
                                                     .gas(6_000_000));
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    assertHollowAccount(spec, payTxn, address1Reference.get());
+                                }));
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityTransfersViaEthereumTxn() {
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
+        final var ECDSA_KEY = "ECDSAKey";
+        final var ECDSA_KEY2 = "ECDSAKey2";
+        final var ECDSA_KEY3 = "ECDSAKey3";
+        final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
+        final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
+        final var sendLazyCreateFunction = "nestedLazyCreateThenSendMoreViaSend";
+        final var revertingSendLazyCreateFunction = "nestedLazyCreateViaSendThenRevert";
+        final var transferLazyCreateFunction = "nestedLazyCreateThenSendMoreViaTransfer";
+        final var revertingTransferLazyCreateFunction = "nestedLazyCreateViaTransferThenRevert";
+        final var lazyCreationProperty = "lazyCreation.enabled";
+        final var contractsEvmVersionProperty = "contracts.evm.version";
+        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
+        final var REVERTING_TXN = "revertingTxn";
+        final var payTxn = "payTxn";
+        final var sendRevertingTxn = "sendRevertingTxn";
+        final var sendSuccessfulTxn = "sendSuccessfulTxn";
+        final var transferRevertingTxn = "transferRevertingTxn";
+        final var transferSuccessfulTxn = "transferSuccessfulTxn";
+        final AtomicReference<byte[]> address1Reference = new AtomicReference<>();
+        final AtomicReference<byte[]> address2Reference = new AtomicReference<>();
+        final AtomicReference<byte[]> address3Reference = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityTransfersViaEthereumTxn")
+                .preserving(
+                        lazyCreationProperty,
+                        contractsEvmVersionProperty,
+                        contractsEvmVersionDynamicProperty)
+                .given(
+                        overridingThree(
+                                lazyCreationProperty,
+                                "true",
+                                contractsEvmVersionProperty,
+                                "v0.34",
+                                contractsEvmVersionDynamicProperty,
+                                "true"),
+                        overriding(CHAIN_ID_PROP, "298"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY3).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var address1 = getEvmAddressFrom(ECDSA_KEY, spec);
+                                    address1Reference.set(address1);
+                                    final var address2 = getEvmAddressFrom(ECDSA_KEY2, spec);
+                                    address2Reference.set(address2);
+                                    final var address3 = getEvmAddressFrom(ECDSA_KEY3, spec);
+                                    address3Reference.set(address3);
+                                    allRunFor(
+                                            spec,
+                                            // .call()
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingCallLazyCreateFunction,
+                                                            asHeadlongAddress(address1))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(0)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000)
+                                                    .sending(DEPOSIT_AMOUNT)
+                                                    .via(REVERTING_TXN)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            emptyChildRecordsCheck(
+                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            callLazyCreateFunction,
+                                                            asHeadlongAddress(address1))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000) // intentionally small amount
+                                                    // of gas so that relayer pays
+                                                    // for lazy create
+                                                    .sending(DEPOSIT_AMOUNT)
+                                                    .via(payTxn),
+                                            // .send()
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingSendLazyCreateFunction,
+                                                            asHeadlongAddress(address2))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(2)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000)
+                                                    .sending(DEPOSIT_AMOUNT)
+                                                    .via(sendRevertingTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            emptyChildRecordsCheck(
+                                                    sendRevertingTxn, CONTRACT_REVERT_EXECUTED),
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            sendLazyCreateFunction,
+                                                            asHeadlongAddress(address2))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(3)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000) // intentionally small amount
+                                                    // of gas so that relayer pays
+                                                    // for lazy create
+                                                    .via(sendSuccessfulTxn)
+                                                    .sending(DEPOSIT_AMOUNT),
+                                            //                                            //
+                                            // .transfer()
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingTransferLazyCreateFunction,
+                                                            asHeadlongAddress(address3))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(4)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000)
+                                                    .sending(DEPOSIT_AMOUNT)
+                                                    .via(transferRevertingTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                            emptyChildRecordsCheck(
+                                                    transferRevertingTxn, CONTRACT_REVERT_EXECUTED),
+                                            ethereumCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            transferLazyCreateFunction,
+                                                            asHeadlongAddress(address3))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(5)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000) // intentionally small amount
+                                                    // of gas so that relayer pays
+                                                    // for lazy create
+                                                    .via(transferSuccessfulTxn)
+                                                    .sending(DEPOSIT_AMOUNT));
                                 }))
                 .then(
                         withOpContext(
@@ -1556,8 +1709,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
         final var txn2 = "txn2";
         final var txn3 = "txn3";
-        return onlyPropertyPreservingHapiSpec(
-                        "evmLazyCreateViaSolidityTransfersTooManyCreatesFails")
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityTransfersTooManyCreatesFails")
                 .preserving(
                         lazyCreationProperty,
                         maxPrecedingRecords,
@@ -1570,11 +1722,20 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 "v0.34",
                                 contractsEvmVersionDynamicProperty,
                                 "true"),
+                        overriding(CHAIN_ID_PROP, "298"),
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1597,27 +1758,39 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN)
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
-                                            contractCall(
+                                            ethereumCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             createTooManyHollowAccountsViaSend,
                                                             (Object)
                                                                     asHeadlongAddressArray(
                                                                             addressBytes,
                                                                             addressBytes2))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(0)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000)
                                                     .sending(DEPOSIT_AMOUNT)
                                                     .via(txn2)
-                                                    .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
-                                            contractCall(
+                                            ethereumCall(
                                                             LAZY_CREATE_CONTRACT,
                                                             createTooManyHollowAccountsViaTransfer,
                                                             (Object)
                                                                     asHeadlongAddressArray(
                                                                             addressBytes,
                                                                             addressBytes2))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .maxFeePerGas(0L)
+                                                    .maxGasAllowance(FIVE_HBARS)
+                                                    .gasLimit(100_000)
                                                     .sending(DEPOSIT_AMOUNT)
                                                     .via(txn3)
-                                                    .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
                                             getAliasedAccountInfo(ecdsaKey.toByteString())
                                                     .logged()
