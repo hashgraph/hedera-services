@@ -72,6 +72,11 @@ public class HederaBalanceOperation extends BalanceOperation {
     }
 
     @VisibleForTesting
+    public BiPredicate<Address, MessageFrame> getAddressValidator() {
+        return addressValidator;
+    }
+
+    @VisibleForTesting
     public void setAddressValidator(BiPredicate<Address, MessageFrame> addressValidator) {
         this.addressValidator = addressValidator;
     }
