@@ -80,21 +80,6 @@ tasks.jar {
     }
 }
 
-// Replace variables in semantic-version.properties with build variables
-tasks.processResources {
-    filesMatching("semantic-version.properties") {
-        filter { line: String ->
-            if (line.contains("hapi-proto.version")) {
-                "hapi.proto.version=" + libs.versions.hapi.version.get()
-            } else if (line.contains("project.version")) {
-                "hedera.services.version=" + project.version
-            } else {
-                line
-            }
-        }
-    }
-}
-
 // Copy dependencies into `data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
     from(project.configurations.getByName("runtimeClasspath"))

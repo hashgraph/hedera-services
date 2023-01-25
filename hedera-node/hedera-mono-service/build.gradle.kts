@@ -103,3 +103,19 @@ tasks.withType<JavaCompile> {
 
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
+
+// Replace variables in semantic-version.properties with build variables
+tasks.processResources {
+    filesMatching("semantic-version.properties") {
+        filter { line: String ->
+            if (line.contains("hapi-proto.version")) {
+                "hapi.proto.version=" + libs.versions.hapi.version.get()
+            } else if (line.contains("project.version")) {
+                "hedera.services.version=" + project.version
+            } else {
+                line
+            }
+        }
+    }
+}
+
