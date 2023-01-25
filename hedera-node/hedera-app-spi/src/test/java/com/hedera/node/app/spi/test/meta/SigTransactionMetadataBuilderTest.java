@@ -65,6 +65,7 @@ class SigTransactionMetadataBuilderTest {
     private Long payerNum = 3L;
     @Mock private HederaKey payerKey;
     final AccountID otherAccountId = AccountID.newBuilder().setAccountNum(12345L).build();
+    final ContractID otherContractId = ContractID.newBuilder().setContractNum(123456L).build();
     @Mock private HederaKey otherKey;
     @Mock private AccountKeyLookup keyLookup;
     private SigTransactionMetadataBuilder subject;
@@ -97,7 +98,7 @@ class SigTransactionMetadataBuilderTest {
         assertThrows(NullPointerException.class, () -> subject.txnBody(null));
         assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
         assertThrows(NullPointerException.class, () -> subject.status(null));
-        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey(null));
+        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey((AccountID) null));
         assertThrows(
                 NullPointerException.class,
                 () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));
@@ -262,6 +263,32 @@ class SigTransactionMetadataBuilderTest {
     }
 
     @Test
+    void addsContractIdKey() {
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(keyLookup.getKey(otherContractId))
+                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
+        given(keyLookup.getKeyIfReceiverSigRequired(otherContractId))
+                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
+
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+
+        subject.addNonPayerKey(otherContractId);
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(otherKey), subject.build().requiredNonPayerKeys());
+
+        subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(otherKey, otherKey), subject.build().requiredNonPayerKeys());
+        assertEquals(OK, subject.build().status());
+    }
+
+    @Test
     void doesntLookupIfMetaIsFailedAlready() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
@@ -281,6 +308,14 @@ class SigTransactionMetadataBuilderTest {
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         subject.status(INVALID_ACCOUNT_ID);
+
+        subject.addNonPayerKey(otherContractId);
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+        subject.status(INVALID_CONTRACT_ID);
+
+        subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+        subject.status(INVALID_CONTRACT_ID);
     }
 
     @Test
@@ -342,6 +377,22 @@ class SigTransactionMetadataBuilderTest {
     }
 
     @Test
+    void doesntFailForInvalidContract() {
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addNonPayerKey(ContractID.newBuilder().setContractNum(0L).build());
+
+        meta = subject.build();
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
     void doesntFailForAliasedAccount() {
         final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
@@ -356,6 +407,25 @@ class SigTransactionMetadataBuilderTest {
         meta = subject.build();
         assertEquals(payerKey, meta.payerKey());
         assertIterableEquals(List.of(payerKey), meta.requiredNonPayerKeys());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void doesntFailForAliasedContract() {
+        final var alias =
+                ContractID.newBuilder().setEvmAddress(ByteString.copyFromUtf8("test")).build();
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addNonPayerKey(alias);
+
+        meta = subject.build();
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(otherKey), meta.requiredNonPayerKeys());
         assertEquals(OK, meta.status());
     }
 

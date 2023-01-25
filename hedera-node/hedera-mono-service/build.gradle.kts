@@ -91,7 +91,7 @@ dependencies {
 
 val apt = configurations.create("apt")
 dependencies {
-    implementation(project(mapOf("path" to ":hedera-node:hedera-app-spi")))
+    implementation(project(":hedera-node:hedera-app-spi"))
     testImplementation("org.jetbrains:annotations:20.1.0")
     @Suppress("UnstableApiUsage")
     apt(libs.dagger.compiler)
