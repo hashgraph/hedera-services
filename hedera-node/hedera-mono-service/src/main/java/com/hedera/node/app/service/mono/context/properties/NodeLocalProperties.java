@@ -53,6 +53,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import java.util.List;
@@ -101,6 +102,7 @@ public class NodeLocalProperties {
     private List<String> consThrottlesToSample;
     private List<String> hapiThrottlesToSample;
     private String sidecarDir;
+    private boolean workflowsEnabled;
 
     @Inject
     public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -154,6 +156,8 @@ public class NodeLocalProperties {
                 properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
         throttleUtilStatsUpdateIntervalMs =
                 properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+        workflowsEnabled =
+                properties.getBooleanProperty(WORKFLOWS_ENABLED);
     }
 
     public int port() {
@@ -306,5 +310,9 @@ public class NodeLocalProperties {
 
     public long throttleUtilStatsUpdateIntervalMs() {
         return throttleUtilStatsUpdateIntervalMs;
+    }
+
+    public boolean workflowsEnabled() {
+        return workflowsEnabled;
     }
 }
