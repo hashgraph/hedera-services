@@ -180,11 +180,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final Wei refundedWei = Wei.of(refunded * gasPrice);
             if (refundedWei.greaterThan(Wei.ZERO)) {
                 final var chargedRelayer = chargingResult.relayer();
-                final var allowanceCharged =
-                        getTotalAllowanceCharged(
-                                maxGasAllowanceInTinybars,
-                                chargingResult.allowanceCharged(),
-                                chargedRelayer);
+                final var allowanceCharged = chargingResult.allowanceCharged();
                 if (chargedRelayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
                     // If allowance has been charged, we always try to refund relayer first
                     if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
@@ -199,6 +195,10 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     chargingResult.sender().incrementBalance(refundedWei);
                 }
             }
+            chargeLazyCreationAllowanceIfNeeded(
+                    maxGasAllowanceInTinybars,
+                    chargingResult.allowanceCharged(),
+                    chargingResult.relayer());
             sendToCoinbase(
                     coinbase, gasLimit - refunded, gasPrice, (HederaWorldState.Updater) updater);
             initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
@@ -251,14 +251,13 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         }
     }
 
-    private Wei getTotalAllowanceCharged(
+    private void chargeLazyCreationAllowanceIfNeeded(
             final long maxGasAllowance,
             final Wei allowanceChargedForGasCosts,
             final MutableAccount relayer) {
         if (relayer == null) {
-            return allowanceChargedForGasCosts;
+            return;
         }
-        var totalAllowanceCharged = Wei.of(0).add(allowanceChargedForGasCosts);
         final var remainingAllowanceAfterEvmEx =
                 (AllowanceWrapper)
                         initialFrame.getContextVariable(FrameContextVariables.REMAINING_ALLOWANCE);
@@ -271,10 +270,10 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                 updater.getOrCreateSenderAccount(relayer.getAddress())
                         .getMutable()
                         .decrementBalance(Wei.of(spentAllowanceDuringExecution));
-                totalAllowanceCharged = totalAllowanceCharged.add(spentAllowanceDuringExecution);
+                final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+                mutableCoinbase.incrementBalance(Wei.of(spentAllowanceDuringExecution));
             }
         }
-        return totalAllowanceCharged;
     }
 
     protected Map<String, Object> createContextVariables() {

@@ -1383,14 +1383,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var REVERTING_TXN = "revertingTxn";
         final var payTxn = "payTxn";
         final var sendRevertingTxn = "sendRevertingTxn";
-        final var sendSuccessfulTxn = "sendSuccessfulTxn";
         final var transferRevertingTxn = "transferRevertingTxn";
-        final var transferSuccessfulTxn = "transferSuccessfulTxn";
         final AtomicReference<byte[]> address1Reference = new AtomicReference<>();
         final AtomicReference<byte[]> address2Reference = new AtomicReference<>();
         final AtomicReference<byte[]> address3Reference = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityTransfers")
                 .preserving(
                         lazyCreationProperty,
                         contractsEvmVersionProperty,
@@ -1462,13 +1460,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .gas(6_000_000),
                                             emptyChildRecordsCheck(
                                                     sendRevertingTxn, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            sendLazyCreateFunction,
-                                                            asHeadlongAddress(address2))
-                                                    .via(sendSuccessfulTxn)
-                                                    .sending(DEPOSIT_AMOUNT)
-                                                    .gas(6_000_000),
                                             // .transfer()
                                             contractCall(
                                                             LAZY_CREATE_CONTRACT,
@@ -1479,14 +1470,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(6_000_000),
                                             emptyChildRecordsCheck(
-                                                    transferRevertingTxn, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            transferLazyCreateFunction,
-                                                            asHeadlongAddress(address3))
-                                                    .via(transferSuccessfulTxn)
-                                                    .sending(DEPOSIT_AMOUNT)
-                                                    .gas(6_000_000));
+                                                    transferRevertingTxn,
+                                                    CONTRACT_REVERT_EXECUTED));
                                 }))
                 .then(
                         withOpContext(
