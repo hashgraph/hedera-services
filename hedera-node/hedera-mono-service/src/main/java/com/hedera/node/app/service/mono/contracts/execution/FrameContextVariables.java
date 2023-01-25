@@ -17,6 +17,8 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 public class FrameContextVariables {
 
+    private FrameContextVariables() {}
+
     public static final String HEDERA_FUNCTIONALITY = "HederaFunctionality";
     public static final String REMAINING_ALLOWANCE = "Allowance";
     public static final String LAZY_CREATE_CHARGE_FROM_ALLOWANCE = "lazyCreateChargeFromAllowance";

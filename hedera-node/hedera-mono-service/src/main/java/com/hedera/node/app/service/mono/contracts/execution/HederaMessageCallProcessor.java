@@ -144,7 +144,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
 
     private boolean chargeCreationFee(final MessageFrame frame, final long creationFeeInTinybars) {
         final var topLevelFrame = frame.getMessageFrameStack().peekLast();
-        if (((Boolean)
+        if (((boolean)
                 topLevelFrame.getContextVariable(
                         FrameContextVariables.LAZY_CREATE_CHARGE_FROM_ALLOWANCE))) {
             final var remainingAllowance =

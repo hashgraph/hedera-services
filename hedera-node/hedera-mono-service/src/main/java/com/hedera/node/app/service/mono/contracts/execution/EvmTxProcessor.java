@@ -179,24 +179,12 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             final long refunded = gasLimit - gasUsed + sbhRefund;
             final Wei refundedWei = Wei.of(refunded * gasPrice);
             if (refundedWei.greaterThan(Wei.ZERO)) {
-                var allowanceCharged = chargingResult.allowanceCharged();
-                final var remainingAllowanceAfterEvmEx =
-                        (AllowanceWrapper)
-                                initialFrame.getContextVariable(
-                                        FrameContextVariables.REMAINING_ALLOWANCE);
-                if (remainingAllowanceAfterEvmEx != null) {
-                    final var initialAllowanceInEvm =
-                            maxGasAllowanceInTinybars - allowanceCharged.toLong();
-                    final var spentAllowanceDuringExecution =
-                            initialAllowanceInEvm - remainingAllowanceAfterEvmEx.getValue();
-                    if (spentAllowanceDuringExecution > 0) {
-                        updater.getOrCreateSenderAccount(relayer.canonicalAddress())
-                                .getMutable()
-                                .decrementBalance(Wei.of(spentAllowanceDuringExecution));
-                        allowanceCharged = allowanceCharged.add(spentAllowanceDuringExecution);
-                    }
-                }
                 final var chargedRelayer = chargingResult.relayer();
+                final var allowanceCharged =
+                        getTotalAllowanceCharged(
+                                maxGasAllowanceInTinybars,
+                                chargingResult.allowanceCharged(),
+                                chargedRelayer);
                 if (chargedRelayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
                     // If allowance has been charged, we always try to refund relayer first
                     if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
@@ -261,6 +249,32 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     stateChanges,
                     hederaTracer.getActions());
         }
+    }
+
+    private Wei getTotalAllowanceCharged(
+            final long maxGasAllowance,
+            final Wei allowanceChargedForGasCosts,
+            final MutableAccount relayer) {
+        if (relayer == null) {
+            return allowanceChargedForGasCosts;
+        }
+        var totalAllowanceCharged = Wei.of(0).add(allowanceChargedForGasCosts);
+        final var remainingAllowanceAfterEvmEx =
+                (AllowanceWrapper)
+                        initialFrame.getContextVariable(FrameContextVariables.REMAINING_ALLOWANCE);
+        if (remainingAllowanceAfterEvmEx != null) {
+            final var initialAllowanceInEvm =
+                    maxGasAllowance - allowanceChargedForGasCosts.toLong();
+            final var spentAllowanceDuringExecution =
+                    initialAllowanceInEvm - remainingAllowanceAfterEvmEx.getValue();
+            if (spentAllowanceDuringExecution > 0) {
+                updater.getOrCreateSenderAccount(relayer.getAddress())
+                        .getMutable()
+                        .decrementBalance(Wei.of(spentAllowanceDuringExecution));
+                totalAllowanceCharged = totalAllowanceCharged.add(spentAllowanceDuringExecution);
+            }
+        }
+        return totalAllowanceCharged;
     }
 
     protected Map<String, Object> createContextVariables() {
