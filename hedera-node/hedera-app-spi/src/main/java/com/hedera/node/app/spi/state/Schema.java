@@ -79,8 +79,7 @@ public abstract class Schema implements Comparable<Schema> {
      * @param previousStates The {@link ReadableStates} of the previous {@link Schema} version
      * @param newStates {@link WritableStates} for this schema.
      */
-    public void migrate(
-            @NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
+    public void migrate(@NonNull ReadableStates previousStates, @NonNull WritableStates newStates) {
         Objects.requireNonNull(previousStates);
         Objects.requireNonNull(newStates);
     }
