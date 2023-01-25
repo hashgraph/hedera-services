@@ -377,28 +377,27 @@ class WorldLedgersTest {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         tokenAccessor();
 
-        given(staticEntityAccess.infoForToken(fungibleToken)).willReturn(Optional.of(tokenInfo));
-        given(tokenInfo.getPauseStatus()).willReturn(Paused);
-        given(tokenInfo.getMemo()).willReturn(tokenMemo);
-        given(tokenInfo.getTokenId()).willReturn(fungibleToken);
-        given(tokenInfo.getSymbol()).willReturn("UnfrozenToken");
-        given(tokenInfo.getName()).willReturn("UnfrozenTokenName");
-        given(tokenInfo.getTreasury()).willReturn(accountID);
-        given(tokenInfo.getTotalSupply()).willReturn(100L);
-        given(tokenInfo.getDecimals()).willReturn(1);
-        given(tokenInfo.getCustomFeesList()).willReturn(grpcCustomFees);
+        given(staticEntityAccess.evmInfoForToken(fungibleToken))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmTokenInfo.isPaused()).willReturn(Paused.getNumber() == 1);
+        given(evmTokenInfo.getMemo()).willReturn(tokenMemo);
+        given(evmTokenInfo.getSymbol()).willReturn("UnfrozenToken");
+        given(evmTokenInfo.getName()).willReturn("UnfrozenTokenName");
+        given(evmTokenInfo.getTreasury()).willReturn(asTypedEvmAddress(accountID));
+        given(evmTokenInfo.getTotalSupply()).willReturn(100L);
+        given(evmTokenInfo.getDecimals()).willReturn(1);
+        given(evmTokenInfo.getCustomFees()).willReturn(evmCustomFees(grpcCustomFees));
 
-        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
 
-        assertEquals(Paused, tokenInfo.getPauseStatus());
+        assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
-        assertEquals(fungibleToken, tokenInfo.getTokenId());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
         assertEquals(token.name(), tokenInfo.getName());
-        assertEquals(token.treasury().toGrpcAccountId(), tokenInfo.getTreasury());
+        assertEquals(token.treasury().toEvmAddress(), tokenInfo.getTreasury());
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
-        assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+        assertEquals(evmCustomFees(token.grpcFeeSchedule()), tokenInfo.getCustomFees());
     }
 
     @Test
@@ -439,17 +438,16 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
 
-        assertEquals(Paused, tokenInfo.getPauseStatus());
+        assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
-        assertEquals(fungibleToken, tokenInfo.getTokenId());
         assertEquals(token.symbol(), tokenInfo.getSymbol());
         assertEquals(token.name(), tokenInfo.getName());
-        assertEquals(token.treasury().toGrpcAccountId(), tokenInfo.getTreasury());
+        assertEquals(token.treasury().toEvmAddress(), tokenInfo.getTreasury());
         assertEquals(token.totalSupply(), tokenInfo.getTotalSupply());
         assertEquals(token.decimals(), tokenInfo.getDecimals());
-        assertEquals(token.grpcFeeSchedule(), tokenInfo.getCustomFeesList());
+        assertEquals(evmCustomFees(token.grpcFeeSchedule()), tokenInfo.getCustomFees());
     }
 
     @Test
@@ -464,7 +462,7 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorksForMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var tokenInfo = worldLedgers.infoForToken(fungibleToken, ledgerId);
+        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId);
         assertEquals(Optional.empty(), tokenInfo);
     }
 

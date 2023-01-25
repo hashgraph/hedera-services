@@ -28,7 +28,6 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -63,16 +62,17 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var tokenInfo =
-                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
+                        .orElse(null);
 
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
                 new TokenExpiryInfo(
-                        tokenInfo.getExpiry().getSeconds(),
-                        EntityIdUtils.asTypedEvmAddress(tokenInfo.getAutoRenewAccount()),
-                        tokenInfo.getAutoRenewPeriod().getSeconds());
+                        tokenInfo.getExpiry(),
+                        tokenInfo.getAutoRenewAccount(),
+                        tokenInfo.getAutoRenewPeriod());
 
         return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
     }

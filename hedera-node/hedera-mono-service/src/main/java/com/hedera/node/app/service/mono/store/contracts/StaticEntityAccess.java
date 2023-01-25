@@ -60,7 +60,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -317,10 +316,6 @@ public class StaticEntityAccess implements EntityAccess {
 
     public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
         return view.evmInfoForToken(tokenId);
-    }
-
-    public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
-        return view.infoForToken(tokenId);
     }
 
     public Optional<TokenNftInfo> infoForNft(final NftID target) {

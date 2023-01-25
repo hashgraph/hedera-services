@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class EvmNftInfo {
@@ -30,13 +32,13 @@ public class EvmNftInfo {
 
     public EvmNftInfo(
             long serialNumber,
-            Address account,
+            @NonNull Address account,
             long creationTime,
             byte[] metadata,
             Address spender,
             byte[] ledgerId) {
         this.serialNumber = serialNumber;
-        this.account = account;
+        this.account = Objects.requireNonNull(account);
         this.creationTime = creationTime;
         this.metadata = metadata;
         this.spender = spender;

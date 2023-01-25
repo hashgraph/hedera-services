@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.parentContractAddressConvertedToContractId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payerIdConvertedToAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
@@ -250,7 +251,7 @@ class GetTokenInfoPrecompilesTest {
         evmNftInfo =
                 new EvmNftInfo(
                         serialNumber,
-                        EntityIdUtils.asTypedEvmAddress(payer),
+                        payerIdConvertedToAddress,
                         creationTime,
                         metadata.toByteArray(),
                         EntityIdUtils.asTypedEvmAddress(sender),
