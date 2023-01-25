@@ -179,7 +179,7 @@ class ConsensusCreateTopicHandlerTest {
     @DisplayName("Fails if payer is not found")
     void createFailsWhenPayerNotFound() {
         // given:
-        given(keyFinder.getKey(any()))
+        given(keyFinder.getKey((AccountID) any()))
                 .willReturn(
                         KeyOrLookupFailureReason.withFailureReason(
                                 ResponseCodeEnum
@@ -200,7 +200,7 @@ class ConsensusCreateTopicHandlerTest {
     @DisplayName("Fails if auto account is returned with a null key")
     void autoAccountKeyIsNull() {
         // given:
-        given(keyFinder.getKey(any()))
+        given(keyFinder.getKey((AccountID) any()))
                 .willReturn(KeyOrLookupFailureReason.withKey(null)); // Any error response code
         final var inputTxn =
                 TransactionBody.newBuilder()
