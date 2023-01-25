@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJ
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKey;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -388,7 +389,7 @@ class WorldLedgersTest {
         given(evmTokenInfo.getDecimals()).willReturn(1);
         given(evmTokenInfo.getCustomFees()).willReturn(evmCustomFees(grpcCustomFees));
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = worldLedgers.evmInfoForToken(fungibleToken, ledgerId).get();
 
         assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
@@ -438,7 +439,7 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorks() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(token);
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId).get();
+        final var tokenInfo = worldLedgers.evmInfoForToken(fungibleToken, ledgerId).get();
 
         assertEquals(Paused.getNumber() == 1, tokenInfo.isPaused());
         assertEquals(token.memo(), tokenInfo.getMemo());
@@ -462,7 +463,7 @@ class WorldLedgersTest {
     void nonStaticTokenInfoWorksForMissingToken() {
         given(tokensLedger.getImmutableRef(fungibleToken)).willReturn(null);
 
-        final var tokenInfo = subject.evmInfoForToken(fungibleToken, ledgerId);
+        final var tokenInfo = worldLedgers.evmInfoForToken(fungibleToken, ledgerId);
         assertEquals(Optional.empty(), tokenInfo);
     }
 
