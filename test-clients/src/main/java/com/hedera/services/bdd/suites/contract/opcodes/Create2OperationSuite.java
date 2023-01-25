@@ -532,7 +532,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
                                         getContractInfo(expectedCreate2Address.get())
@@ -617,7 +617,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         // https://github.com/hashgraph/hedera-services/issues/2874
                         // autoRenewAccountID is inherited from the sender
                         sourcing(
@@ -879,7 +879,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -908,7 +908,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 /* Cannot repeat CREATE2
                                                 with same args without destroying the existing contract */
 
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         sourcing(
                                 () ->
                                         getContractInfo(mergedAliasAddr.get())
