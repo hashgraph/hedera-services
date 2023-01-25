@@ -147,6 +147,9 @@ public class QueryDispatcher {
             case TRANSACTIONGETFASTRECORD -> throw new UnsupportedOperationException(
                     GET_FAST_RECORD_IS_NOT_SUPPORTED);
             case QUERY_NOT_SET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
+
+            default -> throw new UnsupportedOperationException(
+                    "This type of query is not supported: " + query.getQueryCase());
         }
     }
 

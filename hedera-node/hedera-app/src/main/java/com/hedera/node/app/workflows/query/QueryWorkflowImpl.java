@@ -53,7 +53,7 @@ import io.grpc.StatusRuntimeException;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +69,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
-    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final QueryChecker checker;
@@ -81,7 +81,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      *
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
-     * @param stateAccessor a {@link Supplier} that provides the latest immutable state
+     * @param stateAccessor a {@link Function} that returns the latest immutable or latest signed
+     *     state depending on the {@link ResponseType}
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param checker the {@link QueryChecker} with specific checks of an ingest-workflow
@@ -92,7 +93,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     public QueryWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
-            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
@@ -139,10 +140,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         if (queryHeader == null) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
+        final ResponseType responseType = queryHeader.getResponseType();
 
         Response response;
         long fee = 0L;
-        try (final var wrappedState = stateAccessor.get()) {
+        try (final var wrappedState = stateAccessor.apply(responseType)) {
             // Do some general pre-checks
             if (nodeInfo.isSelfZeroStake()) {
                 // Zero stake nodes are currently not supported
@@ -151,7 +153,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             if (currentPlatformStatus.get() != ACTIVE) {
                 throw new PreCheckException(PLATFORM_NOT_ACTIVE);
             }
-            if (UNSUPPORTED_RESPONSE_TYPES.contains(queryHeader.getResponseType())) {
+            if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
@@ -161,7 +163,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             final var state = wrappedState.get();
-            final var paymentRequired = handler.requiresNodePayment(queryHeader.getResponseType());
+            final var paymentRequired = handler.requiresNodePayment(responseType);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
@@ -193,13 +195,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 7. Find response
-            if (handler.needsAnswerOnlyCost(queryHeader.getResponseType())) {
+            if (handler.needsAnswerOnlyCost(responseType)) {
                 // TODO: Integrate fee-engine (estimate fee) (#4207)
                 fee = 0L;
-                final var header = createResponseHeader(queryHeader.getResponseType(), OK, fee);
+                final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
-                final var header = createResponseHeader(queryHeader.getResponseType(), OK, fee);
+                final var header = createResponseHeader(responseType, OK, fee);
                 response = dispatcher.dispatchFindResponse(state, query, header);
             }
 
@@ -207,12 +209,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
         } catch (InsufficientBalanceException e) {
             final var header =
-                    createResponseHeader(
-                            queryHeader.getResponseType(), e.responseCode(), e.getEstimatedFee());
+                    createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
-            final var header =
-                    createResponseHeader(queryHeader.getResponseType(), e.responseCode(), fee);
+            final var header = createResponseHeader(responseType, e.responseCode(), fee);
             response = handler.createEmptyResponse(header);
         }
 
