@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,6 +57,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param status status to be set on {@link TransactionMetadata}
      * @return builder object
      */
+    @NonNull
     public T status(@NonNull final ResponseCodeEnum status) {
         this.status = Objects.requireNonNull(status);
         return self();
@@ -67,6 +69,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param keys list of keys to add
      * @return builder object
      */
+    @NonNull
     public T addAllReqKeys(@NonNull final List<HederaKey> keys) {
         requiredNonPayerKeys.addAll(Objects.requireNonNull(keys));
         return self();
@@ -78,6 +81,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param payer payer for the transaction
      * @return builder object
      */
+    @NonNull
     public T payerKeyFor(@NonNull AccountID payer) {
         this.payer = Objects.requireNonNull(payer);
         addPayerKey();
@@ -93,6 +97,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param key key to be added
      * @return builder object
      */
+    @NonNull
     public T addToReqNonPayerKeys(@NonNull HederaKey key) {
         if (status != OK || payerKey == null) {
             return self();
@@ -107,6 +112,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param txn transaction body of the transaction
      * @return builder object
      */
+    @NonNull
     public T txnBody(@NonNull TransactionBody txn) {
         this.txn = Objects.requireNonNull(txn);
         return self();
@@ -119,6 +125,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      *
      * @param id given accountId
      */
+    @NonNull
     public T addNonPayerKey(@NonNull final AccountID id) {
         return addNonPayerKey(id, null);
     }
@@ -132,6 +139,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param id given accountId
      * @param failureStatusToUse failure status to be set if there is failure
      */
+    @NonNull
     public T addNonPayerKey(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(Objects.requireNonNull(id))) {
@@ -139,6 +147,16 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
         }
         final var result = keyLookup.getKey(id);
         addToKeysOrFail(result, failureStatusToUse, false);
+        return self();
+    }
+
+    @NonNull
+    public T addNonPayerKey(@NonNull final ContractID id) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
+            return self();
+        }
+        final var result = keyLookup.getKey(id);
+        addToKeysOrFail(result, null, false);
         return self();
     }
 
@@ -152,6 +170,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param id given accountId
      * @param failureStatusToUse failure status to be set if there is failure
      */
+    @NonNull
     public T addNonPayerKeyIfReceiverSigRequired(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(Objects.requireNonNull(id))) {
@@ -159,6 +178,16 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, failureStatusToUse, false);
+        return self();
+    }
+
+    @NonNull
+    public T addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
+            return self();
+        }
+        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
+        addToKeysOrFail(result, null, false);
         return self();
     }
 
@@ -190,6 +219,20 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
     }
 
     /**
+     * Checks if the metadata is already failed. In this case no need to look up that contract's key
+     * If the payer key has not been set we don't add other keys.
+     *
+     * @param id given contract
+     * @return true if the lookup is not needed, false otherwise
+     */
+    private boolean isNotNeeded(@NonNull final ContractID id) {
+        return id.equals(ContractID.getDefaultInstance())
+                || designatesContractRemoval(id)
+                || status != OK
+                || payerKey == null;
+    }
+
+    /**
      * Checks if the accountId is a sentinel id 0.0.0
      *
      * @param id given accountId
@@ -200,6 +243,19 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
                 && id.getRealmNum() == 0
                 && id.getAccountNum() == 0
                 && id.getAlias().isEmpty();
+    }
+
+    /**
+     * Checks if the contractId is a sentinel id <code>0.0.0</code>
+     *
+     * @param id given contractId
+     * @return true if the given contractId is
+     */
+    private boolean designatesContractRemoval(@NonNull final ContractID id) {
+        return id.getShardNum() == 0
+                && id.getRealmNum() == 0
+                && id.getContractNum() == 0
+                && id.getEvmAddress().isEmpty();
     }
 
     /**

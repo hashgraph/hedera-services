@@ -343,7 +343,10 @@ public class KeyFactory implements Serializable {
 
     public static String mnemonicFromFile(final String wordsLoc) {
         try {
-            return java.nio.file.Files.lines(Paths.get(wordsLoc)).collect(Collectors.joining(" "));
+            return java.nio.file.Files.lines(Paths.get(wordsLoc))
+                    .map(String::strip)
+                    .collect(Collectors.joining(" "))
+                    .strip();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
