@@ -37,6 +37,7 @@ package com.hedera.node.app.service.evm.contracts.operations;
  *
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -52,7 +53,7 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
  */
 public class HederaBalanceOperation extends BalanceOperation {
 
-    private final BiPredicate<Address, MessageFrame> addressValidator;
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     public HederaBalanceOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
@@ -68,5 +69,10 @@ public class HederaBalanceOperation extends BalanceOperation {
                 () -> cost(true),
                 () -> super.execute(frame, evm),
                 addressValidator);
+    }
+
+    @VisibleForTesting
+    public void setAddressValidator(BiPredicate<Address, MessageFrame> addressValidator) {
+        this.addressValidator = addressValidator;
     }
 }
