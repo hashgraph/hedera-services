@@ -1533,7 +1533,7 @@ jobs:
             cd /swirlds-platform
             ./gradlew assemble --scan
             
-            # Build JRS
+            # Build JRS 
             cd /swirlds-platform/regression
             git checkout 03094-circleci-cli-4
 
