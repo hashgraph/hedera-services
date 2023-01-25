@@ -52,23 +52,16 @@ class HederaBalanceOperationTest {
 
     private HederaBalanceOperation subject;
 
-    void setUp() {
-        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
-        givenAddress();
-        given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
-        given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
-    }
-
     @Test
     void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
-        setUp();
+        initializeSubject();
         given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
     }
 
     @Test
     void haltsWithInsufficientStackItemsWhenPopsStackItem() {
-        setUp();
+        initializeSubject();
         given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -77,7 +70,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithTooManyStackItemsWhenPopsStackItem() {
-        setUp();
+        initializeSubject();
         given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -86,7 +79,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithInvalidSolidityAddressOperationResult() {
-        setUp();
+        initializeSubject();
         given(addressValidator.test(any(), any())).willReturn(false);
 
         thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
@@ -94,7 +87,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithInsufficientGasOperationResult() {
-        setUp();
+        initializeSubject();
         given(frame.popStackItem()).willReturn(Bytes.EMPTY);
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(0L);
@@ -105,7 +98,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void returnsOperationResultWithoutException() {
-        setUp();
+        initializeSubject();
         given(worldUpdater.get(any())).willReturn(account);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.popStackItem()).willReturn(Bytes.EMPTY);
@@ -123,6 +116,13 @@ class HederaBalanceOperationTest {
         subject = new HederaBalanceOperation(gasCalculator, addressValidator);
         subject.setAddressValidator(addressValidator);
         assertEquals(addressValidator, subject.getAddressValidator());
+    }
+
+    private void initializeSubject() {
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        givenAddress();
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
+        given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
     }
 
     private void givenAddress() {
