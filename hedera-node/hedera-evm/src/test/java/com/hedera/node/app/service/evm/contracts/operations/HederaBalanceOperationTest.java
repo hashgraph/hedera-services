@@ -35,7 +35,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -53,22 +52,16 @@ class HederaBalanceOperationTest {
 
     private HederaBalanceOperation subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
-        givenAddress();
-        given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
-        given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
-    }
-
     @Test
     void haltsWithInsufficientStackItemsOperationResultWhenGetsStackItem() {
+        initializeSubject();
         given(frame.getStackItem(anyInt())).willThrow(new FixedStack.UnderflowException());
         thenOperationWillFailWithReason(INSUFFICIENT_STACK_ITEMS);
     }
 
     @Test
     void haltsWithInsufficientStackItemsWhenPopsStackItem() {
+        initializeSubject();
         given(frame.popStackItem()).willThrow(new FixedStack.UnderflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -77,6 +70,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithTooManyStackItemsWhenPopsStackItem() {
+        initializeSubject();
         given(frame.popStackItem()).willThrow(new FixedStack.OverflowException());
         given(addressValidator.test(any(), any())).willReturn(true);
 
@@ -85,6 +79,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithInvalidSolidityAddressOperationResult() {
+        initializeSubject();
         given(addressValidator.test(any(), any())).willReturn(false);
 
         thenOperationWillFailWithReason(INVALID_SOLIDITY_ADDRESS);
@@ -92,6 +87,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void haltsWithInsufficientGasOperationResult() {
+        initializeSubject();
         given(frame.popStackItem()).willReturn(Bytes.EMPTY);
         given(frame.warmUpAddress(any())).willReturn(true);
         given(frame.getRemainingGas()).willReturn(0L);
@@ -102,6 +98,7 @@ class HederaBalanceOperationTest {
 
     @Test
     void returnsOperationResultWithoutException() {
+        initializeSubject();
         given(worldUpdater.get(any())).willReturn(account);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.popStackItem()).willReturn(Bytes.EMPTY);
@@ -112,6 +109,20 @@ class HederaBalanceOperationTest {
         final var result = subject.execute(frame, evm);
 
         assertNull(result.getHaltReason());
+    }
+
+    @Test
+    void addressValidatorSetterWorks() {
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        subject.setAddressValidator(addressValidator);
+        assertEquals(addressValidator, subject.getAddressValidator());
+    }
+
+    private void initializeSubject() {
+        subject = new HederaBalanceOperation(gasCalculator, addressValidator);
+        givenAddress();
+        given(gasCalculator.getWarmStorageReadCost()).willReturn(1600L);
+        given(gasCalculator.getBalanceOperationGasCost()).willReturn(100L);
     }
 
     private void givenAddress() {

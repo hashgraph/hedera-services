@@ -6292,7 +6292,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 contract))
-                                                                        .setGasUsed(587)
+                                                                        .setGasUsed(613)
                                                                         .setOutput(EMPTY)
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(CREATE_TXN, contract, contract))

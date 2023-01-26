@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -97,6 +98,7 @@ class TokenPrecompileReadOperationsTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
     @Mock private AssetsLoader assetLoader;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
@@ -128,7 +130,8 @@ class TokenPrecompileReadOperationsTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         merkleToken =
                 new MerkleToken(
                         Long.MAX_VALUE,

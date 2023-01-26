@@ -103,6 +103,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
+    public MerkleHederaState() {}
+
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *

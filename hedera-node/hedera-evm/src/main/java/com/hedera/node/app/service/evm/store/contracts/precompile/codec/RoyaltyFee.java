@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class RoyaltyFee {
@@ -54,7 +55,7 @@ public class RoyaltyFee {
     }
 
     public Address getDenominatingTokenId() {
-        return denominatingTokenId;
+        return denominatingTokenId != null ? denominatingTokenId : Address.ZERO;
     }
 
     public boolean isUseHbarsForPayment() {
@@ -62,6 +63,48 @@ public class RoyaltyFee {
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                numerator,
+                denominator,
+                amount,
+                denominatingTokenId,
+                useHbarsForPayment,
+                feeCollector);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || RoyaltyFee.class != o.getClass()) {
+            return false;
+        }
+        RoyaltyFee other = (RoyaltyFee) o;
+
+        return this.numerator == other.numerator
+                && this.denominator == other.denominator
+                && this.amount == other.amount
+                && this.useHbarsForPayment == other.useHbarsForPayment;
+    }
+
+    @Override
+    public String toString() {
+        return "RoyaltyFee{"
+                + "numerator="
+                + numerator
+                + ", denominator="
+                + denominator
+                + ", amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }

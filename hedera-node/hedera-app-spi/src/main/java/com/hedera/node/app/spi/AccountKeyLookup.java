@@ -16,6 +16,8 @@
 package com.hedera.node.app.spi;
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An interface used for looking up Keys on the account. NOTE: This class can be modified to return
@@ -31,7 +33,8 @@ public interface AccountKeyLookup {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKey(final AccountID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKey(@NonNull final AccountID idOrAlias);
 
     /**
      * Fetches the account's key from given accountID and returns the keys if the account has
@@ -45,5 +48,32 @@ public interface AccountKeyLookup {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
-    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias);
+    @NonNull
+    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final AccountID idOrAlias);
+
+    /**
+     * Fetches the contract's key from given contractID. If the key could not be fetched as the
+     * given contractID is invalid or doesn't exist provides information about the failure
+     * failureReason. If there is no failure failureReason will be null.
+     *
+     * @param idOrAlias contract id whose key should be fetched
+     * @return key if successfully fetched or failureReason for failure
+     */
+    @NonNull
+    KeyOrLookupFailureReason getKey(@NonNull final ContractID idOrAlias);
+
+    /**
+     * Fetches the contract's key from given contractID and returns the keys if the account has
+     * receiverSigRequired flag set to true.
+     *
+     * <p>If the receiverSigRequired flag is not true on the account, returns key as null and
+     * failureReason as null. If the key could not be fetched as the given contractID is invalid or
+     * doesn't exist, provides information about the failure failureReason. If there is no failure
+     * failureReason will be null.
+     *
+     * @param idOrAlias contract id whose key should be fetched
+     * @return key if successfully fetched or failureReason for failure
+     */
+    @NonNull
+    KeyOrLookupFailureReason getKeyIfReceiverSigRequired(@NonNull final ContractID idOrAlias);
 }
