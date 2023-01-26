@@ -20,11 +20,9 @@ import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.suites.records.BalanceValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -76,10 +74,13 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
     }
 
     public static Stream<RecordStreamItem> streamOfItemsFrom(
-            final List<RecordWithSidecars> recordsWithSidecars
-    ) {
+            final List<RecordWithSidecars> recordsWithSidecars) {
         return recordsWithSidecars.stream()
-                .flatMap(recordWithSidecars ->
-                        recordWithSidecars.recordFile().getRecordStreamItemsList().stream());
+                .flatMap(
+                        recordWithSidecars ->
+                                recordWithSidecars
+                                        .recordFile()
+                                        .getRecordStreamItemsList()
+                                        .stream());
     }
 }
