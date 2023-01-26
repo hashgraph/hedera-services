@@ -1,0 +1,219 @@
+##
+# Copyright (C) 2023 Hedera Hashgraph, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+##
+name: "ZXC: Release Branching"
+on:
+#  schedule:
+#    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_CLI_VERSION: 2.21.2
+  YQ_CLI_VERSION: 4.30.8
+  WORKFLOW_CONFIG_FILE: ".github/workflows/config/release.yaml"
+  RELEASE_BRANCH_CHECK_SCRIPT: ".github/workflows/support/scripts/release-branch-check.sh"
+
+jobs:
+  check-trigger:
+    name: Check Trigger Conditions
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    outputs:
+      triggered: ${{ steps.evaluate.outputs.triggered }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Read Trigger Time
+        id: time
+        uses: mikefarah/yq@dd6cf3df146f3e2c0f8c765a6ef9e35780ad8cc1
+        with:
+          cmd: yq '.release.branching.execution.time' '${{ env.WORKFLOW_CONFIG_FILE }}'
+
+      - name: Evaluate Trigger
+        id: evaluate
+        env:
+          REQUESTED_TIME: ${{ steps.time.outputs.result }}
+        run: |
+          set -x
+          if [[ -z "${REQUESTED_TIME}" ]]; then
+            echo "::error file=${WORKFLOW_CONFIG_FILE},title=Configuration Error::The release branch execution time must be specified and may not be omitted."
+            exit 1
+          fi
+
+          if ! date --date="${REQUESTED_TIME} today" +%s >/dev/null 2>&1; then
+            echo "::error file=${WORKFLOW_CONFIG_FILE},title=Configuration Error::The release branch execution time of '${REQUESTED_TIME}' is invalid."
+            exit 1
+          fi
+
+          BEGIN_TRIGGER_EPOCH="$(date --date="${REQUESTED_TIME} today" +%s)"
+          END_TRIGGER_EPOCH="$(date --date="${REQUESTED_TIME} today +2 hours" +%s)"
+          CURRENT_EPOCH="$(date +%s)"
+
+          TRIGGERED="false"
+          [[ "${CURRENT_EPOCH}" -ge "${BEGIN_TRIGGER_EPOCH}" && "${CURRENT_EPOCH}" -le "${END_TRIGGER_EPOCH}" ]] && TRIGGERED="true"
+          echo "triggered=${TRIGGERED}" >> "${GITHUB_OUTPUT}"
+
+  check-branch:
+    name: Check Branching Conditions
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    needs:
+      - check-trigger
+    outputs:
+      schedule-trigger: ${{ steps.branch-creation.outputs.schedule-trigger }}
+      branch-create: ${{ steps.branch-creation.outputs.branch-create }}
+      branch-name: ${{ steps.branch-creation.outputs.branch-name }}
+      tag-create: ${{ steps.branch-creation.outputs.tag-create }}
+      tag-name: ${{ steps.branch-creation.outputs.tag-name }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+    if: ${{ needs.check-trigger.outputs.triggered == 'true' && !cancelled() }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Branch Creation Check
+        id: branch-creation
+        run: bash "${{ github.workspace }}/${{ env.RELEASE_BRANCH_CHECK_SCRIPT }}"
+
+  create-branch:
+    name: Create Release Branch
+    runs-on: [self-hosted, Linux, small, scheduler, ephemeral]
+    needs:
+      - check-branch
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+    if: ${{ needs.check-branch.outputs.branch-create == 'true' && !cancelled() }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Create Branch
+        id: branch
+        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1
+        with:
+          branch: refs/heads/${{ needs.check-branch.outputs.branch-name }}
+
+      - name: Compute Commit Identifier
+        id: commit
+        run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "attachments": [
+                  {
+                    "color": "#7647cd",
+                    "blocks": [
+                      {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": ":evergreen_tree: Hedera Services - Automatic Release Branching",
+                          "emoji": true
+                        }
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Branch Name:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Source Branch:*"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ needs.check-branch.outputs.branch-name }}|${{ needs.check-branch.outputs.branch-name }}>"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "<${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}|${{ github.ref_name }}>"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "text": {
+                          "type": "mrkdwn",
+                          "text": "*Source Commit*: \n<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ steps.commit.outputs.short-id }}>"
+                        }
+                      },
+                      {
+                        "type": "divider"
+                      },
+                      {
+                        "type": "context",
+                        "elements": [
+                          {
+                            "type": "mrkdwn",
+                            "text": ":watch: Initiated by scheduled repository event at date & time: `${{ needs.check-branch.outputs.schedule-trigger }} UTC`"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+
+  create-tag:
+    name: Create Release Tag
+    runs-on: [ self-hosted, Linux, small, scheduler, ephemeral ]
+    needs:
+      - check-branch
+      - create-branch
+    if: ${{ needs.check-branch.outputs.tag-create == 'true' && needs.create-branch.result == 'success' && !cancelled() }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          ref: ${{ needs.check-branch.outputs.branch-name }}
+          fetch-depth: 0
+
+      - name: Prepare Dispatch
+        id: prepare-dispatch
+        run: |
+          REQ_JSON="$(jq --compact-output --null-input \
+                      --arg ref "${{ needs.check-branch.outputs.branch-name }}" \
+                      --arg tagname "${{ needs.check-branch.outputs.tag-name }}" \
+                      --arg strigger "${{ needs.check-branch.outputs.schedule-trigger }}" \
+                      '{"ref": $ref, "tag": { "name": $tagname }, "schedule": { "trigger": $strigger }}')"
+
+          echo "payload=${REQ_JSON}" >>"${GITHUB_OUTPUT}"
+          printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          repository: hashgraph/hedera-internal-workflows
+          event-type: hedera-svcs-release-tag
+          client-payload: ${{ steps.prepare-dispatch.outputs.payload }}
