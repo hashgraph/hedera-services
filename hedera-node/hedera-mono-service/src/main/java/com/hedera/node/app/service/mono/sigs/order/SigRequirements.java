@@ -33,11 +33,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -718,13 +714,7 @@ public class SigRequirements {
                 }
                 final var receiver = adjust.getReceiverAccountID();
                 if (linkedRefsLoaded) {
-                    mapWarmer
-                            .get()
-                            .warmNft(
-                                    UniqueTokenKey.from(
-                                            NftNumPair.fromLongs(
-                                                    token.getTokenNum(),
-                                                    receiver.getAccountNum())));
+                    mapWarmer.get().warmTokenObjs(token.getTokenNum(), adjust.getSerialNumber());
                 }
                 if ((failure =
                                 nftIncludeIfNecessary(
@@ -741,15 +731,6 @@ public class SigRequirements {
                     return (failure == MISSING_TOKEN)
                             ? factory.forMissingToken()
                             : accountFailure(failure, factory);
-                }
-                if (linkedRefsLoaded) {
-                    mapWarmer
-                            .get()
-                            .warmTokenRel(
-                                    EntityNumVirtualKey.fromPair(
-                                            EntityNumPair.fromLongs(
-                                                    token.getTokenNum(),
-                                                    adjust.getSerialNumber())));
                 }
             }
         }

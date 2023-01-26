@@ -22,6 +22,8 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.Executor;
@@ -73,37 +75,46 @@ public class MapWarmer {
                 Executors.newFixedThreadPool(globalDynamicProperties.cryptoTransferWarmThreads());
     }
 
+    // Intentionally keeping this around in case it's needed
+    @SuppressWarnings("unused")
     public void warmAccount(EntityNumVirtualKey accountId) {
         if (accountsStorageAdapter.get().areOnDisk()) {
             submitToThreadpool(accountsStorageAdapter.get().getOnDiskAccounts(), accountId);
         }
     }
 
-    public void warmNft(UniqueTokenKey nftId) {
-        if (nftsAdapter.get().isVirtual()) {
-            submitToThreadpool(nftsAdapter.get().getOnDiskNfts(), nftId);
+    // "warmTokenObjs" as in "warm the token and its associated token relation objects"
+    public void warmTokenObjs(long tokenNum, long serialNum) {
+        if (nftsAdapter.get().isVirtual() && tokenRelsAdapter.get().areOnDisk()) {
+            threadpool.execute(newTokenRunnable(tokenNum, serialNum));
         }
     }
 
-    public void warmTokenRel(EntityNumVirtualKey tokenRelKey) {
-        if (tokenRelsAdapter.get().areOnDisk()) {
-            threadpool.execute(newTokenRelRunnable(tokenRelKey));
-        }
-    }
-
-    private Runnable newTokenRelRunnable(EntityNumVirtualKey tokenRelKey) {
+    private Runnable newTokenRunnable(long tokenNum, long serialNum) {
         return () -> {
-            final var vmap = tokenRelsAdapter.get().getOnDiskRels();
-            if (vmap != null) {
-                final var hederaTokenRel = vmap.get(tokenRelKey);
+            // NFT:
+            final var tokenKey = UniqueTokenKey.from(NftNumPair.fromLongs(tokenNum, serialNum));
+            final var nftMap = nftsAdapter.get().getOnDiskNfts();
+            if (nftMap != null) {
+                nftMap.warm(tokenKey);
+            } else if (log.isDebugEnabled()) {
+                log.debug("no-op 'warm' called on token key {}", tokenKey);
+            }
+
+            // tokenRel:
+            final var tokenRelKey =
+                    EntityNumVirtualKey.fromPair(EntityNumPair.fromLongs(tokenNum, serialNum));
+            final var tokenRelMap = tokenRelsAdapter.get().getOnDiskRels();
+            if (tokenRelMap != null) {
+                final var hederaTokenRel = tokenRelMap.get(tokenRelKey);
                 if (hederaTokenRel != null) {
-                    vmap.warm(
+                    tokenRelMap.warm(
                             EntityNumVirtualKey.from(EntityNum.fromLong(hederaTokenRel.getPrev())));
-                    vmap.warm(
+                    tokenRelMap.warm(
                             EntityNumVirtualKey.from(EntityNum.fromLong(hederaTokenRel.getNext())));
                 }
             } else if (log.isDebugEnabled()) {
-                log.debug("no-op 'warm' called on tokenRel {}", tokenRelKey);
+                log.debug("no-op 'warm' called on tokenRel key {}", tokenRelKey);
             }
         };
     }
