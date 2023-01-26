@@ -20,13 +20,13 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -62,18 +62,19 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var tokenInfo =
-                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
+                        .orElse(null);
 
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
-                new TokenExpiryWrapper(
-                        tokenInfo.getExpiry().getSeconds(),
+                new TokenExpiryInfo(
+                        tokenInfo.getExpiry(),
                         tokenInfo.getAutoRenewAccount(),
-                        tokenInfo.getAutoRenewPeriod().getSeconds());
+                        tokenInfo.getAutoRenewPeriod());
 
-        return encoder.encodeGetTokenExpiryInfo(expiryInfo);
+        return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
 
     public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {

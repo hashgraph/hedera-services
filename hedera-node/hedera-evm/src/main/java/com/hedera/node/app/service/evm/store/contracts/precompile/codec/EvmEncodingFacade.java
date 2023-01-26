@@ -15,15 +15,20 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.addressTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.bigIntegerTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.booleanTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.decimalsType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.getTokenInfoType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intBoolTuple;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BIG_INTEGER_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.DECIMALS_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_FUNGIBLE_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_CUSTOM_FEES_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_EXPIRY_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_INFO_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.GET_TOKEN_KEY_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.notSpecifiedType;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.stringTuple;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -32,6 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
@@ -168,6 +174,48 @@ public class EvmEncodingFacade {
                 .build();
     }
 
+    public Bytes encodeGetFungibleTokenInfo(final EvmTokenInfo tokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .build();
+    }
+
+    public Bytes encodeTokenGetCustomFees(final List<CustomFee> customFees) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
+                .withStatus(SUCCESS.getNumber())
+                .withCustomFees(customFees)
+                .build();
+    }
+
+    public Bytes encodeGetNonFungibleTokenInfo(
+            final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withTokenInfo(tokenInfo)
+                .withNftTokenInfo(nonFungibleTokenInfo)
+                .build();
+    }
+
+    public Bytes encodeGetTokenExpiryInfo(final TokenExpiryInfo tokenExpiryWrapper) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
+                .withStatus(SUCCESS.getNumber())
+                .withExpiry(tokenExpiryWrapper)
+                .build();
+    }
+
+    public Bytes encodeGetTokenKey(final EvmKey keyValue) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
+                .withStatus(SUCCESS.getNumber())
+                .withKey(keyValue)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -200,23 +248,33 @@ public class EvmEncodingFacade {
         private Address approved;
 
         private EvmTokenInfo tokenInfo;
+        private List<CustomFee> customFees;
+        private EvmNftInfo nonFungibleTokenInfo;
+
+        private Tuple tokenExpiryInfo;
+        private Tuple keyValue;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
-                        case ERC_DECIMALS -> decimalsType;
+                        case ERC_DECIMALS -> DECIMALS_TYPE;
                         case HAPI_GET_TOKEN_TYPE -> intPairTuple;
-                        case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> bigIntegerTuple;
-                        case ERC_IS_APPROVED_FOR_ALL -> booleanTuple;
+                        case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> BIG_INTEGER_TUPLE;
+                        case ERC_IS_APPROVED_FOR_ALL -> BOOLEAN_TUPLE;
                         case HAPI_IS_FROZEN,
                                 GET_TOKEN_DEFAULT_FREEZE_STATUS,
                                 GET_TOKEN_DEFAULT_KYC_STATUS,
                                 HAPI_IS_KYC,
-                                HAPI_IS_TOKEN -> intBoolTuple;
-                        case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> stringTuple;
-                        case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
-                        case HAPI_GET_TOKEN_INFO -> getTokenInfoType;
-                        default -> notSpecifiedType;
+                                HAPI_IS_TOKEN -> INT_BOOL_TUPLE;
+                        case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> STRING_TUPLE;
+                        case ERC_OWNER, ERC_GET_APPROVED -> ADDRESS_TUPLE;
+                        case HAPI_GET_TOKEN_INFO -> GET_TOKEN_INFO_TYPE;
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> GET_FUNGIBLE_TOKEN_INFO_TYPE;
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> GET_NON_FUNGIBLE_TOKEN_INFO_TYPE;
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> GET_TOKEN_CUSTOM_FEES_TYPE;
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> GET_TOKEN_EXPIRY_INFO_TYPE;
+                        case HAPI_GET_TOKEN_KEY -> GET_TOKEN_KEY_TYPE;
+                        default -> NOT_SPECIFIED_TYPE;
                     };
             this.functionType = functionType;
             return this;
@@ -315,6 +373,38 @@ public class EvmEncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withCustomFees(final List<CustomFee> customFees) {
+            this.customFees = customFees;
+            return this;
+        }
+
+        private FunctionResultBuilder withNftTokenInfo(final EvmNftInfo nonFungibleTokenInfo) {
+            this.nonFungibleTokenInfo = nonFungibleTokenInfo;
+            return this;
+        }
+
+        private FunctionResultBuilder withExpiry(final TokenExpiryInfo tokenExpiryInfo) {
+            this.tokenExpiryInfo =
+                    Tuple.of(
+                            tokenExpiryInfo.getSecond(),
+                            convertBesuAddressToHeadlongAddress(
+                                    tokenExpiryInfo.getAutoRenewAccount()),
+                            tokenExpiryInfo.getAutoRenewPeriod());
+            return this;
+        }
+
+        private FunctionResultBuilder withKey(final EvmKey wrapper) {
+            this.keyValue =
+                    Tuple.of(
+                            false,
+                            convertBesuAddressToHeadlongAddress(wrapper.getContractId()),
+                            wrapper.getEd25519(),
+                            wrapper.getECDSASecp256K1(),
+                            convertBesuAddressToHeadlongAddress(
+                                    wrapper.getDelegatableContractId()));
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -338,6 +428,11 @@ public class EvmEncodingFacade {
                         case ERC_GET_APPROVED -> Tuple.of(
                                 convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_GET_TOKEN_INFO -> getTupleForGetTokenInfo();
+                        case HAPI_GET_FUNGIBLE_TOKEN_INFO -> getTupleForGetFungibleTokenInfo();
+                        case HAPI_GET_NON_FUNGIBLE_TOKEN_INFO -> getTupleForGetNonFungibleTokenInfo();
+                        case HAPI_GET_TOKEN_CUSTOM_FEES -> getTupleForTokenGetCustomFees();
+                        case HAPI_GET_TOKEN_EXPIRY_INFO -> getTupleForGetTokenExpiryInfo();
+                        case HAPI_GET_TOKEN_KEY -> Tuple.of(status, keyValue);
                         default -> Tuple.of(status);
                     };
 
@@ -346,6 +441,50 @@ public class EvmEncodingFacade {
 
         private Tuple getTupleForGetTokenInfo() {
             return Tuple.of(status, getTupleForTokenInfo());
+        }
+
+        private Tuple getTupleForGetFungibleTokenInfo() {
+            return Tuple.of(status, Tuple.of(getTupleForTokenInfo(), tokenInfo.getDecimals()));
+        }
+
+        private Tuple getTupleForGetNonFungibleTokenInfo() {
+            return Tuple.of(
+                    status,
+                    Tuple.of(
+                            getTupleForTokenInfo(),
+                            nonFungibleTokenInfo.getSerialNumber(),
+                            convertBesuAddressToHeadlongAddress(nonFungibleTokenInfo.getAccount()),
+                            nonFungibleTokenInfo.getCreationTime(),
+                            nonFungibleTokenInfo.getMetadata(),
+                            convertBesuAddressToHeadlongAddress(
+                                    nonFungibleTokenInfo.getSpender())));
+        }
+
+        private Tuple getTupleForTokenGetCustomFees() {
+            return getTupleForTokenCustomFees(status);
+        }
+
+        private Tuple getTupleForGetTokenExpiryInfo() {
+            return getTupleForTokenExpiryInfo(status);
+        }
+
+        private Tuple getTupleForTokenExpiryInfo(final int responseCode) {
+            return Tuple.of(responseCode, tokenExpiryInfo);
+        }
+
+        private Tuple getTupleForTokenCustomFees(final int responseCode) {
+            final var fixedFees = new ArrayList<Tuple>();
+            final var fractionalFees = new ArrayList<Tuple>();
+            final var royaltyFees = new ArrayList<Tuple>();
+
+            for (final var customFee : customFees) {
+                extractAllFees(fixedFees, fractionalFees, royaltyFees, customFee);
+            }
+            return Tuple.of(
+                    responseCode,
+                    fixedFees.toArray(new Tuple[fixedFees.size()]),
+                    fractionalFees.toArray(new Tuple[fractionalFees.size()]),
+                    royaltyFees.toArray(new Tuple[royaltyFees.size()]));
         }
 
         private Tuple getTupleForTokenInfo() {
