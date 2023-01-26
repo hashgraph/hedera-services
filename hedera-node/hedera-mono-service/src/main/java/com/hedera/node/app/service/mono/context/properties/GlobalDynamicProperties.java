@@ -163,6 +163,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
     private LegacyContractIdActivations legacyContractIdActivations;
+    private boolean workflowsEnabled;
 
     @Inject
     public GlobalDynamicProperties(
@@ -334,6 +335,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
         legacyContractIdActivations =
                 properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
+        workflowsEnabled = properties.getBooleanProperty(WORKFLOWS_ENABLED);
     }
 
     public int maxTokensPerAccount() {
@@ -802,5 +804,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean isImplicitCreationEnabled() {
         return autoCreationEnabled && lazyCreationEnabled;
+    }
+
+    public boolean workflowsEnabled() {
+        return workflowsEnabled;
     }
 }

@@ -102,7 +102,6 @@ public class NodeLocalProperties {
     private List<String> consThrottlesToSample;
     private List<String> hapiThrottlesToSample;
     private String sidecarDir;
-    private boolean workflowsEnabled;
 
     @Inject
     public NodeLocalProperties(@CompositeProps PropertySource properties) {
@@ -156,8 +155,6 @@ public class NodeLocalProperties {
                 properties.getLongProperty(STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
         throttleUtilStatsUpdateIntervalMs =
                 properties.getLongProperty(STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
-        workflowsEnabled =
-                properties.getBooleanProperty(WORKFLOWS_ENABLED);
     }
 
     public int port() {
@@ -310,9 +307,5 @@ public class NodeLocalProperties {
 
     public long throttleUtilStatsUpdateIntervalMs() {
         return throttleUtilStatsUpdateIntervalMs;
-    }
-
-    public boolean workflowsEnabled() {
-        return workflowsEnabled;
     }
 }
