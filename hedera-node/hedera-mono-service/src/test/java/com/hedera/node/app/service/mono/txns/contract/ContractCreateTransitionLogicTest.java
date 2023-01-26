@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -325,6 +326,7 @@ class ContractCreateTransitionLogicTest {
         given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
         given(properties.maxGasPerSec()).willReturn(gas + 1);
         given(validator.memoCheck(any())).willReturn(OK);
+        given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
 
         assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
     }
@@ -332,6 +334,7 @@ class ContractCreateTransitionLogicTest {
     @Test
     void rejectsInvalidMaxAutomaticAssociations() {
         givenInvalidMaxAutoAssociations();
+        given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
         given(properties.maxTokensPerAccount()).willReturn(maxAutoAssociations);
         given(properties.areTokenAssociationsLimited()).willReturn(true);
         given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
@@ -339,6 +342,16 @@ class ContractCreateTransitionLogicTest {
         assertEquals(
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
                 subject.semanticCheck().apply(contractCreateTxn));
+    }
+
+    @Test
+    void rejectsIfContractAssociationsAreNotEnabledButPresentInBody() {
+        givenValidTxnCtxWithMaxAssociations();
+        given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
+        given(properties.maxGasPerSec()).willReturn(gas + 1);
+        given(properties.areContractAutoAssociationsEnabled()).willReturn(false);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(contractCreateTxn));
     }
 
     private void givenInvalidMaxAutoAssociations() {
@@ -840,7 +853,7 @@ class ContractCreateTransitionLogicTest {
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
         assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(maxAutoAssociations, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
     }
 
     @Test
@@ -925,7 +938,7 @@ class ContractCreateTransitionLogicTest {
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
         assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(maxAutoAssociations, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
     }
 
     @Test
@@ -1010,7 +1023,7 @@ class ContractCreateTransitionLogicTest {
         final var customizerUsed = captor.getValue();
         final var changes = customizerUsed.accountCustomizer().getChanges();
         assertTrue(changes.containsKey(MAX_AUTOMATIC_ASSOCIATIONS));
-        assertEquals(0, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+        assertEquals(maxAutoAssociations, (int) changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
     }
 
     @Test
@@ -1055,7 +1068,6 @@ class ContractCreateTransitionLogicTest {
                                 biOfferedGasPrice,
                                 maxGas))
                 .willReturn(result);
-        given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
 
         // when:
         subject.doStateTransitionOperation(
@@ -1125,7 +1137,6 @@ class ContractCreateTransitionLogicTest {
                                 biOfferedGasPrice,
                                 maxGas))
                 .willReturn(result);
-        given(properties.areContractAutoAssociationsEnabled()).willReturn(true);
         given(properties.enabledSidecars()).willReturn(EnumSet.of(SidecarType.CONTRACT_BYTECODE));
         final var sidecarRecord =
                 TransactionSidecarRecord.newBuilder()
