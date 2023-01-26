@@ -44,11 +44,9 @@ class SerializationTest extends MerkleTestBase {
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 final var fruitDef =
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
                 final var animalDef =
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
+                        StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
                 return Set.of(fruitDef, animalDef);
             }
 

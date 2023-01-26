@@ -55,4 +55,11 @@ class EmptyWritableStatesTest extends StateTestBase {
         assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("Throws IAE for any non-null singleton key")
+    void nonNullSingletonKey() {
+        assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

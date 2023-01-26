@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * @param stateKey The "state key" that uniquely identifies this {@link ReadableKVState} within the
@@ -33,7 +34,76 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record StateDefinition<K extends Comparable<K>, V>(
         @NonNull String stateKey,
-        @NonNull Serdes<K> keySerdes,
+        @Nullable Serdes<K> keySerdes,
         @NonNull Serdes<V> valueSerdes,
         int maxKeysHint,
-        boolean onDisk) {}
+        boolean onDisk,
+        boolean singleton) {
+
+    public StateDefinition {
+        if (singleton && onDisk) {
+            throw new IllegalArgumentException("A state cannot both be 'singleton' and 'onDisk'");
+        }
+
+        if (onDisk && maxKeysHint <= 0) {
+            throw new IllegalArgumentException(
+                    "You must specify the maxKeysHint when onDisk. Please see docs.");
+        }
+
+        if (!singleton && keySerdes == null) {
+            throw new NullPointerException(
+                    "keySerdes must be specified when not using singleton types");
+        }
+    }
+
+    /**
+     * Convenience method for creating a {@link StateDefinition} for in-memory k/v states.
+     *
+     * @param stateKey The state key
+     * @param keySerdes The serdes for the key
+     * @param valueSerdes The serdes for the value
+     * @return An instance of {@link StateDefinition}
+     * @param <K> The key type
+     * @param <V> The value type
+     */
+    public static <K extends Comparable<K>, V> StateDefinition<K, V> inMemory(
+            @NonNull final String stateKey,
+            @NonNull final Serdes<K> keySerdes,
+            @NonNull final Serdes<V> valueSerdes) {
+        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, -1, false, false);
+    }
+
+    /**
+     * Convenience method for creating a {@link StateDefinition} for on-disk k/v states.
+     *
+     * @param stateKey The state key
+     * @param keySerdes The serdes for the key
+     * @param valueSerdes The serdes for the value
+     * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This
+     *     value * CANNOT CHANGE from one schema version to another. If it is changed, you will need
+     *     to do a * long-form migration to a new state.
+     * @return An instance of {@link StateDefinition}
+     * @param <K> The key type
+     * @param <V> The value type
+     */
+    public static <K extends Comparable<K>, V> StateDefinition<K, V> onDisk(
+            @NonNull final String stateKey,
+            @NonNull final Serdes<K> keySerdes,
+            @NonNull final Serdes<V> valueSerdes,
+            final int maxKeysHint) {
+        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, maxKeysHint, true, false);
+    }
+
+    /**
+     * Convenience method for creating a {@link StateDefinition} for singleton states.
+     *
+     * @param stateKey The state key
+     * @param valueSerdes The serdes for the singleton value
+     * @return An instance of {@link StateDefinition}
+     * @param <T> The type of the singleton
+     */
+    public static <T> StateDefinition<?, T> singleton(
+            @NonNull final String stateKey, @NonNull final Serdes<T> valueSerdes) {
+        return new StateDefinition<>(stateKey, null, valueSerdes, 1, false, true);
+    }
+}

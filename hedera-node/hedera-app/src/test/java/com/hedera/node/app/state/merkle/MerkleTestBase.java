@@ -132,8 +132,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
@@ -143,8 +142,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+                        StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
@@ -156,8 +154,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -168,32 +165,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         SECOND_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES, 100, false));
-    }
-
-    /** Sets up the "Steam" merkle map, label, and metadata. */
-    protected void setupSteamMerkleMap() {
-        steamLabel = StateUtils.computeLabel(SECOND_SERVICE, STEAM_STATE_KEY);
-        steamMerkleMap = createMerkleMap(steamLabel);
-        steamMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                STEAM_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
-    }
-
-    /** Sets up the "Country" merkle map, label, and metadata. */
-    protected void setupCountryMerkleMap() {
-        countryLabel = StateUtils.computeLabel(SECOND_SERVICE, COUNTRY_STATE_KEY);
-        countryMerkleMap = createMerkleMap(countryLabel);
-        countryMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                COUNTRY_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES));
     }
 
     /** Sets up the {@link #registry}, ready to be used for serialization tests */

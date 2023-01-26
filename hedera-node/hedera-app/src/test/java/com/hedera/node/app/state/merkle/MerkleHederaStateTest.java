@@ -180,8 +180,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                     new StateMetadata<>(
                             FIRST_SERVICE,
                             new TestSchema(1),
-                            new StateDefinition<>(
-                                    FRUIT_STATE_KEY, STRING_SERDES, LONG_SERDES, 10, false));
+                            StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, LONG_SERDES));
 
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata2, fruitMerkleMap);
@@ -200,8 +199,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
                     new StateMetadata<>(
                             FIRST_SERVICE,
                             new TestSchema(1),
-                            new StateDefinition<>(
-                                    FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 10, true));
+                            StateDefinition.onDisk(
+                                    FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 10));
 
             assertThatThrownBy(
                             () ->
@@ -275,8 +274,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
                         new StateMetadata<>(
                                 serviceName,
                                 new TestSchema(1),
-                                new StateDefinition<>(
-                                        FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                                StateDefinition.inMemory(
+                                        FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);

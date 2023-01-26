@@ -35,4 +35,8 @@ public interface WritableStates extends ReadableStates {
     @Override
     @NonNull
     <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
+
+    @Override
+    @NonNull
+    <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey);
 }
