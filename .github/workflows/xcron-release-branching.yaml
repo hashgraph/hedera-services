@@ -111,7 +111,7 @@ jobs:
 
       - name: Create Branch
         id: branch
-        uses: peterjgrainger/action-create-branch@v2.0.1
+        uses: peterjgrainger/action-create-branch@08259812c8ebdbf1973747f9297e332fa078d3c1
         with:
           branch: refs/heads/${{ needs.check-branch.outputs.branch-name }}
 
@@ -120,10 +120,10 @@ jobs:
         run: echo "short-id=$(echo -n "${{ github.sha }}" | tr -d '[:space:]' | cut -c1-8)" >> "${GITHUB_OUTPUT}"
 
       - name: Send Slack Notification
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
         with:
           payload: |
             {
@@ -211,7 +211,7 @@ jobs:
           printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           repository: hashgraph/hedera-internal-workflows
