@@ -36,7 +36,8 @@ class HederaEvmStackedWorldStateUpdaterTest {
     MockTokenAccessor tokenAccessor = new MockTokenAccessor();
     MockEntityAccess entityAccess = new MockEntityAccess();
     HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess, tokenAccessor);
+            new HederaEvmStackedWorldStateUpdater(
+                    null, null, accountAccessor, entityAccess, tokenAccessor, null);
 
     @Test
     void accountTests() {

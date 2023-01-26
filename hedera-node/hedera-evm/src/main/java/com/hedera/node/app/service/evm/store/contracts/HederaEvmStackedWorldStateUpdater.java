@@ -16,25 +16,34 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
-public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpdater {
+public class HederaEvmStackedWorldStateUpdater
+        extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account> {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     protected final TokenAccessor tokenAccessor;
+    private final HederaEvmMutableWorldState worldState;
+    private final EvmProperties evmProperties;
 
     public HederaEvmStackedWorldStateUpdater(
+            final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
+            final HederaEvmMutableWorldState worldState,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
-            final TokenAccessor tokenAccessor) {
-        super(accountAccessor);
+            final TokenAccessor tokenAccessor,
+            final EvmProperties evmProperties) {
+        super(updater, accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.tokenAccessor = tokenAccessor;
+        this.worldState = worldState;
+        this.evmProperties = evmProperties;
     }
 
     public TokenAccessor tokenAccessor() {
@@ -42,21 +51,35 @@ public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpd
     }
 
     @Override
-    public Account get(Address address) {
-        if (!address.equals(accountAccessor.canonicalAddress(address))) {
-            return null;
+    public Account get(final Address address) {
+        // TODO resolve for evm
+        if (isTokenRedirect(address)) {
+            return new HederaEvmWorldStateTokenAccount(address);
         }
+        return super.get(address);
 
-        final var accountBalance = Wei.of(hederaEvmEntityAccess.getBalance(address));
-        final var account = new UpdatedHederaEvmAccount(address);
-        account.setBalance(accountBalance);
-        account.setEvmEntityAccess(hederaEvmEntityAccess);
-
-        return account;
+        //        final var accountBalance = Wei.of(hederaEvmEntityAccess.getBalance(address));
+        //        final var account = new UpdatedHederaEvmAccount<>(address);
+        //        account.setBalance(accountBalance);
+        //        account.setEvmEntityAccess(hederaEvmEntityAccess);
+        //
+        //        return account;
     }
 
     @Override
-    public EvmAccount getAccount(Address address) {
-        return (EvmAccount) get(address);
+    public EvmAccount getAccount(final Address address) {
+        //        final address = resolveForEvm()
+        // TODO resolve for evm -> in TokenAccessor add aliases()
+        if (isTokenRedirect(address)) {
+            final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
+            final var newMutable = new UpdatedHederaEvmAccount<>(proxyAccount);
+            return new WrappedEvmAccount(newMutable);
+        }
+        return super.getAccount(address);
+    }
+
+    private boolean isTokenRedirect(final Address address) {
+        return hederaEvmEntityAccess.isTokenAccount(address)
+                && evmProperties.isRedirectTokenCallsEnabled();
     }
 }

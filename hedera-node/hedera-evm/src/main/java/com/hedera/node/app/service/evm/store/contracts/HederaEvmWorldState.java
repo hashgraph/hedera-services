@@ -24,6 +24,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
@@ -88,17 +89,28 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+        return new Updater(
+                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
     }
 
-    public static class Updater extends HederaEvmStackedWorldStateUpdater
+    public static class Updater
+            extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
 
+        private final HederaEvmEntityAccess hederaEvmEntityAccess;
+        private final TokenAccessor tokenAccessor;
+        private final EvmProperties evmProperties;
+
         protected Updater(
+                final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,
                 final HederaEvmEntityAccess hederaEvmEntityAccess,
-                final TokenAccessor tokenAccessor) {
-            super(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+                final TokenAccessor tokenAccessor,
+                final EvmProperties evmProperties) {
+            super(world, accountAccessor);
+            this.tokenAccessor = tokenAccessor;
+            this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+            this.evmProperties = evmProperties;
         }
 
         @Override
@@ -107,9 +119,29 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
+        public Account getForMutation(Address address) {
+            return null;
+        }
+
+        @Override
+        public EvmAccount getAccount(Address address) {
+            return null;
+        }
+
+        @Override
+        public Account get(Address address) {
+            return null;
+        }
+
+        @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+                    this,
+                    wrappedWorldView(),
+                    accountAccessor,
+                    hederaEvmEntityAccess,
+                    tokenAccessor,
+                    evmProperties);
         }
     }
 }
