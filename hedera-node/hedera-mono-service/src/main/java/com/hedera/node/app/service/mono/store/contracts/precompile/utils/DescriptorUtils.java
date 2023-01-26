@@ -69,8 +69,9 @@ public class DescriptorUtils {
 
     private static Bytes getFinalInput(final Bytes input) {
         try {
-            // try decoding the input to see if redirectForToken() was called explicitly
-            // if so, massage it to a normal redirect input
+            // try decoding the input to see if redirectForToken() was called explicitly, using
+            // normal encoding
+            // if so, massage it to our expected "packed" redirect input
             final var tuple =
                     EvmDecodingFacade.decodeFunctionCall(
                             input, REDIRECT_FOR_TOKEN_SELECTOR, REDIRECT_FOR_TOKEN_DECODER);
@@ -81,7 +82,7 @@ public class DescriptorUtils {
                             tuple.get(1));
             return Bytes.of(massagedInput);
         } catch (Exception e) {
-            // any exception thrown means the input is from a redirect
+            // exception from the decoder means the input is already in "packed" form
             return input;
         }
     }
