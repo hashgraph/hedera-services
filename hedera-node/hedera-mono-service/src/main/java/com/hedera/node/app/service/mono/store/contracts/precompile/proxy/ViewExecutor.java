@@ -28,17 +28,17 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKey;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
@@ -64,26 +64,24 @@ public class ViewExecutor {
 
     private final Bytes input;
     private final MessageFrame frame;
-    private final EncodingFacade encoder;
     private final EvmEncodingFacade evmEncoder;
     private final ViewGasCalculator gasCalculator;
     private final StateView stateView;
     private final WorldLedgers ledgers;
+    private final HederaStackedWorldStateUpdater updater;
 
     public ViewExecutor(
             final Bytes input,
             final MessageFrame frame,
-            final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator,
             final StateView stateView) {
         this.input = input;
         this.frame = frame;
-        this.encoder = encoder;
         this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
         this.stateView = stateView;
-        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         this.ledgers = updater.trackingLedgers();
     }
 
@@ -109,28 +107,31 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                return encoder.encodeGetTokenInfo(tokenInfo);
+                return evmEncoder.encodeGetTokenInfo(tokenInfo);
             }
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                return encoder.encodeGetFungibleTokenInfo(tokenInfo);
+                return evmEncoder.encodeGetFungibleTokenInfo(tokenInfo);
             }
             case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -141,16 +142,16 @@ public class ViewExecutor {
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
                 final var nonFungibleTokenInfo =
-                        ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmNftInfo(nftID, stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
                         ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-                return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+                return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
             }
             case ABI_ID_IS_FROZEN -> {
-                final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, a -> a);
+                final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, updater::unaliased);
 
                 validateTrueOrRevert(
                         ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
@@ -181,7 +182,7 @@ public class ViewExecutor {
                 return evmEncoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
-                final var wrapper = IsKycPrecompile.decodeIsKyc(input, a -> a);
+                final var wrapper = IsKycPrecompile.decodeIsKyc(input, updater::unaliased);
 
                 validateTrueOrRevert(
                         ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
@@ -196,7 +197,7 @@ public class ViewExecutor {
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                return encoder.encodeTokenGetCustomFees(customFees);
+                return evmEncoder.encodeTokenGetCustomFees(customFees);
             }
             case ABI_ID_IS_TOKEN -> {
                 final var wrapper = IsTokenPrecompile.decodeIsToken(input);
@@ -222,19 +223,20 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.evmInfoForToken(
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
                 Objects.requireNonNull(tokenInfo);
 
                 final var expiryInfo =
-                        new TokenExpiryWrapper(
-                                tokenInfo.getExpiry().getSeconds(),
+                        new TokenExpiryInfo(
+                                tokenInfo.getExpiry(),
                                 tokenInfo.getAutoRenewAccount(),
-                                tokenInfo.getAutoRenewPeriod().getSeconds());
+                                tokenInfo.getAutoRenewPeriod());
 
-                return encoder.encodeGetTokenExpiryInfo(expiryInfo);
+                return evmEncoder.encodeGetTokenExpiryInfo(expiryInfo);
             }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = GetTokenKeyPrecompile.decodeGetTokenKey(input);
@@ -244,7 +246,8 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var key = ledgers.keyOf(wrapper.tokenID(), wrapper.tokenKeyType());
-                return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
+                final var evmKey = convertToEvmKey(asKeyUnchecked(key));
+                return evmEncoder.encodeGetTokenKey(evmKey);
             }
                 // Only view functions can be used inside a ContractCallLocal
             default -> throw new InvalidTransactionException(NOT_SUPPORTED);

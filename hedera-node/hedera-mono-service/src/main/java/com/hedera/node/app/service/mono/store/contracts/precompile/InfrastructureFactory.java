@@ -51,7 +51,6 @@ import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
@@ -97,7 +96,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
-    private final EncodingFacade encoder;
     private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
@@ -122,7 +120,6 @@ public class InfrastructureFactory {
     public InfrastructureFactory(
             final UsageLimits usageLimits,
             final EntityIdSource ids,
-            final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
@@ -139,7 +136,6 @@ public class InfrastructureFactory {
             final StateView view,
             final EntityCreator entityCreator) {
         this.ids = ids;
-        this.encoder = encoder;
         this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
@@ -279,7 +275,7 @@ public class InfrastructureFactory {
             final MessageFrame frame,
             final ViewGasCalculator gasCalculator,
             final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, evmEncoder, gasCalculator, stateView);
+        return new ViewExecutor(input, frame, evmEncoder, gasCalculator, stateView);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

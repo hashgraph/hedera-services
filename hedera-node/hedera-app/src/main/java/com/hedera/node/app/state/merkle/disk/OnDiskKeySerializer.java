@@ -46,9 +46,21 @@ import java.util.Objects;
  */
 public final class OnDiskKeySerializer<K extends Comparable<K>>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
+
+    @Deprecated(forRemoval = true)
+    private static final long CLASS_ID = 0x9992382838283411L;
+
     private final long classId;
     private final Serdes<K> serdes;
     private final StateMetadata<K, ?> md;
+
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
+    public OnDiskKeySerializer() {
+        classId = CLASS_ID; // BAD!!
+        serdes = null;
+        md = null;
+    }
 
     public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
         this.classId = md.onDiskKeySerializerClassId();

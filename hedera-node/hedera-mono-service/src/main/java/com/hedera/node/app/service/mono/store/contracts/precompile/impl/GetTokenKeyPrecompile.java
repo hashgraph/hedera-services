@@ -19,7 +19,8 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.convertToEvmKey;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -75,7 +76,9 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
         validateTrue(ledgers.tokens().exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(keyType);
         final JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
-        return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
+        validateTrue(key != null, ResponseCodeEnum.KEY_NOT_PROVIDED);
+        final var evmKey = convertToEvmKey(asKeyUnchecked(key));
+        return evmEncoder.encodeGetTokenKey(evmKey);
     }
 
     public static GetTokenKeyWrapper decodeGetTokenKey(final Bytes input) {

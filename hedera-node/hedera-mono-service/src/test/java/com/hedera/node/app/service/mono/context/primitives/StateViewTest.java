@@ -61,6 +61,9 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -110,6 +113,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -135,6 +139,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -571,6 +576,49 @@ class StateViewTest {
         assertEquals(TokenFreezeStatus.Frozen, info.getDefaultFreezeStatus());
         assertEquals(TokenKycStatus.Granted, info.getDefaultKycStatus());
         assertEquals(ledgerId, info.getLedgerId());
+    }
+
+    @Test
+    void getsEvmTokenInfo() {
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+        given(tokens.get(tokenNum)).willReturn(token);
+        final var miscKey = MISC_ACCOUNT_KT.asKey();
+
+        final var info = subject.evmInfoForToken(tokenId).get();
+
+        assertTrue(info.isDeleted());
+        assertEquals(Paused.getNumber() == 1, info.isPaused());
+        assertEquals(token.memo(), info.getMemo());
+        assertEquals(token.symbol(), info.getSymbol());
+        assertEquals(token.name(), info.getName());
+        assertEquals(
+                token.treasury().toGrpcAccountId(),
+                EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
+        assertEquals(token.totalSupply(), info.getTotalSupply());
+        assertEquals(token.decimals(), info.getDecimals());
+        assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
+        info.setAutoRenewAccount(null);
+        assertEquals(Address.ZERO, info.getAutoRenewAccount());
+        assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
+        assertEquals(expiry, info.getExpiry());
+        assertEquals(TokenFreezeStatus.Frozen.getNumber() == 1, info.getDefaultFreezeStatus());
+        assertEquals(TokenKycStatus.Granted.getNumber() == 1, info.getDefaultKycStatus());
+    }
+
+    @Test
+    void recognizesMissingTokenEvm() {
+        final var info = subject.evmInfoForToken(missingTokenId);
+
+        assertTrue(info.isEmpty());
+    }
+
+    @Test
+    void evmInfoForTokenFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+
+        final var info = subject.evmInfoForToken(tokenId);
+
+        assertTrue(info.isEmpty());
     }
 
     @Test
@@ -1365,7 +1413,8 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
+        assertEquals(customFees(), subject.infoForTokenCustomFees(tokenId));
+        System.out.println();
     }
 
     @Test
@@ -1413,10 +1462,56 @@ class StateViewTest {
     private final CustomFee customFractionalFee =
             builder.withFractionalFee(
                     fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
+    private final CustomFee customRoyaltyFee =
+            builder.withRoyaltyFee(
+                    com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+                            .setExchangeValueFraction(
+                                    Fraction.newBuilder().setNumerator(15).setDenominator(100)));
     private final List<CustomFee> grpcCustomFees =
             List.of(
                     customFixedFeeInHbar,
                     customFixedFeeInHts,
                     customFixedFeeSameToken,
-                    customFractionalFee);
+                    customFractionalFee,
+                    customRoyaltyFee);
+
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
+        FixedFee fixedFeeInHbar =
+                new FixedFee(
+                        100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts =
+                new FixedFee(
+                        100,
+                        EntityIdUtils.asTypedEvmAddress(tokenId),
+                        false,
+                        false,
+                        EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeSameToken =
+                new FixedFee(
+                        50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FractionalFee fractionalFee =
+                new FractionalFee(
+                        15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+
+        RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 0, Address.ZERO, true, Address.ZERO);
+
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee2.setFixedFee(fixedFeeInHts);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee3.setFixedFee(fixedFeeSameToken);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee4.setFractionalFee(fractionalFee);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee5 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee5.setRoyaltyFee(royaltyFee);
+
+        return List.of(customFee1, customFee2, customFee3, customFee4, customFee5);
+    }
 }

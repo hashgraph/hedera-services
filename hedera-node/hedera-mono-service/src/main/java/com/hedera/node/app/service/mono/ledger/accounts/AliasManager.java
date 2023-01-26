@@ -56,7 +56,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
 
     private static final String NON_TRANSACTIONAL_MSG =
             "Base alias manager does not buffer changes";
-    private static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
+    public static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
             EthSigsUtils::recoverAddressFromPubKey;
 
     private final Supplier<Map<ByteString, EntityNum>> aliases;
@@ -258,7 +258,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Nullable
-    public byte[] keyAliasToEVMAddress(final ByteString alias) {
+    public static byte[] keyAliasToEVMAddress(final ByteString alias) {
         try {
             final Key key = Key.parseFrom(alias);
             final JKey jKey = JKey.mapKey(key);

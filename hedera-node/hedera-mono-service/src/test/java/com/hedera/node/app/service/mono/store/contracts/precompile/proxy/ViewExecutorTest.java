@@ -28,9 +28,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -42,6 +39,10 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
@@ -72,15 +73,12 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGet
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -133,6 +131,7 @@ class ViewExecutorTest {
     private static final long gas = 100L;
     private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
     private TokenInfo tokenInfo;
+    private EvmTokenInfo evmTokenInfo;
     private Bytes tokenInfoEncoded;
     private Bytes isFrozenEncoded;
 
@@ -174,6 +173,21 @@ class ViewExecutorTest {
                         .setTotalSupply(1L)
                         .setMaxSupply(1000L)
                         .build();
+        evmTokenInfo =
+                new EvmTokenInfo(
+                        fromString("0x03").toByteArray(),
+                        1,
+                        false,
+                        "FT",
+                        "NAME",
+                        "MEMO",
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cc")),
+                        1L,
+                        1000L,
+                        0,
+                        0L);
+
         tokenInfoEncoded =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
@@ -269,9 +283,9 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
-        given(encodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmEncodingFacade.encodeGetTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
     }
@@ -287,10 +301,10 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
 
-        given(encodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
+        given(evmEncodingFacade.encodeGetFungibleTokenInfo(any())).willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
     }
@@ -307,17 +321,17 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(nonfungibletoken, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
+        given(ledgers.evmInfoForToken(nonfungibletoken, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
         given(
-                        ledgers.infoForNft(
+                        ledgers.evmNftInfo(
                                 NftID.newBuilder()
                                         .setTokenID(nonfungibletoken)
                                         .setSerialNumber(1L)
                                         .build(),
                                 networkInfo.ledgerId()))
-                .willReturn(Optional.of(TokenNftInfo.newBuilder().build()));
-        given(encodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
+                .willReturn(Optional.of(new EvmNftInfo()));
+        given(evmEncodingFacade.encodeGetNonFungibleTokenInfo(any(), any()))
                 .willReturn(tokenInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenInfoEncoded), subject.computeCosted());
@@ -348,8 +362,9 @@ class ViewExecutorTest {
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
                 .thenReturn(new TokenGetCustomFeesWrapper<>(fungible));
-        given(ledgers.infoForTokenCustomFees(fungible)).willReturn(getCustomFees());
-        given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
+        given(ledgers.infoForTokenCustomFees(fungible))
+                .willReturn(Optional.ofNullable(customFees()));
+        given(evmEncodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
         assertEquals(Pair.of(gas, tokenCustomFeesEncoded), subject.computeCosted());
     }
@@ -365,15 +380,7 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenKeyWrapper(fungible, 1));
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
         given(ledgers.keyOf(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
-        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-        given(key.getEd25519())
-                .willReturn(
-                        new byte[] {
-                            -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27,
-                            69, -102, -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19,
-                            98
-                        });
-        given(encodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
+        given(evmEncodingFacade.encodeGetTokenKey(any())).willReturn(getTokenKeyEncoded);
 
         assertEquals(Pair.of(gas, getTokenKeyEncoded), subject.computeCosted());
     }
@@ -432,7 +439,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -449,7 +455,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -467,7 +472,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -485,8 +489,6 @@ class ViewExecutorTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(any(), any())).willReturn(Optional.of(tokenInfo));
-        given(ledgers.infoForNft(any(), any())).willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -504,9 +506,9 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
-                .willReturn(Optional.of(tokenInfo));
-        given(encodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(evmTokenInfo));
+        given(evmEncodingFacade.encodeGetTokenExpiryInfo(any())).willReturn(tokenExpiryInfoEncoded);
 
         assertEquals(Pair.of(gas, tokenExpiryInfoEncoded), subject.computeCosted());
     }
@@ -520,7 +522,8 @@ class ViewExecutorTest {
                 .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
-        given(ledgers.infoForToken(fungible, networkInfo.ledgerId())).willReturn(Optional.empty());
+        given(ledgers.evmInfoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
 
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
@@ -534,13 +537,7 @@ class ViewExecutorTest {
         given(frame.getWorldUpdater()).willReturn(updater);
         given(updater.trackingLedgers()).willReturn(ledgers);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        encodingFacade,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        stateView);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, stateView);
         return input;
     }
 
@@ -557,33 +554,45 @@ class ViewExecutorTest {
         given(blockValues.getTimestamp()).willReturn(timestamp);
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
-                new ViewExecutor(
-                        input,
-                        frame,
-                        encodingFacade,
-                        evmEncodingFacade,
-                        viewGasCalculator,
-                        stateView);
+                new ViewExecutor(input, frame, evmEncodingFacade, viewGasCalculator, stateView);
         return input;
     }
 
-    private Optional<List<CustomFee>> getCustomFees() {
-
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
         final var payerAccountId = asAccount("0.0.9");
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+                customFees = new ArrayList<>();
+        FixedFee fixedFeeInHbar =
+                new FixedFee(
+                        100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts =
+                new FixedFee(
+                        100,
+                        EntityIdUtils.asTypedEvmAddress(fungible),
+                        false,
+                        false,
+                        EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeSameToken =
+                new FixedFee(
+                        50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FractionalFee fractionalFee =
+                new FractionalFee(
+                        15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
 
-        final var builder = new CustomFeeBuilder(payerAccountId);
-        final var customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
-        final var customFixedFeeInHts = builder.withFixedFee(fixedHts(fungible, 100L));
-        final var customFixedFeeSameToken = builder.withFixedFee(fixedHts(50L));
-        final var customFractionalFee =
-                builder.withFractionalFee(
-                        fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
-        final var customFees = new ArrayList<CustomFee>();
-        customFees.add(customFixedFeeInHbar);
-        customFees.add(customFixedFeeInHts);
-        customFees.add(customFixedFeeSameToken);
-        customFees.add(customFractionalFee);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee2.setFixedFee(fixedFeeInHts);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee3.setFixedFee(fixedFeeSameToken);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee4.setFractionalFee(fractionalFee);
 
-        return Optional.of(customFees);
+        return List.of(customFee1, customFee2, customFee3, customFee4);
     }
 }

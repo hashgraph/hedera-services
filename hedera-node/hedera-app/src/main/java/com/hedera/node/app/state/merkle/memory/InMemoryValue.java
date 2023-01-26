@@ -34,12 +34,21 @@ import java.util.Objects;
 public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerkleLeaf
         implements MerkleNode, Keyed<InMemoryKey<K>>, SelfSerializable, MerkleLeaf {
 
+    @Deprecated(forRemoval = true)
+    private static final long CLASS_ID = 0x657483284563728L;
+
     /** The key associated with this value. {@link MerkleMap} requires we do this. */
     private InMemoryKey<K> key;
 
     private final StateMetadata<K, V> md;
     /** The actual value. For example, it could be an Account or SmartContract. */
     private V val;
+
+    // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
+    @Deprecated(forRemoval = true)
+    public InMemoryValue() {
+        md = null;
+    }
 
     /**
      * Used by the deserialization system to create an {@link InMemoryValue} that does not yet have
@@ -81,7 +90,8 @@ public final class InMemoryValue<K extends Comparable<K>, V> extends PartialMerk
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return md.inMemoryValueClassId();
+        // Null `md` for ConstructableRegistry, TO BE REMOVED ASAP
+        return md == null ? CLASS_ID : md.inMemoryValueClassId();
     }
 
     /** {@inheritDoc} */
