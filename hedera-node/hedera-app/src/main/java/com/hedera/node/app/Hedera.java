@@ -34,14 +34,14 @@ import java.util.concurrent.Executors;
 public final class Hedera {
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-    public Hedera() { }
+    public Hedera() {}
 
     public void start(ServicesApp app, int port) {
         final var metrics = createMetrics();
 
-        // Create the Ingest workflow. While we are in transition, some required facilities come from
-        // `hedera-app`, and some from `mono-service`. Eventually we'll transition all facilities to
-        // be from the app module.
+        // Create the Ingest workflow. While we are in transition, some required facilities come
+        // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
+        // facilities to be from the app module.
         final var ingestWorkflow =
                 new IngestWorkflowImpl(
                         app.nodeInfo(),
@@ -69,9 +69,9 @@ public final class Hedera {
                         GrpcRouting.builder()
                                 .register(
                                         new GrpcServiceBuilder(
-                                                "proto.ConsensusService",
-                                                ingestWorkflow,
-                                                queryWorkflow)
+                                                        "proto.ConsensusService",
+                                                        ingestWorkflow,
+                                                        queryWorkflow)
                                                 .transaction("createTopic")
                                                 .transaction("updateTopic")
                                                 .transaction("deleteTopic")

@@ -53,7 +53,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import java.util.List;

@@ -47,8 +47,8 @@ public class ServicesMain implements SwirldMain {
     private ServicesApp app;
 
     /**
-     * Stores information related to the running of the Hedera application in the modular app.
-     * This is unused when the "hedera.workflows.enabled" flag is false.
+     * Stores information related to the running of the Hedera application in the modular app. This
+     * is unused when the "hedera.workflows.enabled" flag is false.
      */
     private final Hedera hedera = new Hedera();
 
