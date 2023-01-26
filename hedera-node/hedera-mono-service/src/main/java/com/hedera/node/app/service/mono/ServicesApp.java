@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -132,6 +133,8 @@ public interface ServicesApp {
     NodeLocalProperties nodeLocalProperties();
 
     GlobalDynamicProperties globalDynamicProperties();
+
+    GlobalStaticProperties globalStaticProperties();
 
     MutableStateChildren workingState();
 
