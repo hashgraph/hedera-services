@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
@@ -115,7 +116,7 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
         final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
         if (alias != ByteString.EMPTY) {
             sigImpactHistorian.markAliasChanged(alias);
-            final var maybeAddress = aliasManager.keyAliasToEVMAddress(alias);
+            final var maybeAddress = keyAliasToEVMAddress(alias);
             if (maybeAddress != null) {
                 sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
             }
