@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PAUSE;

@@ -15,6 +15,7 @@ module com.hedera.node.app.service.token.impl.test {
     requires hedera.services.hedera.node.hedera.app.spi.testFixtures;
     requires com.swirlds.common;
     requires org.bouncycastle.provider;
+    requires com.hedera.node.app.service.evm;
 
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons;

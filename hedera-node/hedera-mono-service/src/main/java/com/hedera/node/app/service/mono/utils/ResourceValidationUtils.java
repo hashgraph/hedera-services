@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
+package com.hedera.node.app.service.mono.utils;
 
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-@FunctionalInterface
-public interface ViewGasCalculator {
-    long compute(final Timestamp now, final long minimumTinybarCost);
+public final class ResourceValidationUtils {
+    private ResourceValidationUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
+    public static void validateResourceLimit(final boolean flag, final ResponseCodeEnum code) {
+        if (!flag) {
+            throw new ResourceLimitException(code);
+        }
+    }
 }

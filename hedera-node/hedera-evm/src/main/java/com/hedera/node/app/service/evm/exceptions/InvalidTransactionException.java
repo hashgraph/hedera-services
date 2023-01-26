@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.exceptions;
+package com.hedera.node.app.service.evm.exceptions;
 
-import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
- * Captures a failure in transaction processing to be captured by the {@link TransitionRunner} and
- * used to set the final resolved status of the transaction.
+ * Captures a failure in transaction processing to be captured by the {TransitionRunner} and used to
+ * set the final resolved status of the transaction.
  *
  * <p>Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents
  * some form of user error. The {@code FAIL_INVALID} code indicates an internal system error; and it

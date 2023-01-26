@@ -29,8 +29,8 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;

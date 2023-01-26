@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.fees.charging;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
