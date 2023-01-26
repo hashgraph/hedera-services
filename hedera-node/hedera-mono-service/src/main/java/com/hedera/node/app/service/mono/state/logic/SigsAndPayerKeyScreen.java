@@ -107,9 +107,11 @@ public class SigsAndPayerKeyScreen {
         }
 
         final var sigMeta = accessor.getSigMeta();
-        sigMeta.replacePayerHollowKeyIfNeeded();
 
         if (hasActivePayerSig(accessor)) {
+            // Do not try to replace a hollow key if payer sig is not active
+            sigMeta.replacePayerHollowKeyIfNeeded();
+
             txnCtx.payerSigIsKnownActive();
 
             if (sigMeta.hasReplacedHollowKey()) {
