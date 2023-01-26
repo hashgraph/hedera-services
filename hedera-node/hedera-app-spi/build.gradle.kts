@@ -15,6 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - SPI"
@@ -40,4 +41,6 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
+
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

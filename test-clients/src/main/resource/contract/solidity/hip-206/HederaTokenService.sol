@@ -386,16 +386,6 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
-    /// Operation to unpause token
-    /// @param token The token address to be unpaused
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function unpauseToken(address token) external returns (int responseCode)
-    {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
-        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-    }
-
     /// Operation to wipe fungible tokens from account
     /// @param token The token address
     /// @param account The account address to revoke kyc

@@ -323,8 +323,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            feeCalculator,
-                            currentView);
+                            feeCalculator);
                     case AbiConstants.ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile(
                             ledgers,
                             updater.aliases(),
@@ -333,8 +332,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            feeCalculator,
-                            currentView);
+                            feeCalculator);
                     case AbiConstants.ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile(
                             ledgers,
                             updater.aliases(),
@@ -343,8 +341,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            feeCalculator,
-                            currentView);
+                            feeCalculator);
                     case AbiConstants.ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile(
                             ledgers,
                             updater.aliases(),
@@ -353,8 +350,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            feeCalculator,
-                            currentView);
+                            feeCalculator);
                     case AbiConstants.ABI_ID_PAUSE_TOKEN -> new PausePrecompile(
                             ledgers,
                             updater.aliases(),
@@ -386,7 +382,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             true,
                                             ledgers,
                                             encoder,
-                                            currentView,
                                             sideEffectsTracker,
                                             syntheticTxnFactory,
                                             infrastructureFactory,
@@ -399,7 +394,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             false,
                                             ledgers,
                                             encoder,
-                                            currentView,
                                             sideEffectsTracker,
                                             syntheticTxnFactory,
                                             infrastructureFactory,
@@ -410,7 +404,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             () ->
                                     new SetApprovalForAllPrecompile(
                                             ledgers,
-                                            currentView,
                                             sideEffectsTracker,
                                             syntheticTxnFactory,
                                             infrastructureFactory,
@@ -667,7 +660,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     isFungibleToken,
                                                     ledgers,
                                                     encoder,
-                                                    currentView,
                                                     sideEffectsTracker,
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
@@ -679,7 +671,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             new SetApprovalForAllPrecompile(
                                                     tokenId,
                                                     ledgers,
-                                                    currentView,
                                                     sideEffectsTracker,
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,

@@ -31,6 +31,7 @@ import java.util.Objects;
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
  */
+/*@ThreadSafe*/
 final class QueryMethod extends MethodBase {
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";

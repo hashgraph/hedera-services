@@ -57,9 +57,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_S
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,11 +71,9 @@ import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -89,9 +85,8 @@ class CryptoTransferHandlerParityTest {
 
     @BeforeEach
     void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
+        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 
     @Test
@@ -190,7 +185,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -235,7 +230,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -251,7 +246,8 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
+        assertMetaFailedWithReqPayerKeyAnd(
+                meta, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
@@ -266,7 +262,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test

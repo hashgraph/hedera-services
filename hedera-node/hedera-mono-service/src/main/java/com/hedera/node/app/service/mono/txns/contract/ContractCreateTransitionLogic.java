@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
@@ -191,9 +192,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         // --- Do the business logic ---
         final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
-        if (!properties.areContractAutoAssociationsEnabled()) {
-            hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
-        }
         worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
         TransactionProcessingResult result;
         try {
@@ -319,6 +317,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
+        }
+        if (op.getMaxAutomaticTokenAssociations() > 0
+                && !properties.areContractAutoAssociationsEnabled()) {
+            return NOT_SUPPORTED;
         }
         if (properties.areTokenAssociationsLimited()
                 && op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {
