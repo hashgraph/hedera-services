@@ -116,6 +116,7 @@ import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
+import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -147,6 +148,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -465,6 +467,12 @@ public class UtilVerbs {
     /* Stream validation. */
     public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
         return new RecordStreamVerification(baseDir);
+    }
+
+    public static HapiSpecOperation assertEventually(
+            final Predicate<RecordStreamItem> test,
+            final Duration timeout) {
+        return noOp();
     }
 
     public static RecordFileChecker verifyRecordFile(

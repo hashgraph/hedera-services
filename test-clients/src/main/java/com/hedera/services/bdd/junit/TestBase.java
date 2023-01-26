@@ -27,6 +27,8 @@ import com.hedera.services.bdd.junit.validators.QueryLogValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.records.ClosingTime;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -109,8 +111,7 @@ public abstract class TestBase {
     }
 
     @SuppressWarnings("java:S1181")
-    protected final DynamicTest recordStreamValidation(
-            final String loc, final RecordStreamValidator... validators) {
+    protected final DynamicTest recordStreamValidation( final String loc, final RecordStreamValidator... validators) {
         return dynamicTest(
                 "recordStreamValidation",
                 () -> {
@@ -119,30 +120,36 @@ public abstract class TestBase {
                                     List.of(ClosingTime::new),
                                     TestBase::contextualizedSpecsFromConcurrent);
                     concurrentExecutionOf(closingTimeSpecs);
-
-                    final var access = new RecordStreamAccess();
-                    final var streamFiles = access.readStreamFilesFrom(loc, "sidecar");
-                    final var errorsIfAny =
-                            Stream.of(validators)
-                                    .flatMap(
-                                            v -> {
-                                                try {
-                                                    // The validator will complete silently if no
-                                                    // errors are found
-                                                    v.validate(streamFiles);
-                                                    return Stream.empty();
-                                                } catch (final Throwable t) {
-                                                    return Stream.of(t);
-                                                }
-                                            })
-                                    .map(Throwable::getMessage)
-                                    .toList();
-                    if (!errorsIfAny.isEmpty()) {
-                        Assertions.fail(
-                                "Record stream validation failed with the following errors:\n  - "
-                                        + String.join("\n  - ", errorsIfAny));
-                    }
+                    assertValidatorsPass(loc, Arrays.asList(validators));
                 });
+    }
+
+    @SuppressWarnings("java:S1181")
+    public static void assertValidatorsPass(
+            final String loc,
+            final List<RecordStreamValidator> validators
+    ) throws IOException {
+        final var access = new RecordStreamAccess();
+        final var streamFiles = access.readStreamFilesFrom(loc, "sidecar");
+        final var errorsIfAny =
+                validators.stream()
+                        .flatMap(
+                                v -> {
+                                    try {
+                                        // The validator will complete silently if no errors are found
+                                        v.validate(streamFiles);
+                                        return Stream.empty();
+                                    } catch (final Throwable t) {
+                                        return Stream.of(t);
+                                    }
+                                })
+                        .map(Throwable::getMessage)
+                        .toList();
+        if (!errorsIfAny.isEmpty()) {
+            Assertions.fail(
+                    "Record stream validation failed with the following errors:\n  - "
+                            + String.join("\n  - ", errorsIfAny));
+        }
     }
 
     public static void concurrentExecutionOf(final List<HapiSpec> specs) {
