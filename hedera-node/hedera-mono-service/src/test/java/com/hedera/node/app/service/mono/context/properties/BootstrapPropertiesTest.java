@@ -309,7 +309,8 @@ class BootstrapPropertiesTest {
                     entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
                     entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
                     entry(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, true),
-                    entry(TOKENS_AUTO_CREATIONS_ENABLED, true));
+                    entry(TOKENS_AUTO_CREATIONS_ENABLED, true),
+                    entry(WORKFLOWS_ENABLED, false));
 
     @Test
     void containsProperty() {

@@ -43,7 +43,14 @@ import org.apache.logging.log4j.Logger;
 public class ServicesMain implements SwirldMain {
     private static final Logger log = LogManager.getLogger(ServicesMain.class);
 
+    /** Stores information related to the running of services in the mono-repo */
     private ServicesApp app;
+
+    /**
+     * Stores information related to the running of the Hedera application in the modular app. This
+     * is unused when the "hedera.workflows.enabled" flag is false.
+     */
+    private final Hedera hedera = new Hedera();
 
     /**
      * Convenience launcher for dev env.
@@ -116,7 +123,14 @@ public class ServicesMain implements SwirldMain {
     }
 
     private void startNettyIfAppropriate() {
-        app.grpcStarter().startIfAppropriate();
+        // The "hedera.workflows.enabled" feature flag indicates whether we enable the new gRPC
+        // server and workflows, or use the existing gRPC handlers in mono-service.
+        final var props = app.globalStaticProperties();
+        if (props.workflowsEnabled()) {
+            hedera.start(app, app.nodeLocalProperties().port());
+        } else {
+            app.grpcStarter().startIfAppropriate();
+        }
     }
 
     private void configurePlatform() {

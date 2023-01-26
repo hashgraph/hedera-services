@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -75,6 +76,7 @@ class ServicesMainTest {
     @Mock private PrintStream consoleOut;
     @Mock private Supplier<Charset> nativeCharset;
     @Mock private ServicesApp app;
+    @Mock private GlobalStaticProperties globalStaticProperties;
     @Mock private NamedDigestFactory namedDigestFactory;
     @Mock private MutableStateChildren workingState;
     @Mock private AccountStorageAdapter accounts;
@@ -242,6 +244,7 @@ class ServicesMainTest {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willReturn(null);
+        given(app.globalStaticProperties()).willReturn(globalStaticProperties);
         given(app.nativeCharset()).willReturn(nativeCharset);
         given(app.digestFactory()).willReturn(namedDigestFactory);
         given(app.consoleOut()).willReturn(Optional.of(consoleOut));
