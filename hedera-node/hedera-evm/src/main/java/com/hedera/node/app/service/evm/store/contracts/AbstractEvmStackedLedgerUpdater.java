@@ -26,8 +26,10 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
                 AbstractLedgerEvmWorldUpdater<W, A>, UpdatedHederaEvmAccount<A>> {
 
     protected AbstractEvmStackedLedgerUpdater(
-            AbstractLedgerEvmWorldUpdater<W, A> world, AccountAccessor accountAccessor) {
-        super(world, accountAccessor);
+            final AbstractLedgerEvmWorldUpdater<W, A> world,
+            final AccountAccessor accountAccessor,
+            final HederaEvmEntityAccess entityAccess) {
+        super(world, accountAccessor, entityAccess);
     }
 
     @Override

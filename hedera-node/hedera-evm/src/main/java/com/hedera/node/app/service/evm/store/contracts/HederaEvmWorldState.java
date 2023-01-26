@@ -24,7 +24,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
@@ -119,29 +118,15 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
-        public Account getForMutation(Address address) {
-            return null;
-        }
-
-        @Override
-        public EvmAccount getAccount(Address address) {
-            return null;
-        }
-
-        @Override
-        public Account get(Address address) {
-            return null;
+        public Account getForMutation(final Address address) {
+            final HederaEvmWorldState wrapped = (HederaEvmWorldState) wrappedWorldView();
+            return wrapped.get(address);
         }
 
         @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    this,
-                    wrappedWorldView(),
-                    accountAccessor,
-                    hederaEvmEntityAccess,
-                    tokenAccessor,
-                    evmProperties);
+                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
         }
     }
 }

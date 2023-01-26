@@ -29,20 +29,17 @@ public class HederaEvmStackedWorldStateUpdater
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     protected final TokenAccessor tokenAccessor;
-    private final HederaEvmMutableWorldState worldState;
     private final EvmProperties evmProperties;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater,
-            final HederaEvmMutableWorldState worldState,
             final AccountAccessor accountAccessor,
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties) {
-        super(updater, accountAccessor);
+        super(updater, accountAccessor, hederaEvmEntityAccess);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.tokenAccessor = tokenAccessor;
-        this.worldState = worldState;
         this.evmProperties = evmProperties;
     }
 
@@ -73,8 +70,10 @@ public class HederaEvmStackedWorldStateUpdater
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
             final var newMutable = new UpdatedHederaEvmAccount<>(proxyAccount);
+            newMutable.setEvmEntityAccess(hederaEvmEntityAccess);
             return new WrappedEvmAccount(newMutable);
         }
+
         return super.getAccount(address);
     }
 

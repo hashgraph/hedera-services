@@ -36,10 +36,19 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     protected final W world;
     protected final AccountAccessor accountAccessor;
     protected Map<Address, UpdatedHederaEvmAccount<A>> updatedAccounts = new HashMap<>();
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
 
     protected AbstractLedgerEvmWorldUpdater(final W world, final AccountAccessor accountAccessor) {
         this.world = world;
         this.accountAccessor = accountAccessor;
+    }
+
+    protected AbstractLedgerEvmWorldUpdater(
+            final W world,
+            final AccountAccessor accountAccessor,
+            final HederaEvmEntityAccess hederaEvmEntityAccess) {
+        this(world, accountAccessor);
+        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }
 
     /**
@@ -129,8 +138,8 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
     }
 
     private UpdatedHederaEvmAccount<A> track(final UpdatedHederaEvmAccount<A> account) {
-        final var address = account.getAddress();
-        updatedAccounts.put(address, account);
+        account.setEvmEntityAccess(hederaEvmEntityAccess);
+        updatedAccounts.put(account.getAddress(), account);
         return account;
     }
 }
