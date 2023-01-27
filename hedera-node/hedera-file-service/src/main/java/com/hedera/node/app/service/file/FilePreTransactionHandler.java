@@ -15,10 +15,17 @@
  */
 package com.hedera.node.app.service.file;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.file.FileDeleteTransactionBody;
+import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
+import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * The pre-handler for the HAPI <a
@@ -27,72 +34,62 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface FilePreTransactionHandler extends PreTransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileCreate}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#FILE_CREATE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FileCreateTransactionBody}
+     * @param txn a transaction with a {@link FileCreateTransactionBody}
      * @param payer payer of the transaction
      * @return the metadata for the file creation
      */
     TransactionMetadata preHandleCreateFile(TransactionBody txn, AccountID payer);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileUpdate}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#FILE_UPDATE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FileUpdateTransactionBody}
+     * @param txn a transaction with a {@link FileUpdateTransactionBody}
      * @param payer payer of the transaction
      * @return the metadata for the file update
      */
     TransactionMetadata preHandleUpdateFile(TransactionBody txn, AccountID payer);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileDelete}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#FILE_DELETE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FileDeleteTransactionBody}
+     * @param txn a transaction with a {@link FileDeleteTransactionBody}
      * @param payer payer of the transaction
      * @return the metadata for the file deletion
      */
     TransactionMetadata preHandleDeleteFile(TransactionBody txn, AccountID payer);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#FileAppend}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#FILE_APPEND} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FileAppendTransactionBody}
+     * @param txn a transaction with a {@link FileAppendTransactionBody}
      * @param payer payer of the transaction
      * @return the metadata for the file append
      */
     TransactionMetadata preHandleAppendContent(TransactionBody txn, AccountID payer);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemDelete}
-     * transaction that targets a file, returning the metadata required to, at minimum, validate the
-     * signatures of all required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SYSTEM_DELETE} transaction that targets a file,
+     * returning the metadata required to, at minimum, validate the signatures of all required
+     * signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody} targeting a file
+     * @param txn a transaction with a {@link SystemDeleteTransactionBody} targeting a file
      * @param payer payer of the transaction
      * @return the metadata for the system file deletion
      */
     TransactionMetadata preHandleSystemDelete(TransactionBody txn, AccountID payer);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#SystemUndelete}
-     * transaction that targets a file, returning the metadata required to, at minimum, validate the
-     * signatures of all required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SYSTEM_UNDELETE} transaction that targets a file,
+     * returning the metadata required to, at minimum, validate the signatures of all required
+     * signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody} targeting a file
+     * @param txn a transaction with a {@link SystemUndeleteTransactionBody} targeting a file
      * @param payer payer of the transaction
      * @return the metadata for the system file un-deletion
      */

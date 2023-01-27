@@ -15,10 +15,12 @@
  */
 package com.hedera.node.app.service.admin;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * The pre-handler for the HAPI <a
@@ -27,12 +29,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface FreezePreTransactionHandler extends PreTransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#FREEZE} transaction, returning the metadata required
+     * to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FreezeTransactionBody}
+     * @param txn a transaction with a {@link FreezeTransactionBody}
      * @return the metadata for the freeze
      */
     TransactionMetadata preHandleFreeze(TransactionBody txn, AccountID payer);

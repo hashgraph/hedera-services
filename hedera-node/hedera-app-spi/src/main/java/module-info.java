@@ -1,5 +1,5 @@
 module com.hedera.node.app.spi {
-    requires com.hedera.node.hapi;
+    requires transitive com.hedera.node.hapi;
     requires com.hedera.hashgraph.pbj.runtime;
     requires static transitive com.github.spotbugs.annotations;
 

@@ -15,11 +15,15 @@
  */
 package com.hedera.node.app.service.schedule;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * The pre-handler for the HAPI <a
@@ -28,36 +32,30 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface SchedulePreTransactionHandler extends PreTransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_CREATE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody}
+     * @param txn a transaction with a {@link ScheduleCreateTransactionBody}
      * @return the metadata for the schedule creation
      */
     ScheduleTransactionMetadata preHandleCreateSchedule(
             TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody}
+     * @param txn a transaction with a {@link ScheduleSignTransactionBody}
      * @return the metadata for the schedule signing
      */
     ScheduleTransactionMetadata preHandleSignSchedule(
             TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher);
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_DELETE} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody}
+     * @param txn a transaction with a {@link ScheduleDeleteTransactionBody}
      * @return the metadata for the schedule deletion
      */
     ScheduleTransactionMetadata preHandleDeleteSchedule(

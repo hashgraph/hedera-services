@@ -15,10 +15,12 @@
  */
 package com.hedera.node.app.service.util;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * The pre-handler for the HAPI <a
@@ -27,12 +29,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface UtilPreTransactionHandler extends PreTransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#UtilPrng}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#UTIL_PRNG} transaction, returning the metadata
+     * required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.UtilPrngTransactionBody}
+     * @param txn a transaction with a {@link UtilPrngTransactionBody}
      * @return the metadata for the pseudo-random number generation
      */
     TransactionMetadata preHandlePrng(TransactionBody txn, AccountID payer);

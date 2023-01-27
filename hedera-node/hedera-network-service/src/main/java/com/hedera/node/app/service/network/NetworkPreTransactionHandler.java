@@ -15,10 +15,12 @@
  */
 package com.hedera.node.app.service.network;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * The pre-handler for the HAPI <a
@@ -27,12 +29,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface NetworkPreTransactionHandler extends PreTransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#UncheckedSubmit}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link HederaFunctionality#UNCHECKED_SUBMIT} transaction, returning the
+     * metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.UncheckedSubmitBody}
+     * @param txn a transaction with a {@link UncheckedSubmitBody}
      * @param payer payer of the transaction
      * @return the metadata for the unchecked submit
      */
