@@ -1153,7 +1153,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     }
 
     private HapiSpec hollowAccountCompletionWithSimultaniousPropertiesUpdate() {
-        return defaultHapiSpec("hollowAccountCompletionWithSimultaniousPropertiesUpdate")
+        return propertyPreservingHapiSpec("hollowAccountCompletionWithSimultaniousPropertiesUpdate")
+                .preserving(LAZY_CREATION_ENABLED)
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
