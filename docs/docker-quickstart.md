@@ -1,6 +1,6 @@
 # Docker quickstart
 
-To execute the integration and end-to-end tests of this repo a local hedera node need to be started.
+To execute the integration and end-to-end tests of this repo, a local hedera node needs to be started.
 
 We first discuss how to run a Hedera Services network on
 your local machine with Docker Compose. This consists of [sourcing](#sourcing-the-image)
