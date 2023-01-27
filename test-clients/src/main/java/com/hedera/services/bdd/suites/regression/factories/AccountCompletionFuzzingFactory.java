@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.print.attribute.standard.MediaSize;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -38,6 +39,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite.INITIAL_BALANCE;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
 
 public class AccountCompletionFuzzingFactory {
@@ -52,8 +58,7 @@ public class AccountCompletionFuzzingFactory {
 
 
     public static HapiSpecOperation[] accountCreation() {
-        return Stream.of(createSponsor()).flatMap(Stream::of)
-                .toArray(HapiSpecOperation[]::new);
+        return createAccounts();
     }
 
     private static HapiCryptoCreate[] createSponsor() {
@@ -62,6 +67,11 @@ public class AccountCompletionFuzzingFactory {
                 .withRecharging()};
     }
 
+    private static HapiCryptoCreate[] createAccounts() {
+        return List.of(cryptoCreate(LAZY_CREATE_SPONSOR).balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE).withRecharging(),
+                cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE).withRecharging())
+                .toArray(HapiCryptoCreate[]::new);
+    }
 
     public static Function<HapiSpec, OpProvider> accountCompletionFuzzingWith(final String resource) {
         return spec -> {
@@ -77,6 +87,7 @@ public class AccountCompletionFuzzingFactory {
 
             return new BiasedDelegatingProvider()
                     .withInitialization(onlyEcdsaKeys())
+                    .shouldLogNormalFlow(true)
                     .withOp(
                             new OpProvider() {
                                 @Override
@@ -95,24 +106,21 @@ public class AccountCompletionFuzzingFactory {
                             new OpProvider() {
                                 @Override
                                 public Optional<HapiSpecOperation> get() {
-                                    final var involved = LookupUtils.twoDistinct(accounts);
-                                    if (involved.isEmpty()) {
+                                    final var payer = accounts.getQualifying().filter(a -> a.endsWith("#"));
+
+                                    if(payer.isEmpty()) {
                                         return Optional.empty();
                                     }
+                                    final var from = payer.get();
 
                                     long amount =  1;
-                                    String from = involved.get().getKey(), to = involved.get().getValue();
 
-                                    if(!from.endsWith("#") || !to.endsWith("#")){
-                                        return Optional.empty();
-                                    }
-
-                                    final var key = from.substring(0, from.length() - 1);
+                                    final var key = from.substring(0, from.length()-1);
                                     final AccountID fromAccount = asId(from, spec);
                                     spec.registry()
                                             .saveAccountId(key, fromAccount);
                                     HapiCryptoTransfer op =
-                                            cryptoTransfer(tinyBarsFromTo(UNIQUE_PAYER_ACCOUNT, to, amount))
+                                            cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, amount))
                                                     .payingWith(key)
                                                     //.signedBy(from)
                                                     .sigMapPrefixes(uniqueWithFullPrefixesFor(key))
@@ -168,6 +176,7 @@ public class AccountCompletionFuzzingFactory {
                 .hasAnyPrecheck()
                 .hasAnyKnownStatus()
                 .evmAddress(evmAddress)
+                //.payingWith(LAZY_CREATE_SPONSOR)
               //  .key(keyName)
                 .balance(100 * ONE_HBAR);
                // .via(keyName + "#tx");
