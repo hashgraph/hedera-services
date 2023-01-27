@@ -75,12 +75,10 @@ public class DescriptorUtils {
             final var tuple =
                     EvmDecodingFacade.decodeFunctionCall(
                             input, REDIRECT_FOR_TOKEN_SELECTOR, REDIRECT_FOR_TOKEN_DECODER);
-            final var massagedInput =
-                    com.google.common.primitives.Bytes.concat(
-                            Bytes.ofUnsignedInt(ABI_ID_REDIRECT_FOR_TOKEN).toArrayUnsafe(),
-                            getSlicedAddressBytes(tuple.get(0)).toArrayUnsafe(),
-                            tuple.get(1));
-            return Bytes.of(massagedInput);
+            return Bytes.concatenate(
+                    Bytes.ofUnsignedInt(ABI_ID_REDIRECT_FOR_TOKEN),
+                    getSlicedAddressBytes(tuple.get(0)),
+                    Bytes.of((byte[]) tuple.get(1)));
         } catch (Exception e) {
             // exception from the decoder means the input is already in "packed" form
             return input;
