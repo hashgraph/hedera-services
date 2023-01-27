@@ -41,7 +41,7 @@ TAG=oa-release-r5-rc6-13-gf18d2ff77-dirty
 REGISTRY_PREFIX=
 ```
 
-The file can be created by calling the `updateDockerEnv` gradle tasks (execute `./gradlew updateDockerEnv` from the root folder of the repo).
+The file can be created by calling the `updateDockerEnv` gradle task (execute `./gradlew updateDockerEnv` from the root folder of the repo).
 
 Third, build the image with an empty registry prefix and the `TAG` from your `.env` file by calling the `createDockerImage` gradle tasks (execute `./gradlew createDockerImage` from the root folder of the repo).
 
