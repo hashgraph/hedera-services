@@ -16,6 +16,22 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
-public final class FileServiceImpl implements FileService {}
+public final class FileServiceImpl implements FileService {
+    private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder().setMinor(1).build();
+
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        registry.register(fileServiceSchema());
+    }
+
+    private Schema fileServiceSchema() {
+        return new Schema(CURRENT_VERSION) {
+        };
+    }
+}

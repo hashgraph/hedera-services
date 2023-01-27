@@ -16,8 +16,15 @@
 package com.hedera.node.app.service.network.impl;
 
 import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class NetworkServiceImpl implements NetworkService {}
+public final class NetworkServiceImpl implements NetworkService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        throw new AssertionError("Not implemented");
+    }
+}

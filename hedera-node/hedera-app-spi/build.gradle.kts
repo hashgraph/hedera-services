@@ -34,6 +34,8 @@ configurations.all {
 
 dependencies {
     implementation(libs.grpc.stub)
+    implementation(libs.swirlds.virtualmap)
+    implementation(libs.swirlds.jasperdb)
     api(libs.hapi)
     api(libs.helidon.io.grpc)
     api(libs.jsr305.annotation)

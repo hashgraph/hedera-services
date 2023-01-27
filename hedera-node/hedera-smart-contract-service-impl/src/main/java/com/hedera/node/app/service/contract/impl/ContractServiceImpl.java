@@ -16,8 +16,15 @@
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ContractServiceImpl implements ContractService {}
+public final class ContractServiceImpl implements ContractService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        throw new AssertionError("Not implemented");
+    }
+}

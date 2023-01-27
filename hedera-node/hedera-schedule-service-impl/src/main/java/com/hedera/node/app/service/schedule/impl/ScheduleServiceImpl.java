@@ -16,8 +16,15 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ScheduleServiceImpl implements ScheduleService {}
+public final class ScheduleServiceImpl implements ScheduleService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        throw new AssertionError("Not implemented");
+    }
+}

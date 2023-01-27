@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.state.merkle.data;
+package com.hedera.node.app.spi.state.serdes;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInput;
@@ -111,5 +111,17 @@ public class ByteBufferDataInput implements DataInput {
     @Override
     public String readUTF() throws IOException {
         throw new UnsupportedOperationException("readUTF is not supported");
+    }
+
+    /**
+     * Even more temporary than the class itself, this method is only here to allow us to get the
+     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which
+     * by default only knows how to deserialize itself from a {@link ByteBuffer} or
+     * {@link com.swirlds.common.io.streams.SerializableDataInputStream}.
+     *
+     * @return the underlying {@link ByteBuffer} that this class is adapting
+     */
+    public ByteBuffer getBuffer() {
+        return buffer;
     }
 }

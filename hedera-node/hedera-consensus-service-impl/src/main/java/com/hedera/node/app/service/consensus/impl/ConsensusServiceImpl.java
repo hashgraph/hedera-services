@@ -16,8 +16,15 @@
 package com.hedera.node.app.service.consensus.impl;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link ConsensusService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class ConsensusServiceImpl implements ConsensusService {}
+public final class ConsensusServiceImpl implements ConsensusService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        throw new AssertionError("Not implemented");
+    }
+}

@@ -16,11 +16,27 @@
 package com.hedera.node.app.service.file.impl.test;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.test.utils.SemVerUtils;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+
+@ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
+    @Mock
+    private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -29,9 +45,31 @@ class FileServiceImplTest {
 
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
+        assertEquals(
                 FileServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type " + FileServiceImpl.class.getName());
+    }
+
+    @Test
+    void registersExpectedSchema() {
+        final var captor = ArgumentCaptor.forClass(Schema.class);
+
+        subject().registerSchemas(registry);
+
+        Mockito.verify(registry).register(captor.capture());
+        final var schema = captor.getValue();
+
+        assertEquals(SemVerUtils.standardSemverWith(0, 1, 0), schema.getVersion());
+        assertTrue(schema.statesToRemove().isEmpty());
+        final var requestedStates = schema.statesToCreate();
+        assertEquals(1, requestedStates.size());
+        final var legacyBlobsDef = requestedStates.iterator().next();
+        assertEquals("BLOBS", legacyBlobsDef.stateKey());
+    }
+
+
+    private FileService subject() {
+        return FileService.getInstance();
     }
 }

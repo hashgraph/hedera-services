@@ -16,6 +16,13 @@
 package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** An implementation of the {@link CryptoService} interface. */
-public final class CryptoServiceImpl implements CryptoService {}
+public final class CryptoServiceImpl implements CryptoService {
+    @Override
+    public void registerSchemas(@NonNull SchemaRegistry registry) {
+        throw new AssertionError("Not implemented");
+    }
+}
