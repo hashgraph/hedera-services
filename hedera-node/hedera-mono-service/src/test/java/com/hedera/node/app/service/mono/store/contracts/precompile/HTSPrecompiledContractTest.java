@@ -155,6 +155,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -1055,8 +1057,9 @@ class HTSPrecompiledContractTest {
         assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
     }
 
-    @Test
-    void computeCallsCorrectImplementationForExplicitRedirectTokenCall() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void computeCallsCorrectImplementationForExplicitRedirectTokenCall(final boolean tokenExists) {
         // given
         givenFrameContext();
         final Bytes input =
@@ -1076,13 +1079,16 @@ class HTSPrecompiledContractTest {
                 .thenReturn(HTSTestsUtil.balanceOfWrapper);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokensLedger = mock(TransactionalLedger.class);
+        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(any(TokenID.class))).willReturn(tokenExists);
 
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
 
         // then
-        assertTrue(subject.getPrecompile() instanceof BalanceOfPrecompile);
+        assertTrue(subject.getPrecompile() instanceof RedirectPrecompile);
     }
 
     @Test
