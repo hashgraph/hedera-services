@@ -1,4 +1,6 @@
 module com.hedera.node.app {
+    opens com.hedera.node.app;
+
     requires io.helidon.grpc.core;
     requires io.helidon.grpc.server;
     requires com.swirlds.common;
@@ -28,4 +30,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
+    requires com.swirlds.platform;
+    requires org.apache.logging.log4j;
 }

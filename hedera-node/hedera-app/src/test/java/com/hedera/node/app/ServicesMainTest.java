@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono;
+package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
@@ -27,9 +27,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
@@ -73,6 +76,7 @@ class ServicesMainTest {
     @Mock private PrintStream consoleOut;
     @Mock private Supplier<Charset> nativeCharset;
     @Mock private ServicesApp app;
+    @Mock private GlobalStaticProperties globalStaticProperties;
     @Mock private NamedDigestFactory namedDigestFactory;
     @Mock private MutableStateChildren workingState;
     @Mock private AccountStorageAdapter accounts;
@@ -240,6 +244,7 @@ class ServicesMainTest {
         APPS.save(selfId, app);
         given(nativeCharset.get()).willReturn(UTF_8);
         given(namedDigestFactory.forName("SHA-384")).willReturn(null);
+        given(app.globalStaticProperties()).willReturn(globalStaticProperties);
         given(app.nativeCharset()).willReturn(nativeCharset);
         given(app.digestFactory()).willReturn(namedDigestFactory);
         given(app.consoleOut()).willReturn(Optional.of(consoleOut));

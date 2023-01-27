@@ -33,9 +33,10 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
+    MockTokenAccessor tokenAccessor = new MockTokenAccessor();
     MockEntityAccess entityAccess = new MockEntityAccess();
     HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess);
+            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess, tokenAccessor);
 
     @Test
     void accountTests() {
@@ -62,6 +63,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void updaterTest() {
+        assertEquals(tokenAccessor, hederaEvmStackedWorldStateUpdater.tokenAccessor());
         assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
         assertEquals(
                 hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
