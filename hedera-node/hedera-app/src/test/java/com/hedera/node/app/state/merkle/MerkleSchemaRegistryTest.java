@@ -331,7 +331,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         final var animalDef =
                                 StateDefinition.onDisk(
                                         ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
-                        return Set.of(animalDef);
+                        final var countryDef =
+                                StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                        return Set.of(animalDef, countryDef);
                     }
 
                     @Override
@@ -350,9 +352,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         assertThat(oldFruit.get(C_KEY)).isEqualTo(CHERRY);
 
                         // Now check that the new states contains the new states
-                        assertThat(newStates.size()).isEqualTo(2);
+                        assertThat(newStates.size()).isEqualTo(3);
                         assertThat(newStates.contains(FRUIT_STATE_KEY)).isTrue();
                         assertThat(newStates.contains(ANIMAL_STATE_KEY)).isTrue();
+                        assertThat(newStates.contains(COUNTRY_STATE_KEY)).isTrue();
 
                         // Add in the new animals
                         final WritableKVState<String, String> animals =
@@ -366,6 +369,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         fruit.remove(A_KEY);
                         fruit.put(B_KEY, BLACKBERRY);
                         fruit.put(E_KEY, EGGPLANT);
+
+                        // Initialize the COUNTRY to be BRAZIL
+                        final WritableSingletonState<String> country =
+                                newStates.getSingleton(COUNTRY_STATE_KEY);
+                        country.put(BRAZIL);
+
+                        // And the old states shouldn't have a COUNTRY_STATE_KEY
+                        assertThat(previousStates.contains(COUNTRY_STATE_KEY)).isFalse();
 
                         // Make sure old fruit hasn't been changed in any way
                         assertThat(oldFruit.keys()).toIterable().hasSize(3);
@@ -381,7 +392,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @NonNull
                     @Override
                     public Set<String> statesToRemove() {
-                        return Set.of(FRUIT_STATE_KEY);
+                        return Set.of(FRUIT_STATE_KEY, COUNTRY_STATE_KEY);
                     }
 
                     @Override
@@ -390,7 +401,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             @NonNull WritableStates newStates) {
                         // Verify that everything in v2 is still here
                         assertThat(previousStates.stateKeys())
-                                .containsExactlyInAnyOrder(FRUIT_STATE_KEY, ANIMAL_STATE_KEY);
+                                .containsExactlyInAnyOrder(
+                                        FRUIT_STATE_KEY, ANIMAL_STATE_KEY, COUNTRY_STATE_KEY);
                         final ReadableKVState<String, String> oldFruit =
                                 previousStates.get(FRUIT_STATE_KEY);
                         assertThat(oldFruit.keys())
@@ -413,6 +425,13 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         final WritableKVState<String, String> animals =
                                 newStates.get(ANIMAL_STATE_KEY);
                         animals.put(C_KEY, CUTTLEFISH);
+
+                        // And I should still see the COUNTRY_STATE_KEY in the previousStates,
+                        // but not in the newStates
+                        final ReadableSingletonState<String> country =
+                                previousStates.getSingleton(COUNTRY_STATE_KEY);
+                        assertThat(country.get()).isEqualTo(BRAZIL);
+                        assertThat(newStates.contains(COUNTRY_STATE_KEY)).isFalse();
 
                         // The newStates should not see the fruit map
                         assertThatThrownBy(() -> newStates.get(FRUIT_STATE_KEY))
@@ -456,7 +475,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
                 // We should see the v2 state (the delta from v2 after applied atop v1)
                 final var readableStates = merkleTree.createReadableStates(FIRST_SERVICE);
-                assertThat(readableStates.size()).isEqualTo(2);
+                assertThat(readableStates.size()).isEqualTo(3);
 
                 final ReadableKVState<String, String> fruitV2 = readableStates.get(FRUIT_STATE_KEY);
                 assertThat(fruitV2.keys())
@@ -468,6 +487,10 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                         readableStates.get(ANIMAL_STATE_KEY);
                 assertThat(animalV2.get(A_KEY)).isEqualTo(AARDVARK);
                 assertThat(animalV2.get(B_KEY)).isEqualTo(BEAR);
+
+                final ReadableSingletonState<String> countryV2 =
+                        readableStates.getSingleton(COUNTRY_STATE_KEY);
+                assertThat(countryV2.get()).isEqualTo(BRAZIL);
             }
 
             @Test
@@ -491,6 +514,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
                 // This should be deleted
                 assertThatThrownBy(() -> readableStates.get(FRUIT_STATE_KEY))
+                        .isInstanceOf(IllegalArgumentException.class);
+                assertThatThrownBy(() -> readableStates.getSingleton(COUNTRY_STATE_KEY))
                         .isInstanceOf(IllegalArgumentException.class);
 
                 // And this should be updated

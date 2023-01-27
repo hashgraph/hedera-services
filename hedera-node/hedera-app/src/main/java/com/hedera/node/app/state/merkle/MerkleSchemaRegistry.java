@@ -18,12 +18,14 @@ package com.hedera.node.app.state.merkle;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -164,7 +166,10 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             statesToCreate.forEach(
                     def -> {
                         final var md = new StateMetadata<>(serviceName, schema, def);
-                        if (!def.onDisk()) {
+                        if (def.singleton()) {
+                            final var singleton = new SingletonNode<>(md, null);
+                            hederaState.putServiceStateIfAbsent(md, singleton);
+                        } else if (!def.onDisk()) {
                             final var map = new MerkleMap<>();
                             map.setLabel(StateUtils.computeLabel(serviceName, def.stateKey()));
                             hederaState.putServiceStateIfAbsent(md, map);
@@ -205,12 +210,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
 
             // Now we can migrate the schema and then commit all the changes
             schema.migrate(previousStates, newStates);
-            newStates
-                    .stateKeys()
-                    .forEach(
-                            stateKey ->
-                                    // Reviewers: Should we promote "commit" to WritableKVState?
-                                    ((WritableKVStateBase<?, ?>) newStates.get(stateKey)).commit());
+            if (writeableStates instanceof MerkleWritableStates mws) {
+                mws.commit();
+            }
 
             // And finally we can remove any states we need to remove
             statesToRemove.forEach(

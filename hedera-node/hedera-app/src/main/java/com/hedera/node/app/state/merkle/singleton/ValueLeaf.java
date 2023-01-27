@@ -56,9 +56,9 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * @param md The state metadata
      * @param value The value.
      */
-    public ValueLeaf(@NonNull final StateMetadata<?, T> md, @NonNull final T value) {
+    public ValueLeaf(@NonNull final StateMetadata<?, T> md, @Nullable final T value) {
         this(md);
-        this.val = Objects.requireNonNull(value);
+        this.val = value;
     }
 
     /** {@inheritDoc} */

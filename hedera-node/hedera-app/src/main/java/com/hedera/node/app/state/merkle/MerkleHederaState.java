@@ -21,7 +21,9 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
@@ -361,8 +363,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @SuppressWarnings({"rawtypes", "unchecked"})
     private abstract class MerkleStates implements ReadableStates {
         private final Map<String, StateMetadata<?, ?>> stateMetadata;
-        private final Map<String, ReadableKVState<?, ?>> kvInstances;
-        private final Map<String, ReadableSingletonState<?>> singletonInstances;
+        protected final Map<String, ReadableKVState<?, ?>> kvInstances;
+        protected final Map<String, ReadableSingletonState<?>> singletonInstances;
         private final Set<String> stateKeys;
 
         /**
@@ -515,7 +517,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     /** An implementation of {@link WritableStates} based on the merkle tree. */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private final class MerkleWritableStates extends MerkleStates implements WritableStates {
+    final class MerkleWritableStates extends MerkleStates implements WritableStates {
         /**
          * Create a new instance
          *
@@ -556,6 +558,15 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         protected WritableSingletonState<?> createReadableSingletonState(
                 @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
             return new WritableSingletonStateImpl<>(md, s);
+        }
+
+        void commit() {
+            for (final ReadableKVState kv : kvInstances.values()) {
+                ((WritableKVStateBase) kv).commit();
+            }
+            for (final ReadableSingletonState s : singletonInstances.values()) {
+                ((WritableSingletonStateBase) s).commit();
+            }
         }
     }
 }
