@@ -49,7 +49,7 @@ This is a multi-stage build that could take **several minutes**, depending on yo
 
 ## Starting the Compose network
 
-The network can be started by calling the `startDockerContainers` gradle tasks (execute `./gradlew startDockerContainers` from the root folder of the repo).
+The network can be started by calling the `startDockerContainers` gradle task (execute `./gradlew startDockerContainers` from the root folder of the repo).
 
 The aggregated logs should end with lines such as:
 
