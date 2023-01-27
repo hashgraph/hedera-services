@@ -100,10 +100,11 @@ public record StateDefinition<K extends Comparable<K>, V>(
      * @param stateKey The state key
      * @param valueSerdes The serdes for the singleton value
      * @return An instance of {@link StateDefinition}
-     * @param <T> The type of the singleton
+     * @param <K> The key type
+     * @param <V> The value type
      */
-    public static <T> StateDefinition<?, T> singleton(
-            @NonNull final String stateKey, @NonNull final Serdes<T> valueSerdes) {
+    public static <K extends Comparable<K>, V> StateDefinition<K, V> singleton(
+            @NonNull final String stateKey, @NonNull final Serdes<V> valueSerdes) {
         return new StateDefinition<>(stateKey, null, valueSerdes, 1, false, true);
     }
 }

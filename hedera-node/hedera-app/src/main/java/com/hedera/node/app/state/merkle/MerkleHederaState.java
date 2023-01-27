@@ -321,7 +321,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @param stateKey The state key
      */
     void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
-
         throwIfImmutable();
         Objects.requireNonNull(serviceName);
         Objects.requireNonNull(stateKey);
@@ -426,7 +425,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             if (node instanceof SingletonNode s) {
                 final var ret = createReadableSingletonState(md, s);
                 singletonInstances.put(stateKey, ret);
-                return (ReadableSingletonState<T>) ret;
+                return ret;
             } else {
                 // This exception should never be thrown. Only if "findNode" found the wrong node!
                 throw new IllegalStateException("Unexpected type for singleton state " + stateKey);

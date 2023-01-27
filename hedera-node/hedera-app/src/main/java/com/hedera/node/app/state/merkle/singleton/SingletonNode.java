@@ -16,6 +16,7 @@
 package com.hedera.node.app.state.merkle.singleton;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
+import com.hedera.node.app.state.merkle.StateUtils;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
@@ -41,7 +42,7 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal
     }
 
     public SingletonNode(@NonNull final StateMetadata<?, T> md, @NonNull final T value) {
-        setLeft(new StringLeaf(md.stateDefinition().stateKey()));
+        setLeft(new StringLeaf(StateUtils.computeLabel(md.serviceName(), md.stateDefinition().stateKey())));
         setRight(new ValueLeaf<T>(md, value));
     }
 
