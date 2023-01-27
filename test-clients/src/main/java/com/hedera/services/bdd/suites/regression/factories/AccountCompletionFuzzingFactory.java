@@ -1,0 +1,175 @@
+package com.hedera.services.bdd.suites.regression.factories;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
+import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
+import com.hedera.services.bdd.spec.infrastructure.providers.LookupUtils;
+import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
+import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
+import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
+import com.hedera.services.bdd.suites.regression.HollowAccountCompletionFuzzing;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.print.attribute.standard.MediaSize;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
+import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.intPropOrElse;
+
+public class AccountCompletionFuzzingFactory {
+    /**
+     * How many different ECDSA keys we will re-use as we continually create, update, and delete
+     * accounts with random {@link InitialAccountIdentifiers} based on this fixed set of keys.
+     */
+    private static final int NUM_DISTINCT_ECDSA_KEYS = 42;
+
+    private static final Logger log = LogManager.getLogger(AccountCompletionFuzzingFactory.class);
+
+
+
+    public static HapiSpecOperation[] accountCreation() {
+        return Stream.of(createSponsor()).flatMap(Stream::of)
+                .toArray(HapiSpecOperation[]::new);
+    }
+
+    private static HapiCryptoCreate[] createSponsor() {
+        return new HapiCryptoCreate[]{cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                .withRecharging()};
+    }
+
+
+    public static Function<HapiSpec, OpProvider> accountCompletionFuzzingWith(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var accounts =
+                    new RegistrySourcedNameProvider<>(
+                            AccountID.class, spec.registry(), new RandomSelector());
+
+            final var keys =
+                    new RegistrySourcedNameProvider<>(
+                            Key.class, spec.registry(), new RandomSelector());
+
+            return new BiasedDelegatingProvider()
+                    .withInitialization(onlyEcdsaKeys())
+                    .withOp(
+                            new OpProvider() {
+                                @Override
+                                public Optional<HapiSpecOperation> get() {
+                                    final var key = keys.getQualifying();
+                                    return key
+                                            .filter(k -> !k.endsWith("#"))
+                                            .filter(k -> !spec.registry().hasAccountId(k + "#"))
+                                            .map(s -> generateHollowAccount(spec.registry(), s));
+
+                                }
+                            },
+                            intPropOrElse("randomAccount.bias", 10, props)
+                    )
+                    .withOp(
+                            new OpProvider() {
+                                @Override
+                                public Optional<HapiSpecOperation> get() {
+                                    final var involved = LookupUtils.twoDistinct(accounts);
+                                    if (involved.isEmpty()) {
+                                        return Optional.empty();
+                                    }
+
+                                    long amount =  1;
+                                    String from = involved.get().getKey(), to = involved.get().getValue();
+
+                                    if(!from.endsWith("#") || !to.endsWith("#")){
+                                        return Optional.empty();
+                                    }
+
+                                    final var key = from.substring(0, from.length() - 1);
+                                    final AccountID fromAccount = asId(from, spec);
+                                    spec.registry()
+                                            .saveAccountId(key, fromAccount);
+                                    HapiCryptoTransfer op =
+                                            cryptoTransfer(tinyBarsFromTo(UNIQUE_PAYER_ACCOUNT, to, amount))
+                                                    .payingWith(key)
+                                                    //.signedBy(from)
+                                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(key))
+                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS);
+                                    return Optional.of(op);
+                                }
+                            },
+                            intPropOrElse("randomTransfer.bias", 10, props));
+        };
+    }
+
+    /*
+                                     final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+     */
+
+    private static HapiSpecOperation[] onlyEcdsaKeys() {
+        return IntStream.range(0, NUM_DISTINCT_ECDSA_KEYS)
+                .mapToObj(i -> newKeyNamed("Fuzz#" + i).shape(SECP_256K1_SHAPE))
+                .toArray(HapiSpecOperation[]::new);
+    }
+
+    public static HapiSpecOperation[] generateHollowAccounts(HapiSpecRegistry registry) {
+        return IntStream.range(0, NUM_DISTINCT_ECDSA_KEYS)
+                .mapToObj(i -> generateHollowAccount(registry, "Fuzz#" + i))
+                .toArray(HapiSpecOperation[]::new);
+    }
+
+    private static HapiSpecOperation generateHollowAccount(HapiSpecRegistry registry, String keyName) {
+        final var ecdsaKey = registry
+                .getKey(keyName)
+                .getECDSASecp256K1()
+                .toByteArray();
+        final var evmAddress =
+                ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+        //log.warn("Key name: " + keyName + ", Evm: " + evmAddress + "----------------");
+
+
+        return cryptoCreate(keyName + "#")
+                .hasAnyPrecheck()
+                .hasAnyKnownStatus()
+                .evmAddress(evmAddress)
+              //  .key(keyName)
+                .balance(100 * ONE_HBAR);
+               // .via(keyName + "#tx");
+    }
+}
