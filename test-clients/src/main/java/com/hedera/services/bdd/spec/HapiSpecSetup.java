@@ -119,6 +119,10 @@ public class HapiSpecSetup {
         System.out.println("addOverrides = " + this.props);
     }
 
+    public String defaultRecordLoc() {
+        return props.get("recordStream.path");
+    }
+
     public FileID addressBookId() {
         return props.getFile("address.book.id");
     }

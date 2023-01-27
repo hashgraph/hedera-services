@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
@@ -48,6 +49,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.commons.io.FileUtils;
@@ -327,5 +329,9 @@ public class Utils {
                     mirrorAddr.set(hex(HapiPropertySource.asSolidityAddress(createdId)));
                     opLog.info("{} is @ {} (mirror {})", desc, create2Addr.get(), mirrorAddr.get());
                 });
+    }
+
+    public static Instant asInstant(final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 }

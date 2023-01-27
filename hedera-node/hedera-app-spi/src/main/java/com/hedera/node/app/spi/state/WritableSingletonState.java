@@ -35,5 +35,5 @@ public interface WritableSingletonState<T> extends ReadableSingletonState<T> {
      *
      * @return True if the {@link #put(Object)} method has been called
      */
-    boolean modified();
+    boolean isModified();
 }

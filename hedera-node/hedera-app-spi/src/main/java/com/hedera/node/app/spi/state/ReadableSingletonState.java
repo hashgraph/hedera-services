@@ -52,5 +52,5 @@ public interface ReadableSingletonState<T> {
      *
      * @return true if {@link #get()} has been called on this instance
      */
-    boolean read();
+    boolean isRead();
 }

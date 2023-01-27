@@ -26,6 +26,10 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link
+ * StateMetadata}.
+ */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x65A48B28C563D72EL;

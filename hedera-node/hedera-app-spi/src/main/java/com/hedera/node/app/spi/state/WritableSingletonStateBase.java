@@ -66,7 +66,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     }
 
     @Override
-    public boolean modified() {
+    public boolean isModified() {
         return modified;
     }
 
