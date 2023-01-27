@@ -131,6 +131,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
@@ -148,22 +149,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpauseP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -239,31 +228,12 @@ class HTSPrecompiledContractTest {
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-    private TokenInfo tokenInfo;
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 
     @BeforeEach
     void setUp() throws IOException {
-        tokenInfo =
-                TokenInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setSupplyTypeValue(1)
-                        .setTokenId(fungible)
-                        .setDeleted(false)
-                        .setSymbol("FT")
-                        .setName("NAME")
-                        .setMemo("MEMO")
-                        .setTreasury(
-                                EntityIdUtils.accountIdFromEvmAddress(
-                                        Address.wrap(
-                                                Bytes.fromHexString(
-                                                        "0x00000000000000000000000000000000000005cc"))))
-                        .setTotalSupply(1L)
-                        .setMaxSupply(1000L)
-                        .build();
-
         precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
@@ -421,8 +391,6 @@ class HTSPrecompiledContractTest {
             given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
             given(worldUpdater.isInTransaction()).willReturn(false);
             given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
-            final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
-            final var ledgers = updater.trackingLedgers();
             final var viewExecutor =
                     new ViewExecutor(
                             input,
@@ -727,8 +695,6 @@ class HTSPrecompiledContractTest {
     @Test
     void replacesInheritedPropertiesOnCreateNonFungibleToken() {
         // given
-        final var parentId = EntityIdUtils.accountIdFromEvmAddress(contractAddress);
-
         final var autoRenewId = EntityId.fromIdentityCode(10);
         final var tokenCreateWrapper = mock(TokenCreateWrapper.class);
         given(tokenCreateWrapper.hasAutoRenewAccount()).willReturn(false);

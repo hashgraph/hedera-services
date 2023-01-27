@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
@@ -34,9 +34,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * A wrapper around a normal redirect precompile. Delegates each call to the wrapped precompile,
  * except for the @code {run()} method, where it first checks that the targeted token exists in the
- * current ledgers, before delegating. This check is required, since
- * all the ERC precompiles @code {run()} methods execute with the assumption that the passed token
- * exists.
+ * current ledgers, before delegating. This check is required, since all the ERC precompiles @code
+ * {run()} methods execute with the assumption that the passed token exists.
  */
 public class RedirectPrecompile implements Precompile {
 
