@@ -33,7 +33,8 @@ public class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> 
      * Creates a new instance.
      *
      * @param stateKey The state key for this instance
-     * @param backingStoreAccessor A {@link Supplier} that provides access to the value in the backing store.
+     * @param backingStoreAccessor A {@link Supplier} that provides access to the value in the
+     *     backing store.
      */
     public ReadableSingletonStateBase(
             @NonNull final String stateKey, @NonNull final Supplier<T> backingStoreAccessor) {
