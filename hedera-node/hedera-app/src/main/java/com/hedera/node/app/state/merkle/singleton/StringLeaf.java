@@ -22,7 +22,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.Labeled;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.Objects;
 
 public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf {
     private static final long CLASS_ID = 0x9C829FF3B2283L;
@@ -34,7 +33,7 @@ public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf
     public StringLeaf() {}
 
     public StringLeaf(@NonNull final String label) {
-        this.label = Objects.requireNonNull(label);
+        setLabel(label);
     }
 
     /** Copy constructor. */

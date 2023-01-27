@@ -26,11 +26,12 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
+import com.hedera.node.app.state.merkle.singleton.StringLeaf;
+import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
@@ -41,7 +42,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * An implementation of {@link SchemaRegistry}.
@@ -338,32 +338,25 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // various delegate writers and parsers, and so can parse/write different types of data
         // based on the id.
         try {
-            final Supplier<RuntimeConstructable> inMemoryValueCreator = () -> new InMemoryValue(md);
-            final var inMemoryValuePair =
-                    new ClassConstructorPair(InMemoryValue.class, inMemoryValueCreator);
-            constructableRegistry.registerConstructable(inMemoryValuePair);
-
-            final Supplier<RuntimeConstructable> onDiskKeyCreator = () -> new OnDiskKey<>(md);
-            final var onDiskKeyPair = new ClassConstructorPair(OnDiskKey.class, onDiskKeyCreator);
-            constructableRegistry.registerConstructable(onDiskKeyPair);
-
-            final Supplier<RuntimeConstructable> onDiskKeySerializerCreator =
-                    () -> new OnDiskKeySerializer<>(md);
-            final var onDiskKeySerializerPair =
-                    new ClassConstructorPair(OnDiskKeySerializer.class, onDiskKeySerializerCreator);
-            constructableRegistry.registerConstructable(onDiskKeySerializerPair);
-
-            final Supplier<RuntimeConstructable> onDiskValueCreator = () -> new OnDiskValue<>(md);
-            final var onDiskValuePair =
-                    new ClassConstructorPair(OnDiskValue.class, onDiskValueCreator);
-            constructableRegistry.registerConstructable(onDiskValuePair);
-
-            final Supplier<RuntimeConstructable> onDiskValueSerializerCreator =
-                    () -> new OnDiskValueSerializer<>(md);
-            final var onDiskValueSerializerPair =
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(InMemoryValue.class, () -> new InMemoryValue(md)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
+            constructableRegistry.registerConstructable(
                     new ClassConstructorPair(
-                            OnDiskValueSerializer.class, onDiskValueSerializerCreator);
-            constructableRegistry.registerConstructable(onDiskValueSerializerPair);
+                            OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(
+                            OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(
+                            SingletonNode.class, () -> new SingletonNode<>(md, null)));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
+            constructableRegistry.registerConstructable(
+                    new ClassConstructorPair(ValueLeaf.class, () -> new ValueLeaf<>(md)));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new RuntimeException(
