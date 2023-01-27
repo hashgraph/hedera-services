@@ -50,13 +50,12 @@ public class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> 
 
     @Override
     public T get() {
-        // TODO Should this be cached after first read? Repeatable read vs. dirty read
         this.read = true;
         return backingStoreAccessor.get();
     }
 
     @Override
-    public boolean read() {
+    public boolean isRead() {
         return read;
     }
 

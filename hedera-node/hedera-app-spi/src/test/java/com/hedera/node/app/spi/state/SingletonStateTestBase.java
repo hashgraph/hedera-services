@@ -36,9 +36,9 @@ abstract class SingletonStateTestBase extends StateTestBase {
     void testNonExistingGet() {
         backingStore.set(null);
         final var state = createState();
-        assertThat(state.read()).isFalse();
+        assertThat(state.isRead()).isFalse();
         assertThat(state.get()).isNull();
-        assertThat(state.read()).isTrue();
+        assertThat(state.isRead()).isTrue();
     }
 
     /**
@@ -50,9 +50,9 @@ abstract class SingletonStateTestBase extends StateTestBase {
     void testExistingGet() {
         backingStore.set(BRAZIL);
         final var state = createState();
-        assertThat(state.read()).isFalse();
+        assertThat(state.isRead()).isFalse();
         assertThat(state.get()).isEqualTo(BRAZIL);
-        assertThat(state.read()).isTrue();
+        assertThat(state.isRead()).isTrue();
     }
 
     @Test
@@ -62,22 +62,22 @@ abstract class SingletonStateTestBase extends StateTestBase {
         backingStore.set(CHAD);
         final var state = createState();
         assertThat(state.get()).isEqualTo(CHAD);
-        assertThat(state.read()).isTrue();
+        assertThat(state.isRead()).isTrue();
 
         // When we reset
         state.reset();
 
         // Then the "read" flag is false
-        assertThat(state.read()).isFalse();
+        assertThat(state.isRead()).isFalse();
 
         // And when the value in the backing store is changed
         backingStore.set(DENMARK);
         // Then it doesn't affect the state
-        assertThat(state.read()).isFalse();
+        assertThat(state.isRead()).isFalse();
 
         // Until we ask for the value, and then it shows the new value
         assertThat(state.get()).isEqualTo(DENMARK);
-        assertThat(state.read()).isTrue();
+        assertThat(state.isRead()).isTrue();
     }
 
     /**

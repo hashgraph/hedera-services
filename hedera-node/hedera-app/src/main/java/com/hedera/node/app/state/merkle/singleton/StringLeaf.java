@@ -23,6 +23,7 @@ import com.swirlds.common.utility.Labeled;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
+/** A leaf in the merkle tree that stores a string as its value. */
 public class StringLeaf extends PartialMerkleLeaf implements Labeled, MerkleLeaf {
     private static final long CLASS_ID = 0x9C829FF3B2283L;
     public static final int CLASS_VERSION = 1;

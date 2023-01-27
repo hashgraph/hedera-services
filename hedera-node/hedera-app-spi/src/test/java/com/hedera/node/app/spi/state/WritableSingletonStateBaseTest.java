@@ -83,7 +83,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         @DisplayName("`modified` is false on a new state")
         void initialValueForModified() {
             final var state = createState();
-            assertThat(state.modified()).isFalse();
+            assertThat(state.isModified()).isFalse();
         }
 
         @Test
@@ -91,7 +91,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         void modifiedAfterPut() {
             final var state = createState();
             state.put(BRAZIL);
-            assertThat(state.modified()).isTrue();
+            assertThat(state.isModified()).isTrue();
         }
 
         @Test
@@ -99,7 +99,7 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         void readDoesNotModify() {
             final var state = createState();
             assertThat(state.get()).isEqualTo(AUSTRALIA);
-            assertThat(state.modified()).isFalse();
+            assertThat(state.isModified()).isFalse();
         }
     }
 
@@ -154,9 +154,9 @@ class WritableSingletonStateBaseTest extends SingletonStateTestBase {
         void modifiedCleared() {
             final var state = createState();
             state.put(BRAZIL);
-            assertThat(state.modified()).isTrue();
+            assertThat(state.isModified()).isTrue();
             state.reset();
-            assertThat(state.modified()).isFalse();
+            assertThat(state.isModified()).isFalse();
         }
 
         @Test

@@ -40,6 +40,8 @@ public record StateDefinition<K extends Comparable<K>, V>(
         boolean onDisk,
         boolean singleton) {
 
+    private static final int NO_MAX = -1;
+
     public StateDefinition {
         if (singleton && onDisk) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'onDisk'");
@@ -70,7 +72,7 @@ public record StateDefinition<K extends Comparable<K>, V>(
             @NonNull final String stateKey,
             @NonNull final Serdes<K> keySerdes,
             @NonNull final Serdes<V> valueSerdes) {
-        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, -1, false, false);
+        return new StateDefinition<>(stateKey, keySerdes, valueSerdes, NO_MAX, false, false);
     }
 
     /**
@@ -105,6 +107,6 @@ public record StateDefinition<K extends Comparable<K>, V>(
      */
     public static <K extends Comparable<K>, V> StateDefinition<K, V> singleton(
             @NonNull final String stateKey, @NonNull final Serdes<V> valueSerdes) {
-        return new StateDefinition<>(stateKey, null, valueSerdes, 1, false, true);
+        return new StateDefinition<>(stateKey, null, valueSerdes, NO_MAX, false, true);
     }
 }
