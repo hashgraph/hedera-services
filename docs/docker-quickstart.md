@@ -43,7 +43,7 @@ REGISTRY_PREFIX=
 
 The file can be created by calling the `updateDockerEnv` gradle task (execute `./gradlew updateDockerEnv` from the root folder of the repo).
 
-Third, build the image with an empty registry prefix and the `TAG` from your `.env` file by calling the `createDockerImage` gradle tasks (execute `./gradlew createDockerImage` from the root folder of the repo).
+Third, build the image with an empty registry prefix and the `TAG` from your `.env` file by calling the `createDockerImage` gradle task (execute `./gradlew createDockerImage` from the root folder of the repo).
 
 This is a multi-stage build that could take **several minutes**, depending on your environment.
 
