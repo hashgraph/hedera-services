@@ -88,7 +88,7 @@ As you run operations against the local network, each node will periodically sav
 a combination of PostgreSQL tables under _compose-network/pgdata/_ and state files under, for example,
 _compose-network/node0/saved/com.hedera.node.app.service.mono.ServicesMain/0/hedera/_.
 
-To stop the network, call the `stopDockerContainers` gradle tasks (execute `./gradlew stopDockerContainers` from the root folder of the repo).
+To stop the network, call the `stopDockerContainers` gradle task (execute `./gradlew stopDockerContainers` from the root folder of the repo).
 
 Given a clean shutdown of the containers, when you restart with the `startDockerContainers` gradle task,
 the network will load from its last saved state. In general, for this to work correctly,
