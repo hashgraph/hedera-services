@@ -91,10 +91,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -103,6 +105,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -207,6 +210,7 @@ public class ContractCallSuite extends HapiSuite {
                 multipleSelfDestructsAreSafe(),
                 smartContractInlineAssemblyCheck(),
                 ocToken(),
+                erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently(),
                 contractTransferToSigReqAccountWithKeySucceeds(),
                 minChargeIsTXGasUsedByContractCall(),
                 hscsEvm005TransferOfHBarsWorksBetweenContracts(),
@@ -841,6 +845,85 @@ public class ContractCallSuite extends HapiSuite {
                                                         minValueToAccessGatedMethodAtCurrentRate
                                                                 .get())
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    /**
+     * This test characterizes a difference in behavior between the ERC721 {@code tokenURI()} and
+     * HTS {@code getNonFungibleTokenInfo()} methods. The HTS method will leave non-UTF-8 bytes
+     * as-is, while the ERC721 method will replace them with the Unicode replacement character.
+     *
+     * @return a spec characterizing this behavior
+     */
+    @SuppressWarnings("java:S5960")
+    private HapiSpec erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
+        final var contractAlternatives = "ErcAndHtsAlternatives";
+        final AtomicReference<Address> nftAddr = new AtomicReference<>();
+        final var viaErc721TokenURI = "erc721TokenURI";
+        final var viaHtsNftInfo = "viaHtsNftInfo";
+        // Valid UTF-8 bytes cannot include 0xff
+        final var hexedNonUtf8Meta = "ff";
+
+        return defaultHapiSpec("Erc721TokenUriAndHtsNftInfoSeeSameMetadata")
+                .given(
+                        uploadInitCode(contractAlternatives),
+                        contractCreate(contractAlternatives),
+                        tokenCreate("nft")
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .exposingAddressTo(nftAddr::set)
+                                .initialSupply(0)
+                                .supplyKey(DEFAULT_PAYER)
+                                .treasury(DEFAULT_PAYER),
+                        mintToken(
+                                "nft",
+                                List.of(ByteString.copyFrom(CommonUtils.unhex(hexedNonUtf8Meta)))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contractAlternatives,
+                                                        "canGetMetadataViaERC",
+                                                        nftAddr.get(),
+                                                        BigInteger.valueOf(1))
+                                                .via(viaErc721TokenURI)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contractAlternatives,
+                                                        "canGetMetadataViaHTS",
+                                                        nftAddr.get(),
+                                                        BigInteger.valueOf(1))
+                                                .via(viaHtsNftInfo)
+                                                .gas(1_000_000)))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getErcResult = getTxnRecord(viaErc721TokenURI);
+                                    final var getHtsResult = getTxnRecord(viaHtsNftInfo);
+                                    CustomSpecAssert.allRunFor(spec, getErcResult, getHtsResult);
+
+                                    ABIType<Tuple> decoder = TypeFactory.create("(bytes)");
+
+                                    final var htsResult =
+                                            getHtsResult
+                                                    .getResponseRecord()
+                                                    .getContractCallResult()
+                                                    .getContractCallResult();
+                                    final var htsMetadata = decoder.decode(htsResult.toByteArray());
+                                    // The HTS method leaves non-UTF-8 bytes as-is
+                                    Assertions.assertEquals(
+                                            hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
+
+                                    final var ercResult =
+                                            getErcResult
+                                                    .getResponseRecord()
+                                                    .getContractCallResult()
+                                                    .getContractCallResult();
+                                    // But the ERC721 method returns the Unicode replacement
+                                    // character
+                                    final var ercMetadata = decoder.decode(ercResult.toByteArray());
+                                    Assertions.assertEquals(
+                                            "efbfbd", CommonUtils.hex(ercMetadata.get(0)));
+                                }));
     }
 
     private HapiSpec imapUserExercise() {
