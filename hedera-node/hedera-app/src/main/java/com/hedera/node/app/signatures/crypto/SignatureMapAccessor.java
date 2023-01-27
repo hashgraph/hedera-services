@@ -65,11 +65,11 @@ public class SignatureMapAccessor {
      * {@link NonUniquePrefixException}.
      *
      * @param publicKey the public key that should match exactly one prefix in the map
-     * @return the signature bytes for the given public key, or an empty byte array if none
-     * @throws {@link NonUniquePrefixException} if there are multiple prefixes that match the given
-     *     key
+     * @return the signature bytes for the given public key, or an empty byte array if no prefixes
+     *     match
+     * @throws NonUniquePrefixException if more than one prefix matches
      */
-    public byte[] getSignatureByPublicKey(final byte[] publicKey) {
+    public byte[] getSignatureByPublicKey(final byte[] publicKey) throws NonUniquePrefixException {
         throw new AssertionError("Not implemented");
     }
 

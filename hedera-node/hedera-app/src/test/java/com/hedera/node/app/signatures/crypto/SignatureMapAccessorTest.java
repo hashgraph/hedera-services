@@ -32,4 +32,13 @@ class SignatureMapAccessorTest {
         assertThrows(AssertionError.class, () -> subject.getSignatureByEvmAddress(MOCK_PUBLIC_KEY));
         assertThrows(AssertionError.class, subject::getRemainingExplicitSignatures);
     }
+
+    @Test
+    void canThrowNonUniquePrefixException() {
+        assertThrows(
+                NonUniquePrefixException.class,
+                () -> {
+                    throw new NonUniquePrefixException();
+                });
+    }
 }
