@@ -42,7 +42,10 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal
     }
 
     public SingletonNode(@NonNull final StateMetadata<?, T> md, @NonNull final T value) {
-        setLeft(new StringLeaf(StateUtils.computeLabel(md.serviceName(), md.stateDefinition().stateKey())));
+        setLeft(
+                new StringLeaf(
+                        StateUtils.computeLabel(
+                                md.serviceName(), md.stateDefinition().stateKey())));
         setRight(new ValueLeaf<T>(md, value));
     }
 

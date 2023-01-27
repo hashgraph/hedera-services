@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
@@ -48,8 +47,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
 
     /**
-     * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready
-     * to be added.
+     * Start with an empty Merkle Tree, but with the "fruit" map and metadata created and ready to
+     * be added.
      */
     @BeforeEach
     void setUp() {
@@ -468,7 +467,8 @@ class MerkleHederaStateTest extends MerkleTestBase {
             assertThat(animalStates.get(F_KEY)).isSameAs(FOX);
             assertThat(animalStates.get(G_KEY)).isNull();
 
-            final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
+            final ReadableSingletonState<String> countryState =
+                    states.getSingleton(COUNTRY_STATE_KEY);
             assertThat(countryState.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
             assertThat(countryState.get()).isEqualTo(GHANA);
 
