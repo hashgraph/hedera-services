@@ -203,7 +203,7 @@ class FooServiceImplTest {
 ```
 
 The functionality of service implementations should be tested in unit tests.
-Since unit tests are executed on the classpath no `module-info.java` is needed and the tests cn be in the same package
+Since unit tests are executed on the classpath no `module-info.java` is needed and the tests can be in the same package
 as the implementations.
 
 ## Using services
