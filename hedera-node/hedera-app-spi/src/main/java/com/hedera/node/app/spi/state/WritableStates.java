@@ -26,13 +26,17 @@ public interface WritableStates extends ReadableStates {
      * the {@link Schema}.
      *
      * @param stateKey The key used for looking up state
-     * @return The state for that key. This will never be null.
      * @param <K> The key type in the state.
      * @param <V> The value type in the state.
+     * @return The state for that key. This will never be null.
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @Override
     @NonNull
     <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey);
+
+    @Override
+    @NonNull
+    <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey);
 }

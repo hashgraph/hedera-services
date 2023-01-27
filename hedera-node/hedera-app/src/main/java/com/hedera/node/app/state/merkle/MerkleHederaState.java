@@ -15,12 +15,24 @@
  */
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.spi.state.EmptyWritableStates;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
+import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
+import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
+import com.hedera.node.app.state.merkle.singleton.SingletonNode;
+import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
@@ -29,10 +41,15 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
+import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -262,13 +279,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         Objects.requireNonNull(md);
         Objects.requireNonNull(node);
 
-        String label;
-        if (node instanceof MerkleMap<?, ?> m) {
-            label = m.getLabel();
-        } else if (node instanceof VirtualMap<?, ?> v) {
-            label = v.getLabel();
-        } else {
-            throw new IllegalArgumentException("`node` must be a VirtualMap or MerkleMap");
+        final var label = node instanceof Labeled labeled ? labeled.getLabel() : null;
+        if (label == null) {
+            throw new IllegalArgumentException("`node` must be a Labeled and have a label");
         }
 
         final var def = md.stateDefinition();
@@ -278,7 +291,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                             + "the merkle node is not a VirtualMap");
         }
 
-        if (label == null || label.isEmpty()) {
+        if (label.isEmpty()) {
             // It looks like both MerkleMap and VirtualMap do not allow for a null label.
             // But I want to leave this check in here anyway, in case that is ever changed.
             throw new IllegalArgumentException("A label must be specified on the node");
@@ -310,7 +323,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @param stateKey The state key
      */
     void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
-
         throwIfImmutable();
         Objects.requireNonNull(serviceName);
         Objects.requireNonNull(stateKey);
@@ -339,8 +351,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         final var label = StateUtils.computeLabel(serviceName, stateKey);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);
-            if (node instanceof MerkleMap<?, ?> m && label.equals(m.getLabel())
-                    || node instanceof VirtualMap<?, ?> v && label.equals(v.getLabel())) {
+            if (node instanceof Labeled labeled && label.equals(labeled.getLabel())) {
                 return i;
             }
         }
@@ -348,33 +359,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return -1;
     }
 
-    /**
-     * Utility method for finding and returning the given node. Will throw an ISE if such a node
-     * cannot be found!
-     *
-     * @param md The metadata
-     * @return The found node
-     */
-    @NonNull
-    private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
-        final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
-        if (index == -1) {
-            // This can only happen if there WAS a node here, and it was removed!
-            throw new IllegalStateException(
-                    "State '"
-                            + md.stateDefinition().stateKey()
-                            + "' for service '"
-                            + md.serviceName()
-                            + "' is missing from the merkle tree!");
-        }
-
-        return getChild(index);
-    }
-
-    /** An implementation of {@link ReadableStates} based on the merkle tree. */
-    private final class MerkleReadableStates implements ReadableStates {
+    /** Base class implementation for states based on MerkleTree */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private abstract class MerkleStates implements ReadableStates {
         private final Map<String, StateMetadata<?, ?>> stateMetadata;
-        private final Map<String, ReadableKVState<?, ?>> instances;
+        protected final Map<String, ReadableKVState<?, ?>> kvInstances;
+        protected final Map<String, ReadableSingletonState<?>> singletonInstances;
         private final Set<String> stateKeys;
 
         /**
@@ -382,41 +372,65 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
          *
          * @param stateMetadata cannot be null
          */
-        MerkleReadableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
+        MerkleStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
             this.stateMetadata = Objects.requireNonNull(stateMetadata);
             this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
-            this.instances = new HashMap<>();
+            this.kvInstances = new HashMap<>();
+            this.singletonInstances = new HashMap<>();
         }
 
         @NonNull
         @Override
-        @SuppressWarnings({"rawtypes", "unchecked"})
         public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
-            final ReadableKVState<K, V> instance = (ReadableKVState<K, V>) instances.get(stateKey);
+            final ReadableKVState<K, V> instance =
+                    (ReadableKVState<K, V>) kvInstances.get(stateKey);
             if (instance != null) {
                 return instance;
             }
 
             final var md = stateMetadata.get(stateKey);
-            if (md == null) {
-                throw new IllegalArgumentException("Unknown state key '" + stateKey + ";");
+            if (md == null || md.stateDefinition().singleton()) {
+                throw new IllegalArgumentException("Unknown k/v state key '" + stateKey + ";");
             }
 
             final var node = findNode(md);
             if (node instanceof VirtualMap v) {
-                final var ret = new OnDiskReadableKVState<>(md, v);
-                instances.put(stateKey, ret);
+                final var ret = createReadableKVState(md, v);
+                kvInstances.put(stateKey, ret);
                 return ret;
             } else if (node instanceof MerkleMap m) {
-                final var ret = new InMemoryReadableKVState<>(md, m);
-                instances.put(stateKey, ret);
+                final var ret = createReadableKVState(md, m);
+                kvInstances.put(stateKey, ret);
                 return ret;
             } else {
-                // This method cannot possibly be reached. The findNodeIndex method ONLY
-                // returns an index if the type is VirtualMap or MerkleMap. There is no
-                // way to modify the merkle tree between the line that calls findNodeIndex
-                // and here. So this can never be reached, even in testing!
-                throw new IllegalStateException("Unexpected type for state " + stateKey);
+                // This exception should never be thrown. Only if "findNode" found the wrong node!
+                throw new IllegalStateException("Unexpected type for k/v state " + stateKey);
+            }
+        }
+
+        @NonNull
+        @Override
+        public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+            final ReadableSingletonState<T> instance =
+                    (ReadableSingletonState<T>) singletonInstances.get(stateKey);
+            if (instance != null) {
+                return instance;
+            }
+
+            final var md = stateMetadata.get(stateKey);
+            if (md == null || !md.stateDefinition().singleton()) {
+                throw new IllegalArgumentException(
+                        "Unknown singleton state key '" + stateKey + "'");
+            }
+
+            final var node = findNode(md);
+            if (node instanceof SingletonNode s) {
+                final var ret = createReadableSingletonState(md, s);
+                singletonInstances.put(stateKey, ret);
+                return ret;
+            } else {
+                // This exception should never be thrown. Only if "findNode" found the wrong node!
+                throw new IllegalStateException("Unexpected type for singleton state " + stateKey);
             }
         }
 
@@ -430,66 +444,129 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         public Set<String> stateKeys() {
             return stateKeys;
         }
+
+        @NonNull
+        protected abstract ReadableKVState createReadableKVState(
+                @NonNull StateMetadata md, @NonNull VirtualMap v);
+
+        @NonNull
+        protected abstract ReadableKVState createReadableKVState(
+                @NonNull StateMetadata md, @NonNull MerkleMap m);
+
+        @NonNull
+        protected abstract ReadableSingletonState createReadableSingletonState(
+                @NonNull StateMetadata md, @NonNull SingletonNode<?> s);
+
+        /**
+         * Utility method for finding and returning the given node. Will throw an ISE if such a node
+         * cannot be found!
+         *
+         * @param md The metadata
+         * @return The found node
+         */
+        @NonNull
+        private MerkleNode findNode(@NonNull final StateMetadata<?, ?> md) {
+            final var index = findNodeIndex(md.serviceName(), md.stateDefinition().stateKey());
+            if (index == -1) {
+                // This can only happen if there WAS a node here, and it was removed!
+                throw new IllegalStateException(
+                        "State '"
+                                + md.stateDefinition().stateKey()
+                                + "' for service '"
+                                + md.serviceName()
+                                + "' is missing from the merkle tree!");
+            }
+
+            return getChild(index);
+        }
+    }
+
+    /** An implementation of {@link ReadableStates} based on the merkle tree. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private final class MerkleReadableStates extends MerkleStates {
+        /**
+         * Create a new instance
+         *
+         * @param stateMetadata cannot be null
+         */
+        MerkleReadableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
+            super(stateMetadata);
+        }
+
+        @Override
+        @NonNull
+        protected ReadableKVState<?, ?> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
+            return new OnDiskReadableKVState<>(md, v);
+        }
+
+        @Override
+        @NonNull
+        protected ReadableKVState<?, ?> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
+            return new InMemoryReadableKVState<>(md, m);
+        }
+
+        @Override
+        @NonNull
+        protected ReadableSingletonState<?> createReadableSingletonState(
+                @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
+            return new ReadableSingletonStateImpl<>(md, s);
+        }
     }
 
     /** An implementation of {@link WritableStates} based on the merkle tree. */
-    private final class MerkleWritableStates implements WritableStates {
-        private final Map<String, StateMetadata<?, ?>> stateMetadata;
-        private final Map<String, WritableKVState<?, ?>> instances;
-        private final Set<String> stateKeys;
-
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    final class MerkleWritableStates extends MerkleStates implements WritableStates {
         /**
          * Create a new instance
          *
          * @param stateMetadata cannot be null
          */
         MerkleWritableStates(@NonNull final Map<String, StateMetadata<?, ?>> stateMetadata) {
-            this.stateMetadata = Objects.requireNonNull(stateMetadata);
-            this.stateKeys = Collections.unmodifiableSet(stateMetadata.keySet());
-            this.instances = new HashMap<>();
+            super(stateMetadata);
         }
 
         @NonNull
         @Override
-        @SuppressWarnings({"rawtypes", "unchecked"})
         public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
-            final WritableKVState<K, V> instance = (WritableKVState<K, V>) instances.get(stateKey);
-            if (instance != null) {
-                return instance;
-            }
-
-            final var md = stateMetadata.get(stateKey);
-            if (md == null) {
-                throw new IllegalArgumentException("Unknown state key '" + stateKey + "'");
-            }
-
-            final var node = findNode(md);
-            if (node instanceof VirtualMap v) {
-                final var ret = new OnDiskWritableKVState<>(md, v);
-                instances.put(stateKey, ret);
-                return ret;
-            } else if (node instanceof MerkleMap m) {
-                final var ret = new InMemoryWritableKVState<>(md, m);
-                instances.put(stateKey, ret);
-                return ret;
-            } else {
-                // This method cannot possibly be reached. The findNodeIndex method ONLY
-                // returns an index if the type is VirtualMap or MerkleMap. There is no
-                // way to modify the merkle tree between the line that calls findNodeIndex
-                // and here. So this can never be reached, even in testing!
-                throw new IllegalStateException("Unexpected type for state " + stateKey);
-            }
-        }
-
-        @Override
-        public boolean contains(@NonNull String stateKey) {
-            return stateMetadata.containsKey(stateKey);
+            return (WritableKVState<K, V>) super.get(stateKey);
         }
 
         @NonNull
         @Override
-        public Set<String> stateKeys() {
-            return stateKeys;
+        public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+            return (WritableSingletonState<T>) super.getSingleton(stateKey);
+        }
+
+        @Override
+        @NonNull
+        protected WritableKVState<?, ?> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final VirtualMap v) {
+            return new OnDiskWritableKVState<>(md, v);
+        }
+
+        @Override
+        @NonNull
+        protected WritableKVState<?, ?> createReadableKVState(
+                @NonNull final StateMetadata md, @NonNull final MerkleMap m) {
+            return new InMemoryWritableKVState<>(md, m);
+        }
+
+        @Override
+        @NonNull
+        protected WritableSingletonState<?> createReadableSingletonState(
+                @NonNull final StateMetadata md, @NonNull final SingletonNode<?> s) {
+            return new WritableSingletonStateImpl<>(md, s);
+        }
+
+        void commit() {
+            for (final ReadableKVState kv : kvInstances.values()) {
+                ((WritableKVStateBase) kv).commit();
+            }
+            for (final ReadableSingletonState s : singletonInstances.values()) {
+                ((WritableSingletonStateBase) s).commit();
+            }
         }
     }
 }
