@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYE
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferExperimentsWith;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -46,7 +47,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing());
+        return List.of(transferExperimentsFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
@@ -57,6 +58,18 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                                 .withRecharging())
                 .when()
                 .then(runWithProvider(idFuzzingWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
+    }
+
+    private HapiSpec transferExperimentsFuzzing() {
+        return defaultHapiSpec("TransferExperimentsFuzzing")
+                .given(
+                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                                .withRecharging())
+                .when()
+                .then(
+                        runWithProvider(idTransferExperimentsWith(PROPERTIES))
+                                .lasting(10L, TimeUnit.SECONDS));
     }
 
     @Override
