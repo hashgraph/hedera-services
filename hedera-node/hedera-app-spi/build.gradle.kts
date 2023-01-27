@@ -33,9 +33,8 @@ configurations.all {
 }
 
 dependencies {
-    implementation(libs.grpc.stub)
-    api(libs.hapi)
-    api(libs.helidon.io.grpc)
+    api(project(":hedera-node:hapi"))
+    api(libs.pbj.runtime)
     api(libs.jsr305.annotation)
     compileOnlyApi(libs.spotbugs.annotations)
 

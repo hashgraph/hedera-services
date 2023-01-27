@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.spi;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**

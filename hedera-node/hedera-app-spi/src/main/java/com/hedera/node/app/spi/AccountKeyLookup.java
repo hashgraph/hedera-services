@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.spi;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

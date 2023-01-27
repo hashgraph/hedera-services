@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.spi.state;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.Objects;

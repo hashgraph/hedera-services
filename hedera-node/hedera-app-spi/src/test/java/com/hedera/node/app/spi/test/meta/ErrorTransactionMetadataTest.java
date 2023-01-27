@@ -18,8 +18,13 @@ package com.hedera.node.app.spi.test.meta;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
-import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
 
 class ErrorTransactionMetadataTest {
@@ -62,17 +67,18 @@ class ErrorTransactionMetadataTest {
 
     private TransactionBody createAccountTransaction() {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(AccountID.newBuilder().setAccountNum(3L).build())
-                        .setTransactionValidStart(Timestamp.newBuilder().build());
-        final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setReceiverSigRequired(true)
-                        .setMemo("Create Account")
+                new TransactionID.Builder()
+                        .accountID(new AccountID.Builder().accountNum(3L).build())
+                        .transactionValidStart(new Timestamp.Builder().build())
                         .build();
-        return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+        final var createTxnBody =
+                new CryptoCreateTransactionBody.Builder()
+                        .receiverSigRequired(true)
+                        .memo("Create Account")
+                        .build();
+        return new TransactionBody.Builder()
+                .transactionID(transactionID)
+                .cryptoCreateAccount(createTxnBody)
                 .build();
     }
 }

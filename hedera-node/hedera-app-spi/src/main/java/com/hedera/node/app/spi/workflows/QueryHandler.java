@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.workflows;
 
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A {@code QueryHandler} contains all methods for the different stages of a single query. */

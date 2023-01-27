@@ -15,16 +15,16 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -39,6 +39,8 @@ import java.util.Objects;
  * <p>NOTE : This class is designed to be subclassed
  */
 public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBuilder<T>> {
+    private static final AccountID DEFAULT_ACCOUNT_ID = new AccountID.Builder().build();
+    private static final ContractID DEFAULT_CONTRACT_ID = new ContractID.Builder().build();
     protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
     protected HederaKey payerKey;
     protected ResponseCodeEnum status = OK;
@@ -212,7 +214,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      */
     private boolean isNotNeeded(@NonNull final AccountID id) {
         return id.equals(payer)
-                || id.equals(AccountID.getDefaultInstance())
+                || id.equals(DEFAULT_ACCOUNT_ID)
                 || designatesAccountRemoval(id)
                 || status != OK
                 || payerKey == null;
@@ -226,7 +228,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @return true if the lookup is not needed, false otherwise
      */
     private boolean isNotNeeded(@NonNull final ContractID id) {
-        return id.equals(ContractID.getDefaultInstance())
+        return id.equals(DEFAULT_CONTRACT_ID)
                 || designatesContractRemoval(id)
                 || status != OK
                 || payerKey == null;
@@ -239,10 +241,10 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @return true if the given accountID is
      */
     private boolean designatesAccountRemoval(@NonNull final AccountID id) {
-        return id.getShardNum() == 0
-                && id.getRealmNum() == 0
-                && id.getAccountNum() == 0
-                && id.getAlias().isEmpty();
+        return id.shardNum() == 0
+                && id.realmNum() == 0
+                && id.accountNum().orElse(0L) == 0
+                && id.alias().isEmpty();
     }
 
     /**
@@ -252,10 +254,10 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @return true if the given contractId is
      */
     private boolean designatesContractRemoval(@NonNull final ContractID id) {
-        return id.getShardNum() == 0
-                && id.getRealmNum() == 0
-                && id.getContractNum() == 0
-                && id.getEvmAddress().isEmpty();
+        return id.shardNum() == 0
+                && id.realmNum() == 0
+                && id.contractNum().orElse(0L) == 0
+                && id.evmAddress().isEmpty();
     }
 
     /**

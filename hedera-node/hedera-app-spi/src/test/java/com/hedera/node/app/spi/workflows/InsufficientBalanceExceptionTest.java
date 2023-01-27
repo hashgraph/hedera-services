@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.workflows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
 class InsufficientBalanceExceptionTest {

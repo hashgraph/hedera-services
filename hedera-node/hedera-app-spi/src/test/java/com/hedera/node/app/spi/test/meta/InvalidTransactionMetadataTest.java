@@ -15,17 +15,21 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
-import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class InvalidTransactionMetadataTest {
     private InvalidTransactionMetadata subject;
-    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
+    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
 
     @Test
     void gettersWork() {
@@ -52,17 +56,18 @@ class InvalidTransactionMetadataTest {
     }
 
     private TransactionBody createScheduleTransaction() {
-        final var transactionID = TransactionID.newBuilder().setAccountID(payer);
+        final var transactionID = new TransactionID.Builder().accountID(payer).build();
         final var createTxnBody =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setScheduledTransactionBody(
-                                SchedulableTransactionBody.newBuilder()
-                                        .setMemo("test")
-                                        .setTransactionFee(1_000_000L))
+                new ScheduleCreateTransactionBody.Builder()
+                        .scheduledTransactionBody(
+                                new SchedulableTransactionBody.Builder()
+                                        .memo("test")
+                                        .transactionFee(1_000_000L)
+                                        .build())
                         .build();
-        return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setScheduleCreate(createTxnBody)
+        return new TransactionBody.Builder()
+                .transactionID(transactionID)
+                .scheduleCreate(createTxnBody)
                 .build();
     }
 }

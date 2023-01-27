@@ -15,19 +15,23 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,8 +45,8 @@ class ScheduleSigTransactionMetadataBuilderTest {
     @Mock private AccountKeyLookup keyLookup;
     @Mock private HederaKey payerKey;
     @Mock private HederaKey schedulePayerKey;
-    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
-    private AccountID schedulePayer = AccountID.newBuilder().setAccountNum(4L).build();
+    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
+    private AccountID schedulePayer = new AccountID.Builder().accountNum(4L).build();
     private ScheduleTransactionMetadata meta;
 
     @Test
@@ -196,18 +200,19 @@ class ScheduleSigTransactionMetadataBuilderTest {
     }
 
     private TransactionBody createScheduleTransaction() {
-        final var transactionID = TransactionID.newBuilder().setAccountID(payer);
+        final var transactionID = new TransactionID.Builder().accountID(payer).build();
         final var createTxnBody =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setScheduledTransactionBody(
-                                SchedulableTransactionBody.newBuilder()
-                                        .setMemo("test")
-                                        .setTransactionFee(1_000_000L))
-                        .setPayerAccountID(schedulePayer)
+                new ScheduleCreateTransactionBody.Builder()
+                        .scheduledTransactionBody(
+                                new SchedulableTransactionBody.Builder()
+                                        .memo("test")
+                                        .transactionFee(1_000_000L)
+                                        .build())
+                        .payerAccountID(schedulePayer)
                         .build();
-        return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setScheduleCreate(createTxnBody)
+        return new TransactionBody.Builder()
+                .transactionID(transactionID)
+                .scheduleCreate(createTxnBody)
                 .build();
     }
 }

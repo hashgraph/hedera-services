@@ -15,18 +15,22 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -34,10 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSigTransactionMetadataTest {
+    private static final TransactionBody DEFAULT_TX_BODY = new TransactionBody.Builder().build();
     @Mock private AccountKeyLookup keyLookup;
     @Mock private HederaKey payerKey;
-    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
-    private AccountID schedulePayer = AccountID.newBuilder().setAccountNum(4L).build();
+    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
+    private AccountID schedulePayer = new AccountID.Builder().accountNum(4L).build();
 
     @Test
     void getsInnerMetadata() {
@@ -48,7 +53,7 @@ class ScheduleSigTransactionMetadataTest {
         final var innerMeta =
                 new SigTransactionMetadataBuilder(keyLookup)
                         .payerKeyFor(schedulePayer)
-                        .txnBody(TransactionBody.getDefaultInstance())
+                        .txnBody(DEFAULT_TX_BODY)
                         .build();
         final var subject =
                 new ScheduleSigTransactionMetadataBuilder(keyLookup)
@@ -67,7 +72,7 @@ class ScheduleSigTransactionMetadataTest {
 
         final var innerMeta =
                 new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(TransactionBody.getDefaultInstance())
+                        .txnBody(DEFAULT_TX_BODY)
                         .payerKeyFor(schedulePayer)
                         .build();
         final var subject =
@@ -91,7 +96,7 @@ class ScheduleSigTransactionMetadataTest {
         final var innerMeta =
                 new SigTransactionMetadataBuilder(keyLookup)
                         .status(INVALID_PAYER_ACCOUNT_ID)
-                        .txnBody(TransactionBody.getDefaultInstance())
+                        .txnBody(DEFAULT_TX_BODY)
                         .payerKeyFor(schedulePayer)
                         .build();
         final var subject =
@@ -107,18 +112,19 @@ class ScheduleSigTransactionMetadataTest {
     }
 
     private TransactionBody createScheduleTransaction() {
-        final var transactionID = TransactionID.newBuilder().setAccountID(payer);
+        final var transactionID = new TransactionID.Builder().accountID(payer).build();
         final var createTxnBody =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setScheduledTransactionBody(
-                                SchedulableTransactionBody.newBuilder()
-                                        .setMemo("test")
-                                        .setTransactionFee(1_000_000L))
-                        .setPayerAccountID(schedulePayer)
+                new ScheduleCreateTransactionBody.Builder()
+                        .scheduledTransactionBody(
+                                new SchedulableTransactionBody.Builder()
+                                        .memo("test")
+                                        .transactionFee(1_000_000L)
+                                        .build())
+                        .payerAccountID(schedulePayer)
                         .build();
-        return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setScheduleCreate(createTxnBody)
+        return new TransactionBody.Builder()
+                .transactionID(transactionID)
+                .scheduleCreate(createTxnBody)
                 .build();
     }
 }

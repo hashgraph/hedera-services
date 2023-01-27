@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,11 +34,11 @@ public class TestSchema extends Schema {
     }
 
     public TestSchema(int version) {
-        this(SemanticVersion.newBuilder().setMajor(version).build());
+        this(new SemanticVersion.Builder().major(version).build());
     }
 
     public TestSchema(int major, int minor, int patch) {
-        this(SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build());
+        this(new SemanticVersion.Builder().major(major).minor(minor).patch(patch).build());
     }
 
     public TestSchema(SemanticVersion version, Runnable onMigrate) {
