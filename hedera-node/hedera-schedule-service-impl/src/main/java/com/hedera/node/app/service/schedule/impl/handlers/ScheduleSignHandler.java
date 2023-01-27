@@ -15,8 +15,9 @@
  */
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
@@ -25,17 +26,15 @@ import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#SCHEDULE_SIGN}.
  */
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
+     * Pre-handles a {@link HederaFunctionality#SCHEDULE_SIGN}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -55,27 +54,28 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final PreHandleDispatcher dispatcher) {
-        final var op = txn.getScheduleSign();
-        final var id = op.getScheduleID();
-
-        final var scheduleLookupResult = scheduleStore.get(id);
-        if (scheduleLookupResult.isEmpty()) {
-            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
-        }
-
-        final var meta =
-                new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(payer);
-
-        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
-        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        final var payerForNested =
-                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
-
-        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        meta.scheduledMeta(innerMeta);
-        return meta.build();
+//        final var op = txn.scheduleSign();
+//        final var id = op.scheduleID();
+//
+//        final var scheduleLookupResult = scheduleStore.get(id);
+//        if (scheduleLookupResult.isEmpty()) {
+//            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
+//        }
+//
+//        final var meta =
+//                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+//                        .txnBody(txn)
+//                        .payerKeyFor(payer);
+//
+//        final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
+//        final var optionalPayer = scheduleLookupResult.get().designatedPayer();
+//        final var payerForNested =
+//                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
+//
+//        final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
+//        meta.scheduledMeta(innerMeta);
+//        return meta.build();
+        return null;
     }
 
     /**
