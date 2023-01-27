@@ -370,8 +370,10 @@ class EvmEncodingFacadeTest {
                                 Bytes.fromHexString("0x00000000000000000000000000000000000005a6")),
                         7120543443612535051L,
                         ByteString.copyFromUtf8("First").toByteArray(),
-                        null);
+                        null,
+                        fromHexString("0x03"));
         assertEquals(Address.ZERO, nftInfoWithoutSpender.getSpender());
+        assertEquals(fromHexString("0x03").length, nftInfoWithoutSpender.getLedgerId().length);
 
         final var nftInfo =
                 new EvmNftInfo(
@@ -381,7 +383,8 @@ class EvmEncodingFacadeTest {
                         7120543443612535051L,
                         ByteString.copyFromUtf8("First").toByteArray(),
                         Address.wrap(
-                                Bytes.fromHexString("0x00000000000000000000000000000000000005a7")));
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005a7")),
+                        fromHexString("0x03"));
 
         final var encodeResult = subject.encodeGetNonFungibleTokenInfo(tokenInfo, nftInfo);
         assertEquals(RETURN_GET_NON_FUNGIBLE_TOKEN_INFO, encodeResult);

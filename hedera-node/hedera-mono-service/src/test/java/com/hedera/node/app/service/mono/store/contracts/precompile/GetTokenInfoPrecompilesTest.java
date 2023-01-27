@@ -49,6 +49,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
@@ -139,6 +140,7 @@ class GetTokenInfoPrecompilesTest {
     @Mock private AccessorFactory accessorFactory;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private NetworkInfo networkInfo;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString(
@@ -252,7 +254,8 @@ class GetTokenInfoPrecompilesTest {
                         payerIdConvertedToAddress,
                         creationTime,
                         metadata.toByteArray(),
-                        EntityIdUtils.asTypedEvmAddress(sender));
+                        EntityIdUtils.asTypedEvmAddress(sender),
+                        evmTokenInfo.getLedgerId());
         nonFungibleTokenInfo =
                 TokenNftInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))
@@ -284,7 +287,8 @@ class GetTokenInfoPrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
 
         tokenInfoPrecompile = Mockito.mockStatic(TokenInfoPrecompile.class);
         fungibleTokenInfoPrecompile = Mockito.mockStatic(FungibleTokenInfoPrecompile.class);

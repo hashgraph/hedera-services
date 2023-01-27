@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -46,10 +47,12 @@ import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
@@ -93,8 +96,12 @@ class ContractsModuleTest {
     @Mock MessageCallProcessor messageCallProcessor;
     @Mock ContractCreationProcessor contractCreationProcessor;
     @Mock AutoCreationLogic autoCreationLogic;
+    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
 
     ContractsTestComponent subject;
+
+    private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+    private final Address ethAddressInstance = Address.fromHexString(ethAddress);
 
     @BeforeEach
     void createComponent() {
@@ -305,14 +312,19 @@ class ContractsModuleTest {
 
     @Test
     void balanceGoodAddress() {
+
         var evm = subject.evmV_0_34();
         var balanceOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
-        given(messageFrame.getRemainingGas()).willReturn(3000L);
-        given(messageFrame.popStackItem())
-                .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
+        ((HederaBalanceOperation) balanceOperation).setAddressValidator(addressValidator);
+
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(messageFrame.popStackItem()).willReturn(ethAddressInstance);
+        given(messageFrame.getStackItem(0)).willReturn(ethAddressInstance);
+        given(messageFrame.getRemainingGas()).willReturn(100000L);
+
+        given(addressValidator.test(any(), any())).willReturn(true);
         given(worldUpdater.get(any())).willReturn(null);
 
         final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);

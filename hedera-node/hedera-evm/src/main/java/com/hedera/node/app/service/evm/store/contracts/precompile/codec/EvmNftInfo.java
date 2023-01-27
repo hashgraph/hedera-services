@@ -26,6 +26,7 @@ public class EvmNftInfo {
     private long creationTime;
     private byte[] metadata;
     private Address spender;
+    private byte[] ledgerId;
 
     public EvmNftInfo() {}
 
@@ -34,12 +35,14 @@ public class EvmNftInfo {
             @NonNull Address account,
             long creationTime,
             byte[] metadata,
-            Address spender) {
+            Address spender,
+            byte[] ledgerId) {
         this.serialNumber = serialNumber;
         this.account = Objects.requireNonNull(account);
         this.creationTime = creationTime;
         this.metadata = metadata;
         this.spender = spender;
+        this.ledgerId = ledgerId;
     }
 
     public long getSerialNumber() {
@@ -60,5 +63,9 @@ public class EvmNftInfo {
 
     public Address getSpender() {
         return spender != null ? spender : Address.ZERO;
+    }
+
+    public byte[] getLedgerId() {
+        return ledgerId;
     }
 }

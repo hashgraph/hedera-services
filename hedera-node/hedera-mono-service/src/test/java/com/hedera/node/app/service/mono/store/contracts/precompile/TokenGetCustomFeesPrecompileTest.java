@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
@@ -110,6 +111,7 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private AccessorFactory accessorFactory;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private NetworkInfo networkInfo;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
             Bytes.fromHexString(
@@ -151,7 +153,8 @@ class TokenGetCustomFeesPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
 
         tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
     }
