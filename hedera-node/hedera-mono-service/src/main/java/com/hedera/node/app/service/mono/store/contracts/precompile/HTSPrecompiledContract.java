@@ -46,51 +46,7 @@ import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdat
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DecimalsPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DeleteTokenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FreezeTokenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenTypePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GrantKycPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsFrozenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsKycPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiAssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NamePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.PausePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.RevokeKycPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SymbolPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TotalSupplyPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpausePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.TokenCreateReqs;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -543,165 +499,176 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
-                        final var tokenId = target.tokenId();
-                        final var isFungibleToken =
-                                TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-                        final var nestedFunctionSelector = target.descriptor();
-                        if (target.massagedInput() != null) {
+                        final var isExplicitRedirectCall = target.massagedInput() != input;
+                        if (isExplicitRedirectCall) {
                             input = target.massagedInput();
                         }
-                        yield switch (nestedFunctionSelector) {
-                            case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(
-                                    tokenId,
-                                    syntheticTxnFactory,
-                                    ledgers,
-                                    encoder,
-                                    evmEncoder,
-                                    precompilePricingUtils);
-                            case AbiConstants.ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(
-                                    tokenId,
-                                    syntheticTxnFactory,
-                                    ledgers,
-                                    encoder,
-                                    evmEncoder,
-                                    precompilePricingUtils);
-                            case AbiConstants.ABI_ID_ERC_DECIMALS -> checkFungible(
-                                    isFungibleToken,
-                                    () ->
-                                            new DecimalsPrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            case AbiConstants
-                                    .ABI_ID_ERC_TOTAL_SUPPLY_TOKEN -> new TotalSupplyPrecompile(
-                                    tokenId,
-                                    syntheticTxnFactory,
-                                    ledgers,
-                                    encoder,
-                                    evmEncoder,
-                                    precompilePricingUtils);
-                            case AbiConstants
-                                    .ABI_ID_ERC_BALANCE_OF_TOKEN -> new BalanceOfPrecompile(
-                                    tokenId,
-                                    syntheticTxnFactory,
-                                    ledgers,
-                                    encoder,
-                                    evmEncoder,
-                                    precompilePricingUtils);
-                            case AbiConstants.ABI_ID_ERC_OWNER_OF_NFT -> checkNFT(
-                                    isFungibleToken,
-                                    () ->
-                                            new OwnerOfPrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            case AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT -> checkNFT(
-                                    isFungibleToken,
-                                    () ->
-                                            new TokenURIPrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            case AbiConstants.ABI_ID_ERC_TRANSFER -> checkFungible(
-                                    isFungibleToken,
-                                    () ->
-                                            new ERCTransferPrecompile(
-                                                    tokenId,
-                                                    senderAddress,
-                                                    isFungibleToken,
-                                                    ledgers,
-                                                    encoder,
-                                                    updater,
-                                                    sigsVerifier,
-                                                    sideEffectsTracker,
-                                                    syntheticTxnFactory,
-                                                    infrastructureFactory,
-                                                    precompilePricingUtils,
-                                                    functionId,
-                                                    dynamicProperties.isImplicitCreationEnabled()));
+                        final var tokenId = target.tokenId();
+                        final var isFungibleToken =
+                                (!isExplicitRedirectCall || ledgers.tokens().exists(tokenId))
+                                        && TokenType.FUNGIBLE_COMMON.equals(
+                                                ledgers.typeOf(tokenId));
+                        final var nestedFunctionSelector = target.descriptor();
+                        final var tokenPrecompile =
+                                switch (nestedFunctionSelector) {
+                                    case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(
+                                            tokenId,
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            evmEncoder,
+                                            precompilePricingUtils);
+                                    case AbiConstants.ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(
+                                            tokenId,
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            evmEncoder,
+                                            precompilePricingUtils);
+                                    case AbiConstants.ABI_ID_ERC_DECIMALS -> checkFungible(
+                                            isFungibleToken,
+                                            () ->
+                                                    new DecimalsPrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    case AbiConstants
+                                            .ABI_ID_ERC_TOTAL_SUPPLY_TOKEN -> new TotalSupplyPrecompile(
+                                            tokenId,
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            evmEncoder,
+                                            precompilePricingUtils);
+                                    case AbiConstants
+                                            .ABI_ID_ERC_BALANCE_OF_TOKEN -> new BalanceOfPrecompile(
+                                            tokenId,
+                                            syntheticTxnFactory,
+                                            ledgers,
+                                            encoder,
+                                            evmEncoder,
+                                            precompilePricingUtils);
+                                    case AbiConstants.ABI_ID_ERC_OWNER_OF_NFT -> checkNFT(
+                                            isFungibleToken,
+                                            () ->
+                                                    new OwnerOfPrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    case AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT -> checkNFT(
+                                            isFungibleToken,
+                                            () ->
+                                                    new TokenURIPrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    case AbiConstants.ABI_ID_ERC_TRANSFER -> checkFungible(
+                                            isFungibleToken,
+                                            () ->
+                                                    new ERCTransferPrecompile(
+                                                            tokenId,
+                                                            senderAddress,
+                                                            isFungibleToken,
+                                                            ledgers,
+                                                            encoder,
+                                                            updater,
+                                                            sigsVerifier,
+                                                            sideEffectsTracker,
+                                                            syntheticTxnFactory,
+                                                            infrastructureFactory,
+                                                            precompilePricingUtils,
+                                                            functionId,
+                                                            dynamicProperties
+                                                                    .isImplicitCreationEnabled()));
 
-                            case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new ERCTransferPrecompile(
-                                                    tokenId,
-                                                    senderAddress,
-                                                    isFungibleToken,
-                                                    ledgers,
-                                                    encoder,
-                                                    updater,
-                                                    sigsVerifier,
-                                                    sideEffectsTracker,
-                                                    syntheticTxnFactory,
-                                                    infrastructureFactory,
-                                                    precompilePricingUtils,
-                                                    functionId,
-                                                    dynamicProperties.isImplicitCreationEnabled()));
-                            case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new AllowancePrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            case AbiConstants.ABI_ID_ERC_APPROVE -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new ApprovePrecompile(
-                                                    tokenId,
-                                                    isFungibleToken,
-                                                    ledgers,
-                                                    encoder,
-                                                    sideEffectsTracker,
-                                                    syntheticTxnFactory,
-                                                    infrastructureFactory,
-                                                    precompilePricingUtils,
-                                                    senderAddress));
-                            case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new SetApprovalForAllPrecompile(
-                                                    tokenId,
-                                                    ledgers,
-                                                    sideEffectsTracker,
-                                                    syntheticTxnFactory,
-                                                    infrastructureFactory,
-                                                    precompilePricingUtils,
-                                                    senderAddress));
-                            case AbiConstants.ABI_ID_ERC_GET_APPROVED -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new GetApprovedPrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            case AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL -> checkFeatureFlag(
-                                    dynamicProperties.areAllowancesEnabled(),
-                                    () ->
-                                            new IsApprovedForAllPrecompile(
-                                                    tokenId,
-                                                    syntheticTxnFactory,
-                                                    ledgers,
-                                                    encoder,
-                                                    evmEncoder,
-                                                    precompilePricingUtils));
-                            default -> null;
-                        };
+                                    case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new ERCTransferPrecompile(
+                                                            tokenId,
+                                                            senderAddress,
+                                                            isFungibleToken,
+                                                            ledgers,
+                                                            encoder,
+                                                            updater,
+                                                            sigsVerifier,
+                                                            sideEffectsTracker,
+                                                            syntheticTxnFactory,
+                                                            infrastructureFactory,
+                                                            precompilePricingUtils,
+                                                            functionId,
+                                                            dynamicProperties
+                                                                    .isImplicitCreationEnabled()));
+                                    case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new AllowancePrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    case AbiConstants.ABI_ID_ERC_APPROVE -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new ApprovePrecompile(
+                                                            tokenId,
+                                                            isFungibleToken,
+                                                            ledgers,
+                                                            encoder,
+                                                            sideEffectsTracker,
+                                                            syntheticTxnFactory,
+                                                            infrastructureFactory,
+                                                            precompilePricingUtils,
+                                                            senderAddress));
+                                    case AbiConstants
+                                            .ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new SetApprovalForAllPrecompile(
+                                                            tokenId,
+                                                            ledgers,
+                                                            sideEffectsTracker,
+                                                            syntheticTxnFactory,
+                                                            infrastructureFactory,
+                                                            precompilePricingUtils,
+                                                            senderAddress));
+                                    case AbiConstants.ABI_ID_ERC_GET_APPROVED -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new GetApprovedPrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    case AbiConstants
+                                            .ABI_ID_ERC_IS_APPROVED_FOR_ALL -> checkFeatureFlag(
+                                            dynamicProperties.areAllowancesEnabled(),
+                                            () ->
+                                                    new IsApprovedForAllPrecompile(
+                                                            tokenId,
+                                                            syntheticTxnFactory,
+                                                            ledgers,
+                                                            encoder,
+                                                            evmEncoder,
+                                                            precompilePricingUtils));
+                                    default -> null;
+                                };
+                        yield isExplicitRedirectCall
+                                ? new RedirectPrecompile(tokenPrecompile, ledgers, tokenId)
+                                : tokenPrecompile;
                     }
                     case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
                             AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
