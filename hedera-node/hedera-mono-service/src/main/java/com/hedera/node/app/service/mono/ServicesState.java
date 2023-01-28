@@ -539,8 +539,10 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     public RecordsStorageAdapter payerRecords() {
         return getNumberOfChildren() == StateChildIndices.NUM_032X_CHILDREN
-                ? RecordsStorageAdapter.fromDedicated(getChild(StateChildIndices.PAYER_RECORDS))
-                : RecordsStorageAdapter.fromLegacy(getChild(StateChildIndices.ACCOUNTS));
+                ? RecordsStorageAdapter.fromDedicated(
+                        MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS)))
+                : RecordsStorageAdapter.fromLegacy(
+                        MerkleMapLike.from(getChild(StateChildIndices.ACCOUNTS)));
     }
 
     public VirtualMap<ContractKey, IterableContractValue> contractStorage() {

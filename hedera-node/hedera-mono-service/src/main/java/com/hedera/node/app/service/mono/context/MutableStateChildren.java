@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.virtualmap.VirtualMap;
-import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -51,21 +50,21 @@ import java.util.Objects;
  */
 public class MutableStateChildren implements StateChildren {
     private NonAtomicReference<AccountStorageAdapter> accounts;
-    private WeakReference<MerkleMapLike<EntityNum, MerkleTopic>> topics;
-    private WeakReference<MerkleMapLike<EntityNum, MerkleToken>> tokens;
+    private NonAtomicReference<MerkleMapLike<EntityNum, MerkleTopic>> topics;
+    private NonAtomicReference<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private NonAtomicReference<RecordsStorageAdapter> payerRecords;
-    private WeakReference<MerkleScheduledTransactions> schedules;
-    private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-    private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
+    private NonAtomicReference<MerkleScheduledTransactions> schedules;
+    private NonAtomicReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
+    private NonAtomicReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
     private NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
-    private WeakReference<MerkleNetworkContext> networkCtx;
-    private WeakReference<AddressBook> addressBook;
-    private WeakReference<MerkleSpecialFiles> specialFiles;
-    private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
-    private WeakReference<Map<ByteString, EntityNum>> aliases;
-    private WeakReference<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo;
+    private NonAtomicReference<MerkleNetworkContext> networkCtx;
+    private NonAtomicReference<AddressBook> addressBook;
+    private NonAtomicReference<MerkleSpecialFiles> specialFiles;
+    private NonAtomicReference<RecordsRunningHashLeaf> runningHashLeaf;
+    private NonAtomicReference<Map<ByteString, EntityNum>> aliases;
+    private NonAtomicReference<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo;
     private Instant signedAt = Instant.EPOCH;
 
     public MutableStateChildren() {
@@ -100,7 +99,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setTopics(final MerkleMapLike<EntityNum, MerkleTopic> topics) {
-        this.topics = new WeakReference<>(topics);
+        this.topics = new NonAtomicReference<>(topics);
     }
 
     @Override
@@ -113,7 +112,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setTokens(final MerkleMapLike<EntityNum, MerkleToken> tokens) {
-        this.tokens = new WeakReference<>(tokens);
+        this.tokens = new NonAtomicReference<>(tokens);
     }
 
     @Override
@@ -126,7 +125,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setStorage(final VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
-        this.storage = new WeakReference<>(storage);
+        this.storage = new NonAtomicReference<>(storage);
     }
 
     @Override
@@ -140,7 +139,7 @@ public class MutableStateChildren implements StateChildren {
 
     public void setContractStorage(
             final VirtualMap<ContractKey, IterableContractValue> contractStorage) {
-        this.contractStorage = new WeakReference<>(contractStorage);
+        this.contractStorage = new NonAtomicReference<>(contractStorage);
     }
 
     @Override
@@ -181,7 +180,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setSpecialFiles(final MerkleSpecialFiles specialFiles) {
-        this.specialFiles = new WeakReference<>(specialFiles);
+        this.specialFiles = new NonAtomicReference<>(specialFiles);
     }
 
     @Override
@@ -212,7 +211,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setStakingInfo(final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo) {
-        this.stakingInfo = new WeakReference<>(stakingInfo);
+        this.stakingInfo = new NonAtomicReference<>(stakingInfo);
     }
 
     @Override
@@ -241,30 +240,30 @@ public class MutableStateChildren implements StateChildren {
 
     public void updatePrimitiveChildrenFrom(final StateChildrenProvider provider) {
         accounts = new NonAtomicReference<>(provider.accounts());
-        topics = new WeakReference<>(provider.topics());
-        storage = new WeakReference<>(provider.storage());
-        contractStorage = new WeakReference<>(provider.contractStorage());
-        tokens = new WeakReference<>(provider.tokens());
+        topics = new NonAtomicReference<>(provider.topics());
+        storage = new NonAtomicReference<>(provider.storage());
+        contractStorage = new NonAtomicReference<>(provider.contractStorage());
+        tokens = new NonAtomicReference<>(provider.tokens());
         tokenAssociations = new NonAtomicReference<>(provider.tokenAssociations());
-        schedules = new WeakReference<>(provider.scheduleTxs());
-        networkCtx = new WeakReference<>(provider.networkCtx());
-        addressBook = new WeakReference<>(provider.addressBook());
-        specialFiles = new WeakReference<>(provider.specialFiles());
+        schedules = new NonAtomicReference<>(provider.scheduleTxs());
+        networkCtx = new NonAtomicReference<>(provider.networkCtx());
+        addressBook = new NonAtomicReference<>(provider.addressBook());
+        specialFiles = new NonAtomicReference<>(provider.specialFiles());
         uniqueTokens = new NonAtomicReference<>(provider.uniqueTokens());
         payerRecords = new NonAtomicReference<>(provider.payerRecords());
-        runningHashLeaf = new WeakReference<>(provider.runningHashLeaf());
-        aliases = new WeakReference<>(provider.aliases());
-        stakingInfo = new WeakReference<>(provider.stakingInfo());
+        runningHashLeaf = new NonAtomicReference<>(provider.runningHashLeaf());
+        aliases = new NonAtomicReference<>(provider.aliases());
+        stakingInfo = new NonAtomicReference<>(provider.stakingInfo());
     }
 
     /* --- used only in unit tests */
     @VisibleForTesting
     public void setNetworkCtx(final MerkleNetworkContext networkCtx) {
-        this.networkCtx = new WeakReference<>(networkCtx);
+        this.networkCtx = new NonAtomicReference<>(networkCtx);
     }
 
     @VisibleForTesting
     public void setAliases(final Map<ByteString, EntityNum> aliases) {
-        this.aliases = new WeakReference<>(aliases);
+        this.aliases = new NonAtomicReference<>(aliases);
     }
 }
