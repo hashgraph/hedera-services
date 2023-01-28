@@ -54,7 +54,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     private byte uint256KeyNonZeroBytes;
 
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xb2c0a1f733950abdL;
-    static final int MERKLE_VERSION = 1;
+    public static final int MERKLE_VERSION = 1;
 
     public ContractKey() {
         // there has to be a default constructor for deserialize

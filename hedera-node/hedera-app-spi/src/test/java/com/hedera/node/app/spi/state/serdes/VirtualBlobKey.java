@@ -41,25 +41,6 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
         this.entityNumCode = entityNumCode;
     }
 
-    public static VirtualBlobKey fromPath(final String path) {
-        final var code = path.charAt(LEGACY_BLOB_CODE_INDEX);
-        final var packedNum =
-                codeFromNum(parseLong(path.substring(LEGACY_BLOB_CODE_INDEX + 1)));
-
-        switch (code) {
-            case 'f':
-                return new VirtualBlobKey(Type.FILE_DATA, packedNum);
-            case 'k':
-                return new VirtualBlobKey(Type.FILE_METADATA, packedNum);
-            case 's':
-                return new VirtualBlobKey(Type.CONTRACT_BYTECODE, packedNum);
-            case 'e':
-                return new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, packedNum);
-            default:
-                throw new IllegalArgumentException("Invalid code in blob path '" + path + "'");
-        }
-    }
-
     @Override
     public void serialize(final ByteBuffer buffer) throws IOException {
         buffer.put((byte) type.ordinal());

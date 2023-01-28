@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class VirtualBlobValue implements VirtualValue {
-    static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     static final long CLASS_ID = 0x7eb72381159d8402L;
 
     private byte[] data;

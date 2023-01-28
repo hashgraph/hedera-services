@@ -101,7 +101,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public void deserialize(final SerializableDataInputStream in, final int version)
             throws IOException {
         final var valueSerdes = md.stateDefinition().valueSerdes();
-        this.val = valueSerdes.parse(new DataInputStream(in));
+        this.val = valueSerdes.parse(in);
     }
 
     /**

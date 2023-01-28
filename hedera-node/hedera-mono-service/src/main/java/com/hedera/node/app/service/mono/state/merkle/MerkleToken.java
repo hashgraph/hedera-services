@@ -67,7 +67,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     static final int RELEASE_0180_VERSION = 4;
     static final int RELEASE_0190_VERSION = 5;
 
-    static final int CURRENT_VERSION = RELEASE_0190_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0190_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
 
     private static final long UNUSED_AUTO_RENEW_PERIOD = -1L;

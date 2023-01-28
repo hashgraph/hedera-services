@@ -45,7 +45,7 @@ public class UniqueTokenValue implements VirtualValue {
     // Maximum amount of metadata bytes allowed.
     private static final int MAX_METADATA_BYTES = 100;
     /** Current version of the encoding scheme. */
-    /* package */ static final int CURRENT_VERSION = 1;
+    /* package */ public static final int CURRENT_VERSION = 1;
 
     /** The account number field of the owner's account id. */
     private long ownerAccountNum;

@@ -91,7 +91,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     static final int RELEASE_0300_VERSION = 10;
     static final int RELEASE_0310_VERSION = 11;
     static final int RELEASE_0320_VERSION = 12;
-    static final int CURRENT_VERSION = RELEASE_0320_VERSION;
+    public static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
     static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
     static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS =

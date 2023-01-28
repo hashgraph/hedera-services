@@ -38,7 +38,7 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
     static final long CLASS_ID = 0xe370929ba5429d9bL;
     static final int CLASS_VERSION = 1;
 
-    static final int RELEASE_0280_VERSION = 2;
+    public static final int RELEASE_0280_VERSION = 2;
     /** a runningHash of all RecordStreamObject */
     private RunningHash runningHash;
     /**

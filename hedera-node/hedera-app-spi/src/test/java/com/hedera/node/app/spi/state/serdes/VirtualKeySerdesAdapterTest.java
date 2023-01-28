@@ -16,7 +16,7 @@ class VirtualKeySerdesAdapterTest extends AbstractVirtualSerdesTest<VirtualBlobK
     private static final VirtualBlobKeySerializer SERIALIZER = new VirtualBlobKeySerializer();
 
     public VirtualKeySerdesAdapterTest() {
-        super(MonoSerdesAdapter.serdesForVirtualKey(
+        super(MonoMapSerdesAdapter.serdesForVirtualKey(
                 VirtualBlobKey.CURRENT_VERSION,
                 VirtualBlobKey::new,
                 SERIALIZER));

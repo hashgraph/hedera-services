@@ -16,15 +16,56 @@
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class ContractServiceImpl implements ContractService {
+    private static final int MAX_STORAGE_ENTRIES = 500_000_000;
+    private static final String STORAGE_KEY = "STORAGE";
+
+    private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder()
+            .setMinor(34)
+            .build();
+
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        throw new AssertionError("Not implemented");
+        registry.register(contractSchema());
+    }
+
+    private Schema contractSchema() {
+        return new Schema(CURRENT_VERSION) {
+            @NonNull
+            @Override
+            public Set<StateDefinition> statesToCreate() {
+                return Set.of(storageDef());
+            }
+        };
+    }
+
+    private static StateDefinition<ContractKey, IterableContractValue> storageDef() {
+        final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
+                ContractKey.MERKLE_VERSION,
+                ContractKey::new,
+                new ContractKeySerializer());
+        final var valueSerdes = MonoMapSerdesAdapter.serdesForVirtualValue(
+                IterableContractValue.ITERABLE_VERSION,
+                IterableContractValue::new);
+
+        return StateDefinition.onDisk(STORAGE_KEY, keySerdes, valueSerdes, MAX_STORAGE_ENTRIES);
     }
 }

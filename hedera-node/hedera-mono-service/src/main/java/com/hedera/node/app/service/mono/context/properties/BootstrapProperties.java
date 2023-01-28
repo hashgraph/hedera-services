@@ -60,9 +60,15 @@ public final class BootstrapProperties implements PropertySource {
     private static ThrowingStreamProvider fileStreamProvider =
             loc -> Files.newInputStream(Paths.get(loc));
 
+    private final boolean logEnabled;
+
     @Inject
     public BootstrapProperties() {
-        /* No-op */
+        this(true);
+    }
+
+    public BootstrapProperties(final boolean logEnabled) {
+        this.logEnabled = logEnabled;
     }
 
     String bootstrapPropsResource = "bootstrap.properties";
@@ -114,13 +120,15 @@ public final class BootstrapProperties implements PropertySource {
                         bootstrapProps.put(
                                 prop, transformFor(prop).apply(resourceProps.getProperty(prop))));
 
-        final var msg =
-                "Resolved bootstrap properties:\n  "
-                        + BOOTSTRAP_PROP_NAMES.stream()
-                                .sorted()
-                                .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
-                                .collect(Collectors.joining("\n  "));
-        log.info(msg);
+        if (logEnabled) {
+            final var msg =
+                    "Resolved bootstrap properties:\n  "
+                            + BOOTSTRAP_PROP_NAMES.stream()
+                            .sorted()
+                            .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
+                            .collect(Collectors.joining("\n  "));
+            log.info(msg);
+        }
     }
 
     private void load(final String resource, final Properties intoProps)
@@ -209,7 +217,8 @@ public final class BootstrapProperties implements PropertySource {
                     STAKING_PERIOD_MINS,
                     STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
                     STAKING_STARTUP_HELPER_RECOMPUTE,
-                    WORKFLOWS_ENABLED);
+                    WORKFLOWS_ENABLED,
+                    STATES_ENABLED);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS =
             Set.of(
@@ -575,5 +584,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
                     entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
-                    entry(WORKFLOWS_ENABLED, AS_BOOLEAN));
+                    entry(WORKFLOWS_ENABLED, AS_BOOLEAN),
+                    entry(STATES_ENABLED, AS_BOOLEAN));
 }

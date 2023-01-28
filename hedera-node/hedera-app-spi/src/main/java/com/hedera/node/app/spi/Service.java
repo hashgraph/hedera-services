@@ -35,5 +35,7 @@ public interface Service {
     /**
      * Registers the schemas for the service with the given {@link SchemaRegistry}.
      */
-    void registerSchemas(@NonNull SchemaRegistry registry);
+    default void registerSchemas(@NonNull SchemaRegistry registry) {
+        // TODO - hmm
+    }
 }

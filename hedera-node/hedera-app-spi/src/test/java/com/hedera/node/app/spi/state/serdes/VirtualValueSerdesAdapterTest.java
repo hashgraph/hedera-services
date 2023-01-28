@@ -13,7 +13,7 @@ public class VirtualValueSerdesAdapterTest extends AbstractVirtualSerdesTest<Vir
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public VirtualValueSerdesAdapterTest() {
-        super(MonoSerdesAdapter.serdesForVirtualValue(
+        super(MonoMapSerdesAdapter.serdesForVirtualValue(
                 VirtualBlobValue.CURRENT_VERSION,
                 VirtualBlobValue::new));
     }

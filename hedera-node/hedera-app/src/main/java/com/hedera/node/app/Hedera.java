@@ -18,17 +18,36 @@ package com.hedera.node.app;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
+import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
+import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
 import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.system.SoftwareVersion;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
+
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
@@ -95,6 +114,38 @@ public final class Hedera {
 
     public void shutdown() {
         shutdownLatch.countDown();
+    }
+
+    private record ServiceRegistry(Service service, MerkleSchemaRegistry registry) {
+        public static ServiceRegistry registryFor(final Service service) {
+            final var registry = new MerkleSchemaRegistry(
+                    ConstructableRegistry.getInstance(),
+                    Paths.get("hmm"),
+                    service.getServiceName());
+            return new ServiceRegistry(service, registry);
+        }
+        public void registerSchemas() {
+            service.registerSchemas(registry);
+        }
+    }
+
+    static Consumer<MerkleHederaState> registerServiceSchemasForMigration(
+            final SemanticVersion currentVersion) {
+        final List<ServiceRegistry> serviceRegistries = List.of(
+            ServiceRegistry.registryFor(ConsensusService.getInstance()),
+            ServiceRegistry.registryFor(ContractService.getInstance()),
+            ServiceRegistry.registryFor(FileService.getInstance()),
+            ServiceRegistry.registryFor(FreezeService.getInstance()),
+            ServiceRegistry.registryFor(NetworkService.getInstance()),
+            ServiceRegistry.registryFor(ScheduleService.getInstance()),
+            ServiceRegistry.registryFor(TokenService.getInstance()),
+            ServiceRegistry.registryFor(UtilService.getInstance()));
+
+        serviceRegistries.forEach(ServiceRegistry::registerSchemas);
+
+        return state -> serviceRegistries.forEach(serviceRegistry ->
+                serviceRegistry.registry().migrate(
+                        state, state.deserializedVersion(), currentVersion));
     }
 
     private static Metrics createMetrics() {

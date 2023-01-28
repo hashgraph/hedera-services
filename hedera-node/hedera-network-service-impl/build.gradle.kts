@@ -31,4 +31,5 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-network-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.swirlds.common)
 }

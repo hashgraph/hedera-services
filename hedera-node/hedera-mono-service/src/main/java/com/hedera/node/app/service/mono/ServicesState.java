@@ -34,6 +34,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
@@ -108,7 +109,7 @@ import org.apache.logging.log4j.Logger;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState2 {
+        implements MerkleInternal, SwirldState2, StateChildrenProvider {
     private static final VirtualMapDataAccess VIRTUAL_MAP_DATA_ACCESS =
             VirtualMapMigration::extractVirtualMapData;
     private static final Logger log = LogManager.getLogger(ServicesState.class);

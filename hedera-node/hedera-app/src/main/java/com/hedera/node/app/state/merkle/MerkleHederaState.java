@@ -33,10 +33,14 @@ import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.WritableSingletonStateImpl;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
@@ -45,6 +49,8 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +58,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import static com.swirlds.common.system.InitTrigger.GENESIS;
 
 /**
  * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
@@ -138,6 +146,27 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         this.onMigrate = Objects.requireNonNull(onMigrate);
         this.onPreHandle = Objects.requireNonNull(onPreHandle);
         this.onHandleConsensusRound = Objects.requireNonNull(onHandleConsensusRound);
+    }
+
+    @Override
+    public void init(
+            Platform platform,
+            AddressBook addressBook,
+            SwirldDualState swirldDualState,
+            InitTrigger trigger,
+            SoftwareVersion deserializedVersion) {
+        if (trigger == GENESIS) {
+//            genesisInit(platform, addressBook, dualState);
+        } else {
+            // Note this returns the app in case we need to do something with it  after making
+            // final changes to state (e.g. after migrating something from memory to disk)
+//            deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
+        }
+    }
+
+    @Nullable
+    public SemanticVersion deserializedVersion() {
+        return null;
     }
 
     /**

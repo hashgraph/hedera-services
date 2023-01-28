@@ -226,35 +226,35 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void updateFromImmutable(
-            final ServicesState signedState, final Instant lowerBoundOnSigningTime) {
-        updateFrom(signedState);
+            final StateChildrenProvider provider, final Instant lowerBoundOnSigningTime) {
+        updateFrom(provider);
         signedAt = lowerBoundOnSigningTime;
     }
 
-    public void updateFrom(final ServicesState state) {
-        if (!state.isInitialized()) {
+    public void updateFrom(final StateChildrenProvider provider) {
+        if (!provider.isInitialized()) {
             throw new IllegalArgumentException(
                     "State children require an initialized state to update");
         }
-        updatePrimitiveChildrenFrom(state);
+        updatePrimitiveChildrenFrom(provider);
     }
 
-    public void updatePrimitiveChildrenFrom(final ServicesState state) {
-        accounts = new NonAtomicReference<>(state.accounts());
-        topics = new WeakReference<>(state.topics());
-        storage = new WeakReference<>(state.storage());
-        contractStorage = new WeakReference<>(state.contractStorage());
-        tokens = new WeakReference<>(state.tokens());
-        tokenAssociations = new NonAtomicReference<>(state.tokenAssociations());
-        schedules = new WeakReference<>(state.scheduleTxs());
-        networkCtx = new WeakReference<>(state.networkCtx());
-        addressBook = new WeakReference<>(state.addressBook());
-        specialFiles = new WeakReference<>(state.specialFiles());
-        uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
-        payerRecords = new NonAtomicReference<>(state.payerRecords());
-        runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
-        aliases = new WeakReference<>(state.aliases());
-        stakingInfo = new WeakReference<>(state.stakingInfo());
+    public void updatePrimitiveChildrenFrom(final StateChildrenProvider provider) {
+        accounts = new NonAtomicReference<>(provider.accounts());
+        topics = new WeakReference<>(provider.topics());
+        storage = new WeakReference<>(provider.storage());
+        contractStorage = new WeakReference<>(provider.contractStorage());
+        tokens = new WeakReference<>(provider.tokens());
+        tokenAssociations = new NonAtomicReference<>(provider.tokenAssociations());
+        schedules = new WeakReference<>(provider.scheduleTxs());
+        networkCtx = new WeakReference<>(provider.networkCtx());
+        addressBook = new WeakReference<>(provider.addressBook());
+        specialFiles = new WeakReference<>(provider.specialFiles());
+        uniqueTokens = new NonAtomicReference<>(provider.uniqueTokens());
+        payerRecords = new NonAtomicReference<>(provider.payerRecords());
+        runningHashLeaf = new WeakReference<>(provider.runningHashLeaf());
+        aliases = new WeakReference<>(provider.aliases());
+        stakingInfo = new WeakReference<>(provider.stakingInfo());
     }
 
     /* --- used only in unit tests */

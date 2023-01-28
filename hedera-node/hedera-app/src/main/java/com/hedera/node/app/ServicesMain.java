@@ -16,11 +16,15 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -28,6 +32,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
@@ -78,8 +83,22 @@ public class ServicesMain implements SwirldMain {
     }
 
     @Override
-    public ServicesState newState() {
-        return new ServicesState();
+    public SwirldState2 newState() {
+        final var statesEnabled =
+                new BootstrapProperties(false)
+                        .getBooleanProperty(STATES_ENABLED);
+        if (!statesEnabled) {
+            return new ServicesState();
+        } else {
+            final var servicesSemVer =
+                    SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
+            final var migration =
+                    Hedera.registerServiceSchemasForMigration(servicesSemVer);
+            return new MerkleHederaState(
+                    migration,
+                    event -> {},
+                    (round, dualState) -> {});
+        }
     }
 
     @Override

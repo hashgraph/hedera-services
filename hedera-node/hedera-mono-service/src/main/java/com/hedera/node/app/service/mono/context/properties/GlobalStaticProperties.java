@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATES_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 
 import edu.umd.cs.findbugs.annotations.Nullable;

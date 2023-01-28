@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
-    private static final int CURRENT_VERSION = 1;
+    public static final int CURRENT_VERSION = 1;
     private static final long CLASS_ID = 0xc18c86c499e60727L;
 
     private long prev;

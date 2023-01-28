@@ -2,6 +2,8 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 
 module com.hedera.node.app.service.file.impl {
     requires com.hedera.node.app.service.file;
+    requires com.hedera.node.app.service.mono;
+    requires com.swirlds.common;
 
     provides com.hedera.node.app.service.file.FileService with
             FileServiceImpl;

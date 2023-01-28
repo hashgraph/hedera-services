@@ -67,24 +67,24 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
     private final Instant signedAt;
 
-    public ImmutableStateChildren(final ServicesState state) {
-        this.signedAt = state.getTimeOfLastHandledTxn();
+    public ImmutableStateChildren(final StateChildrenProvider provider) {
+        this.signedAt = provider.getTimeOfLastHandledTxn();
 
-        accounts = new NonAtomicReference<>(state.accounts());
-        topics = new WeakReference<>(state.topics());
-        storage = new WeakReference<>(state.storage());
-        contractStorage = new WeakReference<>(state.contractStorage());
-        tokens = new WeakReference<>(state.tokens());
-        tokenAssociations = new WeakReference<>(state.tokenAssociations());
-        schedules = new WeakReference<>(state.scheduleTxs());
-        networkCtx = new WeakReference<>(state.networkCtx());
-        addressBook = new WeakReference<>(state.addressBook());
-        specialFiles = new WeakReference<>(state.specialFiles());
-        uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
-        runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
-        aliases = new WeakReference<>(state.aliases());
-        stakingInfo = new WeakReference<>(state.stakingInfo());
-        payerRecords = new NonAtomicReference<>(state.payerRecords());
+        accounts = new NonAtomicReference<>(provider.accounts());
+        topics = new WeakReference<>(provider.topics());
+        storage = new WeakReference<>(provider.storage());
+        contractStorage = new WeakReference<>(provider.contractStorage());
+        tokens = new WeakReference<>(provider.tokens());
+        tokenAssociations = new WeakReference<>(provider.tokenAssociations());
+        schedules = new WeakReference<>(provider.scheduleTxs());
+        networkCtx = new WeakReference<>(provider.networkCtx());
+        addressBook = new WeakReference<>(provider.addressBook());
+        specialFiles = new WeakReference<>(provider.specialFiles());
+        uniqueTokens = new NonAtomicReference<>(provider.uniqueTokens());
+        runningHashLeaf = new WeakReference<>(provider.runningHashLeaf());
+        aliases = new WeakReference<>(provider.aliases());
+        stakingInfo = new WeakReference<>(provider.stakingInfo());
+        payerRecords = new NonAtomicReference<>(provider.payerRecords());
     }
 
     @Override

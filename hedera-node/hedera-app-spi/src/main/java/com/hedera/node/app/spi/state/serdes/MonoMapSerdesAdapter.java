@@ -1,6 +1,7 @@
 package com.hedera.node.app.spi.state.serdes;
 
 import com.hedera.node.app.spi.state.Serdes;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
@@ -13,12 +14,54 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-public class MonoSerdesAdapter {
-    private MonoSerdesAdapter() {
+public class MonoMapSerdesAdapter {
+    private MonoMapSerdesAdapter() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static <T extends VirtualKey<T>> Serdes<T> serdesForVirtualKey(
+    public static <T extends SelfSerializable> Serdes<T> serdesForSelfSerializable(
+            final int version,
+            final Supplier<T> factory) {
+        return new Serdes<>() {
+            @NonNull
+            @Override
+            public T parse(final @NonNull DataInput input) throws IOException {
+                final var item = factory.get();
+                if (input instanceof SerializableDataInputStream in) {
+                    item.deserialize(in, version);
+                } else {
+                    throw new IllegalArgumentException("Expected a SerializableDataInputStream");
+                }
+                return item;
+            }
+
+            @Override
+            public void write(final @NonNull T item, final @NonNull DataOutput output) throws IOException {
+                if (output instanceof SerializableDataOutputStream out) {
+                    item.serialize(out);
+                } else {
+                    throw new IllegalArgumentException("Expected a SerializableDataOutputStream");
+                }
+            }
+
+            @Override
+            public int measure(final @NonNull DataInput input) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public int typicalSize() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean fastEquals(@NonNull T item, @NonNull DataInput input) {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    public static <T extends VirtualKey<?>> Serdes<T> serdesForVirtualKey(
             final int version,
             final Supplier<T> factory,
             final KeySerializer<T> keySerializer

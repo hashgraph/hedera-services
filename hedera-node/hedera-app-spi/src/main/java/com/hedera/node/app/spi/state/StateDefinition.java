@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param <K> The type of key
  * @param <V> The type of value
  */
-public record StateDefinition<K extends Comparable<K>, V>(
+public record StateDefinition<K extends Comparable<? super K>, V>(
         @NonNull String stateKey,
         @Nullable Serdes<K> keySerdes,
         @NonNull Serdes<V> valueSerdes,
@@ -88,7 +88,7 @@ public record StateDefinition<K extends Comparable<K>, V>(
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K extends Comparable<K>, V> StateDefinition<K, V> onDisk(
+    public static <K extends Comparable<? super K>, V> StateDefinition<K, V> onDisk(
             @NonNull final String stateKey,
             @NonNull final Serdes<K> keySerdes,
             @NonNull final Serdes<V> valueSerdes,
