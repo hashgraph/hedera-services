@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -93,7 +94,7 @@ class OpUsageCtxHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
+        subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> MerkleMapLike.from(tokens), aliasManager);
     }
 
     @Test

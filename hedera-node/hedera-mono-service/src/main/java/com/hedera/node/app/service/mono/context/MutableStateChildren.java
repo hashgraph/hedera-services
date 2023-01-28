@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -36,7 +37,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
@@ -51,8 +51,8 @@ import java.util.Objects;
  */
 public class MutableStateChildren implements StateChildren {
     private NonAtomicReference<AccountStorageAdapter> accounts;
-    private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
-    private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private WeakReference<MerkleMapLike<EntityNum, MerkleTopic>> topics;
+    private WeakReference<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private NonAtomicReference<RecordsStorageAdapter> payerRecords;
@@ -65,7 +65,7 @@ public class MutableStateChildren implements StateChildren {
     private WeakReference<MerkleSpecialFiles> specialFiles;
     private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
     private WeakReference<Map<ByteString, EntityNum>> aliases;
-    private WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+    private WeakReference<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo;
     private Instant signedAt = Instant.EPOCH;
 
     public MutableStateChildren() {
@@ -91,7 +91,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
         return Objects.requireNonNull(topics.get());
     }
 
@@ -99,12 +99,12 @@ public class MutableStateChildren implements StateChildren {
         return topics().size();
     }
 
-    public void setTopics(final MerkleMap<EntityNum, MerkleTopic> topics) {
+    public void setTopics(final MerkleMapLike<EntityNum, MerkleTopic> topics) {
         this.topics = new WeakReference<>(topics);
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
         return Objects.requireNonNull(tokens.get());
     }
 
@@ -112,7 +112,7 @@ public class MutableStateChildren implements StateChildren {
         return tokens().size();
     }
 
-    public void setTokens(final MerkleMap<EntityNum, MerkleToken> tokens) {
+    public void setTokens(final MerkleMapLike<EntityNum, MerkleToken> tokens) {
         this.tokens = new WeakReference<>(tokens);
     }
 
@@ -207,11 +207,11 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
         return Objects.requireNonNull(stakingInfo.get());
     }
 
-    public void setStakingInfo(final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo) {
+    public void setStakingInfo(final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo) {
         this.stakingInfo = new WeakReference<>(stakingInfo);
     }
 

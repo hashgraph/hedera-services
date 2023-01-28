@@ -6,11 +6,14 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.mono;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
+    requires com.swirlds.virtualmap;
+    requires com.swirlds.jasperdb;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
 
     exports com.hedera.node.app.service.contract.impl to
+            com.hedera.node.app,
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
 }

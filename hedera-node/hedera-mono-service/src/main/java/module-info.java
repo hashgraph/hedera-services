@@ -39,7 +39,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app.service.contract.impl.test,
-            com.hedera.node.app.service.contract.impl, com.hedera.node.app.service.network.impl, com.hedera.node.app.service.consensus.impl, com.hedera.node.app.service.file.impl;
+            com.hedera.node.app.service.contract.impl, com.hedera.node.app.service.network.impl, com.hedera.node.app.service.consensus.impl, com.hedera.node.app.service.file.impl, com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.utils.accessors;
@@ -70,6 +70,14 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;
+    exports com.hedera.node.app.service.mono.ledger.accounts.staking to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.context.init to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.state.initialization to
+            com.hedera.node.app;
+    exports com.hedera.node.app.service.mono.sigs to
+            com.hedera.node.app;
 
     opens com.hedera.node.app.service.mono to
             com.swirlds.common;
@@ -99,6 +107,9 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.virtual;
     exports com.hedera.node.app.service.mono.state.virtual.entities;
     exports com.hedera.node.app.service.mono.stream;
+    exports com.hedera.node.app.service.mono.state;
+    exports com.hedera.node.app.service.mono.state.org;
+    exports com.hedera.node.app.service.mono.state.adapters;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;

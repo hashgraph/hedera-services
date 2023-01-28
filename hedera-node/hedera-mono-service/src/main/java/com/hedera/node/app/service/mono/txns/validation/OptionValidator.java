@@ -20,6 +20,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -87,7 +88,7 @@ public interface OptionValidator {
 
     ResponseCodeEnum nftMaxQueryRangeCheck(long start, long end);
 
-    ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMap<EntityNum, MerkleTopic> topics);
+    ResponseCodeEnum queryableTopicStatus(TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics);
 
     JKey attemptToDecodeOrThrow(Key key, ResponseCodeEnum code);
 

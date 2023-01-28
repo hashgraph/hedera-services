@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -36,26 +37,26 @@ public class AccountStorageAdapter {
     private static final int THREAD_COUNT = 32;
     private final boolean accountsOnDisk;
     private final @Nullable VirtualMapDataAccess virtualMapDataAccess;
-    private final @Nullable MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts;
-    private final @Nullable MerkleMap<EntityNum, MerklePayerRecords> payerRecords;
+    private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts;
+    private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
     private final @Nullable VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
 
     public static AccountStorageAdapter fromInMemory(
-            final MerkleMap<EntityNum, MerkleAccount> accounts) {
+            final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
         return new AccountStorageAdapter(accounts, null, null, null);
     }
 
     public static AccountStorageAdapter fromOnDisk(
             final VirtualMapDataAccess virtualMapDataAccess,
-            final MerkleMap<EntityNum, MerklePayerRecords> payerRecords,
+            final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
             final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts) {
         return new AccountStorageAdapter(null, virtualMapDataAccess, payerRecords, accounts);
     }
 
     private AccountStorageAdapter(
-            @Nullable final MerkleMap<EntityNum, MerkleAccount> inMemoryAccounts,
+            @Nullable final MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts,
             final @Nullable VirtualMapDataAccess virtualMapDataAccess,
-            @Nullable final MerkleMap<EntityNum, MerklePayerRecords> payerRecords,
+            @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
             @Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts) {
         if (inMemoryAccounts != null) {
             this.accountsOnDisk = false;
@@ -152,7 +153,7 @@ public class AccountStorageAdapter {
     }
 
     @Nullable
-    public MerkleMap<EntityNum, MerkleAccount> getInMemoryAccounts() {
+    public MerkleMapLike<EntityNum, MerkleAccount> getInMemoryAccounts() {
         return inMemoryAccounts;
     }
 

@@ -1,6 +1,7 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -26,10 +27,10 @@ import java.util.Map;
 
 public interface StateChildrenProvider {
     AccountStorageAdapter accounts();
-    MerkleMap<EntityNum, MerkleTopic> topics();
+    MerkleMapLike<EntityNum, MerkleTopic> topics();
     VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
     VirtualMap<ContractKey, IterableContractValue> contractStorage();
-    MerkleMap<EntityNum, MerkleToken> tokens();
+    MerkleMapLike<EntityNum, MerkleToken> tokens();
     TokenRelStorageAdapter tokenAssociations();
     MerkleScheduledTransactions scheduleTxs();
     MerkleNetworkContext networkCtx();
@@ -39,8 +40,9 @@ public interface StateChildrenProvider {
     RecordsStorageAdapter payerRecords();
     RecordsRunningHashLeaf runningHashLeaf();
     Map<ByteString, EntityNum> aliases();
-    MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo();
+    MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo();
 
+    int getStateVersion();
     boolean isInitialized();
     Instant getTimeOfLastHandledTxn();
 }

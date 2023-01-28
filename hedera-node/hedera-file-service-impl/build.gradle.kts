@@ -30,6 +30,8 @@ configurations.all {
 
 dependencies {
     api(project(":hedera-node:hedera-file-service"))
+    implementation(libs.swirlds.virtualmap)
+    implementation(libs.swirlds.jasperdb)
     implementation(project(":hedera-node:hedera-mono-service"))
     testImplementation(testLibs.mockito.inline)
     testImplementation(testLibs.bundles.testing)

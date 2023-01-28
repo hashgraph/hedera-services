@@ -32,6 +32,8 @@ dependencies {
     api(project(":hedera-node:hedera-smart-contract-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
 
+    implementation(libs.swirlds.virtualmap)
+    implementation(libs.swirlds.jasperdb)
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.mockito.inline)
     testImplementation(project(":hedera-node:hedera-app-spi"))

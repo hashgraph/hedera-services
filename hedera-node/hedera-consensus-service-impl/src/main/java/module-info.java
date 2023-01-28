@@ -10,6 +10,7 @@ module com.hedera.node.app.service.consensus.impl {
             ConsensusServiceImpl;
 
     exports com.hedera.node.app.service.consensus.impl to
+            com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.consensus.impl.handlers;
 }

@@ -94,6 +94,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.remove(schema);
         schemas.add(Objects.requireNonNull(schema));
+        System.out.println("Registering schema " + " for " + serviceName);
 
         // Any states being created, need to be registered for deserialization
         schema.statesToCreate()
@@ -165,6 +166,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(
                     def -> {
+                        System.out.println("Creating state " + def.stateKey() + " for " + serviceName);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             final var singleton = new SingletonNode<>(md, null);

@@ -31,5 +31,10 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
     requires com.swirlds.platform;
+    requires com.swirlds.fchashmap;
     requires org.apache.logging.log4j;
+    requires org.apache.commons.lang3;
+
+    uses com.hedera.node.app.service.consensus.ConsensusService;
+    uses com.hedera.node.app.service.schedule.ScheduleService;
 }

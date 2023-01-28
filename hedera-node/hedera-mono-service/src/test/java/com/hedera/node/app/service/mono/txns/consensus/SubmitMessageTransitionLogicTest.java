@@ -35,6 +35,7 @@ import static org.mockito.BDDMockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -78,7 +79,7 @@ class SubmitMessageTransitionLogicTest {
         given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
         subject =
                 new SubmitMessageTransitionLogic(
-                        () -> topics, validator, transactionContext, globalDynamicProperties);
+                        () -> MerkleMapLike.from(topics), validator, transactionContext, globalDynamicProperties);
     }
 
     @Test
@@ -246,7 +247,7 @@ class SubmitMessageTransitionLogicTest {
 
     private void givenValidTransactionContext() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
@@ -255,13 +256,13 @@ class SubmitMessageTransitionLogicTest {
                 ConsensusSubmitMessageTransactionBody.newBuilder()
                         .setTopicID(asTopic(TOPIC_ID))
                         .setTopicID(asTopic(TOPIC_ID)));
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
                 .willReturn(INVALID_TOPIC_ID);
     }
 
@@ -274,7 +275,7 @@ class SubmitMessageTransitionLogicTest {
                         .setNumber(chunkNumber)
                         .build();
         givenTransaction(getBasicValidTransactionBodyBuilder().setChunkInfo(chunkInfo));
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
         topics.put(EntityNum.fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 

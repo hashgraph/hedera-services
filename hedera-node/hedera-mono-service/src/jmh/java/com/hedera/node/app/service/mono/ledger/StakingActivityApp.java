@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManag
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.setup.InfrastructureBundle;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -54,7 +55,7 @@ public interface StakingActivityApp {
 
     Supplier<AccountStorageAdapter> accounts();
 
-    Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
+    Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos();
 
     TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger();
 

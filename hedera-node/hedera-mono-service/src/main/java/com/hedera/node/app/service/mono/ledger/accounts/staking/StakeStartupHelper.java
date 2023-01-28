@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuratio
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -104,7 +105,7 @@ public class StakeStartupHelper {
      */
     public void doRestartHousekeeping(
             final AddressBook addressBook,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
         // List the node ids in the staking info map from BEFORE the restart
         final List<Long> preRestartNodeIds =
                 stakingInfos.keySet().stream().map(EntityNum::longValue).toList();
@@ -129,7 +130,7 @@ public class StakeStartupHelper {
     public void doUpgradeHousekeeping(
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         // Recompute anything requested by the staking.startupHelper.recompute property
         final var recomputeTypes =
@@ -151,7 +152,7 @@ public class StakeStartupHelper {
     private void updateInfosForAddedOrRemovedNodes(
             final List<Long> preUpgradeNodeIds,
             final List<Long> postUpgradeNodeIds,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
         // Add staking info for nodes that are new in the address book
         final List<Long> addedNodeIds = orderedSetMinus(postUpgradeNodeIds, preUpgradeNodeIds);
         if (!addedNodeIds.isEmpty()) {
@@ -178,7 +179,7 @@ public class StakeStartupHelper {
             final boolean doPendingRewards,
             final MerkleNetworkContext networkContext,
             final AccountStorageAdapter accounts,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         final AtomicLong newPendingRewards = new AtomicLong();
         final Map<EntityNum, Long> newStakesToReward = new HashMap<>();

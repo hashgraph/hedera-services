@@ -36,6 +36,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -482,19 +483,19 @@ public class ServicesState extends PartialNaryMerkleInternal
                         getChild(StateChildIndices.PAYER_RECORDS),
                         (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
                 : AccountStorageAdapter.fromInMemory(
-                        (MerkleMap<EntityNum, MerkleAccount>) accountsStorage);
+                        MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
     }
 
     public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
         return getChild(StateChildIndices.STORAGE);
     }
 
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
-        return getChild(StateChildIndices.TOPICS);
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
+        return MerkleMapLike.from(getChild(StateChildIndices.TOPICS));
     }
 
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
-        return getChild(StateChildIndices.TOKENS);
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
+        return MerkleMapLike.from(getChild(StateChildIndices.TOKENS));
     }
 
     @SuppressWarnings("unchecked")
@@ -546,8 +547,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         return getChild(StateChildIndices.CONTRACT_STORAGE);
     }
 
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
-        return getChild(StateChildIndices.STAKING_INFO);
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
+        return MerkleMapLike.from(getChild(StateChildIndices.STAKING_INFO));
     }
 
     int getDeserializedStateVersion() {

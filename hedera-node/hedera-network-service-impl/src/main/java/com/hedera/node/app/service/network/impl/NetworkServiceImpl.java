@@ -23,6 +23,7 @@ import com.hedera.node.app.service.network.impl.serdes.EntityNumSerdes;
 import com.hedera.node.app.service.network.impl.serdes.MonoBookAdapterSerdes;
 import com.hedera.node.app.service.network.impl.serdes.MonoContextAdapterSerdes;
 import com.hedera.node.app.service.network.impl.serdes.MonoRunningHashesAdapterSerdes;
+import com.hedera.node.app.service.network.impl.serdes.MonoSpecialFilesAdapterSerdes;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
@@ -39,6 +40,7 @@ public final class NetworkServiceImpl implements NetworkService {
     private static final String CONTEXT_KEY = "CONTEXT";
     private static final String STAKING_KEY = "STAKING";
     private static final String ADDRESS_BOOK_KEY = "ADDRESS_BOOK";
+    private static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
     private static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
     private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder()
             .setMinor(34).build();
@@ -54,8 +56,10 @@ public final class NetworkServiceImpl implements NetworkService {
             @Override
             public Set<StateDefinition> statesToCreate() {
                 return Set.of(
+                        stakingDef(),
                         StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterSerdes()),
                         StateDefinition.singleton(ADDRESS_BOOK_KEY, new MonoBookAdapterSerdes()),
+                        StateDefinition.singleton(SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterSerdes()),
                         StateDefinition.singleton(RUNNING_HASHES_KEY, new MonoRunningHashesAdapterSerdes()));
             }
         };

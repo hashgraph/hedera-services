@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -115,7 +116,7 @@ public interface StoresModule {
     @Singleton
     static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
             final UsageLimits usageLimits,
-            final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
+            final Supplier<MerkleMapLike<EntityNum, MerkleToken>> tokens) {
         final var interceptor = new TokensCommitInterceptor(usageLimits);
         final var tokensLedger =
                 new TransactionalLedger<>(

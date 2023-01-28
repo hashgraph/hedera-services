@@ -34,6 +34,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -77,7 +78,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 
         subject =
                 new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+                        () -> MerkleMapLike.from(topics), validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -124,7 +125,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 
         subject =
                 new TopicDeleteTransitionLogic(
-                        () -> topics, validator, sigImpactHistorian, transactionContext);
+                        () -> MerkleMapLike.from(topics), validator, sigImpactHistorian, transactionContext);
     }
 
     @Test
@@ -171,7 +172,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenValidTransactionContext() throws Throwable {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
         var topicWithAdminKey = new MerkleTopic();
         topicWithAdminKey.setAdminKey(MISC_ACCOUNT_KT.asJKey());
         topics.put(fromTopicId(asTopic(TOPIC_ID)), topicWithAdminKey);
@@ -179,13 +180,13 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenTransactionContextNoAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
         topics.put(fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 
     private void givenTransactionContextInvalidTopic() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), topics))
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
                 .willReturn(INVALID_TOPIC_ID);
     }
 

@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -26,9 +27,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
-    private final Supplier<MerkleMap<EntityNum, MerkleToken>> delegate;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleToken>> delegate;
 
-    public BackingTokens(Supplier<MerkleMap<EntityNum, MerkleToken>> delegate) {
+    public BackingTokens(Supplier<MerkleMapLike<EntityNum, MerkleToken>> delegate) {
         this.delegate = delegate;
     }
 
@@ -74,7 +75,7 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     }
 
     /* -- only for unit tests */
-    public Supplier<MerkleMap<EntityNum, MerkleToken>> getDelegate() {
+    public Supplier<MerkleMapLike<EntityNum, MerkleToken>> getDelegate() {
         return delegate;
     }
 }

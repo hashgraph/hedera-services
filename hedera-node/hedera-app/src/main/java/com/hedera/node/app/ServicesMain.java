@@ -92,8 +92,10 @@ public class ServicesMain implements SwirldMain {
         } else {
             final var servicesSemVer =
                     SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
+            log.info("Registering schemas for migration to {}...", servicesSemVer);
             final var migration =
                     Hedera.registerServiceSchemasForMigration(servicesSemVer);
+            log.info("... done registered schemas for migration to {}.", servicesSemVer);
             return new MerkleHederaState(
                     migration,
                     event -> {},

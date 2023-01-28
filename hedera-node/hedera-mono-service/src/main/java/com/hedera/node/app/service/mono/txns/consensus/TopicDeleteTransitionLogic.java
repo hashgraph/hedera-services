@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -39,14 +40,14 @@ public class TopicDeleteTransitionLogic implements TransitionLogic {
     private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
             ignore -> OK;
 
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
     private final OptionValidator validator;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext transactionContext;
 
     @Inject
     public TopicDeleteTransitionLogic(
-            final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             final OptionValidator validator,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext transactionContext) {

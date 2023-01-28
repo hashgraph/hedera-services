@@ -23,6 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class FreezeServiceImpl implements FreezeService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        throw new AssertionError("Not implemented");
+        // No-op
     }
 }

@@ -19,10 +19,12 @@ import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
+/**
+ * Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}.
+ */
 public final class UtilServiceImpl implements UtilService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        throw new AssertionError("Not implemented");
+        // No-op
     }
 }

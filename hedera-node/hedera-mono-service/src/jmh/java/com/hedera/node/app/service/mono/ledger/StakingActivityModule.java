@@ -44,6 +44,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.setup.InfrastructureBundle;
 import com.hedera.node.app.service.mono.setup.InfrastructureType;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -95,9 +96,9 @@ public interface StakingActivityModule {
     static Supplier<AccountStorageAdapter> provideAccountsSupplier(
             final InfrastructureBundle bundle) {
         return () ->
-                AccountStorageAdapter.fromInMemory(
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(
                         (MerkleMap<EntityNum, MerkleAccount>)
-                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
     }
 
     @Provides
@@ -113,7 +114,7 @@ public interface StakingActivityModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideStakingInfosSupplier(
+    static Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> provideStakingInfosSupplier(
             final InfrastructureBundle bundle) {
         return bundle.getterFor(InfrastructureType.STAKING_INFOS_MM);
     }

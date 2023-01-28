@@ -28,6 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -57,7 +58,7 @@ public class EndOfStakingPeriodCalculator {
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
     private final Supplier<AccountStorageAdapter> accounts;
-    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final RecordsHistorian recordsHistorian;
@@ -68,7 +69,7 @@ public class EndOfStakingPeriodCalculator {
     @Inject
     public EndOfStakingPeriodCalculator(
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos,
+            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos,
             final Supplier<MerkleNetworkContext> networkCtx,
             final SyntheticTxnFactory syntheticTxnFactory,
             final RecordsHistorian recordsHistorian,

@@ -51,6 +51,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -133,8 +134,8 @@ class MerkleTopicUpdateTransitionLogicTest {
         ledger = mock(HederaLedger.class);
         subject =
                 new TopicUpdateTransitionLogic(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> topics,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                        () -> MerkleMapLike.from(topics),
                         validator,
                         transactionContext,
                         ledger,
@@ -449,7 +450,7 @@ class MerkleTopicUpdateTransitionLogicTest {
                         null,
                         EXISTING_EXPIRATION_TIME);
         topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(TOPIC_ID, MerkleMapLike.from(topics))).willReturn(OK);
     }
 
     private void givenExistingTopicWithBothKeys() throws Throwable {
@@ -462,7 +463,7 @@ class MerkleTopicUpdateTransitionLogicTest {
                         null,
                         EXISTING_EXPIRATION_TIME);
         topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(TOPIC_ID, MerkleMapLike.from(topics))).willReturn(OK);
     }
 
     private void givenExistingTopicWithoutAdminKey() throws Throwable {
@@ -475,7 +476,7 @@ class MerkleTopicUpdateTransitionLogicTest {
                         null,
                         EXISTING_EXPIRATION_TIME);
         topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(TOPIC_ID, MerkleMapLike.from(topics))).willReturn(OK);
     }
 
     private void givenExistingTopicWithAutoRenewAccount() throws Throwable {
@@ -488,7 +489,7 @@ class MerkleTopicUpdateTransitionLogicTest {
                         EntityId.fromGrpcAccountId(MISC_ACCOUNT),
                         EXISTING_EXPIRATION_TIME);
         topics.put(EntityNum.fromTopicId(TOPIC_ID), existingTopic);
-        given(validator.queryableTopicStatus(TOPIC_ID, topics)).willReturn(OK);
+        given(validator.queryableTopicStatus(TOPIC_ID, MerkleMapLike.from(topics))).willReturn(OK);
     }
 
     private void givenTransaction(ConsensusUpdateTopicTransactionBody.Builder body) {
@@ -510,7 +511,7 @@ class MerkleTopicUpdateTransitionLogicTest {
                 ConsensusUpdateTopicTransactionBody.newBuilder()
                         .setTopicID(MISSING_TOPIC)
                         .setMemo(StringValue.of(VALID_MEMO)));
-        given(validator.queryableTopicStatus(MISSING_TOPIC, topics)).willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(MISSING_TOPIC, MerkleMapLike.from(topics))).willReturn(INVALID_TOPIC_ID);
     }
 
     private void givenTransactionWithInvalidAutoRenewAccount() {

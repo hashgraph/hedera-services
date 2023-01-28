@@ -48,6 +48,7 @@ import com.hedera.node.app.service.mono.sigs.utils.PrecheckUtils;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckKeyReqs;
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
@@ -185,7 +186,7 @@ class SigVerifierRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 null,
-                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),

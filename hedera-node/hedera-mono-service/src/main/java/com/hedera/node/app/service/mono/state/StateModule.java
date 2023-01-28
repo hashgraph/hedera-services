@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
@@ -265,7 +266,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
+    static Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> provideWorkingStakingInfo(
             final MutableStateChildren workingState) {
         return workingState::stakingInfo;
     }
@@ -279,14 +280,14 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
+    static Supplier<MerkleMapLike<EntityNum, MerkleTopic>> provideWorkingTopics(
             final MutableStateChildren workingState) {
         return workingState::topics;
     }
 
     @Provides
     @Singleton
-    static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
+    static Supplier<MerkleMapLike<EntityNum, MerkleToken>> provideWorkingTokens(
             final MutableStateChildren workingState) {
         return workingState::tokens;
     }

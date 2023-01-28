@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermission
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
@@ -55,7 +56,7 @@ public class ConfigCallbacks {
     private final FunctionalityThrottling handleThrottling;
     private final FunctionalityThrottling scheduleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
-    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
 
     @Inject
     public ConfigCallbacks(
@@ -69,7 +70,7 @@ public class ConfigCallbacks {
             final Supplier<AddressBook> addressBook,
             final @CompositeProps PropertySource properties,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos) {
+            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos) {
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;

@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -224,12 +225,12 @@ class AccountStorageAdapterTest {
     }
 
     private void withInMemorySubject() {
-        subject = AccountStorageAdapter.fromInMemory(inMemoryAccounts);
+        subject = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(inMemoryAccounts));
     }
 
     private void withOnDiskSubject() {
         subject =
                 AccountStorageAdapter.fromOnDisk(
-                        virtualMapDataAccess, payerRecords, onDiskAccounts);
+                        virtualMapDataAccess, MerkleMapLike.from(payerRecords), onDiskAccounts);
     }
 }

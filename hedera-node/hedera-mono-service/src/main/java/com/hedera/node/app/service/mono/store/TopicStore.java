@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store;
 import static com.hedera.node.app.service.mono.store.models.TopicConversion.fromModel;
 
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.store.models.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -33,12 +34,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TopicStore {
-    private final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics;
     private final TransactionRecordService transactionRecordService;
 
     @Inject
     public TopicStore(
-            final Supplier<MerkleMap<EntityNum, MerkleTopic>> topics,
+            final Supplier<MerkleMapLike<EntityNum, MerkleTopic>> topics,
             final TransactionRecordService transactionRecordService) {
         this.topics = topics;
         this.transactionRecordService = transactionRecordService;

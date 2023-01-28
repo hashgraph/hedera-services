@@ -25,6 +25,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        throw new AssertionError("Not implemented");
+        // No-op
     }
 }

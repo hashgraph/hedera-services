@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -58,7 +59,7 @@ class FcmCustomFeeSchedulesTest {
 
         tokens.put(EntityNum.fromLong(tokenA.num()), aToken);
         tokens.put(EntityNum.fromLong(tokenB.num()), bToken);
-        subject = new FcmCustomFeeSchedules(() -> tokens);
+        subject = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
     }
 
     @Test
@@ -79,7 +80,7 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void validateLookUpScheduleForUsingLedger() {
-        subject = new FcmCustomFeeSchedules(() -> tokens);
+        subject = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
         // then:
         final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
         final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
@@ -109,8 +110,8 @@ class FcmCustomFeeSchedulesTest {
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
-        final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
-        final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
+        final var fees1 = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(tokens));
+        final var fees2 = new FcmCustomFeeSchedules(() -> MerkleMapLike.from(secondMerkleMap));
 
         // expect:
         assertNotEquals(fees1, fees2);

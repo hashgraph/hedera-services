@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
@@ -71,7 +72,7 @@ class LedgerCustomFeeSchedulesTest {
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
-                        new BackingTokens(() -> tokens),
+                        new BackingTokens(() -> MerkleMapLike.from(tokens)),
                         new ChangeSummaryManager<>());
         subject = new LedgerCustomFeeSchedules(tokensLedger);
     }
@@ -128,7 +129,7 @@ class LedgerCustomFeeSchedulesTest {
                 new TransactionalLedger<>(
                         TokenProperty.class,
                         MerkleToken::new,
-                        new BackingTokens(() -> secondMerkleMap),
+                        new BackingTokens(() -> MerkleMapLike.from(secondMerkleMap)),
                         new ChangeSummaryManager<>());
 
         final var fees1 = new LedgerCustomFeeSchedules(tokensLedger);

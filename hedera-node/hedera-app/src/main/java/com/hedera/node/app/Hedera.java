@@ -19,14 +19,22 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.admin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.network.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -39,12 +47,16 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
 
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -120,7 +132,7 @@ public final class Hedera {
         public static ServiceRegistry registryFor(final Service service) {
             final var registry = new MerkleSchemaRegistry(
                     ConstructableRegistry.getInstance(),
-                    Paths.get("hmm"),
+                    null,
                     service.getServiceName());
             return new ServiceRegistry(service, registry);
         }
@@ -132,14 +144,22 @@ public final class Hedera {
     static Consumer<MerkleHederaState> registerServiceSchemasForMigration(
             final SemanticVersion currentVersion) {
         final List<ServiceRegistry> serviceRegistries = List.of(
-            ServiceRegistry.registryFor(ConsensusService.getInstance()),
-            ServiceRegistry.registryFor(ContractService.getInstance()),
-            ServiceRegistry.registryFor(FileService.getInstance()),
-            ServiceRegistry.registryFor(FreezeService.getInstance()),
-            ServiceRegistry.registryFor(NetworkService.getInstance()),
-            ServiceRegistry.registryFor(ScheduleService.getInstance()),
-            ServiceRegistry.registryFor(TokenService.getInstance()),
-            ServiceRegistry.registryFor(UtilService.getInstance()));
+//            ServiceRegistry.registryFor(ConsensusService.getInstance()),
+            ServiceRegistry.registryFor(new ConsensusServiceImpl()),
+//            ServiceRegistry.registryFor(ContractService.getInstance()),
+            ServiceRegistry.registryFor(new ContractServiceImpl()),
+//            ServiceRegistry.registryFor(FileService.getInstance()),
+            ServiceRegistry.registryFor(new FileServiceImpl()),
+//            ServiceRegistry.registryFor(FreezeService.getInstance()),
+            ServiceRegistry.registryFor(new FreezeServiceImpl()),
+//            ServiceRegistry.registryFor(NetworkService.getInstance()),
+            ServiceRegistry.registryFor(new NetworkServiceImpl()),
+//            ServiceRegistry.registryFor(ScheduleService.getInstance()),
+            ServiceRegistry.registryFor(new ScheduleServiceImpl()),
+//            ServiceRegistry.registryFor(TokenService.getInstance()),
+            ServiceRegistry.registryFor(new TokenServiceImpl()),
+//            ServiceRegistry.registryFor(UtilService.getInstance())
+            ServiceRegistry.registryFor(new UtilServiceImpl()));
 
         serviceRegistries.forEach(ServiceRegistry::registerSchemas);
 

@@ -168,6 +168,7 @@ import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -886,7 +887,7 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMap<K, V> map, final BiConsumer<? super K, ? super V> action) {
+            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
         map.forEachNode(
                 (final MerkleNode node) -> {
                     if (node instanceof Keyed) {

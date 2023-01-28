@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -32,14 +33,14 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakeInfoManager {
     private static final Logger log = LogManager.getLogger(StakeInfoManager.class);
-    private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos;
 
     // Used to improve performance when node ids are sequential whole numbers (0, 1, 2, ...)
     private MerkleStakingInfo[] cache;
-    private MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfos;
+    private MerkleMapLike<EntityNum, MerkleStakingInfo> prevStakingInfos;
 
     @Inject
-    public StakeInfoManager(final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo) {
+    public StakeInfoManager(final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo) {
         this.stakingInfos = stakingInfo;
     }
 
@@ -111,7 +112,7 @@ public class StakeInfoManager {
     }
 
     @VisibleForTesting
-    void setPrevStakingInfos(final MerkleMap<EntityNum, MerkleStakingInfo> prevStakingInfos) {
+    void setPrevStakingInfos(final MerkleMapLike<EntityNum, MerkleStakingInfo> prevStakingInfos) {
         this.prevStakingInfos = prevStakingInfos;
     }
 
