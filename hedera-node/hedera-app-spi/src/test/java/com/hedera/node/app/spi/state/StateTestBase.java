@@ -17,6 +17,7 @@ package com.hedera.node.app.spi.state;
 
 import com.hedera.node.app.spi.fixtures.state.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class StateTestBase extends TestBase {
     @NonNull
@@ -72,29 +73,15 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<String, String> readableSpaceState() {
-        return MapReadableKVState.<String, String>builder(SPACE_STATE_KEY)
-                .value(A_KEY, ASTRONAUT)
-                .value(B_KEY, BLASTOFF)
-                .value(C_KEY, COMET)
-                .value(D_KEY, DRACO)
-                .value(E_KEY, EXOPLANET)
-                .value(F_KEY, FORCE)
-                .value(G_KEY, GRAVITY)
-                .build();
+    protected ReadableSingletonState<String> readableSpaceState() {
+        return new ReadableSingletonStateBase<>(SPACE_STATE_KEY, () -> ASTRONAUT);
     }
 
     @NonNull
-    protected MapWritableKVState<String, String> writableSpaceState() {
-        return MapWritableKVState.<String, String>builder(SPACE_STATE_KEY)
-                .value(A_KEY, ASTRONAUT)
-                .value(B_KEY, BLASTOFF)
-                .value(C_KEY, COMET)
-                .value(D_KEY, DRACO)
-                .value(E_KEY, EXOPLANET)
-                .value(F_KEY, FORCE)
-                .value(G_KEY, GRAVITY)
-                .build();
+    protected WritableSingletonState<String> writableSpaceState() {
+        final AtomicReference<String> backingValue = new AtomicReference<>(ASTRONAUT);
+        return new WritableSingletonStateBase<>(
+                SPACE_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull
@@ -124,29 +111,15 @@ public class StateTestBase extends TestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<String, String> readableCountryState() {
-        return MapReadableKVState.<String, String>builder(COUNTRY_STATE_KEY)
-                .value(A_KEY, AUSTRALIA)
-                .value(B_KEY, BRAZIL)
-                .value(C_KEY, CHAD)
-                .value(D_KEY, DENMARK)
-                .value(E_KEY, ESTONIA)
-                .value(F_KEY, FRANCE)
-                .value(G_KEY, GHANA)
-                .build();
+    protected ReadableSingletonState<String> readableCountryState() {
+        return new ReadableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA);
     }
 
     @NonNull
-    protected MapWritableKVState<String, String> writableCountryState() {
-        return MapWritableKVState.<String, String>builder(COUNTRY_STATE_KEY)
-                .value(A_KEY, AUSTRALIA)
-                .value(B_KEY, BRAZIL)
-                .value(C_KEY, CHAD)
-                .value(D_KEY, DENMARK)
-                .value(E_KEY, ESTONIA)
-                .value(F_KEY, FRANCE)
-                .value(G_KEY, GHANA)
-                .build();
+    protected WritableSingletonState<String> writableCountryState() {
+        final AtomicReference<String> backingValue = new AtomicReference<>(AUSTRALIA);
+        return new WritableSingletonStateBase<>(
+                COUNTRY_STATE_KEY, backingValue::get, backingValue::set);
     }
 
     @NonNull

@@ -63,8 +63,8 @@ class OnDiskTest extends MerkleTestBase {
         storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
         def =
-                new StateDefinition<>(
-                        ACCOUNT_STATE_KEY, new AccountIDSerdes(), new AccountSerdes(), 100, true);
+                StateDefinition.onDisk(
+                        ACCOUNT_STATE_KEY, new AccountIDSerdes(), new AccountSerdes(), 100);
 
         //noinspection rawtypes
         schema =

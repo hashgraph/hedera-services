@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.fixtures.state;
 
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
@@ -28,10 +29,10 @@ import java.util.*;
  */
 @SuppressWarnings("rawtypes")
 public class MapReadableStates implements ReadableStates {
-    private final Map<String, ReadableKVState> states;
+    private final Map<String, ?> states;
 
-    public MapReadableStates(@NonNull final Map<String, ReadableKVState> states) {
-        this.states = states;
+    public MapReadableStates(@NonNull final Map<String, ?> states) {
+        this.states = Objects.requireNonNull(states);
     }
 
     @SuppressWarnings("unchecked")
@@ -40,10 +41,22 @@ public class MapReadableStates implements ReadableStates {
     public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         final var state = states.get(Objects.requireNonNull(stateKey));
         if (state == null) {
-            throw new IllegalArgumentException("Unknown state key " + stateKey);
+            throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
         }
 
-        return state;
+        return (ReadableKVState<K, V>) state;
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    @Override
+    public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        final var state = states.get(Objects.requireNonNull(stateKey));
+        if (state == null) {
+            throw new IllegalArgumentException("Unknown singleton state key " + stateKey);
+        }
+
+        return (ReadableSingletonState<T>) state;
     }
 
     @Override
@@ -74,7 +87,7 @@ public class MapReadableStates implements ReadableStates {
 
     /** A convenience builder */
     public static final class Builder {
-        private final Map<String, MapReadableKVState> states = new HashMap<>();
+        private final Map<String, Object> states = new HashMap<>();
 
         Builder() {}
 
@@ -87,6 +100,19 @@ public class MapReadableStates implements ReadableStates {
          */
         @NonNull
         public Builder state(@NonNull final MapReadableKVState state) {
+            this.states.put(state.getStateKey(), state);
+            return this;
+        }
+
+        /**
+         * Defines a new {@link ReadableSingletonState} that should be available in the {@link
+         * MapReadableStates} instance created by this builder.
+         *
+         * @param state The state to include
+         * @return a reference to this builder
+         */
+        @NonNull
+        public Builder state(@NonNull final ReadableSingletonState<?> state) {
             this.states.put(state.getStateKey(), state);
             return this;
         }

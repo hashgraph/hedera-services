@@ -18,7 +18,14 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -44,12 +51,11 @@ class SerializationTest extends MerkleTestBase {
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
                 final var fruitDef =
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false);
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES);
                 final var animalDef =
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true);
-                return Set.of(fruitDef, animalDef);
+                        StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100);
+                final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES);
+                return Set.of(fruitDef, animalDef, countryDef);
             }
 
             @Override
@@ -72,17 +78,21 @@ class SerializationTest extends MerkleTestBase {
                 animals.put(E_KEY, EMU);
                 animals.put(F_KEY, FOX);
                 animals.put(G_KEY, GOOSE);
+
+                final WritableSingletonState<String> country =
+                        newStates.getSingleton(COUNTRY_STATE_KEY);
+                country.put(CHAD);
             }
         };
     }
 
     /**
-     * In this test scenario, we have a genesis setup where we create FRUIT and ANIMALS, save them
-     * to disk, and then load them back in, and verify everything was loaded correctly.
+     * In this test scenario, we have a genesis setup where we create FRUIT and ANIMALS and COUNTRY,
+     * save them to disk, and then load them back in, and verify everything was loaded correctly.
      */
     @Test
     void simpleReadAndWrite() throws IOException, ConstructableRegistryException {
-        // Given a merkle tree with some fruit and animals
+        // Given a merkle tree with some fruit and animals and country
         final var v1 = version(1, 0, 0);
         final var dir = TemporaryFileBuilder.buildTemporaryDirectory();
         final var originalTree = new MerkleHederaState(tree -> {}, evt -> {}, (round, dual) -> {});
@@ -131,5 +141,8 @@ class SerializationTest extends MerkleTestBase {
         assertThat(animalState.get(E_KEY)).isEqualTo(EMU);
         assertThat(animalState.get(F_KEY)).isEqualTo(FOX);
         assertThat(animalState.get(G_KEY)).isEqualTo(GOOSE);
+
+        final ReadableSingletonState<String> countryState = states.getSingleton(COUNTRY_STATE_KEY);
+        assertThat(countryState.get()).isEqualTo(CHAD);
     }
 }

@@ -39,6 +39,9 @@ public interface ReadableStates {
     @NonNull
     <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey);
 
+    @NonNull
+    <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);
+
     /**
      * Gets whether the given state key is a member of this set.
      *
