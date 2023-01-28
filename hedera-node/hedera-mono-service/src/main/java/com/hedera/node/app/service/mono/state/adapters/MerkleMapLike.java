@@ -7,7 +7,6 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public interface MerkleMapLike<K, V extends MerkleNode & Keyed<K>> {
     V remove(Object key);

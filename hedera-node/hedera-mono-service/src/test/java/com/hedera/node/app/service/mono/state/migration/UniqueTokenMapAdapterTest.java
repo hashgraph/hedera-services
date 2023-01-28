@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
@@ -49,7 +50,7 @@ class UniqueTokenMapAdapterTest {
     @BeforeEach
     void setUp() {
         merkleMapAdapter = UniqueTokenMapAdapter.wrap(merkleMap);
-        virtualMapAdapter = UniqueTokenMapAdapter.wrap(virtualMap);
+        virtualMapAdapter = UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap));
     }
 
     @Test

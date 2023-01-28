@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -56,10 +57,10 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private final UniqueTokenMapAdapter uniqueTokens =
             UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(
+            UniqueTokenMapAdapter.wrap(VirtualMapLike.from(
                     trackedMap(
                             new VirtualMapFactory(JasperDbBuilder::new)
-                                    .newVirtualizedUniqueTokenStorage()));
+                                    .newVirtualizedUniqueTokenStorage())));
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;

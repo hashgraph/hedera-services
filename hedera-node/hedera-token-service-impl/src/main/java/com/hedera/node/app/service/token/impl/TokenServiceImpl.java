@@ -20,6 +20,8 @@ import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -111,11 +113,11 @@ public class TokenServiceImpl implements TokenService {
         return StateDefinition.onDisk(TOKEN_RELS_KEY, keySerdes, valueSerdes, MAX_TOKEN_RELS);
     }
 
-    private StateDefinition<EntityNumVirtualKey, UniqueTokenValue> onDiskNftsDef() {
+    private StateDefinition<UniqueTokenKey, UniqueTokenValue> onDiskNftsDef() {
         final var keySerdes = MonoMapSerdesAdapter.serdesForVirtualKey(
-                EntityNumVirtualKey.CURRENT_VERSION,
-                EntityNumVirtualKey::new,
-                new EntityNumVirtualKeySerializer());
+                UniqueTokenKey.CURRENT_VERSION,
+                UniqueTokenKey::new,
+                new UniqueTokenKeySerializer());
         final var valueSerdes = MonoMapSerdesAdapter.serdesForVirtualValue(
                 UniqueTokenValue.CURRENT_VERSION,
                 UniqueTokenValue::new);

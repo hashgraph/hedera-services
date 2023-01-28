@@ -8,13 +8,15 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class MerkleMapLikeFactory {
+public class MerkleMapLikeAdapter {
     public static <K extends Comparable<K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md,
             final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
@@ -53,9 +55,9 @@ public class MerkleMapLikeFactory {
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public V get(final Object key) {
-                final var present = real.get(new InMemoryKey<>((K) key));
-                return present != null ? present.getValue() : null;
+                return withKeyIfPresent((K) key, real.get(new InMemoryKey<>((K) key)));
             }
 
             @Override
@@ -88,6 +90,7 @@ public class MerkleMapLikeFactory {
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public V getOrDefault(final Object key, final V defaultValue) {
                 final var wrappedKey = new InMemoryKey<>((K) key);
                 final var wrappedDefaultValue = new InMemoryValue<>(md, wrappedKey, defaultValue);
@@ -97,6 +100,19 @@ public class MerkleMapLikeFactory {
             @Override
             public void forEach(final BiConsumer<? super K, ? super V> action) {
                 real.forEach((k, v) -> action.accept(k.key(), v.getValue()));
+            }
+
+            @Nullable
+            private V withKeyIfPresent(
+                    final @NonNull K key,
+                    final @Nullable InMemoryValue<K, V> present) {
+                if (present != null) {
+                    final var answer = present.getValue();
+                    Objects.requireNonNull(answer).setKey(key);
+                    return answer;
+                } else {
+                    return null;
+                }
             }
         };
     }

@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.files.interceptors.ThrottleDefsManager;
 import com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager;
 import com.hedera.node.app.service.mono.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -60,7 +61,7 @@ public interface FilesModule {
     @Provides
     @Singleton
     static Map<String, byte[]> provideBlobStore(
-            Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage) {
+            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage) {
         return new FcBlobsBytesStore(storage);
     }
 

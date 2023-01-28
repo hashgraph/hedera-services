@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -81,8 +82,8 @@ public class StaticEntityAccess implements EntityAccess {
     private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
     private final TokenRelStorageAdapter tokenAssociations;
-    private final VirtualMap<ContractKey, IterableContractValue> storage;
-    private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+    private final VirtualMapLike<ContractKey, IterableContractValue> storage;
+    private final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode;
 
     public StaticEntityAccess(
             final StateView view, final ContractAliases aliases, final OptionValidator validator) {
@@ -181,13 +182,13 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Nullable
     static Bytes explicitCodeFetch(
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode, final AccountID id) {
         return explicitCodeFetch(bytecode, id.getAccountNum());
     }
 
     @Nullable
     public static Bytes explicitCodeFetch(
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
         final var key =
                 new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
         final var value = bytecode.get(key);

@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param <K> The type of the state key
  * @param <V> The type of the state value
  */
-public final class StateMetadata<K extends Comparable<K>, V> {
+public final class StateMetadata<K extends Comparable<? super K>, V> {
     private static final String ON_DISK_KEY_CLASS_ID_SUFFIX = "OnDiskKey";
     private static final String ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskKeySerializer";
     private static final String ON_DISK_VALUE_CLASS_ID_SUFFIX = "OnDiskValue";

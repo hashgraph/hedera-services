@@ -27,6 +27,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.fees.charging.StorageFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
@@ -74,7 +75,7 @@ public class SizeLimitedStorage {
     // Used to look up the initial key/value counts for the contracts involved in a change set
     private final Supplier<AccountStorageAdapter> accounts;
     // Used to both read and write key/value pairs throughout the lifecycle of a change set
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
 
     private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
     private final Map<Long, KvUsageInfo> usageChanges = new TreeMap<>();
@@ -91,7 +92,7 @@ public class SizeLimitedStorage {
             final IterableStorageUpserter storageUpserter,
             final IterableStorageRemover storageRemover,
             final Supplier<AccountStorageAdapter> accounts,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage) {
         this.storageRemover = storageRemover;
         this.storageUpserter = storageUpserter;
         this.storageFeeCharging = storageFeeCharging;
@@ -213,7 +214,7 @@ public class SizeLimitedStorage {
                 IterableContractValue value,
                 ContractKey rootKey,
                 IterableContractValue rootValue,
-                VirtualMap<ContractKey, IterableContractValue> storage);
+                VirtualMapLike<ContractKey, IterableContractValue> storage);
     }
 
     @FunctionalInterface
@@ -222,7 +223,7 @@ public class SizeLimitedStorage {
         ContractKey removeMapping(
                 ContractKey key,
                 ContractKey rootKey,
-                VirtualMap<ContractKey, IterableContractValue> storage);
+                VirtualMapLike<ContractKey, IterableContractValue> storage);
     }
 
     private int kvPairsLookup(final Long num) {
@@ -268,7 +269,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         if (value == ZERO_VALUE) {
             return incorporateZeroingOf(key, updatedKeys, removedKeys, newMappings, storage);
         } else {
@@ -282,7 +283,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final Long contractId = key.getContractId();
         final var hasPendingUpdate = newMappings.containsKey(key);
         final var wasAlreadyPresent = storage.containsKey(key);
@@ -309,7 +310,7 @@ public class SizeLimitedStorage {
             final Map<Long, TreeSet<ContractKey>> updatedKeys,
             final Map<Long, TreeSet<ContractKey>> removedKeys,
             final Map<ContractKey, IterableContractValue> newMappings,
-            final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         final Long contractId = key.getContractId();
         final var hasPendingUpdate = newMappings.containsKey(key);
         final var wasAlreadyPresent = storage.containsKey(key);

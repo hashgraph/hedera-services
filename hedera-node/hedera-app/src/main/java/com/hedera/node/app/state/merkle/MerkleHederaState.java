@@ -22,26 +22,33 @@ import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.migration.VirtualMapDataAccess;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
@@ -55,12 +62,11 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeFactory;
+import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeAdapter;
+import com.hedera.node.app.state.merkle.adapters.VirtualMapLikeAdapter;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
-import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
-import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
@@ -94,6 +100,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -214,7 +221,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
-        System.out.println("In init with " + trigger);
+//        System.out.println("In init with " + trigger);
         if (trigger == GENESIS) {
             // Create the top-level children in the Merkle tree
             onMigrate.accept(this);
@@ -340,7 +347,14 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                     }
                 }
             }
-            networkCtx().setStateVersion(CURRENT_VERSION);
+            networkCtx().setStateVersion(StateVersions.CURRENT_VERSION);
+//            final var writableNetworkStates = createWritableStates("NetworkService");
+//            final var context = writableNetworkStates.<MerkleNetworkContext>getSingleton("CONTEXT");
+//            final var mutableContext = context.get();
+//            mutableContext.setStateVersion(StateVers);
+//            context.put(mutableContext);
+//            ((MerkleWritableStates) writableNetworkStates).commit();
+
 
             metadata = new com.hedera.node.app.service.mono.state.org.StateMetadata(app, new FCHashMap<>());
             // This updates the working state accessor with our children
@@ -459,7 +473,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         throwIfImmutable();
         throwIfDestroyed();
         setImmutable(true);
-        System.out.println("in copy");
         final var that = new MerkleHederaState(this);
         if (metadata != null) {
             metadata.app().workingState().updateFrom(that);
@@ -516,8 +529,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return this;
     }
 
-    <K extends Comparable<K>, V> void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<K, V> md) {
+    void putServiceStateIfAbsent(@NonNull final StateMetadata<?, ?> md) {
         throwIfImmutable();
         Objects.requireNonNull(md);
         final var stateMetadata = services.computeIfAbsent(md.serviceName(), k -> new HashMap<>());
@@ -575,7 +587,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         // because it may have been loaded from state on disk, and the node provided here in this
         // call is always for genesis. So we may just ignore it.
         if (findNodeIndex(md.serviceName(), def.stateKey()) == -1) {
-            System.out.println("Setting child " + getNumberOfChildren() + " to " + node);
+//            System.out.println("Setting child " + getNumberOfChildren() + " to " + node);
             setChild(getNumberOfChildren(), node);
         }
     }
@@ -613,68 +625,85 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     private int findNodeIndex(@NonNull final String serviceName, @NonNull final String stateKey) {
         final var label = StateUtils.computeLabel(serviceName, stateKey);
-        System.out.println("Looking for label " + label);
+//        System.out.println("Looking for label " + label);
         for (int i = 0, n = getNumberOfChildren(); i < n; i++) {
             final var node = getChild(i);
             if (node instanceof Labeled labeled && label.equals(labeled.getLabel())) {
-                System.out.println("Found at index " + i);
+//                System.out.println("Found at index " + i);
                 return i;
             }
         }
 
-        System.out.println("Not found");
+//        System.out.println("Not found");
         return -1;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public AccountStorageAdapter accounts() {
         return AccountStorageAdapter.fromOnDisk(
-                VIRTUAL_MAP_DATA_ACCESS,
                 mapLikePayerRecords(),
-                getChild(findNodeIndex("TokenService", "ACCOUNTS")));
+                VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskAccount>) services.get("TokenService").get("ACCOUNTS"),
+                        getChild(findNodeIndex("TokenService", "ACCOUNTS"))));
     }
 
+    @SuppressWarnings("unchecked")
     private MerkleMapLike<EntityNum, MerklePayerRecords> mapLikePayerRecords() {
-        return MerkleMapLikeFactory.unwrapping(
+        return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerklePayerRecords>) services.get("TokenService").get("PAYER_RECORDS"),
                 getChild(findNodeIndex("TokenService", "PAYER_RECORDS")));
     }
 
     @Override
-    @SuppressWarnings("java:S5961")
+    @SuppressWarnings("unchecked")
     public MerkleMapLike<EntityNum, MerkleTopic> topics() {
-        return MerkleMapLikeFactory.unwrapping(
+        return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleTopic>) services.get("ConsensusService").get("TOPICS"),
                 getChild(findNodeIndex("ConsensusService", "TOPICS")));
     }
 
     @Override
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-        return getChild(findNodeIndex("FileService", "BLOBS"));
+    @SuppressWarnings("unchecked")
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
+        return VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<VirtualBlobKey, VirtualBlobValue>)
+                        services.get("FileService").get("BLOBS"),
+                getChild(findNodeIndex("FileService", "BLOBS")));
     }
 
     @Override
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
-        return getChild(findNodeIndex("ContractService", "STORAGE"));
+    @SuppressWarnings("unchecked")
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
+        return VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<ContractKey, IterableContractValue>)
+                        services.get("ContractService").get("STORAGE"),
+                getChild(findNodeIndex("ContractService", "STORAGE")));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public MerkleMapLike<EntityNum, MerkleToken> tokens() {
-        return MerkleMapLikeFactory.unwrapping(
+        return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleToken>) services.get("TokenService").get("TOKENS"),
                 getChild(findNodeIndex("TokenService", "TOKENS")));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public TokenRelStorageAdapter tokenAssociations() {
         return TokenRelStorageAdapter.fromOnDisk(
-                getChild(findNodeIndex("TokenService", "TOKEN_RELS")));
+                VirtualMapLikeAdapter.unwrapping(
+                        (StateMetadata<EntityNumVirtualKey, OnDiskTokenRel>) services.get("TokenService").get("TOKEN_RELS"),
+                        getChild(findNodeIndex("TokenService", "TOKEN_RELS"))));
     }
 
     @Override
     public MerkleScheduledTransactions scheduleTxs() {
-        // No good way to support this at the moment
-        return null;
+        // No good way to support this at the moment; return a mock
+        // that will always be after current consensus time
+        return new MerkleScheduledTransactions(List.of(
+                new MerkleScheduledTransactionsState(Long.MAX_VALUE)));
     }
 
     @Override
@@ -700,9 +729,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @Override
     @SuppressWarnings("unchecked")
     public UniqueTokenMapAdapter uniqueTokens() {
-        return UniqueTokenMapAdapter.wrap(
-                (VirtualMap<UniqueTokenKey, UniqueTokenValue>)
-                        getChild(findNodeIndex("TokenService", "NFTS")));
+        return UniqueTokenMapAdapter.wrap(VirtualMapLikeAdapter.unwrapping(
+                (StateMetadata<UniqueTokenKey, UniqueTokenValue>)
+                        services.get("TokenService").get("NFTS"),
+                getChild(findNodeIndex("TokenService", "NFTS"))));
     }
 
     @Override
@@ -724,7 +754,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
-        return MerkleMapLikeFactory.unwrapping(
+        return MerkleMapLikeAdapter.unwrapping(
                 (StateMetadata<EntityNum, MerkleStakingInfo>) services.get("NetworkService").get("STAKING"),
                 getChild(findNodeIndex("NetworkService", "STAKING")));
     }

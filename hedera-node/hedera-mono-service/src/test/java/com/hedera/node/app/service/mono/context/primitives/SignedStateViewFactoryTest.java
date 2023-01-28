@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -228,8 +229,8 @@ class SignedStateViewFactoryTest {
 
     private void givenStateWithMockChildren() {
         given(state.accounts()).willReturn(accounts);
-        given(state.storage()).willReturn(storage);
-        given(state.contractStorage()).willReturn(contractStorage);
+        given(state.storage()).willReturn(VirtualMapLike.from(storage));
+        given(state.contractStorage()).willReturn(VirtualMapLike.from(contractStorage));
         given(state.topics()).willReturn(MerkleMapLike.from(topics));
         given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(state.tokenAssociations()).willReturn(tokenAssociations);

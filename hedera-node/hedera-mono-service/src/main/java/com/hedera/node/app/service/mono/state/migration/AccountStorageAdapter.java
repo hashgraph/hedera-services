@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.migration;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -36,40 +37,36 @@ public class AccountStorageAdapter {
     private static final Logger log = LogManager.getLogger(AccountStorageAdapter.class);
     private static final int THREAD_COUNT = 32;
     private final boolean accountsOnDisk;
-    private final @Nullable VirtualMapDataAccess virtualMapDataAccess;
     private final @Nullable MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts;
     private final @Nullable MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords;
-    private final @Nullable VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
+    private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts;
 
     public static AccountStorageAdapter fromInMemory(
             final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
-        return new AccountStorageAdapter(accounts, null, null, null);
+        return new AccountStorageAdapter(accounts,null, null);
     }
 
     public static AccountStorageAdapter fromOnDisk(
-            final VirtualMapDataAccess virtualMapDataAccess,
             final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
-            final VirtualMap<EntityNumVirtualKey, OnDiskAccount> accounts) {
-        return new AccountStorageAdapter(null, virtualMapDataAccess, payerRecords, accounts);
+            final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> accounts) {
+        return new AccountStorageAdapter(
+                null, payerRecords, accounts);
     }
 
     private AccountStorageAdapter(
             @Nullable final MerkleMapLike<EntityNum, MerkleAccount> inMemoryAccounts,
-            final @Nullable VirtualMapDataAccess virtualMapDataAccess,
             @Nullable final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
-            @Nullable final VirtualMap<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts) {
+            @Nullable final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> onDiskAccounts) {
         if (inMemoryAccounts != null) {
             this.accountsOnDisk = false;
             this.inMemoryAccounts = inMemoryAccounts;
             this.onDiskAccounts = null;
             this.payerRecords = null;
-            this.virtualMapDataAccess = null;
         } else {
             this.accountsOnDisk = true;
             this.inMemoryAccounts = null;
             this.onDiskAccounts = onDiskAccounts;
             this.payerRecords = payerRecords;
-            this.virtualMapDataAccess = virtualMapDataAccess;
         }
     }
 
@@ -133,9 +130,8 @@ public class AccountStorageAdapter {
     public void forEach(final BiConsumer<EntityNum, HederaAccount> visitor) {
         if (accountsOnDisk) {
             try {
-                virtualMapDataAccess.extractVirtualMapData(
+                onDiskAccounts.extractVirtualMapData(
                         getStaticThreadManager(),
-                        onDiskAccounts,
                         entry -> visitor.accept(entry.getKey().asEntityNum(), entry.getValue()),
                         THREAD_COUNT);
             } catch (final InterruptedException e) {
@@ -158,7 +154,7 @@ public class AccountStorageAdapter {
     }
 
     @Nullable
-    public VirtualMap<EntityNumVirtualKey, OnDiskAccount> getOnDiskAccounts() {
+    public VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> getOnDiskAccounts() {
         return onDiskAccounts;
     }
 }

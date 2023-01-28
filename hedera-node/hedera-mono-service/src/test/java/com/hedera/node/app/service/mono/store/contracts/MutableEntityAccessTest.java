@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
@@ -68,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MutableEntityAccessTest {
     @Mock private HederaLedger ledger;
-    @Mock private Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
+    @Mock private Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> supplierBytecode;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecodeStorage;
 
     @Mock
@@ -246,7 +247,7 @@ class MutableEntityAccessTest {
     @Test
     void storesBlob() {
         // given:
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
+        given(supplierBytecode.get()).willReturn(VirtualMapLike.from(bytecodeStorage));
 
         // when:
         subject.storeCode(id, bytecode);
@@ -257,14 +258,14 @@ class MutableEntityAccessTest {
 
     @Test
     void fetchesEmptyBytecode() {
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
+        given(supplierBytecode.get()).willReturn(VirtualMapLike.from(bytecodeStorage));
 
         assertNull(subject.fetchCodeIfPresent(asTypedEvmAddress(id)));
     }
 
     @Test
     void fetchesBytecode() {
-        given(supplierBytecode.get()).willReturn(bytecodeStorage);
+        given(supplierBytecode.get()).willReturn(VirtualMapLike.from(bytecodeStorage));
         given(bytecodeStorage.get(expectedBytecodeKey)).willReturn(expectedBytecodeValue);
 
         final var result = subject.fetchCodeIfPresent(asTypedEvmAddress(id));

@@ -37,6 +37,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -101,7 +102,7 @@ class AutoRenewCalcsTest {
         propertySource.ensureProps();
         properties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
 
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> storage, properties);
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         subject.setAccountRenewalPriceSeq(accountPrices);
         subject.setContractRenewalPriceSeq(contractPrices);
@@ -244,7 +245,7 @@ class AutoRenewCalcsTest {
         setupAccountWith(1L);
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> storage, properties);
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         // expect:
         Assertions.assertThrows(
@@ -259,7 +260,7 @@ class AutoRenewCalcsTest {
         expiredEntity = MerkleAccountFactory.newAccount().isSmartContract(true).balance(1).get();
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> storage, properties);
+        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         // expect:
         Assertions.assertThrows(

@@ -25,6 +25,8 @@ import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.properties.BeanProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -255,6 +257,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         throwIfNotInTxn();
 
         try {
+            if (propertyType.equals(TokenProperty.class) || propertyType.equals(TokenRelProperty.class)) {
+                System.out.println("Committing " + changeSetSoFar());
+            }
             if (commitInterceptor != null) {
                 computePendingChanges();
                 commitInterceptor.preview(pendingChanges);

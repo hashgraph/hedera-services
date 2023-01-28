@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -335,14 +336,14 @@ class EthereumSpanMapManagerTest {
         givenUsableAccessor(body);
         given(stateViewFactory.childrenOfLatestSignedState())
                 .willReturn(Optional.of(stateChildren));
-        given(stateChildren.storage()).willReturn(blobs);
+        given(stateChildren.storage()).willReturn(VirtualMapLike.from(blobs));
         given(stateChildren.signedAt()).willReturn(lastHandled);
     }
 
     private void givenRationalizableAccessor(final EthereumTransactionBody body) {
         given(accessor.opEthTxData()).willReturn(ethTxData);
         givenUsableAccessor(body);
-        given(workingState.storage()).willReturn(blobs);
+        given(workingState.storage()).willReturn(VirtualMapLike.from(blobs));
     }
 
     private void givenUsableAccessor(final EthereumTransactionBody body) {

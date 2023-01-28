@@ -29,6 +29,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -163,7 +164,7 @@ public class InfrastructureInitializer {
                 final var vmValue = IterableContractValue.from(evmKey);
                 firstKey =
                         overwritingUpsertMapping(
-                                vmKey, vmValue, firstKey, firstValue, contractStorage);
+                                vmKey, vmValue, firstKey, firstValue, VirtualMapLike.from(contractStorage));
                 firstValue = vmValue;
             }
 

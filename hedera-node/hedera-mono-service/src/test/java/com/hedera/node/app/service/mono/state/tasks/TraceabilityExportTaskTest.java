@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -88,7 +89,7 @@ class TraceabilityExportTaskTest {
                         recordsHelper,
                         throttling,
                         () -> accounts,
-                        () -> contractStorage);
+                        () -> VirtualMapLike.from(contractStorage));
     }
 
     @Test

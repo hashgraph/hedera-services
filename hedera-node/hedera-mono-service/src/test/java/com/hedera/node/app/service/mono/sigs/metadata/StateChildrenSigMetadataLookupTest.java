@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -525,7 +526,7 @@ class StateChildrenSigMetadataLookupTest {
     }
 
     private void setupNonSpecialFileTest() {
-        given(stateChildren.storage()).willReturn(storage);
+        given(stateChildren.storage()).willReturn(VirtualMapLike.from(storage));
     }
 
     private void givenFile(

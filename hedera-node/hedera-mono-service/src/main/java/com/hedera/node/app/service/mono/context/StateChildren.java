@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -34,7 +35,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 
@@ -49,9 +49,9 @@ public interface StateChildren {
 
     MerkleScheduledTransactions schedules();
 
-    VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
+    VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage();
 
-    VirtualMap<ContractKey, IterableContractValue> contractStorage();
+    VirtualMapLike<ContractKey, IterableContractValue> contractStorage();
 
     TokenRelStorageAdapter tokenAssociations();
 

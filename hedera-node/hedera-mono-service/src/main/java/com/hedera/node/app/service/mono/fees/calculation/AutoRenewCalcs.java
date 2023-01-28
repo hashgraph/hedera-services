@@ -30,6 +30,7 @@ import com.hedera.node.app.hapi.fees.usage.contract.ExtantContractContext;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -55,7 +56,7 @@ public class AutoRenewCalcs {
     private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
     private final CryptoOpsUsage cryptoOpsUsage;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
     private final GlobalDynamicProperties properties;
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> accountPricesSeq = null;
@@ -74,7 +75,7 @@ public class AutoRenewCalcs {
     @Inject
     public AutoRenewCalcs(
             final CryptoOpsUsage cryptoOpsUsage,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
             final GlobalDynamicProperties properties) {
         this.storage = storage;
         this.cryptoOpsUsage = cryptoOpsUsage;

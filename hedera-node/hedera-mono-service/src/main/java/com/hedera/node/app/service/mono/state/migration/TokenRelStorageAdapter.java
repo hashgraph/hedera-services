@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
@@ -28,7 +29,7 @@ public class TokenRelStorageAdapter {
     private final boolean relsOnDisk;
 
     private final @Nullable MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels;
-    private final @Nullable VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
+    private final @Nullable VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels;
 
     public static TokenRelStorageAdapter fromInMemory(
             final MerkleMap<EntityNumPair, MerkleTokenRelStatus> rels) {
@@ -36,13 +37,13 @@ public class TokenRelStorageAdapter {
     }
 
     public static TokenRelStorageAdapter fromOnDisk(
-            final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> rels) {
+            final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> rels) {
         return new TokenRelStorageAdapter(null, rels);
     }
 
     private TokenRelStorageAdapter(
             @Nullable final MerkleMap<EntityNumPair, MerkleTokenRelStatus> inMemoryRels,
-            @Nullable final VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels) {
+            @Nullable final VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> onDiskRels) {
         if (inMemoryRels != null) {
             this.relsOnDisk = false;
             this.inMemoryRels = inMemoryRels;
@@ -113,7 +114,7 @@ public class TokenRelStorageAdapter {
     }
 
     @Nullable
-    public VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> getOnDiskRels() {
+    public VirtualMapLike<EntityNumVirtualKey, OnDiskTokenRel> getOnDiskRels() {
         return onDiskRels;
     }
 }

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.stats;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -58,8 +59,8 @@ public class ServicesStatsManager {
     private final NodeLocalProperties localProperties;
     private final ThrottleGauges throttleGauges;
     private final EntityUtilGauges entityUtilGauges;
-    private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
-    private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
+    private final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage;
+    private final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
     @Inject
     public ServicesStatsManager(
@@ -71,8 +72,8 @@ public class ServicesStatsManager {
             final MiscSpeedometers speedometers,
             final HapiOpSpeedometers opSpeedometers,
             final NodeLocalProperties localProperties,
-            final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
-            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
+            final Supplier<VirtualMapLike<ContractKey, IterableContractValue>> storage,
+            final Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         this.storage = storage;
         this.bytecode = bytecode;
         this.localProperties = localProperties;

@@ -191,7 +191,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                                             (short) 1,
                                                             DataFileCommon.VARIABLE_DATA_SIZE,
                                                             new OnDiskValueSerializer(md),
-                                                            true));
+                                                            false));
 
                             if (storageDir != null) {
                                 ds.storageDir(storageDir);

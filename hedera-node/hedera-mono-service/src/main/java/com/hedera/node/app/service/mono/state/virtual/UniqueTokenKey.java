@@ -31,7 +31,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
     private static final long CLASS_ID = 0x17f77b311f6L;
 
     /** Current version of the encoding scheme. */
-    /* package */ static final int CURRENT_VERSION = 1;
+    /* package */ public static final int CURRENT_VERSION = 1;
 
     /**
      * Expected maximum number of bytes this class will serialize to. Serialization format will be:

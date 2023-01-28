@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.interceptors.UniqueTokensLinkManager;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
@@ -50,7 +51,7 @@ class StoresModuleTest {
                         bootstrapProperties,
                         usageLimits,
                         uniqueTokensLinkManager,
-                        () -> UniqueTokenMapAdapter.wrap(virtualMap));
+                        () -> UniqueTokenMapAdapter.wrap(VirtualMapLike.from(virtualMap)));
         transactionalLedger.begin();
         final var nftId = NftId.withDefaultShardRealm(3, 4);
         final var token = UniqueTokenAdapter.newEmptyVirtualToken();

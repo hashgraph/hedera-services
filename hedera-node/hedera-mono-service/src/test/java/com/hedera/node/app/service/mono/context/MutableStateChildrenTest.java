@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -112,8 +113,8 @@ class MutableStateChildrenTest {
 
     private void givenStateWithMockChildren() {
         given(state.accounts()).willReturn(accounts);
-        given(state.storage()).willReturn(storage);
-        given(state.contractStorage()).willReturn(contractStorage);
+        given(state.storage()).willReturn(VirtualMapLike.from(storage));
+        given(state.contractStorage()).willReturn(VirtualMapLike.from(contractStorage));
         given(state.topics()).willReturn(MerkleMapLike.from(topics));
         given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(state.tokenAssociations()).willReturn(tokenAssociations);

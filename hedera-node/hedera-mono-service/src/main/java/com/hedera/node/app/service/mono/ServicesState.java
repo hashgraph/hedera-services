@@ -37,6 +37,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -479,15 +480,15 @@ public class ServicesState extends PartialNaryMerkleInternal
         final var accountsStorage = getChild(StateChildIndices.ACCOUNTS);
         return (accountsStorage instanceof VirtualMap)
                 ? AccountStorageAdapter.fromOnDisk(
-                        VIRTUAL_MAP_DATA_ACCESS,
-                        getChild(StateChildIndices.PAYER_RECORDS),
-                        (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage)
+                        MerkleMapLike.from(getChild(StateChildIndices.PAYER_RECORDS)),
+                        VirtualMapLike.fromLongKeyed(
+                                (VirtualMap<EntityNumVirtualKey, OnDiskAccount>) accountsStorage))
                 : AccountStorageAdapter.fromInMemory(
                         MerkleMapLike.from((MerkleMap<EntityNum, MerkleAccount>) accountsStorage));
     }
 
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-        return getChild(StateChildIndices.STORAGE);
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
+        return VirtualMapLike.from(getChild(StateChildIndices.STORAGE));
     }
 
     public MerkleMapLike<EntityNum, MerkleTopic> topics() {
@@ -502,8 +503,8 @@ public class ServicesState extends PartialNaryMerkleInternal
     public TokenRelStorageAdapter tokenAssociations() {
         final var relsStorage = getChild(TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
-                ? TokenRelStorageAdapter.fromOnDisk(
-                        (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage)
+                ? TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.fromLongKeyed(
+                        (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
                 : TokenRelStorageAdapter.fromInMemory(
                         (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
@@ -533,8 +534,8 @@ public class ServicesState extends PartialNaryMerkleInternal
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
                         (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
-                : UniqueTokenMapAdapter.wrap(
-                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap);
+                : UniqueTokenMapAdapter.wrap(VirtualMapLike.from(
+                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
     }
 
     public RecordsStorageAdapter payerRecords() {
@@ -545,8 +546,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                         MerkleMapLike.from(getChild(StateChildIndices.ACCOUNTS)));
     }
 
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
-        return getChild(StateChildIndices.CONTRACT_STORAGE);
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
+        return VirtualMapLike.from(getChild(StateChildIndices.CONTRACT_STORAGE));
     }
 
     public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {

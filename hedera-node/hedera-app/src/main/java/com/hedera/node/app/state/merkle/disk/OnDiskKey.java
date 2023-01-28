@@ -43,7 +43,7 @@ import java.util.Objects;
  *
  * @param <K> The type of key
  */
-public final class OnDiskKey<K extends Comparable<K>> implements VirtualKey<OnDiskKey<K>> {
+public final class OnDiskKey<K extends Comparable<? super K>> implements VirtualKey<OnDiskKey<K>> {
     @Deprecated(forRemoval = true)
     private static final long CLASS_ID = 0x2929238293892373L;
     /** The metadata */

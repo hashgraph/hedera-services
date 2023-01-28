@@ -101,7 +101,7 @@ public class MonoMapSerdesAdapter {
 
             @Override
             public int typicalSize() {
-                return keySerializer.getSerializedSize();
+                return keySerializer.getTypicalSerializedSize();
             }
 
             @Override

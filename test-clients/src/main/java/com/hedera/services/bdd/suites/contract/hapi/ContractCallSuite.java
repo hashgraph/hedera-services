@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -651,6 +652,8 @@ public class ContractCallSuite extends HapiSuite {
                         burnToken(ticketToken, List.of(1L)).via(burn),
                         uploadInitCode(contract))
                 .when(
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER)
+                                .logged(),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();
@@ -679,7 +682,9 @@ public class ContractCallSuite extends HapiSuite {
                                             ticketSerialNo.set(((Long) result[0]));
                                         }),
                         getTxnRecord(ticketTaking),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 1L),
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER)
+                                .logged()
+                                .hasTokenBalance(ticketToken, 1L),
                         /* Our ticket number is 3 (b/c of the two pre-mints), so we must call
                          * work twice before the contract will actually accept our ticket. */
                         sourcing(

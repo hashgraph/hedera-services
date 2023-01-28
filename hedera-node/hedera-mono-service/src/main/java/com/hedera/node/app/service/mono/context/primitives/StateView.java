@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -660,11 +661,11 @@ public class StateView {
         return Objects.requireNonNull(stateChildren).uniqueTokens();
     }
 
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
         return Objects.requireNonNull(stateChildren).storage();
     }
 
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return Objects.requireNonNull(stateChildren).contractStorage();
     }
 
@@ -792,7 +793,9 @@ public class StateView {
         var counter = 0;
         while (tokenNum != MISSING_ID.num() && counter < maxRels) {
             final var rel = tokenRels.get(key);
+            System.out.println("Visiting rel " + rel);
             final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
+            System.out.println("  for token " + token);
             visitor.accept(token, rel);
             tokenNum = rel.getNext();
             key = EntityNumPair.fromLongs(accountNum, tokenNum);

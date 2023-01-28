@@ -19,6 +19,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -56,8 +57,8 @@ public class MutableStateChildren implements StateChildren {
     private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private NonAtomicReference<MerkleScheduledTransactions> schedules;
-    private NonAtomicReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-    private NonAtomicReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
+    private NonAtomicReference<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage;
+    private NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
     private NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
     private NonAtomicReference<MerkleNetworkContext> networkCtx;
     private NonAtomicReference<AddressBook> addressBook;
@@ -116,7 +117,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
+    public VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage() {
         return Objects.requireNonNull(storage.get());
     }
 
@@ -124,12 +125,12 @@ public class MutableStateChildren implements StateChildren {
         return storage().size();
     }
 
-    public void setStorage(final VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
+    public void setStorage(final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> storage) {
         this.storage = new NonAtomicReference<>(storage);
     }
 
     @Override
-    public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
+    public VirtualMapLike<ContractKey, IterableContractValue> contractStorage() {
         return Objects.requireNonNull(contractStorage.get());
     }
 
@@ -138,7 +139,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void setContractStorage(
-            final VirtualMap<ContractKey, IterableContractValue> contractStorage) {
+            final VirtualMapLike<ContractKey, IterableContractValue> contractStorage) {
         this.contractStorage = new NonAtomicReference<>(contractStorage);
     }
 

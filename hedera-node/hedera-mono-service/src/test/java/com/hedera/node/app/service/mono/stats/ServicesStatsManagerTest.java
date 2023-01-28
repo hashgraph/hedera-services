@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
@@ -85,8 +86,8 @@ class ServicesStatsManagerTest {
                         miscSpeedometers,
                         speedometers,
                         properties,
-                        () -> storage,
-                        () -> bytecode);
+                        () -> VirtualMapLike.from(storage),
+                        () -> VirtualMapLike.from(bytecode));
     }
 
     @AfterEach

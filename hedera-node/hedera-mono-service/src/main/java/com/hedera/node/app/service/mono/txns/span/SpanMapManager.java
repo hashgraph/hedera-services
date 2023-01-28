@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -281,7 +282,7 @@ public class SpanMapManager {
             final FileID callDataId,
             @Nullable final LinkedRefs linkedRefs,
             final Map<String, Object> spanMap,
-            final VirtualMap<VirtualBlobKey, VirtualBlobValue> curBlobs) {
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> curBlobs) {
         if (linkedRefs != null) {
             linkedRefs.link(callDataId.getFileNum());
         }

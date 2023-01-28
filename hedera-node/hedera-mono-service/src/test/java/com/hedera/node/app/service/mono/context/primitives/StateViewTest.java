@@ -78,6 +78,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -1118,16 +1119,18 @@ class StateViewTest {
     @Test
     void getStorageAndContractStorage() {
         final var children = new MutableStateChildren();
-        children.setContractStorage(contractStorage);
-        children.setStorage(storage);
+        final var setBlobs = VirtualMapLike.from(storage);
+        final var setStorage = VirtualMapLike.from(contractStorage);
+        children.setContractStorage(setStorage);
+        children.setStorage(setBlobs);
 
         subject = new StateView(null, children, null);
 
         final var actualStorage = subject.storage();
         final var actualContractStorage = subject.contractStorage();
 
-        assertEquals(storage, actualStorage);
-        assertEquals(contractStorage, actualContractStorage);
+        assertSame(setStorage, actualStorage);
+        assertSame(setBlobs, actualContractStorage);
     }
 
     @Test

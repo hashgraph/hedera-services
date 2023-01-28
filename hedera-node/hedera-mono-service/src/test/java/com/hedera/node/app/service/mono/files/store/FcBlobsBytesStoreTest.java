@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
@@ -52,7 +53,7 @@ class FcBlobsBytesStoreTest {
         pathedBlobs = mock(VirtualMap.class);
 
         givenMockBlobs();
-        subject = new FcBlobsBytesStore(() -> pathedBlobs);
+        subject = new FcBlobsBytesStore(() -> VirtualMapLike.from(pathedBlobs));
 
         pathAKey = subject.at(dataPath);
     }

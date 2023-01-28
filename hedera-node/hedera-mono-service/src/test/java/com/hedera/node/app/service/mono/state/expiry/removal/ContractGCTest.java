@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -55,7 +56,8 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(expiryThrottle, () -> contracts, () -> storage, () -> bytecode);
+        subject = new ContractGC(expiryThrottle, () -> contracts,
+                () -> VirtualMapLike.from(storage), () -> VirtualMapLike.from(bytecode));
         subject.setRemovalFacilitation(removalFacilitation);
     }
 

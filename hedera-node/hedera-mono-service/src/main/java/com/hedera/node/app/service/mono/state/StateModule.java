@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.exports.AccountsExporter;
 import com.hedera.node.app.service.mono.state.exports.BalancesExporter;
@@ -273,7 +274,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
+    static Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
             final MutableStateChildren workingState) {
         return workingState::storage;
     }
@@ -322,7 +323,7 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
+    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>> provideWorkingContractStorage(
             final MutableStateChildren workingState) {
         return workingState::contractStorage;
     }
