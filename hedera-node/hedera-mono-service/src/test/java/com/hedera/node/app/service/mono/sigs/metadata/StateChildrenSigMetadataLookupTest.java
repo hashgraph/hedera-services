@@ -45,6 +45,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -422,7 +423,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void recognizesMissingToken() {
-        given(stateChildren.tokens()).willReturn(tokens);
+        given(stateChildren.tokens()).willReturn(MerkleMapLike.from(tokens));
 
         final var result = subject.tokenSigningMetaFor(unknownToken, null);
 
@@ -431,7 +432,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void recognizesExtantToken() {
-        given(stateChildren.tokens()).willReturn(tokens);
+        given(stateChildren.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(tokens.get(EntityNum.fromTokenId(knownToken))).willReturn(token);
         given(tokenMetaTransform.apply(token)).willReturn(tokenMeta);
 
@@ -444,7 +445,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void includesTopicKeysIfPresent() {
-        given(stateChildren.topics()).willReturn(topics);
+        given(stateChildren.topics()).willReturn(MerkleMapLike.from(topics));
         given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
         given(topic.hasAdminKey()).willReturn(true);
         given(topic.hasSubmitKey()).willReturn(true);
@@ -462,7 +463,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void omitsTopicKeysIfAbsent() {
-        given(stateChildren.topics()).willReturn(topics);
+        given(stateChildren.topics()).willReturn(MerkleMapLike.from(topics));
         given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
 
         final var result = subject.topicSigningMetaFor(knownTopic, null);
@@ -474,7 +475,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void returnsMissingTopicMeta() {
-        given(stateChildren.topics()).willReturn(topics);
+        given(stateChildren.topics()).willReturn(MerkleMapLike.from(topics));
 
         final var result = subject.topicSigningMetaFor(unknownTopic, null);
 
@@ -483,7 +484,7 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void failsOnDeletedTopic() {
-        given(stateChildren.topics()).willReturn(topics);
+        given(stateChildren.topics()).willReturn(MerkleMapLike.from(topics));
         given(topics.get(EntityNum.fromTopicId(knownTopic))).willReturn(topic);
         given(topic.isDeleted()).willReturn(true);
 

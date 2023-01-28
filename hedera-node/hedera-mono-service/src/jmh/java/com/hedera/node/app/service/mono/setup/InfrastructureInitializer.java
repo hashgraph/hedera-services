@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtil
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -60,7 +61,7 @@ public class InfrastructureInitializer {
             final SplittableRandom random,
             final Map<String, Object> config,
             final BackingStore<AccountID, HederaAccount> backingAccounts,
-            final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos,
+            final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfos,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger) {
         final var numAccounts = (int) config.get("stakeableAccounts");
         final var numNodeIds = (int) config.get("nodeIds");

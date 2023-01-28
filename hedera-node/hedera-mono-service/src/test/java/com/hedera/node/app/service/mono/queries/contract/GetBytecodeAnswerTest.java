@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -72,7 +73,7 @@ class GetBytecodeAnswerTest {
         contracts = mock(MerkleMap.class);
 
         view = mock(StateView.class);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
         optionValidator = mock(OptionValidator.class);
         aliasManager = mock(AliasManager.class);
 

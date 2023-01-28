@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -71,8 +72,8 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
                 .thenReturn(false);
         subject =
                 new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                        () -> MerkleMapLike.from(tokens),
                         () -> uniqueTokens,
                         bootstrapProperties);
 
@@ -80,8 +81,8 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
                 .thenReturn(true);
         subjectForVm =
                 new UniqueTokensLinkManager(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> tokens,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                        () -> MerkleMapLike.from(tokens),
                         () -> virtualUniqueTokens,
                         bootstrapProperties);
     }

@@ -60,6 +60,7 @@ import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -376,25 +377,25 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesMissingTopic() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, topics));
+        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void recognizesDeletedTopicStatus() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, topics));
+        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void ignoresExpiredTopicStatus() {
         // expect:
-        assertEquals(OK, subject.queryableTopicStatus(expiredTopicId, topics));
+        assertEquals(OK, subject.queryableTopicStatus(expiredTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void recognizesOkTopicStatus() {
         // expect:
-        assertEquals(OK, subject.queryableTopicStatus(topicId, topics));
+        assertEquals(OK, subject.queryableTopicStatus(topicId, MerkleMapLike.from(topics)));
     }
 
     @Test

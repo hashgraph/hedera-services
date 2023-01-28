@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -77,7 +78,8 @@ class StoreInitializationFlowTest {
     void initsAsExpected() {
         final ArgumentCaptor<BiConsumer<EntityNum, HederaAccount>> captor =
                 ArgumentCaptor.forClass(BiConsumer.class);
-        given(workingState.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(workingState.accounts()).willReturn(
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         // when:
         subject.run();

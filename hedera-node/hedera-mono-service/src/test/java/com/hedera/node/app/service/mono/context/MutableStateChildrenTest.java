@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -113,8 +114,8 @@ class MutableStateChildrenTest {
         given(state.accounts()).willReturn(accounts);
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
-        given(state.topics()).willReturn(topics);
-        given(state.tokens()).willReturn(tokens);
+        given(state.topics()).willReturn(MerkleMapLike.from(topics));
+        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(state.tokenAssociations()).willReturn(tokenAssociations);
         given(state.scheduleTxs()).willReturn(scheduleTxs);
         given(state.networkCtx()).willReturn(networkCtx);
@@ -123,7 +124,7 @@ class MutableStateChildrenTest {
         given(state.uniqueTokens()).willReturn(uniqueTokens);
         given(state.runningHashLeaf()).willReturn(runningHashLeaf);
         given(state.aliases()).willReturn(aliases);
-        given(state.stakingInfo()).willReturn(stakingInfo);
+        given(state.stakingInfo()).willReturn(MerkleMapLike.from(stakingInfo));
     }
 
     private void assertChildrenAreExpectedMocks() {

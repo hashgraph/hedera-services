@@ -887,14 +887,9 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
-        map.forEachNode(
-                (final MerkleNode node) -> {
-                    if (node instanceof Keyed) {
-                        final V leaf = node.cast();
-                        action.accept(leaf.getKey(), leaf);
-                    }
-                });
+            final MerkleMapLike<K, V> map,
+            final BiConsumer<? super K, ? super V> action) {
+        map.forEachNode(action);
     }
 
     public static void putIfNotNull(

@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -218,7 +219,7 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum queryableTopicStatus(
-            TopicID id, MerkleMap<EntityNum, MerkleTopic> topics) {
+            TopicID id, MerkleMapLike<EntityNum, MerkleTopic> topics) {
         MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
 
         return Optional.ofNullable(merkleTopic)

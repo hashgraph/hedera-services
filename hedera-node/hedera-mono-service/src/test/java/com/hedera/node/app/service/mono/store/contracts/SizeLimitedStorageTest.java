@@ -40,6 +40,7 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.charging.StorageFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -88,7 +89,7 @@ class SizeLimitedStorageTest {
                         usageLimits,
                         storageUpserter,
                         storageRemover,
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
                         () -> storage);
     }
 

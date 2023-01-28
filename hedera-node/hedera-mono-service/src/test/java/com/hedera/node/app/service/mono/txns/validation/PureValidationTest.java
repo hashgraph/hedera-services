@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -49,7 +50,7 @@ class PureValidationTest {
     @SuppressWarnings("unchecked")
     void contractOkIfExplicitlyAllowed() {
         final AccountStorageAdapter accounts =
-                AccountStorageAdapter.fromInMemory(mock(MerkleMap.class));
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(mock(MerkleMap.class)));
         final var contract = MerkleAccountFactory.newContract().get();
         final var num = EntityNum.fromLong(1234L);
 

@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -229,8 +230,8 @@ class SignedStateViewFactoryTest {
         given(state.accounts()).willReturn(accounts);
         given(state.storage()).willReturn(storage);
         given(state.contractStorage()).willReturn(contractStorage);
-        given(state.topics()).willReturn(topics);
-        given(state.tokens()).willReturn(tokens);
+        given(state.topics()).willReturn(MerkleMapLike.from(topics));
+        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(state.tokenAssociations()).willReturn(tokenAssociations);
         given(state.scheduleTxs()).willReturn(scheduleTxs);
         given(state.networkCtx()).willReturn(networkCtx);

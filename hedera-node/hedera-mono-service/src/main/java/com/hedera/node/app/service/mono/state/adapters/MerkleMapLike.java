@@ -33,13 +33,20 @@ public interface MerkleMapLike<K, V extends MerkleNode & Keyed<K>> {
     void archive();
 
     boolean isArchived();
-    void forEachNode(Consumer<MerkleNode> operation);
+
+    void forEachNode(BiConsumer<? super K, ? super V> action);
 
     static <K, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> from(MerkleMap<K, V> real) {
         return new MerkleMapLike<>() {
             @Override
-            public void forEachNode(final Consumer<MerkleNode> operation) {
-                real.forEachNode(operation);
+            public void forEachNode(final BiConsumer<? super K, ? super V> action) {
+                real.forEachNode(
+                        (final MerkleNode node) -> {
+                            if (node instanceof Keyed) {
+                                final V leaf = node.cast();
+                                action.accept(leaf.getKey(), leaf);
+                            }
+                        });
             }
 
             @Override

@@ -35,6 +35,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
@@ -92,7 +93,7 @@ class ContractSysDelTransitionLogicTest {
                         txnCtx,
                         sigImpactHistorian,
                         delegate,
-                        () -> AccountStorageAdapter.fromInMemory(contracts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
                         properties);
     }
 
@@ -108,7 +109,7 @@ class ContractSysDelTransitionLogicTest {
                         txnCtx,
                         sigImpactHistorian,
                         delegate,
-                        () -> AccountStorageAdapter.fromInMemory(contracts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
                         properties);
 
         assertEquals(NOT_SUPPORTED, subject.validate(contractSysDelTxn));

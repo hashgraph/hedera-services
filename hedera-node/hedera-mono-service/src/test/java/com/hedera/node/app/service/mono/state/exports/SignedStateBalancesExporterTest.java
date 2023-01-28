@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -215,8 +216,8 @@ class SignedStateBalancesExporterTest {
 
         state = mock(ServicesState.class);
         given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
-        given(state.tokens()).willReturn(tokens);
-        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
+        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         given(state.tokenAssociations()).willReturn(tokenRels);
         given(state.addressBook()).willReturn(book);
 

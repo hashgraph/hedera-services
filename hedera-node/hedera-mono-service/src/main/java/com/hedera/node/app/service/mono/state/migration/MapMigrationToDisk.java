@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
@@ -77,7 +78,7 @@ public class MapMigrationToDisk {
         withLoggedDuration(
                 () ->
                         forEach(
-                                inMemoryAccounts,
+                                MerkleMapLike.from(inMemoryAccounts),
                                 (num, account) -> {
                                     final var accountRecords = new MerklePayerRecords();
                                     account.records().forEach(accountRecords::offer);
@@ -118,7 +119,7 @@ public class MapMigrationToDisk {
         withLoggedDuration(
                 () ->
                         forEach(
-                                inMemoryRels,
+                                MerkleMapLike.from(inMemoryRels),
                                 (numPair, rel) -> {
                                     final var onDiskRel = relMigrator.apply(rel);
                                     onDiskRels

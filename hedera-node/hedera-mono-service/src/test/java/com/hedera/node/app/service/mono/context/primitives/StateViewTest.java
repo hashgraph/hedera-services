@@ -77,6 +77,7 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -352,11 +353,11 @@ class StateViewTest {
         children = new MutableStateChildren();
         children.setUniqueTokens(uniqueTokens);
         children.setAccounts(contracts);
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
         children.setTokenAssociations(tokenRels);
         children.setSpecialFiles(specialFiles);
-        children.setTokens(tokens);
-        children.setStakingInfo(stakingInfo);
+        children.setTokens(MerkleMapLike.from(tokens));
+        children.setStakingInfo(MerkleMapLike.from(stakingInfo));
 
         networkInfo = mock(NetworkInfo.class);
 
@@ -1105,7 +1106,7 @@ class StateViewTest {
     @Test
     void getTopics() {
         final var children = new MutableStateChildren();
-        children.setTopics(topics);
+        children.setTopics(MerkleMapLike.from(topics));
 
         subject = new StateView(null, children, null);
 
@@ -1132,7 +1133,7 @@ class StateViewTest {
     @Test
     void getStakingInfoAndContext() {
         final var children = new MutableStateChildren();
-        children.setStakingInfo(stakingInfo);
+        children.setStakingInfo(MerkleMapLike.from(stakingInfo));
         children.setNetworkCtx(networkContext);
 
         subject = new StateView(null, children, null);

@@ -41,6 +41,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -76,7 +77,7 @@ public class StaticEntityAccess implements EntityAccess {
     private final StateView view;
     private final ContractAliases aliases;
     private final OptionValidator validator;
-    private final MerkleMap<EntityNum, MerkleToken> tokens;
+    private final MerkleMapLike<EntityNum, MerkleToken> tokens;
     private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
     private final TokenRelStorageAdapter tokenAssociations;

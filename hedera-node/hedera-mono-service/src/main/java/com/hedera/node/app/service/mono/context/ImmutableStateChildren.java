@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -50,8 +51,8 @@ import java.util.Objects;
  */
 public class ImmutableStateChildren implements StateChildren {
     private final NonAtomicReference<AccountStorageAdapter> accounts;
-    private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
-    private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private final WeakReference<MerkleMapLike<EntityNum, MerkleTopic>> topics;
+    private final WeakReference<MerkleMapLike<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private final NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
     private final NonAtomicReference<RecordsStorageAdapter> payerRecords;
@@ -64,7 +65,7 @@ public class ImmutableStateChildren implements StateChildren {
     private final WeakReference<MerkleSpecialFiles> specialFiles;
     private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
     private final WeakReference<Map<ByteString, EntityNum>> aliases;
-    private final WeakReference<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfo;
+    private final WeakReference<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo;
     private final Instant signedAt;
 
     public ImmutableStateChildren(final StateChildrenProvider provider) {
@@ -98,12 +99,12 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
         return Objects.requireNonNull(topics.get());
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
         return Objects.requireNonNull(tokens.get());
     }
 
@@ -153,7 +154,7 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
+    public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
         return Objects.requireNonNull(stakingInfo.get());
     }
 

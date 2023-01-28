@@ -1,6 +1,7 @@
 package com.hedera.node.app.state.merkle.adapters;
 
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.swirlds.common.crypto.Hash;
@@ -15,11 +16,18 @@ import java.util.stream.Collectors;
 
 public class MerkleMapLikeFactory {
     public static <K extends Comparable<K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
+            final StateMetadata<K, V> md,
             final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
             @Override
-            public void forEachNode(final Consumer<MerkleNode> operation) {
-                real.forEachNode(operation);
+            public void forEachNode(final BiConsumer<? super K, ? super V> action) {
+                real.forEachNode(
+                        (final MerkleNode node) -> {
+                            if (node instanceof Keyed) {
+                                final InMemoryValue<K, V> leaf = node.cast();
+                                action.accept(leaf.getKey().key(), leaf.getValue());
+                            }
+                        });
             }
 
             @Override
@@ -58,7 +66,9 @@ public class MerkleMapLikeFactory {
 
             @Override
             public V put(final K key, final V value) {
-                return real.put(new InMemoryKey<>(key), new InMemoryValue<>(key, value)).get();
+                final var wrappedKey = new InMemoryKey<>((K) key);
+                final var replaced = real.put(wrappedKey, new InMemoryValue<>(md, wrappedKey, value));
+                return replaced != null ? replaced.getValue() : null;
             }
 
             @Override
@@ -79,9 +89,9 @@ public class MerkleMapLikeFactory {
 
             @Override
             public V getOrDefault(final Object key, final V defaultValue) {
-                return real.getOrDefault(
-                        new InMemoryKey<>((K) key),
-                        new InMemoryValue<>((K) key, defaultValue)).get();
+                final var wrappedKey = new InMemoryKey<>((K) key);
+                final var wrappedDefaultValue = new InMemoryValue<>(md, wrappedKey, defaultValue);
+                return real.getOrDefault(wrappedKey, wrappedDefaultValue).getValue();
             }
 
             @Override

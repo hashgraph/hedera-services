@@ -115,7 +115,7 @@ class StakeStartupHelperTest {
                         subject.doUpgradeHousekeeping(
                                 networkContext,
                                 AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
-                                stakingInfos));
+                                MerkleMapLike.from(stakingInfos)));
     }
 
     @Test
@@ -125,7 +125,8 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
 
         subject.doUpgradeHousekeeping(
-                networkContext, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)), stakingInfos);
+                networkContext,
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)), MerkleMapLike.from(stakingInfos));
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
 

@@ -31,6 +31,7 @@ import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -75,7 +76,7 @@ class TokenAssociateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         tokenAssociateTxn = mock(TransactionBody.class);
         given(tokenAssociateTxn.hasTokenAssociate()).willReturn(true);

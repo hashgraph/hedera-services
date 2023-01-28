@@ -36,6 +36,7 @@ import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.fees.charging.NonHapiFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
@@ -75,7 +76,7 @@ class RenewalHelperTest {
 
     @BeforeEach
     void setUp() {
-        lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(accounts));
+        lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =

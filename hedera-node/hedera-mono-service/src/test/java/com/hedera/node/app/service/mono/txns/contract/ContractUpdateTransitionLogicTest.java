@@ -51,6 +51,7 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.txns.contract.helpers.UpdateCustomizerFactory;
@@ -128,7 +129,7 @@ class ContractUpdateTransitionLogicTest {
                         sigImpactHistorian,
                         txnCtx,
                         customizerFactory,
-                        () -> AccountStorageAdapter.fromInMemory(contracts),
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)),
                         dynamicProperties,
                         nodeInfo);
     }

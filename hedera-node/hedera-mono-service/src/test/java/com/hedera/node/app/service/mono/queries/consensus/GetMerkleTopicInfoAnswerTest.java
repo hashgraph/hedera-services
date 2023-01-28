@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -105,7 +106,7 @@ class GetMerkleTopicInfoAnswerTest {
 
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
-        children.setTopics(topics);
+        children.setTopics(MerkleMapLike.from(topics));
 
         networkInfo = mock(NetworkInfo.class);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
@@ -159,7 +160,7 @@ class GetMerkleTopicInfoAnswerTest {
                 ConsensusGetTopicInfoQuery.newBuilder().setTopicID(tid).build();
         final Query query = Query.newBuilder().setConsensusGetTopicInfo(op).build();
         // and:
-        given(optionValidator.queryableTopicStatus(tid, topics)).willReturn(TOPIC_EXPIRED);
+        given(optionValidator.queryableTopicStatus(tid, MerkleMapLike.from(topics))).willReturn(TOPIC_EXPIRED);
 
         // when:
         final ResponseCodeEnum status = subject.checkValidity(query, view);

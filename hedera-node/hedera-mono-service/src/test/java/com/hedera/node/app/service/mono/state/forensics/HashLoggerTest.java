@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.forensics;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -96,9 +97,9 @@ class HashLoggerTest {
         given(state.getHash()).willReturn(hashOf('0'));
         given(state.accounts()).willReturn(accounts);
         given(accounts.getHash()).willReturn(hashOf('1'));
-        given(state.topics()).willReturn(topics);
+        given(state.topics()).willReturn(MerkleMapLike.from(topics));
         given(topics.getHash()).willReturn(hashOf('2'));
-        given(state.tokens()).willReturn(tokens);
+        given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
         given(tokens.getHash()).willReturn(hashOf('3'));
         given(state.uniqueTokens()).willReturn(uniqueTokens);
         given(uniqueTokens.getHash()).willReturn(hashOf('4'));

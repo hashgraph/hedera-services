@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -63,7 +64,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
         // expect:
-        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test
@@ -72,7 +73,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
@@ -83,7 +84,7 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
         accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }
@@ -93,7 +94,7 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertDoesNotThrow(() -> subject.validate(adapter));
     }
@@ -103,7 +104,7 @@ class BasedLedgerValidatorTest {
         // given:
         accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
-        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        final var adapter = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts));
         // expect:
         assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
     }

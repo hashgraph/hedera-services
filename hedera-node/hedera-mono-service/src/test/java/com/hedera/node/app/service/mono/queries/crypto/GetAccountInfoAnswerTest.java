@@ -47,6 +47,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -190,8 +191,8 @@ class GetAccountInfoAnswerTest {
 
         children.setAccounts(accounts);
         children.setTokenAssociations(tokenRels);
-        children.setTokens(tokens);
-        children.setStakingInfo(stakingInfo);
+        children.setTokens(MerkleMapLike.from(tokens));
+        children.setStakingInfo(MerkleMapLike.from(stakingInfo));
 
         view = new StateView(scheduleStore, children, networkInfo);
 
@@ -257,7 +258,7 @@ class GetAccountInfoAnswerTest {
     void getsTheAccountInfo() throws Throwable {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
         final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
 
         given(token.hasKycKey()).willReturn(true);
         given(token.hasFreezeKey()).willReturn(true);

@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.config.MockHederaNumbers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -75,7 +76,7 @@ class ExpiryManagerTest {
                         nums,
                         sigImpactHistorian,
                         mockTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(mockAccounts));
+                        () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(mockAccounts)));
 
         subject.reviewExistingShortLivedEntities();
         final var resultingExpiries = subject.getShortLivedEntityExpiries();
@@ -92,7 +93,7 @@ class ExpiryManagerTest {
                         nums,
                         sigImpactHistorian,
                         liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+                        () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         final var leftoverTxnId = recordWith(bGrpcId, now).getTxnId().toGrpc();
         liveTxnHistories.put(leftoverTxnId, new TxnIdRecentHistory());
@@ -117,7 +118,7 @@ class ExpiryManagerTest {
                         nums,
                         sigImpactHistorian,
                         liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+                        () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 
@@ -148,7 +149,7 @@ class ExpiryManagerTest {
                         nums,
                         sigImpactHistorian,
                         liveTxnHistories,
-                        () -> RecordsStorageAdapter.fromLegacy(liveAccounts));
+                        () -> RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(liveAccounts)));
         final var newTxnId = recordWith(aGrpcId, start).getTxnId().toGrpc();
         liveAccounts.put(aKey, anAccount);
 

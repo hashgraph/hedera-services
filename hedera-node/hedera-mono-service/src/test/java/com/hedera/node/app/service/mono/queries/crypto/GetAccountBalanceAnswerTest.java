@@ -40,6 +40,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -368,7 +369,7 @@ class GetAccountBalanceAnswerTest {
         final ScheduleStore scheduleStore = mock(ScheduleStore.class);
 
         final MutableStateChildren children = new MutableStateChildren();
-        children.setTokens(tokens);
+        children.setTokens(MerkleMapLike.from(tokens));
         children.setAccounts(accounts);
         children.setTokenAssociations(tokenRels);
         return new StateView(scheduleStore, children, null);

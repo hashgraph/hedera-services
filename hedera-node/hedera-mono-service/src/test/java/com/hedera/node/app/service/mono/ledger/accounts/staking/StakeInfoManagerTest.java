@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.Address;
@@ -55,7 +56,7 @@ class StakeInfoManagerTest {
     @BeforeEach
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
-        subject = new StakeInfoManager(() -> stakingInfo);
+        subject = new StakeInfoManager(() -> MerkleMapLike.from(stakingInfo));
     }
 
     @Test
@@ -117,7 +118,7 @@ class StakeInfoManagerTest {
         // old and new are same
         var oldStakingInfo = stakingInfo;
         oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
-        subject.setPrevStakingInfos(oldStakingInfo);
+        subject.setPrevStakingInfos(MerkleMapLike.from(oldStakingInfo));
 
         var expectedInfo = stakingInfo.get(node0Id);
         var actual = subject.mutableStakeInfoFor(0L);
@@ -126,7 +127,7 @@ class StakeInfoManagerTest {
         // old and new are not same instances, but the cached value is null
         oldStakingInfo = buildsStakingInfoMap();
         oldStakingInfo.forEach((a, b) -> b.setStakeToReward(500L));
-        subject.setPrevStakingInfos(oldStakingInfo);
+        subject.setPrevStakingInfos(MerkleMapLike.from(oldStakingInfo));
 
         expectedInfo = stakingInfo.get(node0Id);
         actual = subject.mutableStakeInfoFor(0L);

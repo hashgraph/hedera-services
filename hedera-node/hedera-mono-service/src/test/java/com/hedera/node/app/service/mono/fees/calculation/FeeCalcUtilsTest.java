@@ -29,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -83,7 +84,7 @@ public class FeeCalcUtilsTest {
         given(accounts.get(key)).willReturn(account);
 
         assertEquals(
-                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(accounts)));
+                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test

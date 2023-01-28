@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -54,9 +55,12 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.merkle.adapters.MerkleMapLikeFactory;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
+import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
+import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
@@ -626,13 +630,22 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public AccountStorageAdapter accounts() {
         return AccountStorageAdapter.fromOnDisk(
                 VIRTUAL_MAP_DATA_ACCESS,
-                getChild(findNodeIndex("TokenService", "PAYER_RECORDS")),
+                mapLikePayerRecords(),
                 getChild(findNodeIndex("TokenService", "ACCOUNTS")));
     }
 
+    private MerkleMapLike<EntityNum, MerklePayerRecords> mapLikePayerRecords() {
+        return MerkleMapLikeFactory.unwrapping(
+                (StateMetadata<EntityNum, MerklePayerRecords>) services.get("TokenService").get("PAYER_RECORDS"),
+                getChild(findNodeIndex("TokenService", "PAYER_RECORDS")));
+    }
+
     @Override
-    public MerkleMap<EntityNum, MerkleTopic> topics() {
-        return getChild(findNodeIndex("ConsensusService", "TOPICS"));
+    @SuppressWarnings("java:S5961")
+    public MerkleMapLike<EntityNum, MerkleTopic> topics() {
+        return MerkleMapLikeFactory.unwrapping(
+                (StateMetadata<EntityNum, MerkleTopic>) services.get("ConsensusService").get("TOPICS"),
+                getChild(findNodeIndex("ConsensusService", "TOPICS")));
     }
 
     @Override
@@ -646,8 +659,10 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleToken> tokens() {
-        return getChild(findNodeIndex("TokenService", "TOKENS"));
+    public MerkleMapLike<EntityNum, MerkleToken> tokens() {
+        return MerkleMapLikeFactory.unwrapping(
+                (StateMetadata<EntityNum, MerkleToken>) services.get("TokenService").get("TOKENS"),
+                getChild(findNodeIndex("TokenService", "TOKENS")));
     }
 
     @Override
@@ -692,8 +707,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     public RecordsStorageAdapter payerRecords() {
-        return RecordsStorageAdapter.fromDedicated(
-                getChild(findNodeIndex("TokenService", "PAYER_RECORDS")));
+        return RecordsStorageAdapter.fromDedicated(mapLikePayerRecords());
     }
 
     @Override
@@ -710,7 +724,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     public MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfo() {
-        return getChild(findNodeIndex("NetworkService", "STAKING"));
+        return MerkleMapLikeFactory.unwrapping(
+                (StateMetadata<EntityNum, MerkleStakingInfo>) services.get("NetworkService").get("STAKING"),
+                getChild(findNodeIndex("NetworkService", "STAKING")));
     }
 
     @Override

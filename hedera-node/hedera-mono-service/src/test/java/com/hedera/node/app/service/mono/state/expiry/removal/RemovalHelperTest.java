@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
@@ -69,7 +70,7 @@ class RemovalHelperTest {
 
     @BeforeEach
     void setUp() {
-        accounts = AccountStorageAdapter.fromInMemory(new MerkleMap<>());
+        accounts = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
         accounts.put(EntityNum.fromLong(expiredDeletedAccountNum), expiredDeletedAccount);
         accounts.put(EntityNum.fromLong(expiredDeletedContractNum), expiredDeletedContract);
         lookup = new EntityLookup(() -> accounts);

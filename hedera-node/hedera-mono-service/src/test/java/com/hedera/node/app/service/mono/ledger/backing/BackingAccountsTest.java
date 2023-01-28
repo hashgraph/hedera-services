@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
@@ -63,7 +64,8 @@ class BackingAccountsTest {
 
         subject =
                 new BackingAccounts(
-                        () -> AccountStorageAdapter.fromInMemory(delegate), () -> payerRecords);
+                        () -> AccountStorageAdapter.fromInMemory(
+                                MerkleMapLike.from(delegate)), () -> payerRecords);
 
         subject.rebuildFromSources();
     }
