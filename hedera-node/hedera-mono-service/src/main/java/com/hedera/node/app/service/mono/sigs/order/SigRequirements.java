@@ -713,9 +713,6 @@ public class SigRequirements {
                     return accountFailure(failure, factory);
                 }
                 final var receiver = adjust.getReceiverAccountID();
-                if (linkedRefsLoaded) {
-                    mapWarmer.get().warmTokenObjs(token.getTokenNum(), adjust.getSerialNumber());
-                }
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -731,6 +728,16 @@ public class SigRequirements {
                     return (failure == MISSING_TOKEN)
                             ? factory.forMissingToken()
                             : accountFailure(failure, factory);
+                }
+                if (linkedRefsLoaded) {
+                    // pre-load objects needed for transfer:
+                    mapWarmer
+                            .get()
+                            .warmTokenObjs(
+                                    sender,
+                                    receiver,
+                                    token.getTokenNum(),
+                                    adjust.getSerialNumber());
                 }
             }
         }
