@@ -76,7 +76,9 @@ class RenewalHelperTest {
 
     @BeforeEach
     void setUp() {
-        lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        lookup =
+                new EntityLookup(
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =

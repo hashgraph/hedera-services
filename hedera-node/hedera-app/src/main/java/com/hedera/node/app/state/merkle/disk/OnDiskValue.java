@@ -16,15 +16,14 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
 import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -68,7 +67,7 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
-//        throwIfImmutable();
+        //        throwIfImmutable();
         final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;

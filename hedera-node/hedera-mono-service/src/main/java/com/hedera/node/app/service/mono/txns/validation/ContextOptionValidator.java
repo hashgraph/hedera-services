@@ -51,7 +51,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;

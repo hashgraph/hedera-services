@@ -160,7 +160,8 @@ class GetMerkleTopicInfoAnswerTest {
                 ConsensusGetTopicInfoQuery.newBuilder().setTopicID(tid).build();
         final Query query = Query.newBuilder().setConsensusGetTopicInfo(op).build();
         // and:
-        given(optionValidator.queryableTopicStatus(tid, MerkleMapLike.from(topics))).willReturn(TOPIC_EXPIRED);
+        given(optionValidator.queryableTopicStatus(tid, MerkleMapLike.from(topics)))
+                .willReturn(TOPIC_EXPIRED);
 
         // when:
         final ResponseCodeEnum status = subject.checkValidity(query, view);

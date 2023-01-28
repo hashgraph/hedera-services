@@ -66,13 +66,15 @@ public enum InfrastructureType {
             final var backingAccounts =
                     new BackingAccounts(
                             () ->
-                                    AccountStorageAdapter.fromInMemory(MerkleMapLike.from(
-                                            (MerkleMap<EntityNum, MerkleAccount>)
-                                                    bundle.getterFor(ACCOUNTS_MM).get())),
+                                    AccountStorageAdapter.fromInMemory(
+                                            MerkleMapLike.from(
+                                                    (MerkleMap<EntityNum, MerkleAccount>)
+                                                            bundle.getterFor(ACCOUNTS_MM).get())),
                             () ->
-                                    RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(
-                                            (MerkleMap<EntityNum, MerkleAccount>)
-                                                    bundle.getterFor(ACCOUNTS_MM).get())));
+                                    RecordsStorageAdapter.fromLegacy(
+                                            MerkleMapLike.from(
+                                                    (MerkleMap<EntityNum, MerkleAccount>)
+                                                            bundle.getterFor(ACCOUNTS_MM).get())));
             backingAccounts.rebuildFromSources();
             return new TransactionalLedger<>(
                     AccountProperty.class,

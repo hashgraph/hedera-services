@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.context.init;
 
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import javax.inject.Inject;
@@ -37,7 +36,8 @@ public class ServicesInitFlow {
         this.entitiesFlow = entitiesFlow;
     }
 
-    public void runWith(final StateChildrenProvider activeState, final BootstrapProperties bootstrapProps) {
+    public void runWith(
+            final StateChildrenProvider activeState, final BootstrapProperties bootstrapProps) {
         stateFlow.runWith(activeState, bootstrapProps);
         storeFlow.run();
         entitiesFlow.run();

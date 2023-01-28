@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;

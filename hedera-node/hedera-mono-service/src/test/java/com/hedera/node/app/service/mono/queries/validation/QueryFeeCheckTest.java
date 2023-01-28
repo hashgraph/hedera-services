@@ -112,7 +112,10 @@ class QueryFeeCheckTest {
 
         validator = mock(OptionValidator.class);
 
-        subject = new QueryFeeCheck(validator, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        subject =
+                new QueryFeeCheck(
+                        validator,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
     }
 
     @Test

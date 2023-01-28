@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.context.init;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;

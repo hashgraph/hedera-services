@@ -15,28 +15,25 @@
  */
 package com.hedera.node.app.service.file.impl.test;
 
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.test.utils.SemVerUtils;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.test.utils.SemVerUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
-    @Mock
-    private SchemaRegistry registry;
+    @Mock private SchemaRegistry registry;
 
     @Test
     void testSpi() {
@@ -67,7 +64,6 @@ class FileServiceImplTest {
         final var legacyBlobsDef = requestedStates.iterator().next();
         assertEquals("BLOBS", legacyBlobsDef.stateKey());
     }
-
 
     private FileService subject() {
         return FileService.getInstance();

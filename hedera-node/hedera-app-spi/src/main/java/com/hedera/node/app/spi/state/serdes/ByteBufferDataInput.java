@@ -115,9 +115,9 @@ public class ByteBufferDataInput implements DataInput {
 
     /**
      * Even more temporary than the class itself, this method is only here to allow us to get the
-     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which
-     * by default only knows how to deserialize itself from a {@link ByteBuffer} or
-     * {@link com.swirlds.common.io.streams.SerializableDataInputStream}.
+     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which by
+     * default only knows how to deserialize itself from a {@link ByteBuffer} or {@link
+     * com.swirlds.common.io.streams.SerializableDataInputStream}.
      *
      * @return the underlying {@link ByteBuffer} that this class is adapting
      */

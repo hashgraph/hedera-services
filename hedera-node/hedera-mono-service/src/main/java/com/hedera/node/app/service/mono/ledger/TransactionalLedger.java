@@ -257,7 +257,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         throwIfNotInTxn();
 
         try {
-            if (propertyType.equals(TokenProperty.class) || propertyType.equals(TokenRelProperty.class)) {
+            if (propertyType.equals(TokenProperty.class)
+                    || propertyType.equals(TokenRelProperty.class)) {
                 System.out.println("Committing " + changeSetSoFar());
             }
             if (commitInterceptor != null) {

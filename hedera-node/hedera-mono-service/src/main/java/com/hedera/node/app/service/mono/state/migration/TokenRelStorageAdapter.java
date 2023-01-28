@@ -22,7 +22,6 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenRelStorageAdapter {

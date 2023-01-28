@@ -511,7 +511,8 @@ class MerkleTopicUpdateTransitionLogicTest {
                 ConsensusUpdateTopicTransactionBody.newBuilder()
                         .setTopicID(MISSING_TOPIC)
                         .setMemo(StringValue.of(VALID_MEMO)));
-        given(validator.queryableTopicStatus(MISSING_TOPIC, MerkleMapLike.from(topics))).willReturn(INVALID_TOPIC_ID);
+        given(validator.queryableTopicStatus(MISSING_TOPIC, MerkleMapLike.from(topics)))
+                .willReturn(INVALID_TOPIC_ID);
     }
 
     private void givenTransactionWithInvalidAutoRenewAccount() {

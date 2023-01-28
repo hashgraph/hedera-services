@@ -15,5 +15,6 @@ module com.hedera.node.app.spi {
     opens com.hedera.node.app.spi to
             com.hedera.node.app.spi.test,
             com.hedera.node.app.service.mono.testFixtures;
+
     exports com.hedera.node.app.spi.state.serdes;
 }

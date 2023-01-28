@@ -66,7 +66,6 @@ import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWild
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

@@ -23,7 +23,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
@@ -84,22 +83,14 @@ public class ServicesMain implements SwirldMain {
 
     @Override
     public SwirldState2 newState() {
-        final var statesEnabled =
-                new BootstrapProperties(false)
-                        .getBooleanProperty(STATES_ENABLED);
+        final var statesEnabled = new BootstrapProperties(false).getBooleanProperty(STATES_ENABLED);
         if (!statesEnabled) {
             return new ServicesState();
         } else {
-            final var servicesSemVer =
-                    SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
-            log.info("Registering schemas for migration to {}...", servicesSemVer);
-            final var migration =
-                    Hedera.registerServiceSchemasForMigration(servicesSemVer);
-            log.info("... done registered schemas for migration to {}.", servicesSemVer);
-            return new MerkleHederaState(
-                    migration,
-                    event -> {},
-                    (round, dualState) -> {});
+            final var servicesSemVer = SEMANTIC_VERSIONS.deployedSoftwareVersion().getServices();
+            log.info("Registering schemas for migration to {}", servicesSemVer);
+            final var migration = Hedera.registerServiceSchemasForMigration(servicesSemVer);
+            return new MerkleHederaState(migration, event -> {}, (round, dualState) -> {});
         }
     }
 

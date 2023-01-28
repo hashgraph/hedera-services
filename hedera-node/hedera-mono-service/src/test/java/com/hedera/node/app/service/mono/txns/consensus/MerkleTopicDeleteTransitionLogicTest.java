@@ -78,7 +78,10 @@ class MerkleTopicDeleteTransitionLogicTest {
 
         subject =
                 new TopicDeleteTransitionLogic(
-                        () -> MerkleMapLike.from(topics), validator, sigImpactHistorian, transactionContext);
+                        () -> MerkleMapLike.from(topics),
+                        validator,
+                        sigImpactHistorian,
+                        transactionContext);
     }
 
     @Test
@@ -125,7 +128,10 @@ class MerkleTopicDeleteTransitionLogicTest {
 
         subject =
                 new TopicDeleteTransitionLogic(
-                        () -> MerkleMapLike.from(topics), validator, sigImpactHistorian, transactionContext);
+                        () -> MerkleMapLike.from(topics),
+                        validator,
+                        sigImpactHistorian,
+                        transactionContext);
     }
 
     @Test
@@ -172,7 +178,8 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenValidTransactionContext() throws Throwable {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
+                .willReturn(OK);
         var topicWithAdminKey = new MerkleTopic();
         topicWithAdminKey.setAdminKey(MISC_ACCOUNT_KT.asJKey());
         topics.put(fromTopicId(asTopic(TOPIC_ID)), topicWithAdminKey);
@@ -180,7 +187,8 @@ class MerkleTopicDeleteTransitionLogicTest {
 
     private void givenTransactionContextNoAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder());
-        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics))).willReturn(OK);
+        given(validator.queryableTopicStatus(asTopic(TOPIC_ID), MerkleMapLike.from(topics)))
+                .willReturn(OK);
         topics.put(fromTopicId(asTopic(TOPIC_ID)), new MerkleTopic());
     }
 

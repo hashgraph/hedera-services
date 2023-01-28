@@ -50,7 +50,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompile
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

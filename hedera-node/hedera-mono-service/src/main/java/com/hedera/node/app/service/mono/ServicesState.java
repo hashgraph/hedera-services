@@ -503,8 +503,9 @@ public class ServicesState extends PartialNaryMerkleInternal
     public TokenRelStorageAdapter tokenAssociations() {
         final var relsStorage = getChild(TOKEN_ASSOCIATIONS);
         return (relsStorage instanceof VirtualMap)
-                ? TokenRelStorageAdapter.fromOnDisk(VirtualMapLike.fromLongKeyed(
-                        (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
+                ? TokenRelStorageAdapter.fromOnDisk(
+                        VirtualMapLike.fromLongKeyed(
+                                (VirtualMap<EntityNumVirtualKey, OnDiskTokenRel>) relsStorage))
                 : TokenRelStorageAdapter.fromInMemory(
                         (MerkleMap<EntityNumPair, MerkleTokenRelStatus>) relsStorage);
     }
@@ -534,8 +535,9 @@ public class ServicesState extends PartialNaryMerkleInternal
         return tokensMap.getClass() == MerkleMap.class
                 ? UniqueTokenMapAdapter.wrap(
                         (MerkleMap<EntityNumPair, MerkleUniqueToken>) tokensMap)
-                : UniqueTokenMapAdapter.wrap(VirtualMapLike.from(
-                        (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
+                : UniqueTokenMapAdapter.wrap(
+                        VirtualMapLike.from(
+                                (VirtualMap<UniqueTokenKey, UniqueTokenValue>) tokensMap));
     }
 
     public RecordsStorageAdapter payerRecords() {

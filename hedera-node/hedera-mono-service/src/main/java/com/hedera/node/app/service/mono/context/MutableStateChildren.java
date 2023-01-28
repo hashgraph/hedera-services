@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;

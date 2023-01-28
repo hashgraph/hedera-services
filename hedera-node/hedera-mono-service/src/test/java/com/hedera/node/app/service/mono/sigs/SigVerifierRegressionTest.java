@@ -186,7 +186,9 @@ class SigVerifierRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 null,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts)),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),

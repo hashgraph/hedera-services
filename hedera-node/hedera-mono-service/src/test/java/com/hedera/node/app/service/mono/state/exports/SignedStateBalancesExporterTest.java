@@ -217,7 +217,8 @@ class SignedStateBalancesExporterTest {
         state = mock(ServicesState.class);
         given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
         given(state.tokens()).willReturn(MerkleMapLike.from(tokens));
-        given(state.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        given(state.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
         given(state.tokenAssociations()).willReturn(tokenRels);
         given(state.addressBook()).willReturn(book);
 

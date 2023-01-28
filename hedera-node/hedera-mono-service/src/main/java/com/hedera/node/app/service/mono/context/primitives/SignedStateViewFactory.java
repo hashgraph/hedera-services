@@ -57,8 +57,9 @@ public class SignedStateViewFactory {
      */
     public void tryToUpdateToLatestSignedChildren(final MutableStateChildren children)
             throws NoValidSignedStateException {
-        doWithLatest(provider ->
-                children.updateFromImmutable(provider, provider.getTimeOfLastHandledTxn()));
+        doWithLatest(
+                provider ->
+                        children.updateFromImmutable(provider, provider.getTimeOfLastHandledTxn()));
     }
 
     /**

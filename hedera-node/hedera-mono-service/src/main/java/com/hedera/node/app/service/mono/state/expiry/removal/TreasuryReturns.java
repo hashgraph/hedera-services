@@ -48,7 +48,6 @@ import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MapValueListUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;

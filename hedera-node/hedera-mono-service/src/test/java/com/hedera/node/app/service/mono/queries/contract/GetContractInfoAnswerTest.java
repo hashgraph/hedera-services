@@ -287,7 +287,8 @@ class GetContractInfoAnswerTest {
 
         given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(INVALID_CONTRACT_ID);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
+        given(view.contracts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         // when:
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -302,7 +303,8 @@ class GetContractInfoAnswerTest {
 
         given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(CONTRACT_DELETED);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
+        given(view.contracts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         final ResponseCodeEnum validity = subject.checkValidity(query, view);
 

@@ -24,7 +24,6 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 
 public class DefaultTopicLookup implements TopicSigMetaLookup {

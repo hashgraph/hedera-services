@@ -100,7 +100,10 @@ class ToStringAccountsExporterTest {
 
         // expect:
         assertDoesNotThrow(
-                () -> subject.toFile(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()))));
+                () ->
+                        subject.toFile(
+                                AccountStorageAdapter.fromInMemory(
+                                        MerkleMapLike.from(new MerkleMap<>()))));
         // and:
         assertThat(
                 logCaptor.warnLogs(),
@@ -159,7 +162,8 @@ class ToStringAccountsExporterTest {
                     + " expiredAndPendingRemoval=false}, # records=0}\n";
 
         // given:
-        AccountStorageAdapter accounts = AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
+        AccountStorageAdapter accounts =
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(new MerkleMap<>()));
         // and:
         accounts.put(EntityNum.fromInt(2), account2);
         accounts.put(EntityNum.fromInt(1), account1);

@@ -91,9 +91,10 @@ class BackingNftsTest extends ResponsibleVMapUser {
         subject =
                 new BackingNfts(
                         () ->
-                                UniqueTokenMapAdapter.wrap(VirtualMapLike.from(
-                                        this.<UniqueTokenKey, UniqueTokenValue>trackedMap(
-                                                new VirtualMap<>()))));
+                                UniqueTokenMapAdapter.wrap(
+                                        VirtualMapLike.from(
+                                                this.<UniqueTokenKey, UniqueTokenValue>trackedMap(
+                                                        new VirtualMap<>()))));
 
         // expect:
         assertThrows(UnsupportedOperationException.class, subject::idSet);

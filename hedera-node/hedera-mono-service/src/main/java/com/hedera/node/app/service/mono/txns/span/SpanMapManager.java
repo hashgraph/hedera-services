@@ -46,7 +46,6 @@ import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -29,7 +29,6 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

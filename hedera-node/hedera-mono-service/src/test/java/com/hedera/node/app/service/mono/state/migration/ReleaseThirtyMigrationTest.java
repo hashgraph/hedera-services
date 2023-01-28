@@ -129,7 +129,8 @@ class ReleaseThirtyMigrationTest {
         uniqueTokens.merkleMap().put(nftId5, nft5);
         uniqueTokens.merkleMap().put(nftId6, nft6);
 
-        rebuildNftOwners(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)), uniqueTokens);
+        rebuildNftOwners(
+                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)), uniqueTokens);
         // keySet() returns values in the order 2,5,4,1,3
         assertEquals(nftId3.getHiOrderAsLong(), accounts.get(accountNum1).getHeadNftTokenNum());
         assertEquals(nftId3.getLowOrderAsLong(), accounts.get(accountNum1).getHeadNftSerialNum());

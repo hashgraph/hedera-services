@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.utils.MapValueListMutation;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class ContractStorageListMutation

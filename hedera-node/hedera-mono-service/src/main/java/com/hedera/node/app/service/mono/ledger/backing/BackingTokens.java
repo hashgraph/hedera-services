@@ -21,7 +21,6 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;

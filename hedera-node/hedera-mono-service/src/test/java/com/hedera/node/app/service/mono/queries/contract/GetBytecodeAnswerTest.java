@@ -73,7 +73,8 @@ class GetBytecodeAnswerTest {
         contracts = mock(MerkleMap.class);
 
         view = mock(StateView.class);
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
+        given(view.contracts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
         optionValidator = mock(OptionValidator.class);
         aliasManager = mock(AliasManager.class);
 

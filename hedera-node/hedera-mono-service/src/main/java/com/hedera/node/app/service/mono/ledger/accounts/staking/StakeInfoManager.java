@@ -19,7 +19,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +39,8 @@ public class StakeInfoManager {
     private MerkleMapLike<EntityNum, MerkleStakingInfo> prevStakingInfos;
 
     @Inject
-    public StakeInfoManager(final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo) {
+    public StakeInfoManager(
+            final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfo) {
         this.stakingInfos = stakingInfo;
     }
 

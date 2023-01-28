@@ -1,15 +1,25 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.spi.state.serdes;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.spi.state.Serdes;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,8 +30,12 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.SplittableRandom;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 abstract class AbstractVirtualSerdesTest<T> {
     private static final SplittableRandom RANDOM = new SplittableRandom();
@@ -49,9 +63,8 @@ abstract class AbstractVirtualSerdesTest<T> {
 
     protected static class InstanceArgumentsProvider implements ArgumentsProvider {
         @Override
-        public Stream<? extends Arguments> provideArguments(
-                final ExtensionContext context
-        ) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        public Stream<? extends Arguments> provideArguments(final ExtensionContext context)
+                throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
             final var testType = context.getRequiredTestClass();
             final var randomInstances = testType.getMethod(RANDOM_INSTANCES);
             return ((Stream<?>) randomInstances.invoke(null)).map(Arguments::of);
@@ -109,7 +122,8 @@ abstract class AbstractVirtualSerdesTest<T> {
         try {
             buffer.get();
             Assertions.fail("No bytes should be left in the buffer");
-        } catch (BufferUnderflowException ignore) {}
+        } catch (BufferUnderflowException ignore) {
+        }
         return instance;
     }
 }

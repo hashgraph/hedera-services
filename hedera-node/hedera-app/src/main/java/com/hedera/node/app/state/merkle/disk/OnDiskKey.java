@@ -16,9 +16,9 @@
 package com.hedera.node.app.state.merkle.disk;
 
 import com.hedera.node.app.spi.state.Serdes;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.spi.state.serdes.ByteBufferDataInput;
 import com.hedera.node.app.spi.state.serdes.ByteBufferDataOutput;
+import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;

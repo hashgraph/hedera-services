@@ -102,7 +102,8 @@ class AutoRenewCalcsTest {
         propertySource.ensureProps();
         properties = new GlobalDynamicProperties(new HederaNumbers(propertySource), propertySource);
 
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
+        subject =
+                new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         subject.setAccountRenewalPriceSeq(accountPrices);
         subject.setContractRenewalPriceSeq(contractPrices);
@@ -245,7 +246,8 @@ class AutoRenewCalcsTest {
         setupAccountWith(1L);
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
+        subject =
+                new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         // expect:
         Assertions.assertThrows(
@@ -260,7 +262,8 @@ class AutoRenewCalcsTest {
         expiredEntity = MerkleAccountFactory.newAccount().isSmartContract(true).balance(1).get();
 
         // given:
-        subject = new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
+        subject =
+                new AutoRenewCalcs(cryptoOpsUsage, () -> VirtualMapLike.from(storage), properties);
 
         // expect:
         Assertions.assertThrows(

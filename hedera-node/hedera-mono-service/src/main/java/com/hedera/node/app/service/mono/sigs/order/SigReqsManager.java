@@ -106,7 +106,8 @@ public class SigReqsManager {
      * @param provider an immutable state appropriate for signature expansion
      * @param accessor a transaction that needs linked signatures expanded
      */
-    public void expandSigs(final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
+    public void expandSigs(
+            final StateChildrenProvider provider, final SwirldsTxnAccessor accessor) {
         if (dynamicProperties.expandSigsFromImmutableState()
                 && tryExpandFromImmutable(provider, accessor)) {
             return;
@@ -141,8 +142,7 @@ public class SigReqsManager {
             // Because event intake is single-threaded, there's no risk of another thread getting
             // inconsistent results while we are doing this. Also, note that MutableStateChildren
             // uses weak references, so we won't keep this immutable state from GC eligibility.
-            immutableChildren.updateFromImmutable(
-                    provider, provider.getTimeOfLastHandledTxn());
+            immutableChildren.updateFromImmutable(provider, provider.getTimeOfLastHandledTxn());
             expandFromImmutableState(accessor);
             return true;
         } catch (final Exception e) {

@@ -377,13 +377,17 @@ class ContextOptionValidatorTest {
     @Test
     void recognizesMissingTopic() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(missingTopicId, MerkleMapLike.from(topics)));
+        assertEquals(
+                INVALID_TOPIC_ID,
+                subject.queryableTopicStatus(missingTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test
     void recognizesDeletedTopicStatus() {
         // expect:
-        assertEquals(INVALID_TOPIC_ID, subject.queryableTopicStatus(deletedTopicId, MerkleMapLike.from(topics)));
+        assertEquals(
+                INVALID_TOPIC_ID,
+                subject.queryableTopicStatus(deletedTopicId, MerkleMapLike.from(topics)));
     }
 
     @Test

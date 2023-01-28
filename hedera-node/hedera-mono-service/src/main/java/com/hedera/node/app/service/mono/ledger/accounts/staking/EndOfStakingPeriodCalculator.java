@@ -36,7 +36,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;

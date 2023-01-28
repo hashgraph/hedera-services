@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.network.impl;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.network.impl.serdes.EntityNumSerdes;
@@ -30,7 +29,6 @@ import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.serdes.MonoMapSerdesAdapter;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Set;
 
 /**
@@ -42,8 +40,8 @@ public final class NetworkServiceImpl implements NetworkService {
     private static final String ADDRESS_BOOK_KEY = "ADDRESS_BOOK";
     private static final String SPECIAL_FILES_KEY = "SPECIAL_FILES";
     private static final String RUNNING_HASHES_KEY = "RUNNING_HASHES";
-    private static final SemanticVersion CURRENT_VERSION = SemanticVersion.newBuilder()
-            .setMinor(34).build();
+    private static final SemanticVersion CURRENT_VERSION =
+            SemanticVersion.newBuilder().setMinor(34).build();
 
     @Override
     public void registerSchemas(final @NonNull SchemaRegistry registry) {
@@ -59,16 +57,19 @@ public final class NetworkServiceImpl implements NetworkService {
                         stakingDef(),
                         StateDefinition.singleton(CONTEXT_KEY, new MonoContextAdapterSerdes()),
                         StateDefinition.singleton(ADDRESS_BOOK_KEY, new MonoBookAdapterSerdes()),
-                        StateDefinition.singleton(SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterSerdes()),
-                        StateDefinition.singleton(RUNNING_HASHES_KEY, new MonoRunningHashesAdapterSerdes()));
+                        StateDefinition.singleton(
+                                SPECIAL_FILES_KEY, new MonoSpecialFilesAdapterSerdes()),
+                        StateDefinition.singleton(
+                                RUNNING_HASHES_KEY, new MonoRunningHashesAdapterSerdes()));
             }
         };
     }
 
     private StateDefinition<EntityNum, MerkleStakingInfo> stakingDef() {
         final var keySerdes = new EntityNumSerdes();
-        final var valueSerdes = MonoMapSerdesAdapter.serdesForSelfSerializable(
-                MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
+        final var valueSerdes =
+                MonoMapSerdesAdapter.serdesForSelfSerializable(
+                        MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
         return StateDefinition.inMemory(STAKING_KEY, keySerdes, valueSerdes);
     }
 }

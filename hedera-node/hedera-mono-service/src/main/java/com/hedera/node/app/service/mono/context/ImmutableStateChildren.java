@@ -37,8 +37,6 @@ import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -58,7 +56,8 @@ public class ImmutableStateChildren implements StateChildren {
     private final NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private final NonAtomicReference<MerkleScheduledTransactions> schedules;
     private final NonAtomicReference<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> storage;
-    private final NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>> contractStorage;
+    private final NonAtomicReference<VirtualMapLike<ContractKey, IterableContractValue>>
+            contractStorage;
     private final NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
     private final NonAtomicReference<MerkleNetworkContext> networkCtx;
     private final NonAtomicReference<AddressBook> addressBook;

@@ -76,7 +76,8 @@ class TokenAssociateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        given(view.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         tokenAssociateTxn = mock(TransactionBody.class);
         given(tokenAssociateTxn.hasTokenAssociate()).willReturn(true);

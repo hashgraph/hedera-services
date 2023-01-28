@@ -56,8 +56,12 @@ class ContractGCTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ContractGC(expiryThrottle, () -> contracts,
-                () -> VirtualMapLike.from(storage), () -> VirtualMapLike.from(bytecode));
+        subject =
+                new ContractGC(
+                        expiryThrottle,
+                        () -> contracts,
+                        () -> VirtualMapLike.from(storage),
+                        () -> VirtualMapLike.from(bytecode));
         subject.setRemovalFacilitation(removalFacilitation);
     }
 

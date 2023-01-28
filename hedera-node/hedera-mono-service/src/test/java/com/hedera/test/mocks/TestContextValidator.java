@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.merkle.map.MerkleMap;
 
 public enum TestContextValidator implements OptionValidator {
     TEST_VALIDATOR;

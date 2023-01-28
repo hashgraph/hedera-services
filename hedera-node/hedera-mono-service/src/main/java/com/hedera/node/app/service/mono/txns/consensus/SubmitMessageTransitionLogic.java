@@ -32,7 +32,6 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.io.IOException;
 import java.util.function.Function;
 import java.util.function.Predicate;

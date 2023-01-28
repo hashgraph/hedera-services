@@ -20,7 +20,6 @@ import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

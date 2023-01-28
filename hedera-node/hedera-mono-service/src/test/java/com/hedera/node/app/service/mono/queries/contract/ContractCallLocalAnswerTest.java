@@ -135,7 +135,8 @@ class ContractCallLocalAnswerTest {
 
     @Test
     void rejectsInvalidCid() throws Throwable {
-        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
+        given(view.contracts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(contracts)));
 
         // given:
         final Query query = validQuery(COST_ANSWER, fee);

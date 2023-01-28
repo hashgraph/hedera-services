@@ -752,7 +752,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -809,7 +811,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -859,7 +863,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -893,7 +899,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -937,7 +945,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -978,7 +988,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,
@@ -1027,7 +1039,9 @@ class StakingAccountsCommitInterceptorTest {
                         rewardCalculator,
                         new StakeChangeManager(
                                 stakeInfoManager,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts))),
                         stakePeriodManager,
                         stakeInfoManager,
                         accountNumbers,

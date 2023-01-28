@@ -124,9 +124,13 @@ public final class BootstrapProperties implements PropertySource {
             final var msg =
                     "Resolved bootstrap properties:\n  "
                             + BOOTSTRAP_PROP_NAMES.stream()
-                            .sorted()
-                            .map(name -> String.format("%s=%s", name, bootstrapProps.get(name)))
-                            .collect(Collectors.joining("\n  "));
+                                    .sorted()
+                                    .map(
+                                            name ->
+                                                    String.format(
+                                                            "%s=%s",
+                                                            name, bootstrapProps.get(name)))
+                                    .collect(Collectors.joining("\n  "));
             log.info(msg);
         }
     }

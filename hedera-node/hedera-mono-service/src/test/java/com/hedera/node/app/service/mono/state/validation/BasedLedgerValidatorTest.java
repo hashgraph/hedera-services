@@ -64,7 +64,10 @@ class BasedLedgerValidatorTest {
         accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
         // expect:
-        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
+        assertDoesNotThrow(
+                () ->
+                        subject.validate(
+                                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test

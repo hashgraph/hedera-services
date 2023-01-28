@@ -84,7 +84,9 @@ public class FeeCalcUtilsTest {
         given(accounts.get(key)).willReturn(account);
 
         assertEquals(
-                expected, lookupAccountExpiry(key, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
+                expected,
+                lookupAccountExpiry(
+                        key, AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))));
     }
 
     @Test

@@ -121,7 +121,9 @@ class IterableStorageUtilsTest {
     void canUpdateExistingMappingInPlace() {
         given(storage.getForModify(targetKey)).willReturn(targetValue);
 
-        final var newRoot = inPlaceUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot =
+                inPlaceUpsertMapping(
+                        targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         assertArrayEquals(targetValue.getValue(), nextValue.getValue());
@@ -132,7 +134,9 @@ class IterableStorageUtilsTest {
         final var valueCaptor = ArgumentCaptor.forClass(IterableContractValue.class);
         given(storage.get(targetKey)).willReturn(targetValue);
 
-        final var newRoot = overwritingUpsertMapping(targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot =
+                overwritingUpsertMapping(
+                        targetKey, nextValue, rootKey, null, VirtualMapLike.from(storage));
 
         assertSame(rootKey, newRoot);
         verify(storage).put(eq(targetKey), valueCaptor.capture());
@@ -142,7 +146,9 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListInPlace() {
-        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
+        final var newRoot =
+                inPlaceUpsertMapping(
+                        targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -151,7 +157,9 @@ class IterableStorageUtilsTest {
 
     @Test
     void canInsertToEmptyListOverwriting() {
-        final var newRoot = overwritingUpsertMapping(targetKey, targetValue, null, null, VirtualMapLike.from(storage));
+        final var newRoot =
+                overwritingUpsertMapping(
+                        targetKey, targetValue, null, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -163,7 +171,9 @@ class IterableStorageUtilsTest {
         given(storage.getForModify(targetKey)).willReturn(null);
         given(storage.getForModify(rootKey)).willReturn(rootValue);
 
-        final var newRoot = inPlaceUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
+        final var newRoot =
+                inPlaceUpsertMapping(
+                        targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -180,7 +190,8 @@ class IterableStorageUtilsTest {
         given(storage.get(rootKey)).willReturn(rootValue);
 
         final var newRoot =
-                overwritingUpsertMapping(targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
+                overwritingUpsertMapping(
+                        targetKey, targetValue, rootKey, null, VirtualMapLike.from(storage));
 
         verify(storage).put(targetKey, targetValue);
 
@@ -195,7 +206,8 @@ class IterableStorageUtilsTest {
     @Test
     void canInsertWithPrefetchedValueInPlace() {
         final var newRoot =
-                inPlaceUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
+                inPlaceUpsertMapping(
+                        targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));
@@ -209,7 +221,8 @@ class IterableStorageUtilsTest {
     @Test
     void canInsertWithPrefetchedValueOverwriting() {
         final var newRoot =
-                overwritingUpsertMapping(targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
+                overwritingUpsertMapping(
+                        targetKey, targetValue, rootKey, rootValue, VirtualMapLike.from(storage));
 
         assertSame(targetKey, newRoot);
         assertNull(targetValue.getPrevKeyScopedTo(contractNum));

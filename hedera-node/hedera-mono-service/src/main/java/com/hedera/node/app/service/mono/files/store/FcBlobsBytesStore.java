@@ -21,7 +21,6 @@ import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
 import com.hedera.node.app.service.mono.state.merkle.internals.BlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.AbstractMap;
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +33,8 @@ public class FcBlobsBytesStore extends AbstractMap<String, byte[]> {
 
     public static final int LEGACY_BLOB_CODE_INDEX = 3;
 
-    public FcBlobsBytesStore(Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
+    public FcBlobsBytesStore(
+            Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> blobSupplier) {
         this.blobSupplier = blobSupplier;
     }
 

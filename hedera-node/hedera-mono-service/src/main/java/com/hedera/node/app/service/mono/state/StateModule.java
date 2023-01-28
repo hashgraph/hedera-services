@@ -86,8 +86,6 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -323,8 +321,8 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>> provideWorkingContractStorage(
-            final MutableStateChildren workingState) {
+    static Supplier<VirtualMapLike<ContractKey, IterableContractValue>>
+            provideWorkingContractStorage(final MutableStateChildren workingState) {
         return workingState::contractStorage;
     }
 

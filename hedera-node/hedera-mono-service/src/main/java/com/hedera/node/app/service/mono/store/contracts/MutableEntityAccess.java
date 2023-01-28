@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

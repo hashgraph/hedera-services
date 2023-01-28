@@ -64,8 +64,8 @@ class BackingAccountsTest {
 
         subject =
                 new BackingAccounts(
-                        () -> AccountStorageAdapter.fromInMemory(
-                                MerkleMapLike.from(delegate)), () -> payerRecords);
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(delegate)),
+                        () -> payerRecords);
 
         subject.rebuildFromSources();
     }

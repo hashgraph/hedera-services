@@ -78,8 +78,8 @@ class StoreInitializationFlowTest {
     void initsAsExpected() {
         final ArgumentCaptor<BiConsumer<EntityNum, HederaAccount>> captor =
                 ArgumentCaptor.forClass(BiConsumer.class);
-        given(workingState.accounts()).willReturn(
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+        given(workingState.accounts())
+                .willReturn(AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
 
         // when:
         subject.run();

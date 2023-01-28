@@ -39,7 +39,6 @@ import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Supplier;

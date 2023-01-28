@@ -166,7 +166,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final var statesToCreate = schema.statesToCreate();
             statesToCreate.forEach(
                     def -> {
-                        System.out.println("Creating state " + def.stateKey() + " for " + serviceName);
+                        System.out.println(
+                                "Creating state " + def.stateKey() + " for " + serviceName);
                         final var md = new StateMetadata<>(serviceName, schema, def);
                         if (def.singleton()) {
                             final var singleton = new SingletonNode<>(md, null);

@@ -60,7 +60,8 @@ class StakeChangeManagerTest {
         stakingInfo = buildsStakingInfoMap();
         subject =
                 new StakeChangeManager(
-                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
+                        stakeInfoManager,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)));
     }
 
     @Test
@@ -137,7 +138,8 @@ class StakeChangeManagerTest {
 
         subject =
                 new StakeChangeManager(
-                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsMap)));
+                        stakeInfoManager,
+                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accountsMap)));
         subject.initializeAllStakingStartsTo(todayNum);
 
         assertEquals(todayNum, counterparty.getStakePeriodStart());

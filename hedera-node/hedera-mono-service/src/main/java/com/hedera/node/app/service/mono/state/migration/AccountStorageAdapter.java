@@ -25,8 +25,6 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -43,14 +41,13 @@ public class AccountStorageAdapter {
 
     public static AccountStorageAdapter fromInMemory(
             final MerkleMapLike<EntityNum, MerkleAccount> accounts) {
-        return new AccountStorageAdapter(accounts,null, null);
+        return new AccountStorageAdapter(accounts, null, null);
     }
 
     public static AccountStorageAdapter fromOnDisk(
             final MerkleMapLike<EntityNum, MerklePayerRecords> payerRecords,
             final VirtualMapLike<EntityNumVirtualKey, OnDiskAccount> accounts) {
-        return new AccountStorageAdapter(
-                null, payerRecords, accounts);
+        return new AccountStorageAdapter(null, payerRecords, accounts);
     }
 
     private AccountStorageAdapter(

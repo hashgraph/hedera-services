@@ -109,9 +109,9 @@ public class ByteBufferDataOutput implements DataOutput {
 
     /**
      * Even more temporary than the class itself, this method is only here to allow us to get the
-     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which
-     * by default only knows how to serialize itself to a {@link ByteBuffer} or
-     * {@link com.swirlds.common.io.streams.SerializableDataOutputStream}.
+     * underlying buffer to use when adapting a legacy {@code VirtualValue} implementation, which by
+     * default only knows how to serialize itself to a {@link ByteBuffer} or {@link
+     * com.swirlds.common.io.streams.SerializableDataOutputStream}.
      *
      * @return the underlying {@link ByteBuffer} that this class is adapting
      */

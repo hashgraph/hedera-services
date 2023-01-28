@@ -45,7 +45,6 @@ import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;

@@ -63,8 +63,6 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
@@ -188,7 +186,8 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Nullable
     public static Bytes explicitCodeFetch(
-            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode, final long contractNum) {
+            final VirtualMapLike<VirtualBlobKey, VirtualBlobValue> bytecode,
+            final long contractNum) {
         final var key =
                 new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
         final var value = bytecode.get(key);

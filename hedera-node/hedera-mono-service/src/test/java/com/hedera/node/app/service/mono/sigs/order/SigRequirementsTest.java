@@ -6427,7 +6427,9 @@ public class SigRequirementsTest {
                                 defaultLookupsFor(
                                         aliasManager,
                                         hfsSigMetaLookup,
-                                        () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                                        () ->
+                                                AccountStorageAdapter.fromInMemory(
+                                                        MerkleMapLike.from(accounts)),
                                         () -> MerkleMapLike.from(topics),
                                         DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(
                                                 tokenStore),

@@ -43,7 +43,6 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

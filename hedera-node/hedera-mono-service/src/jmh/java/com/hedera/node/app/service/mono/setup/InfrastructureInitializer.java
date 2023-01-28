@@ -164,7 +164,11 @@ public class InfrastructureInitializer {
                 final var vmValue = IterableContractValue.from(evmKey);
                 firstKey =
                         overwritingUpsertMapping(
-                                vmKey, vmValue, firstKey, firstValue, VirtualMapLike.from(contractStorage));
+                                vmKey,
+                                vmValue,
+                                firstKey,
+                                firstValue,
+                                VirtualMapLike.from(contractStorage));
                 firstValue = vmValue;
             }
 

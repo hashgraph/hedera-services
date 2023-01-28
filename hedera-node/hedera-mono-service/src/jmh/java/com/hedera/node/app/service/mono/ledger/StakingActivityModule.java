@@ -96,9 +96,10 @@ public interface StakingActivityModule {
     static Supplier<AccountStorageAdapter> provideAccountsSupplier(
             final InfrastructureBundle bundle) {
         return () ->
-                AccountStorageAdapter.fromInMemory(MerkleMapLike.from(
-                        (MerkleMap<EntityNum, MerkleAccount>)
-                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
+                AccountStorageAdapter.fromInMemory(
+                        MerkleMapLike.from(
+                                (MerkleMap<EntityNum, MerkleAccount>)
+                                        bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
     }
 
     @Provides
@@ -107,9 +108,10 @@ public interface StakingActivityModule {
     static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
             final InfrastructureBundle bundle) {
         return () ->
-                RecordsStorageAdapter.fromLegacy(MerkleMapLike.from(
-                        (MerkleMap<EntityNum, MerkleAccount>)
-                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
+                RecordsStorageAdapter.fromLegacy(
+                        MerkleMapLike.from(
+                                (MerkleMap<EntityNum, MerkleAccount>)
+                                        bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get()));
     }
 
     @Provides

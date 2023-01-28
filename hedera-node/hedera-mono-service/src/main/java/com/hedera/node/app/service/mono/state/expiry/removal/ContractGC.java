@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.throttling.MapAccessType;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MapValueListUtils;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;

@@ -57,10 +57,11 @@ class UniqueTokensLinkManagerTest extends ResponsibleVMapUser {
     private final UniqueTokenMapAdapter uniqueTokens =
             UniqueTokenMapAdapter.wrap(new MerkleMap<>());
     private final UniqueTokenMapAdapter virtualUniqueTokens =
-            UniqueTokenMapAdapter.wrap(VirtualMapLike.from(
-                    trackedMap(
-                            new VirtualMapFactory(JasperDbBuilder::new)
-                                    .newVirtualizedUniqueTokenStorage())));
+            UniqueTokenMapAdapter.wrap(
+                    VirtualMapLike.from(
+                            trackedMap(
+                                    new VirtualMapFactory(JasperDbBuilder::new)
+                                            .newVirtualizedUniqueTokenStorage())));
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private UniqueTokensLinkManager subject;

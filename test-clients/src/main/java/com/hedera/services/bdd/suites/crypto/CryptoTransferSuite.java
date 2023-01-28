@@ -51,7 +51,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -750,15 +749,16 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .fee(ONE_HBAR)
                                 .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
                         // Immutable accounts cannot be schedule transaction payers
-//                        scheduleCreate(
-//                                        NOT_TO_BE,
-//                                        cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
-//                                .payingWith(GENESIS)
-//                                .signedBy(GENESIS)
-//                                .fee(ONE_HBAR)
-//                                .designatingPayer(STAKING_REWARD)
-//                                .fee(ONE_HUNDRED_HBARS)
-//                                .hasKnownStatus(INVALID_ACCOUNT_ID),
+                        //                        scheduleCreate(
+                        //                                        NOT_TO_BE,
+                        //
+                        // cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
+                        //                                .payingWith(GENESIS)
+                        //                                .signedBy(GENESIS)
+                        //                                .fee(ONE_HBAR)
+                        //                                .designatingPayer(STAKING_REWARD)
+                        //                                .fee(ONE_HUNDRED_HBARS)
+                        //                                .hasKnownStatus(INVALID_ACCOUNT_ID),
                         // Immutable accounts cannot approve or adjust allowances
                         cryptoApproveAllowance()
                                 .payingWith(GENESIS)

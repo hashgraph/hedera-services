@@ -189,7 +189,6 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
-import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -887,8 +886,7 @@ public final class MiscUtils {
     }
 
     public static <K, V extends MerkleNode & Keyed<K>> void forEach(
-            final MerkleMapLike<K, V> map,
-            final BiConsumer<? super K, ? super V> action) {
+            final MerkleMapLike<K, V> map, final BiConsumer<? super K, ? super V> action) {
         map.forEachNode(action);
     }
 

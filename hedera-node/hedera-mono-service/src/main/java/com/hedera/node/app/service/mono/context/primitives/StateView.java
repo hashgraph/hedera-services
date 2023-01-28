@@ -111,8 +111,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

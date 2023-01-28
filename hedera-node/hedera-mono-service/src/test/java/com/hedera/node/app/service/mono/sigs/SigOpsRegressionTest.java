@@ -389,7 +389,9 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 null,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts)),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
@@ -413,7 +415,9 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts)),
                                 null,
                                 ref -> null,
                                 ref -> null),
@@ -477,7 +481,9 @@ class SigOpsRegressionTest {
                         defaultLookupsFor(
                                 aliasManager,
                                 hfsSigMetaLookup,
-                                () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts)),
+                                () ->
+                                        AccountStorageAdapter.fromInMemory(
+                                                MerkleMapLike.from(accounts)),
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
