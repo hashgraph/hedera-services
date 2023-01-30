@@ -227,6 +227,10 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         } else {
             final var key = account.getAccountKey();
             if (key.isEmpty()) {
+                if (linkedRefs != null) {
+                    linkedRefs.link(fileNumbers.applicationProperties());
+                }
+
                 if (!properties.isLazyCreationEnabled()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 }
