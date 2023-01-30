@@ -30,7 +30,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Interface for constructing {@link TransactionMetadata} by collecting information that is needed
@@ -251,7 +250,8 @@ public class PrehandleHandlerContext {
     }
 
     @NonNull
-    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
+    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(
+            @NonNull final ContractID id) {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
@@ -259,7 +259,6 @@ public class PrehandleHandlerContext {
         addToKeysOrFail(result, null, false);
         return this;
     }
-
 
     @Override
     public String toString() {

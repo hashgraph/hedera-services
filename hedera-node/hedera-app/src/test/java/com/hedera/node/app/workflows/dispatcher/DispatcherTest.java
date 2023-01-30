@@ -133,7 +133,8 @@ class DispatcherTest {
     @BeforeEach
     void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
         when(state.createReadableStates(any())).thenReturn(readableStates);
-        when(accountStore.getKey(any(AccountID.class))).thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        when(accountStore.getKey(any(AccountID.class)))
+                .thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         handlers =
                 new Handlers(

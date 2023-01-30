@@ -45,14 +45,7 @@ public final class Hedera {
         // TODO Real values will be added to make this usable with #4714
         final var ingestWorkflow =
                 new IngestWorkflowImpl(
-                        app.nodeInfo(),
-                        app.platformStatus(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null);
+                        app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
         // Create the query workflow
         final var queryWorkflow = new QueryWorkflowImpl();
