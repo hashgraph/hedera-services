@@ -82,16 +82,17 @@ public interface HederaAccount {
 
 #### Externalize changes through transaction records
 - All virtual address values will be exposed in record files as described in the table from [HAPI changes section](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#hapi-changes) of HIP-631
-- Contract nonce updates will be externalized by adding a map `ContractId -> nonce` in `ContractFunctionResult` message that will be populated in the top-level transaction records
+- Contract nonce updates for both cases of `EthereumTransaction`s and `non-EthereumTransaction`s (i.e. `ContractCall` or `ContractCreate`) will be externalized by adding a `ContractId -> nonce` map in `ContractFunctionResult` message that will be populated in the top-level transaction records
   - We can keep a `ContractId -> nonce` map inside `TxnAwareRecordsHistorian`, it would be updated on each call to `AbstractRecordingCreateOperation` even if the contract creation operation does not succeed
   - When the ledgers `commit()` are executed, and we go to `TxnAwareRecordsHistorian.saveExpirableTransactionRecords` method we can save the constructed map to the top-level `RecordStreamObject`
   - This would be done via setting it inside it's `ExpirableTxnRecord` in the corresponding `EvmFnResult` field
     - `contractCreateResult` if the top level transaction was `ContractCreate`
     - `contractCallResult` if the top level transaction was `ContractCall`
-- Tracking nonces for EOAs for EthereumTransactions is not changed
+- Tracking nonces for EOAs for `EthereumTransaction`s is not changed (currently we don't have a specific protobuf to externalize the nonce but the nonce value is passed as part of the `EthereumTransaction` body, so Mirror Node can read the value from there)
+- Tracking nonces for EOAs for `non-EthereumTransaction`s is not supported because there is no use case for it in Hedera
 
 ### Queries
-- Update `GetAccountInfoAnswer.responseGiven` to return the virtual addresses list for an account
+- Update `GetAccountInfoAnswer.responseGiven` to return the virtual addresses list and their nonces for an account
 - Introduce new `CryptoGetAccountVirtualAddressesQuery` in order to return unbounded list of virtual addresses for an account
 
 ### Global properties
@@ -107,6 +108,7 @@ The development will be done in iterative phases that build on previous ones. Pr
 - Phase 0
   - Protobuf changes:
     - Add virtual addresses list to `AccountInfo` proto (already added)
+    - Add field for nonce per virtual address to `AccountInfo` proto
     - Add a `ContractId -> nonce` map in message `ContractFunctionResult` in order to externalize contract nonce updates
   - Create design doc and test plan
 - Phase 1
@@ -121,6 +123,7 @@ The development will be done in iterative phases that build on previous ones. Pr
 - Phase 2
   - Protobuf changes
     - Add `virtual_address_override` to `ContractCall` and `ContractCreate` transactions
+    - Add update to `CryptoUpdateTransactionBody.virtual_address_update`
   - Support virtual address addition on `CryptoUpdate`
   - Account migration
     - All ECDSA accounts with an alias get a single virtual address
