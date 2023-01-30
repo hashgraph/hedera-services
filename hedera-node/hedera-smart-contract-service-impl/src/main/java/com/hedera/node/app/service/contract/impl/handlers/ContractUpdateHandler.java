@@ -15,11 +15,15 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -45,7 +49,32 @@ public class ContractUpdateHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PrehandleHandlerContext context) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getContractUpdateInstance();
+
+        if (isAdminSigRequired(op)) {
+            context.addNonPayerKey(op.getContractID());
+        }
+        if (hasCryptoAdminKey(op)) {
+            final var key = asHederaKey(op.getAdminKey());
+            key.ifPresent(context::addToReqNonPayerKeys);
+        }
+        if (op.hasAutoRenewAccountId()
+                && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
+            context.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+        }
+    }
+
+    private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
+        return !op.hasExpirationTime()
+                || hasCryptoAdminKey(op)
+                || op.hasProxyAccountID()
+                || op.hasAutoRenewPeriod()
+                || op.hasFileID()
+                || op.getMemo().length() > 0;
+    }
+
+    private boolean hasCryptoAdminKey(final ContractUpdateTransactionBody op) {
+        return op.hasAdminKey() && !op.getAdminKey().hasContractID();
     }
 
     /**

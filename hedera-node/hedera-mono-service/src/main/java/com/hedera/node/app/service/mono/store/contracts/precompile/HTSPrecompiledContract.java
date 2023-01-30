@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isViewFunction;
@@ -27,23 +27,25 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.TokenAccessorImpl;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
@@ -159,6 +161,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private WorldLedgers ledgers;
     private Address senderAddress;
     private HederaStackedWorldStateUpdater updater;
+    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Inject
     public HTSPrecompiledContract(
@@ -173,7 +176,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
-            final InfrastructureFactory infrastructureFactory) {
+            final InfrastructureFactory infrastructureFactory,
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
         this.evmEncoder = evmEncoder;
@@ -186,6 +190,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
         this.infrastructureFactory = infrastructureFactory;
+        this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
     }
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -197,20 +202,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
             final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
             if (!proxyUpdater.isInTransaction()) {
-                if (isTokenProxyRedirect(input)) {
-                    final var executor =
-                            infrastructureFactory.newRedirectExecutor(
-                                    input, frame, precompilePricingUtils::computeViewFunctionGas);
-                    return executor.computeCosted();
-                } else if (isViewFunction(input)) {
-                    final var executor =
-                            infrastructureFactory.newViewExecutor(
-                                    input,
-                                    frame,
-                                    precompilePricingUtils::computeViewFunctionGas,
-                                    currentView);
-                    return executor.computeCosted();
-                }
+                return evmHTSPrecompiledContract.computeCosted(
+                        input,
+                        frame,
+                        precompilePricingUtils::computeViewFunctionGas,
+                        new TokenAccessorImpl(
+                                proxyUpdater.trackingLedgers(),
+                                currentView.getNetworkInfo().ledgerId(),
+                                proxyUpdater::unaliased));
             }
         }
         final var result = computePrecompile(input, frame);

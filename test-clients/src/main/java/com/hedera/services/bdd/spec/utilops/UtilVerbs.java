@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -105,6 +106,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
@@ -465,6 +467,11 @@ public class UtilVerbs {
     /* Stream validation. */
     public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
         return new RecordStreamVerification(baseDir);
+    }
+
+    public static HapiSpecOperation assertEventuallyPasses(
+            final RecordStreamValidator validator, final Duration timeout) {
+        return new RecordAssertions(timeout, validator);
     }
 
     public static RecordFileChecker verifyRecordFile(

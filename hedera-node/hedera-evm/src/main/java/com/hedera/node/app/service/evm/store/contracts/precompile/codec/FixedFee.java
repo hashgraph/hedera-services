@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class FixedFee {
@@ -43,11 +44,11 @@ public class FixedFee {
     }
 
     public Address getDenominatingTokenId() {
-        return denominatingTokenId;
+        return denominatingTokenId != null ? denominatingTokenId : Address.ZERO;
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
     }
 
     public boolean isUseHbarsForPayment() {
@@ -56,5 +57,43 @@ public class FixedFee {
 
     public boolean isUseCurrentTokenForPayment() {
         return useCurrentTokenForPayment;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                amount,
+                denominatingTokenId,
+                useHbarsForPayment,
+                useCurrentTokenForPayment,
+                feeCollector);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || FixedFee.class != o.getClass()) {
+            return false;
+        }
+        FixedFee other = (FixedFee) o;
+
+        return this.amount == other.amount
+                && this.useHbarsForPayment == other.useHbarsForPayment
+                && this.useCurrentTokenForPayment == other.useCurrentTokenForPayment;
+    }
+
+    @Override
+    public String toString() {
+        return "FixedFee{"
+                + "amount="
+                + amount
+                + ", denominatingTokenId="
+                + denominatingTokenId
+                + ", useHbarsForPayment="
+                + useHbarsForPayment
+                + ", useCurrentTokenForPayment="
+                + useCurrentTokenForPayment
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }

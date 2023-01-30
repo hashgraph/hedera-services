@@ -21,6 +21,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -82,7 +84,18 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        if (!"HTS".equals(contract.getName())) {
+        if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
+            var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+            final var costedResult =
+                    htsPrecompile.computeCosted(
+                            frame.getInputData(),
+                            frame,
+                            (now, minimumTinybarCost) -> minimumTinybarCost,
+                            updater.tokenAccessor());
+            output = costedResult.getValue();
+            gasRequirement = costedResult.getKey();
+        }
+        if (!"HTS".equals(contract.getName()) && !"EvmHTS".equals(contract.getName())) {
             output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }

@@ -17,8 +17,8 @@ package com.hedera.node.app.service.mono.store.contracts;
 
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.WILDCARD_OWNER;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.node.app.service.mono.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
@@ -42,10 +42,16 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -57,7 +63,6 @@ import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
@@ -67,12 +72,11 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.txns.customfees.LedgerCustomFeeSchedules;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -146,16 +150,34 @@ public class WorldLedgers {
                 tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
     }
 
-    public Optional<TokenInfo> infoForToken(final TokenID tokenId, final ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(
+            final TokenID tokenId, final ByteString ledgerId) {
         if (staticEntityAccess != null) {
-            return staticEntityAccess.infoForToken(tokenId);
+            return staticEntityAccess.evmInfoForToken(tokenId);
         } else {
             final var token = tokensLedger.getImmutableRef(tokenId);
             if (token == null) {
                 return Optional.empty();
             }
-            return Optional.of(token.asTokenInfo(tokenId, ledgerId));
+            return Optional.of(asEvmTokenInfo(token, ledgerId));
         }
+    }
+
+    public Optional<EvmNftInfo> evmNftInfo(final NftID target, final ByteString ledgerId) {
+        Optional<TokenNftInfo> infoForNft = infoForNft(target, ledgerId);
+        if (infoForNft.isPresent()) {
+            TokenNftInfo info = infoForNft.get();
+            return Optional.of(
+                    new EvmNftInfo(
+                            info.getNftID().getSerialNumber(),
+                            EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                            info.getCreationTime().getSeconds(),
+                            info.getMetadata().toByteArray(),
+                            EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                            ledgerId.toByteArray()));
+        }
+
+        return Optional.empty();
     }
 
     public Optional<TokenNftInfo> infoForNft(final NftID target, final ByteString ledgerId) {
@@ -203,7 +225,7 @@ public class WorldLedgers {
                 if (token == null) {
                     return Optional.empty();
                 }
-                return Optional.of(token.grpcFeeSchedule());
+                return Optional.of(evmCustomFees(token.grpcFeeSchedule()));
             } catch (Exception unexpected) {
                 log.warn(
                         "Unexpected failure getting custom fees for token {}!",
