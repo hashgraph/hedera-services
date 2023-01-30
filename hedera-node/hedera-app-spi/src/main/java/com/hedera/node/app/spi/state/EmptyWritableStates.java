@@ -26,7 +26,14 @@ public final class EmptyWritableStates implements WritableStates {
     @Override
     public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
-        throw new IllegalArgumentException("There are no states");
+        throw new IllegalArgumentException("There are no k/v states");
+    }
+
+    @NonNull
+    @Override
+    public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        throw new IllegalArgumentException("There are no singleton states");
     }
 
     @Override

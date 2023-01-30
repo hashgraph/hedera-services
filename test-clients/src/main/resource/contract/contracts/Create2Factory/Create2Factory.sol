@@ -63,17 +63,18 @@ contract Create2Factory {
 
     function wronglyDeployTwice(bytes memory bytecode, uint _salt) public payable {
         address addr;
+        uint val = msg.value/2;
 
         assembly {
             addr := create2(
-            callvalue(),
+            val,
             add(bytecode, 0x20),
             mload(bytecode),
             _salt
             )
 
             addr := create2(
-            callvalue(),
+            val,
             add(bytecode, 0x20),
             mload(bytecode),
             _salt

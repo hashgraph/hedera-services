@@ -31,6 +31,7 @@ public final class StateMetadata<K extends Comparable<K>, V> {
     private static final String ON_DISK_VALUE_CLASS_ID_SUFFIX = "OnDiskValue";
     private static final String ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskValueSerializer";
     private static final String IN_MEMORY_VALUE_CLASS_ID_SUFFIX = "InMemoryValue";
+    private static final String SINGLETON_CLASS_ID_SUFFIX = "SingletonLeaf";
 
     private final String serviceName;
     private final Schema schema;
@@ -40,6 +41,7 @@ public final class StateMetadata<K extends Comparable<K>, V> {
     private final long onDiskValueClassId;
     private final long onDiskValueSerializerClassId;
     private final long inMemoryValueClassId;
+    private final long singletonClassId;
 
     /**
      * Create an instance.
@@ -73,6 +75,9 @@ public final class StateMetadata<K extends Comparable<K>, V> {
         this.inMemoryValueClassId =
                 StateUtils.computeClassId(
                         serviceName, stateKey, version, IN_MEMORY_VALUE_CLASS_ID_SUFFIX);
+        this.singletonClassId =
+                StateUtils.computeClassId(
+                        serviceName, stateKey, version, SINGLETON_CLASS_ID_SUFFIX);
     }
 
     public String serviceName() {
@@ -105,5 +110,9 @@ public final class StateMetadata<K extends Comparable<K>, V> {
 
     public long inMemoryValueClassId() {
         return inMemoryValueClassId;
+    }
+
+    public long singletonClassId() {
+        return singletonClassId;
     }
 }

@@ -70,6 +70,13 @@ class FilteredWritableStatesTest {
             assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Singleton key")
+        void nonNullSingletonKey() {
+            assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Nested
@@ -113,6 +120,13 @@ class FilteredWritableStatesTest {
             assertThatThrownBy(() -> states.get(UNKNOWN_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+
+        @Test
+        @DisplayName("Throws IAE for any non-null Singleton key")
+        void nonNullSingletonKey() {
+            assertThatThrownBy(() -> states.getSingleton(UNKNOWN_KEY))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Nested
@@ -125,12 +139,14 @@ class FilteredWritableStatesTest {
             final var delegate =
                     MapWritableStates.builder()
                             .state(writableFruitState())
-                            .state(writableCountryState())
+                            .state(writableCountryState()) // <-- singleton state
                             .state(writableAnimalState())
+                            .state(writableSpaceState()) // <-- singleton state
                             .state(writableSTEAMState())
                             .build();
             states =
-                    new FilteredWritableStates(delegate, Set.of(ANIMAL_STATE_KEY, STEAM_STATE_KEY));
+                    new FilteredWritableStates(
+                            delegate, Set.of(ANIMAL_STATE_KEY, COUNTRY_STATE_KEY));
         }
 
         @Test
@@ -149,16 +165,17 @@ class FilteredWritableStatesTest {
         @DisplayName("Contains")
         void contains() {
             assertThat(states.contains(FRUIT_STATE_KEY)).isFalse();
-            assertThat(states.contains(COUNTRY_STATE_KEY)).isFalse();
+            assertThat(states.contains(COUNTRY_STATE_KEY)).isTrue();
             assertThat(states.contains(ANIMAL_STATE_KEY)).isTrue();
-            assertThat(states.contains(STEAM_STATE_KEY)).isTrue();
+            assertThat(states.contains(STEAM_STATE_KEY)).isFalse();
+            assertThat(states.contains(SPACE_STATE_KEY)).isFalse();
         }
 
         @Test
         @DisplayName("Can read the 2 states")
         void acceptedStates() {
             assertThat(states.get(ANIMAL_STATE_KEY)).isNotNull();
-            assertThat(states.get(STEAM_STATE_KEY)).isNotNull();
+            assertThat(states.getSingleton(COUNTRY_STATE_KEY)).isNotNull();
         }
 
         @Test
@@ -166,7 +183,9 @@ class FilteredWritableStatesTest {
         void filteredStates() {
             assertThatThrownBy(() -> states.get(FRUIT_STATE_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> states.get(COUNTRY_STATE_KEY))
+            assertThatThrownBy(() -> states.get(STEAM_STATE_KEY))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.getSingleton(SPACE_STATE_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -178,16 +197,27 @@ class FilteredWritableStatesTest {
 
         @BeforeEach
         void setUp() {
-            final var delegate = MapWritableStates.builder().state(writableFruitState()).build();
-            states = new FilteredWritableStates(delegate, Set.of(FRUIT_STATE_KEY, SPACE_STATE_KEY));
+            final var delegate =
+                    MapWritableStates.builder()
+                            .state(writableFruitState())
+                            .state(writableCountryState())
+                            .build();
+            states =
+                    new FilteredWritableStates(
+                            delegate,
+                            Set.of(
+                                    FRUIT_STATE_KEY,
+                                    ANIMAL_STATE_KEY,
+                                    COUNTRY_STATE_KEY,
+                                    SPACE_STATE_KEY));
         }
 
         @Test
         @DisplayName(
-                "Exactly 1 states was included because only one of two filtered states were in the"
-                        + " delegate")
+                "Exactly 2 states were included because only two of four filtered states were in"
+                        + " the delegate")
         void size() {
-            assertThat(states.size()).isEqualTo(1);
+            assertThat(states.size()).isEqualTo(2);
         }
 
         @Test
@@ -200,19 +230,26 @@ class FilteredWritableStatesTest {
         @DisplayName("Contains")
         void contains() {
             assertThat(states.contains(FRUIT_STATE_KEY)).isTrue();
+            assertThat(states.contains(COUNTRY_STATE_KEY)).isTrue();
+            assertThat(states.contains(ANIMAL_STATE_KEY)).isFalse();
             assertThat(states.contains(SPACE_STATE_KEY)).isFalse();
         }
 
         @Test
-        @DisplayName("Can read FRUIT because it is in the acceptable set and in the delegate")
+        @DisplayName(
+                "Can read FRUIT and COUNTRY because they are in the acceptable set and in the"
+                        + " delegate")
         void acceptedStates() {
             assertThat(states.get(FRUIT_STATE_KEY)).isNotNull();
+            assertThat(states.getSingleton(COUNTRY_STATE_KEY)).isNotNull();
         }
 
         @Test
         @DisplayName("Cannot read STEM because it is not in the delegate")
         void missingState() {
-            assertThatThrownBy(() -> states.get(STEAM_STATE_KEY))
+            assertThatThrownBy(() -> states.get(ANIMAL_STATE_KEY))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> states.getSingleton(SPACE_STATE_KEY))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

@@ -17,6 +17,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -25,12 +26,19 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpdater {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
+    protected final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
             final AccountAccessor accountAccessor,
-            final HederaEvmEntityAccess hederaEvmEntityAccess) {
+            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            final TokenAccessor tokenAccessor) {
         super(accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+        this.tokenAccessor = tokenAccessor;
+    }
+
+    public TokenAccessor tokenAccessor() {
+        return tokenAccessor;
     }
 
     @Override

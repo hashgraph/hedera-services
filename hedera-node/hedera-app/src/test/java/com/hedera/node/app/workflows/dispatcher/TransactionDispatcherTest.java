@@ -298,7 +298,7 @@ class TransactionDispatcherTest {
                         (Consumer<TransactionHandlers>)
                                 h ->
                                         verify(h.consensusCreateTopicHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setConsensusUpdateTopic(
@@ -343,7 +343,9 @@ class TransactionDispatcherTest {
                                         ContractUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.contractUpdateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractUpdateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
@@ -358,7 +360,9 @@ class TransactionDispatcherTest {
                                         ContractDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.contractDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractDeleteHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setEthereumTransaction(

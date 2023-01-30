@@ -18,6 +18,7 @@ package com.hedera.node.app;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
+import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
 import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
 import com.swirlds.common.metrics.Metrics;
@@ -31,21 +32,42 @@ import java.util.concurrent.Executors;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
-    public static void main(String[] args) throws InterruptedException {
-        final var shutdownLatch = new CountDownLatch(1);
+    private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-        // TODO: These need to be replaced with appropriate setup code
+    public Hedera() {}
+
+    public void start(ServicesApp app, int port) {
+        final var metrics = createMetrics();
+
+        // Create the Ingest workflow. While we are in transition, some required facilities come
+        // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
+        // facilities to be from the app module.
+        // TODO Real values will be added to make this usable with #4714
         final var ingestWorkflow =
-                new IngestWorkflowImpl(null, null, null, null, null, null, null, null, null);
+                new IngestWorkflowImpl(
+                        app.nodeInfo(),
+                        app.platformStatus(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
+
+        // Create the query workflow
         final var queryWorkflow =
                 new QueryWorkflowImpl(null, null, null, null, null, null, null, null);
 
-        final var metrics = createMetrics();
-
-        // Setup and start the server
+        // Setup and start the grpc server.
+        // At some point I'd like to somehow move the metadata for which transactions are supported
+        // by a service to the service, instead of having them all hardcoded here. It isn't clear
+        // yet what that API would look like, so for now we do it this way. Maybe we should have
+        // a set of annotations that generate the metadata, or maybe we have some code. Whatever
+        // we do should work also with workflows.
         final var grpcServer =
                 GrpcServer.create(
-                        GrpcServerConfiguration.builder().port(8080).build(),
+                        GrpcServerConfiguration.builder().port(port).build(),
                         GrpcRouting.builder()
                                 .register(
                                         new GrpcServiceBuilder(
@@ -63,7 +85,17 @@ public final class Hedera {
         grpcServer.start();
 
         // Block this main thread until the server terminates.
-        shutdownLatch.await();
+        try {
+            shutdownLatch.await();
+        } catch (InterruptedException ignored) {
+            // An interrupt on this thread means we want to shut down the server.
+            shutdown();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public void shutdown() {
+        shutdownLatch.countDown();
     }
 
     private static Metrics createMetrics() {
