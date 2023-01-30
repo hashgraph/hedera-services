@@ -24,8 +24,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -45,30 +45,31 @@ public class CryptoTransferHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
      * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final TransactionMetadataBuilder<?> meta,
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableTokenStore tokenStore) {
-        requireNonNull(meta);
+        requireNonNull(context);
         requireNonNull(keyLookup);
         requireNonNull(tokenStore);
-        final var op = meta.getTxn().getCryptoTransfer();
+        final var op = context.getTxn().getCryptoTransfer();
         for (final var transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
             if (!tokenMeta.failed()) {
-                handleTokenTransfers(transfers.getTransfersList(), meta, keyLookup);
-                handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op, keyLookup);
+                handleTokenTransfers(transfers.getTransfersList(), context, keyLookup);
+                handleNftTransfers(
+                        transfers.getNftTransfersList(), context, tokenMeta, op, keyLookup);
             } else {
-                meta.status(tokenMeta.failureReason());
+                context.status(tokenMeta.failureReason());
             }
         }
-        handleHbarTransfers(op, meta, keyLookup);
+        handleHbarTransfers(op, context, keyLookup);
     }
 
     /**
@@ -87,7 +88,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleTokenTransfers(
             final List<AccountAmount> transfers,
-            final TransactionMetadataBuilder<?> meta,
+            final PrehandleHandlerContext meta,
             final AccountKeyLookup keyLookup) {
         for (AccountAmount accountAmount : transfers) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());
@@ -115,7 +116,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleNftTransfers(
             final List<NftTransfer> nftTransfersList,
-            final TransactionMetadataBuilder<?> meta,
+            final PrehandleHandlerContext meta,
             final ReadableTokenStore.TokenMetaOrLookupFailureReason tokenMeta,
             final CryptoTransferTransactionBody op,
             final AccountKeyLookup keyLookup) {
@@ -160,7 +161,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleHbarTransfers(
             final CryptoTransferTransactionBody op,
-            final TransactionMetadataBuilder<?> meta,
+            final PrehandleHandlerContext meta,
             final AccountKeyLookup keyLookup) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());

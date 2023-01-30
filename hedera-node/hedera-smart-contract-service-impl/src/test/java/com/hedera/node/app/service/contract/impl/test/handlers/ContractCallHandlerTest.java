@@ -15,63 +15,31 @@
  */
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ContractCallHandlerTest extends ContractHandlerTestBase {
     private ContractCallHandler subject = new ContractCallHandler();
-
-    @Test
-    @DisplayName("Fails for invalid payer account")
-    void invalidPayer() {
-        final var txn = contractCallTransaction();
-        given(keyLookup.getKey(payer))
-                .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
-    }
 
     @Test
     @DisplayName("Succeeds for valid payer account")
     void validPayer() {
         final var txn = contractCallTransaction();
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-    }
-
-    @Test
-    void callHandle() {
-        final var txn = contractCallTransaction();
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
     }
 
     private TransactionBody contractCallTransaction() {

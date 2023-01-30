@@ -20,9 +20,8 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -39,22 +38,22 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate} transaction, returning
      * the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final ScheduleSigTransactionMetadataBuilder meta,
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final PreHandleDispatcher dispatcher) {
-        requireNonNull(meta);
-        final var txn = meta.getTxn();
+        requireNonNull(context);
+        final var txn = context.getTxn();
         final var op = txn.getScheduleCreate();
 
         if (op.hasAdminKey()) {
             final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqNonPayerKeys);
+            key.ifPresent(context::addToReqNonPayerKeys);
         }
 
         final var scheduledTxn =
@@ -75,7 +74,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         // if provided payer is same as payer in the inner transaction.
 
         final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        meta.scheduledMeta(innerMeta);
+        context.handlerMetadata(innerMeta);
     }
 
     /**

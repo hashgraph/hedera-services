@@ -17,15 +17,13 @@ package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -36,14 +34,11 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Adds valid admin key")
     void validAdminKey() {
         final var txn = contractCreateTransaction(adminKey, null);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 1, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertIterableEquals(List.of(adminHederaKey), meta.requiredNonPayerKeys());
     }
@@ -54,87 +49,60 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         final var txn = contractCreateTransaction(adminKey, null);
         given(keyLookup.getKey(payer))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID));
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertThat(context.getPayerKey()).isNull();
     }
 
     @Test
     @DisplayName("admin key with contractID is not added")
     void adminKeyWithContractID() {
         final var txn = contractCreateTransaction(adminContractKey, null);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(payerKey, meta.payerKey());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 0, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
     }
 
     @Test
     @DisplayName("autoRenew account key is added")
     void autoRenewAccountIdAdded() {
         final var txn = contractCreateTransaction(adminContractKey, autoRenewAccountId);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertEquals(List.of(autoRenewHederaKey), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 1, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.getRequiredNonPayerKeys()).containsExactly(autoRenewHederaKey);
     }
 
     @Test
     @DisplayName("autoRenew account key is not added when it is sentinel value")
     void autoRenewAccountIdAsSentinelNotAdded() {
         final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 0, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
 
     @Test
     @DisplayName("autoRenew account and adminKey both added")
     void autoRenewAccountIdAndAdminBothAdded() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(payerKey, meta.payerKey());
+        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        subject.preHandle(context);
+
+        basicMetaAssertions(context, 2, false, OK);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
         //        FUTURE: uncomment this after JKey removal
         //        assertEquals(List.of(adminHederaKey, autoRenewHederaKey),
         // meta.requiredNonPayerKeys());
-    }
-
-    @Test
-    void callHandle() {
-        final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(txn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
-        assertThrows(UnsupportedOperationException.class, () -> subject.handle(meta));
     }
 
     private TransactionBody contractCreateTransaction(

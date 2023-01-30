@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
-import static com.hedera.node.app.spi.test.meta.SigTransactionMetadataBuilderTest.A_COMPLEX_KEY;
+import static com.hedera.node.app.spi.test.meta.PrehandleHandlerContextListUpdatesTest.A_COMPLEX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,8 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -40,29 +39,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SigTransactionMetadataTest {
+class PrehandleHandlerContextTest {
     private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(3L).build();
     @Mock private HederaKey payerKey;
     @Mock private HederaKey otherKey;
     @Mock AccountKeyLookup lookup;
-    private TransactionMetadata subject;
+    private PrehandleHandlerContext subject;
 
     @Test
     void gettersWork() {
         given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject =
-                new SigTransactionMetadataBuilder(lookup)
-                        .payerKeyFor(PAYER)
-                        .txnBody(txn)
-                        .addToReqNonPayerKeys(otherKey)
-                        .build();
+        subject = new PrehandleHandlerContext(lookup, txn, PAYER).addToReqNonPayerKeys(otherKey);
 
         assertFalse(subject.failed());
-        assertEquals(txn, subject.txnBody());
-        assertEquals(ResponseCodeEnum.OK, subject.status());
-        assertEquals(payerKey, subject.payerKey());
-        assertEquals(List.of(otherKey), subject.requiredNonPayerKeys());
+        assertEquals(txn, subject.getTxn());
+        assertEquals(ResponseCodeEnum.OK, subject.getStatus());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -70,20 +64,17 @@ class SigTransactionMetadataTest {
         given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
         subject =
-                new SigTransactionMetadataBuilder(lookup)
-                        .payerKeyFor(PAYER)
+                new PrehandleHandlerContext(lookup, txn, PAYER)
                         .status(INVALID_ACCOUNT_ID)
-                        .txnBody(txn)
-                        .addToReqNonPayerKeys(otherKey)
-                        .build();
+                        .addToReqNonPayerKeys(otherKey);
 
         assertTrue(subject.failed());
-        assertEquals(txn, subject.txnBody());
-        assertEquals(INVALID_ACCOUNT_ID, subject.status());
-        assertEquals(payerKey, subject.payerKey());
+        assertEquals(txn, subject.getTxn());
+        assertEquals(INVALID_ACCOUNT_ID, subject.getStatus());
+        assertEquals(payerKey, subject.getPayerKey());
         assertEquals(
                 List.of(),
-                subject.requiredNonPayerKeys()); // otherKey is not added as there is failure
+                subject.getRequiredNonPayerKeys()); // otherKey is not added as there is failure
         // status set
     }
 

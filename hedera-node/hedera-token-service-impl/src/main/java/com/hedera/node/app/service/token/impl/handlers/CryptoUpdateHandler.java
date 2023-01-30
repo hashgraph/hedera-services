@@ -19,8 +19,8 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,28 +35,28 @@ public class CryptoUpdateHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final TransactionMetadataBuilder<?> meta,
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final CryptoSignatureWaivers waivers) {
-        requireNonNull(meta);
+        requireNonNull(context);
         requireNonNull(waivers);
-        final var txn = meta.getTxn();
-        final var payer = meta.getPayer();
+        final var txn = context.getTxn();
+        final var payer = context.getPayer();
         final var op = txn.getCryptoUpdateAccount();
         final var updateAccountId = op.getAccountIDToUpdate();
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
-            meta.addNonPayerKey(updateAccountId);
+            context.addNonPayerKey(updateAccountId);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
             final var candidate = asHederaKey(op.getKey());
-            candidate.ifPresent(meta::addToReqNonPayerKeys);
+            candidate.ifPresent(context::addToReqNonPayerKeys);
         }
     }
 

@@ -19,8 +19,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -35,20 +35,20 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final TransactionMetadataBuilder<?> meta) {
-        requireNonNull(meta);
-        final var op = meta.getTxn().getCryptoApproveAllowance();
+    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getCryptoApproveAllowance();
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.getCryptoAllowancesList()) {
-            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+            context.addNonPayerKey(allowance.getOwner(), failureStatus);
         }
         for (final var allowance : op.getTokenAllowancesList()) {
-            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+            context.addNonPayerKey(allowance.getOwner(), failureStatus);
         }
         for (final var allowance : op.getNftAllowancesList()) {
             final var ownerId = allowance.getOwner();
@@ -65,7 +65,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             if (operatorId != ownerId) {
                 failureStatus = INVALID_DELEGATING_SPENDER;
             }
-            meta.addNonPayerKey(operatorId, failureStatus);
+            context.addNonPayerKey(operatorId, failureStatus);
         }
     }
 

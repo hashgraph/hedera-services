@@ -20,9 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -36,7 +35,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param meta the {@link TransactionMetadataBuilder} which collects all information that will
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
@@ -44,19 +43,19 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final ScheduleSigTransactionMetadataBuilder meta,
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final PreHandleDispatcher dispatcher) {
-        requireNonNull(meta);
+        requireNonNull(context);
         requireNonNull(scheduleStore);
         requireNonNull(dispatcher);
-        final var txn = meta.getTxn();
+        final var txn = context.getTxn();
         final var op = txn.getScheduleSign();
         final var id = op.getScheduleID();
 
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            meta.status(INVALID_SCHEDULE_ID);
+            context.status(INVALID_SCHEDULE_ID);
             return;
         }
 
@@ -66,7 +65,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                 optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
 
         final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        meta.scheduledMeta(innerMeta);
+        context.handlerMetadata(innerMeta);
     }
 
     /**

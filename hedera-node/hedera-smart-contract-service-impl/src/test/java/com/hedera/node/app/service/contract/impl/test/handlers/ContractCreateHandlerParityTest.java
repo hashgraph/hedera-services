@@ -20,14 +20,11 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.MISC_A
 import static com.hedera.test.factories.txns.ContractCreateFactory.DEFAULT_ADMIN_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
@@ -47,57 +44,43 @@ class ContractCreateHandlerParityTest {
     @Test
     void getsContractCreateWithAutoRenew() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(theTxn)
-                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
+                .containsExactly(MISC_ACCOUNT_KT.asKey());
     }
 
     @Test
     void getsContractCreateNoAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_NO_ADMIN_KEY);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(theTxn)
-                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
     }
 
     @Test
     void getsContractCreateDeprecatedAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(theTxn)
-                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys())).isEmpty();
     }
 
     @Test
     void getsContractCreateWithAdminKey() {
         final var theTxn = txnFrom(CONTRACT_CREATE_WITH_ADMIN_KEY);
-        final var builder =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(theTxn)
-                        .payerKeyFor(theTxn.getTransactionID().getAccountID());
-        subject.preHandle(builder);
-        final var meta = builder.build();
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(DEFAULT_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getPayerKey())).isEqualTo(DEFAULT_PAYER_KT.asKey());
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
+                .containsExactly(DEFAULT_ADMIN_KT.asKey());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

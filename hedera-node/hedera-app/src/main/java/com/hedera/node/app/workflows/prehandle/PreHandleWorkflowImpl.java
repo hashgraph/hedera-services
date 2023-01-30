@@ -18,8 +18,11 @@ package com.hedera.node.app.workflows.prehandle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.Dispatcher;
@@ -28,6 +31,8 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -39,6 +44,9 @@ import org.slf4j.LoggerFactory;
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
+
+    // TODO: Intermediate solution until we find a better way to get the service-key
+    private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
 
     /**
      * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
@@ -115,6 +123,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final HederaState state,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
+        AccountID payerID = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -125,13 +134,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final AccountID payerID = txBody.getTransactionID().getAccountID();
-            final var context = PreHandleWorkflowContext.of(txBody, payerID, state);
-            dispatcher.dispatchPreHandle(context);
-            if (context.getMetadataBuilder() == null) {
-                throw new IllegalStateException(
-                        "Dispatcher did not set a TransactionMetadataBuilder");
-            }
+            final var statesTracker = new ReadableStatesTracker(state);
+            final var tokenStates = statesTracker.getReadableStates(TOKEN_SERVICE_KEY);
+            final var accountStore = new ReadableAccountStore(tokenStates);
+            final var handlerContext = new PrehandleHandlerContext(accountStore, txBody);
+            dispatcher.dispatchPreHandle(statesTracker, handlerContext);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented
@@ -140,33 +147,40 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // TODO: Verify signature via the platform once this functionality was implemented
 
             // 5. Return TransactionMetadata
-            context.getUsedStates()
-                    .forEach(
-                            (statesKey, readableStates) -> {
-                                readableStates
-                                        .stateKeys()
-                                        .forEach(
-                                                stateKey ->
-                                                        context.getMetadataBuilder()
-                                                                .addReadKeys(
-                                                                        statesKey,
-                                                                        stateKey,
-                                                                        readableStates
-                                                                                .get(stateKey)
-                                                                                .readKeys()));
-                            });
-
-            return context.getMetadataBuilder().build();
+            return createTransactionMetadata(statesTracker.getUsedStates(), handlerContext);
 
         } catch (PreCheckException preCheckException) {
-            return new ErrorTransactionMetadata(
-                    txBody, preCheckException.responseCode(), preCheckException);
+            return new TransactionMetadata(txBody, payerID, preCheckException.responseCode());
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return new ErrorTransactionMetadata(txBody, ResponseCodeEnum.UNKNOWN, ex);
+            return new TransactionMetadata(txBody, payerID, ResponseCodeEnum.UNKNOWN);
         }
+    }
+
+    private static TransactionMetadata createTransactionMetadata(
+            @NonNull final Map<String, ReadableStates> usedStates,
+            @NonNull final PrehandleHandlerContext context) {
+        final List<TransactionMetadata.ReadKeys> readKeys =
+                usedStates.entrySet().stream()
+                        .flatMap(
+                                entry -> {
+                                    final var statesKey = entry.getKey();
+                                    final var readableStates = entry.getValue();
+                                    return readableStates.stateKeys().stream()
+                                            .map(
+                                                    stateKey -> {
+                                                        final var readableKVState =
+                                                                readableStates.get(stateKey);
+                                                        return new TransactionMetadata.ReadKeys(
+                                                                statesKey,
+                                                                stateKey,
+                                                                readableKVState.readKeys());
+                                                    });
+                                })
+                        .toList();
+        return new TransactionMetadata(context, readKeys);
     }
 }
