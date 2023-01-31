@@ -251,7 +251,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void getsAccountIdAsExpected() {
         // setup:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
 
         given(addressBook.getAddress(selfId.getId())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
@@ -327,20 +327,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
         subject.handleConsensusRound(round, dualState);
         verify(dualStateAccessor).setDualState(dualState);
         verify(logic).incorporateConsensus(round);
-    }
-
-    @Test
-    void addressBookCopyWorks() {
-        given(addressBook.copy()).willReturn(addressBook);
-        // and:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-
-        // when:
-        final var bookCopy = subject.getAddressBookCopy();
-
-        // then:
-        assertSame(addressBook, bookCopy);
-        verify(addressBook).copy();
     }
 
     @Test
@@ -767,7 +753,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void copiesNonNullChildren() {
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         // and:
