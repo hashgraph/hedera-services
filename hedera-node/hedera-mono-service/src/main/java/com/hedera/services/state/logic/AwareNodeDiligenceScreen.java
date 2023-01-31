@@ -17,17 +17,11 @@ package com.hedera.services.state.logic;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -48,13 +42,13 @@ public final class AwareNodeDiligenceScreen {
 
     private final OptionValidator validator;
     private final TransactionContext txnCtx;
-    private final BackingStore<AccountID, MerkleAccount> backingAccounts;
+    private final BackingStore<AccountID, HederaAccount> backingAccounts;
 
     @Inject
     public AwareNodeDiligenceScreen(
             final OptionValidator validator,
             final TransactionContext txnCtx,
-            final BackingStore<AccountID, MerkleAccount> backingAccounts) {
+            final BackingStore<AccountID, HederaAccount> backingAccounts) {
         this.txnCtx = txnCtx;
         this.validator = validator;
         this.backingAccounts = backingAccounts;
@@ -62,6 +56,16 @@ public final class AwareNodeDiligenceScreen {
 
     public boolean nodeIgnoredDueDiligence(final DuplicateClassification duplicity) {
         final var accessor = txnCtx.accessor();
+        // We don't want a transaction with unknown protobuf fields to resolve to
+        // SUCCESS, because it may contain fields (e.g. staking elections) that the
+        // mirror nodes already support, leading them to become confused about the
+        // actual state of the world; note that a well-behaved node will always
+        // reject such transactions in precheck, so we charge the submitting node
+        // a penalty here for lack of due diligence
+        if (accessor.hasConsequentialUnknownFields()) {
+            txnCtx.setStatus(TRANSACTION_HAS_UNKNOWN_FIELDS);
+            return true;
+        }
 
         final var submittingAccount = txnCtx.submittingNodeAccount();
         final var designatedAccount = accessor.getTxn().getNodeAccountID();
@@ -144,6 +148,7 @@ public final class AwareNodeDiligenceScreen {
      * @param relatedAccount related account as to which the warning applies to
      * @param accessor transaction accessor
      */
+    @SuppressWarnings("java:S2629")
     private void logAccountWarning(
             final String message,
             final AccountID submittingNodeAccount,

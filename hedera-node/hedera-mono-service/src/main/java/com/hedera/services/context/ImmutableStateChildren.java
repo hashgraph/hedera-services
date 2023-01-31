@@ -17,14 +17,15 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -32,7 +33,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
@@ -49,15 +49,16 @@ import java.util.Objects;
  * since the compiler does not seem to ever inline those calls.)
  */
 public class ImmutableStateChildren implements StateChildren {
-    private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final NonAtomicReference<AccountStorageAdapter> accounts;
     private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private final NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
+    private final NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private final WeakReference<MerkleScheduledTransactions> schedules;
     private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
-    private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+    private final WeakReference<TokenRelStorageAdapter> tokenAssociations;
     private final WeakReference<MerkleNetworkContext> networkCtx;
     private final WeakReference<AddressBook> addressBook;
     private final WeakReference<MerkleSpecialFiles> specialFiles;
@@ -69,7 +70,7 @@ public class ImmutableStateChildren implements StateChildren {
     public ImmutableStateChildren(final ServicesState state) {
         this.signedAt = state.getTimeOfLastHandledTxn();
 
-        accounts = new WeakReference<>(state.accounts());
+        accounts = new NonAtomicReference<>(state.accounts());
         topics = new WeakReference<>(state.topics());
         storage = new WeakReference<>(state.storage());
         contractStorage = new WeakReference<>(state.contractStorage());
@@ -83,6 +84,7 @@ public class ImmutableStateChildren implements StateChildren {
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());
+        payerRecords = new NonAtomicReference<>(state.payerRecords());
     }
 
     @Override
@@ -91,7 +93,7 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleAccount> accounts() {
+    public AccountStorageAdapter accounts() {
         return Objects.requireNonNull(accounts.get());
     }
 
@@ -121,7 +123,7 @@ public class ImmutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
+    public TokenRelStorageAdapter tokenAssociations() {
         return Objects.requireNonNull(tokenAssociations.get());
     }
 
@@ -143,6 +145,11 @@ public class ImmutableStateChildren implements StateChildren {
     @Override
     public UniqueTokenMapAdapter uniqueTokens() {
         return Objects.requireNonNull(uniqueTokens.get());
+    }
+
+    @Override
+    public RecordsStorageAdapter payerRecords() {
+        return Objects.requireNonNull(payerRecords.get());
     }
 
     @Override

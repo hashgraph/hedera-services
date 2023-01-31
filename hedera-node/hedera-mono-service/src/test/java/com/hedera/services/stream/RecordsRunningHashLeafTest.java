@@ -50,17 +50,18 @@ class RecordsRunningHashLeafTest {
             new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
     private static final RunningHash runningHash = new RunningHash(hash);
     private static final RunningHash emptyRunningHash = new RunningHash();
-    private static final RecordsRunningHashLeaf runningHashLeaf =
-            new RecordsRunningHashLeaf(runningHash);
+    private final RecordsRunningHashLeaf runningHashLeaf = new RecordsRunningHashLeaf(runningHash);
 
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
-        ConstructableRegistry.registerConstructables("com.swirlds.common");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
     }
 
     @Test
     void initTest() {
         assertEquals(runningHash, runningHashLeaf.getRunningHash());
+        assertFalse(runningHashLeaf.isImmutable());
+        runningHashLeaf.copy();
         assertTrue(runningHashLeaf.isImmutable());
     }
 

@@ -37,12 +37,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
@@ -59,6 +60,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,6 +75,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
+    private static final String CHAIN_ID_PROP = "contracts.chainId";
+    private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
         new HelloWorldEthereumSuite().runSuiteSync();
@@ -80,7 +84,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ethereumCalls(), ethereumCreates());
+        return allOf(setChainId(), ethereumCalls(), ethereumCreates());
     }
 
     List<HapiApiSpec> ethereumCalls() {
@@ -98,6 +102,14 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 new HapiApiSpec[] {
                     smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate()
                 });
+    }
+
+    List<HapiApiSpec> setChainId() {
+        return List.of(
+                defaultHapiSpec("SetChainId")
+                        .given()
+                        .when()
+                        .then(overriding(CHAIN_ID_PROP, "298")));
     }
 
     HapiApiSpec badRelayClient() {
@@ -168,8 +180,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                         ethereumCall(
                                                         exploitContract,
                                                         "stealFrom",
-                                                        relayerEvmAddress.get(),
-                                                        exploitTokenEvmAddress.get())
+                                                        asHeadlongAddress(relayerEvmAddress.get()),
+                                                        asHeadlongAddress(
+                                                                exploitTokenEvmAddress.get()))
                                                 .type(EthTxData.EthTransactionType.EIP1559)
                                                 .signingWith(maliciousEOA)
                                                 .payingWith(RELAYER)
@@ -217,7 +230,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .when(
                         // The cost to the relayer to transmit a simple call with sufficient gas
                         // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -252,7 +268,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         // EIP1559 Ethereum Calls Work
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -264,7 +283,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Legacy Ethereum Calls Work
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -276,7 +298,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         // Ethereum Call with FileID callData works
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                        ethereumCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(depositAmount))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -415,7 +440,14 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                                                         .aliasIdFor(
                                                                                                                                 SECP_256K1_SOURCE_KEY)
                                                                                                                         .getAlias()
-                                                                                                                        .toStringUtf8())))
+                                                                                                                        .toStringUtf8()))
+                                                                                        .create1EvmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                spec.registry()
+                                                                                                                        .getBytes(
+                                                                                                                                ETH_SENDER_ADDRESS)),
+                                                                                                0L))
                                                                         .ethereumHash(
                                                                                 ByteString.copyFrom(
                                                                                         spec.registry()
@@ -467,7 +499,14 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                                                         .aliasIdFor(
                                                                                                                                 SECP_256K1_SOURCE_KEY)
                                                                                                                         .getAlias()
-                                                                                                                        .toStringUtf8())))
+                                                                                                                        .toStringUtf8()))
+                                                                                        .create1EvmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                spec.registry()
+                                                                                                                        .getBytes(
+                                                                                                                                ETH_SENDER_ADDRESS)),
+                                                                                                0L))
                                                                         .ethereumHash(
                                                                                 ByteString.copyFrom(
                                                                                         spec.registry()
@@ -483,13 +522,15 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
-                                tinyBarsFromAccountToAlias(
-                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
                         uploadInitCodeWithConstructorArguments(
                                 OC_TOKEN_CONTRACT,
                                 getABIFor(CONSTRUCTOR, EMPTY, OC_TOKEN_CONTRACT),
-                                1_000_000L,
+                                BigInteger.valueOf(1_000_000L),
                                 "OpenCrowd Token",
                                 "OCT"))
                 .when(
@@ -501,8 +542,42 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .gasPrice(10L)
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
+                                .via("payTxn")
                                 .hasKnownStatus(SUCCESS))
-                .then();
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord("payTxn")
+                                                        .logged()
+                                                        .hasPriority(
+                                                                recordWith()
+                                                                        .contractCreateResult(
+                                                                                resultWith()
+                                                                                        .logs(
+                                                                                                inOrder())
+                                                                                        .senderId(
+                                                                                                spec.registry()
+                                                                                                        .getAccountID(
+                                                                                                                spec.registry()
+                                                                                                                        .aliasIdFor(
+                                                                                                                                SECP_256K1_SOURCE_KEY)
+                                                                                                                        .getAlias()
+                                                                                                                        .toStringUtf8()))
+                                                                                        .create1EvmAddress(
+                                                                                                ByteString
+                                                                                                        .copyFrom(
+                                                                                                                spec.registry()
+                                                                                                                        .getBytes(
+                                                                                                                                ETH_SENDER_ADDRESS)),
+                                                                                                0L))
+                                                                        .ethereumHash(
+                                                                                ByteString.copyFrom(
+                                                                                        spec.registry()
+                                                                                                .getBytes(
+                                                                                                        ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
     @Override

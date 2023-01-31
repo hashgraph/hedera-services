@@ -324,7 +324,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
     HapiApiSpec cannotSendToNonExistentAccount() {
         final var contract = "Multipurpose";
-        Object[] donationArgs = new Object[] {666666, "Hey, Ma!"};
+        Object[] donationArgs = new Object[] {666666L, "Hey, Ma!"};
 
         return defaultHapiSpec("CannotSendToNonExistentAccount")
                 .given(uploadInitCode(contract))
@@ -527,7 +527,12 @@ public class ContractCreateSuite extends HapiApiSuite {
                                             (int)
                                                     registry.getAccountID(bBeneficiary)
                                                             .getAccountNum();
-                                    final var sendArgs = new Object[] {sendAmount, aNum, bNum};
+                                    final var sendArgs =
+                                            new Object[] {
+                                                Long.valueOf(sendAmount),
+                                                Long.valueOf(aNum),
+                                                Long.valueOf(bNum)
+                                            };
 
                                     final var op =
                                             contractCall(contract, "sendTo", sendArgs)
@@ -654,9 +659,9 @@ public class ContractCreateSuite extends HapiApiSuite {
                                         contractCall(
                                                 sendInternalAndDelegateContract,
                                                 "sendRepeatedlyTo",
-                                                justSendContractNum.get(),
-                                                beneficiaryAccountNum.get(),
-                                                totalToSend / 2)),
+                                                BigInteger.valueOf(justSendContractNum.get()),
+                                                BigInteger.valueOf(beneficiaryAccountNum.get()),
+                                                BigInteger.valueOf(totalToSend / 2))),
                         getAccountBalance(beneficiary).hasTinyBars(totalToSend / 2),
                         /* But now we update the beneficiary to have a delegateContractId */
                         newKeyNamed(newKey)
@@ -669,9 +674,9 @@ public class ContractCreateSuite extends HapiApiSuite {
                                         contractCall(
                                                 sendInternalAndDelegateContract,
                                                 "sendRepeatedlyTo",
-                                                justSendContractNum.get(),
-                                                beneficiaryAccountNum.get(),
-                                                totalToSend / 2)),
+                                                BigInteger.valueOf(justSendContractNum.get()),
+                                                BigInteger.valueOf(beneficiaryAccountNum.get()),
+                                                BigInteger.valueOf(totalToSend / 2))),
                         getAccountBalance(beneficiary).hasTinyBars(3 * (totalToSend / 2)));
     }
 
@@ -706,9 +711,11 @@ public class ContractCreateSuite extends HapiApiSuite {
                                         contractCall(
                                                         sendInternalAndDelegateContract,
                                                         "sendRepeatedlyTo",
-                                                        justSendContractNum.get(),
-                                                        beneficiaryAccountNum.get(),
-                                                        balanceToDistribute / 2)
+                                                        BigInteger.valueOf(
+                                                                justSendContractNum.get()),
+                                                        BigInteger.valueOf(
+                                                                beneficiaryAccountNum.get()),
+                                                        BigInteger.valueOf(balanceToDistribute / 2))
                                                 .hasKnownStatus(INVALID_SIGNATURE)),
                         /* But it's not enough to just sign using an incomplete prefix */
                         sourcing(
@@ -716,9 +723,11 @@ public class ContractCreateSuite extends HapiApiSuite {
                                         contractCall(
                                                         sendInternalAndDelegateContract,
                                                         "sendRepeatedlyTo",
-                                                        justSendContractNum.get(),
-                                                        beneficiaryAccountNum.get(),
-                                                        balanceToDistribute / 2)
+                                                        BigInteger.valueOf(
+                                                                justSendContractNum.get()),
+                                                        BigInteger.valueOf(
+                                                                beneficiaryAccountNum.get()),
+                                                        BigInteger.valueOf(balanceToDistribute / 2))
                                                 .signedBy(DEFAULT_PAYER, beneficiary)
                                                 .hasKnownStatus(INVALID_SIGNATURE)),
                         /* We have to specify the full prefix so the sig can be verified async */
@@ -728,9 +737,11 @@ public class ContractCreateSuite extends HapiApiSuite {
                                         contractCall(
                                                         sendInternalAndDelegateContract,
                                                         "sendRepeatedlyTo",
-                                                        justSendContractNum.get(),
-                                                        beneficiaryAccountNum.get(),
-                                                        balanceToDistribute / 2)
+                                                        BigInteger.valueOf(
+                                                                justSendContractNum.get()),
+                                                        BigInteger.valueOf(
+                                                                beneficiaryAccountNum.get()),
+                                                        BigInteger.valueOf(balanceToDistribute / 2))
                                                 .alsoSigningWithFullPrefix(beneficiary)),
                         getAccountBalance(beneficiary).logged());
     }

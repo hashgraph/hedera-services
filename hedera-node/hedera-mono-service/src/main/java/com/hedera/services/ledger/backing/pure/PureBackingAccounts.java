@@ -19,32 +19,32 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class PureBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate;
+public class PureBackingAccounts implements BackingStore<AccountID, HederaAccount> {
+    private final Supplier<AccountStorageAdapter> delegate;
 
-    public PureBackingAccounts(Supplier<MerkleMap<EntityNum, MerkleAccount>> delegate) {
+    public PureBackingAccounts(Supplier<AccountStorageAdapter> delegate) {
         this.delegate = delegate;
     }
 
     @Override
-    public MerkleAccount getRef(AccountID id) {
+    public HederaAccount getRef(AccountID id) {
         return delegate.get().get(fromAccountId(id));
     }
 
     @Override
-    public MerkleAccount getImmutableRef(AccountID id) {
+    public HederaAccount getImmutableRef(AccountID id) {
         return delegate.get().get(fromAccountId(id));
     }
 
     @Override
-    public void put(AccountID id, MerkleAccount account) {
+    public void put(AccountID id, HederaAccount account) {
         throw new UnsupportedOperationException();
     }
 

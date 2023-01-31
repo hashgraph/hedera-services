@@ -498,6 +498,31 @@ public class TxnUtils {
                 .build();
     }
 
+    public static TransactionBody fungibleMintOp() {
+        final var op = TokenMintTransactionBody.newBuilder().setAmount(1234L).build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1_234_567L)))
+                .setTokenMint(op)
+                .build();
+    }
+
+    public static TransactionBody nonFungibleMintOp() {
+        final var op =
+                TokenMintTransactionBody.newBuilder()
+                        .addMetadata(ByteString.copyFromUtf8("FIRST"))
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1_234_567L)))
+                .setTokenMint(op)
+                .build();
+    }
+
     public static Transaction buildTransactionFrom(final TransactionBody transactionBody) {
         return buildTransactionFrom(signedTransactionFrom(transactionBody).toByteString());
     }

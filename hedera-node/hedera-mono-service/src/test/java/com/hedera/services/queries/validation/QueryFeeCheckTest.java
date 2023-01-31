@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -110,7 +111,7 @@ class QueryFeeCheckTest {
 
         validator = mock(OptionValidator.class);
 
-        subject = new QueryFeeCheck(validator, () -> accounts);
+        subject = new QueryFeeCheck(validator, () -> AccountStorageAdapter.fromInMemory(accounts));
     }
 
     @Test
@@ -262,7 +263,7 @@ class QueryFeeCheckTest {
     void detachedPayerRejectedWithRefinement() {
         given(validator.isAfterConsensusSecond(payerExpiry)).willReturn(false);
         final var adjustment = adjustmentWith(aDetached, -aLot);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         final var status = subject.adjustmentPlausibility(adjustment);
@@ -446,7 +447,7 @@ class QueryFeeCheckTest {
     }
 
     private void givenOkExpiry() {
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private AccountAmount adjustmentWith(final AccountID id, final long amount) {

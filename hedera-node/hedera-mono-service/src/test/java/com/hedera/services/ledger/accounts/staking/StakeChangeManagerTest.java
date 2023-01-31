@@ -18,8 +18,7 @@ package com.hedera.services.ledger.accounts.staking;
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
-import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -27,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,13 +56,9 @@ class StakeChangeManagerTest {
     @BeforeEach
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
-        subject = new StakeChangeManager(stakeInfoManager, () -> accounts);
-    }
-
-    @Test
-    void ignoresRequestToWithdrawOrAddStakeFromMissingNodeIds() {
-        assertDoesNotThrow(() -> subject.awardStake(0L, 100L, false));
-        assertDoesNotThrow(() -> subject.withdrawStake(0L, 100L, false));
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accounts));
     }
 
     @Test
@@ -131,7 +127,9 @@ class StakeChangeManagerTest {
                 -1, accountsMap.get(EntityNum.fromAccountId(counterpartyId)).getStakePeriodStart());
         assertEquals(-1, accountsMap.get(EntityNum.fromAccountId(partyId)).getStakePeriodStart());
 
-        subject = new StakeChangeManager(stakeInfoManager, () -> accountsMap);
+        subject =
+                new StakeChangeManager(
+                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(accountsMap));
         subject.initializeAllStakingStartsTo(todayNum);
 
         assertEquals(todayNum, counterparty.getStakePeriodStart());

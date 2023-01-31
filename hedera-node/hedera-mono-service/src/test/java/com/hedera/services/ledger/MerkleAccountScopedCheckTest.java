@@ -16,6 +16,7 @@
 package com.hedera.services.ledger;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -25,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +42,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -93,9 +96,9 @@ class MerkleAccountScopedCheckTest {
         when(balanceChange.isForHbar()).thenReturn(true);
         when(account.isDeleted()).thenReturn(false);
         when(account.getBalance()).thenReturn(0L);
-        when(account.getExpiry()).thenReturn(expiry);
+        when(account.isExpiredAndPendingRemoval()).thenReturn(true);
         when(account.isSmartContract()).thenReturn(false);
-        when(validator.expiryStatusGiven(0L, expiry, false))
+        when(validator.expiryStatusGiven(0L, true, false))
                 .thenReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.checkUsing(account, changeSet));
     }
@@ -104,9 +107,9 @@ class MerkleAccountScopedCheckTest {
     void failsAsExpectedWhenInsufficientBalance() {
         when(balanceChange.isForHbar()).thenReturn(true);
         when(account.isDeleted()).thenReturn(false);
-        when(account.getExpiry()).thenReturn(expiry);
+        when(account.isExpiredAndPendingRemoval()).thenReturn(true);
         when(account.getBalance()).thenReturn(5L);
-        when(validator.expiryStatusGiven(5L, expiry, false)).thenReturn(OK);
+        when(validator.expiryStatusGiven(5L, true, false)).thenReturn(OK);
         when(balanceChange.getAggregatedUnits()).thenReturn(-6L);
         when(balanceChange.codeForInsufficientBalance()).thenReturn(INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -116,13 +119,13 @@ class MerkleAccountScopedCheckTest {
     @Test
     void failsAsExpectedWhenSpenderIsNotGrantedAllowance() {
         when(account.isDeleted()).thenReturn(false);
-        when(account.getExpiry()).thenReturn(expiry);
+        when(account.isExpiredAndPendingRemoval()).thenReturn(false);
         when(account.getBalance()).thenReturn(10L);
         when(balanceChange.isForHbar()).thenReturn(true);
         when(balanceChange.isApprovedAllowance()).thenReturn(true);
         when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
         when(balanceChange.getPayerID()).thenReturn(revokedSpender);
-        when(validator.expiryStatusGiven(10L, expiry, false)).thenReturn(OK);
+        when(validator.expiryStatusGiven(10L, false, false)).thenReturn(OK);
 
         assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
     }
@@ -131,13 +134,13 @@ class MerkleAccountScopedCheckTest {
     void failsAsExpectedWhenSpenderHasInsufficientAllowance() {
         when(account.isDeleted()).thenReturn(false);
         when(account.getBalance()).thenReturn(110L);
-        when(account.getExpiry()).thenReturn(expiry);
+        when(account.isExpiredAndPendingRemoval()).thenReturn(false);
         when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
         when(balanceChange.isForHbar()).thenReturn(true);
         when(balanceChange.isApprovedAllowance()).thenReturn(true);
         when(account.getCryptoAllowances()).thenReturn(CRYPTO_ALLOWANCES);
         when(balanceChange.getPayerID()).thenReturn(payerID);
-        when(validator.expiryStatusGiven(110L, expiry, false)).thenReturn(OK);
+        when(validator.expiryStatusGiven(110L, false, false)).thenReturn(OK);
 
         assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.checkUsing(account, changeSet));
     }
@@ -216,8 +219,8 @@ class MerkleAccountScopedCheckTest {
     void happyPath() {
         when(balanceChange.isForHbar()).thenReturn(true);
         when(account.isDeleted()).thenReturn(false);
-        given(account.getExpiry()).willReturn(expiry);
-        when(validator.expiryStatusGiven(0L, expiry, false)).thenReturn(OK);
+        given(account.isExpiredAndPendingRemoval()).willReturn(false);
+        when(validator.expiryStatusGiven(0L, false, false)).thenReturn(OK);
         when(account.getBalance()).thenReturn(0L);
         when(balanceChange.getAggregatedUnits()).thenReturn(5L);
 
@@ -235,6 +238,30 @@ class MerkleAccountScopedCheckTest {
                 iae.getMessage());
     }
 
+    @Test
+    void canGetDetachedFromAccount() {
+        given(account.isExpiredAndPendingRemoval()).willReturn(true);
+        assertTrue(
+                (boolean)
+                        subject.getEffective(
+                                EXPIRED_AND_PENDING_REMOVAL,
+                                account,
+                                null,
+                                Collections.emptyMap()));
+    }
+
+    @Test
+    void canGetDetachedFromExtantProps() {
+        given(extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)).willReturn(true);
+        assertTrue(
+                (boolean)
+                        subject.getEffective(
+                                EXPIRED_AND_PENDING_REMOVAL,
+                                null,
+                                extantProps,
+                                Collections.emptyMap()));
+    }
+
     private static final AccountID revokedSpender =
             AccountID.newBuilder().setAccountNum(123L).build();
     private static final AccountID payerID = AccountID.newBuilder().setAccountNum(12345L).build();
@@ -244,12 +271,8 @@ class MerkleAccountScopedCheckTest {
             TokenID.newBuilder().setTokenNum(1235L).build();
     private static final NftId nftId1 =
             NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
-    private static final NftId nftId2 =
-            NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
     private static final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
-    private static final FcTokenAllowanceId nftAllowanceId =
-            FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
     private static final Map<EntityNum, Long> CRYPTO_ALLOWANCES = new HashMap<>();
     private static final Map<FcTokenAllowanceId, Long> FUNGIBLE_ALLOWANCES = new HashMap<>();
     private static final Set<FcTokenAllowanceId> NFT_ALLOWANCES = new TreeSet<>();
@@ -259,6 +282,4 @@ class MerkleAccountScopedCheckTest {
         FUNGIBLE_ALLOWANCES.put(fungibleAllowanceId, 100L);
         NFT_ALLOWANCES.add(fungibleAllowanceId);
     }
-
-    private static final long expiry = 1234L;
 }

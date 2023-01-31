@@ -16,6 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
+import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,27 +34,9 @@ import org.hyperledger.besu.evm.log.Log;
  * Model object holding all the necessary data to build and externalise the result of a single EVM
  * transaction
  */
-public class TransactionProcessingResult {
-    /** The status of the transaction after being processed. */
-    public enum Status {
-        /** The transaction was successfully processed. */
-        SUCCESSFUL,
-
-        /** The transaction failed to be completely processed. */
-        FAILED
-    }
-
-    private final long gasUsed;
-    private final long sbhRefund;
-    private final long gasPrice;
-    private final Status status;
-    private final Bytes output;
-    private final List<Log> logs;
-    private final Optional<Bytes> revertReason;
-    private final Optional<Address> recipient;
-    private final Optional<ExceptionalHaltReason> haltReason;
-    private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
-    private final List<SolidityAction> actions;
+public class TransactionProcessingResult extends HederaEvmTransactionProcessingResult {
+    private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+    private List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
 
@@ -114,15 +97,16 @@ public class TransactionProcessingResult {
             final Optional<ExceptionalHaltReason> haltReason,
             final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
             final List<SolidityAction> actions) {
-        this.logs = logs;
-        this.output = output;
-        this.status = status;
-        this.gasUsed = gasUsed;
-        this.sbhRefund = sbhRefund;
-        this.gasPrice = gasPrice;
-        this.recipient = recipient;
-        this.haltReason = haltReason;
-        this.revertReason = revertReason;
+        super(
+                status,
+                logs,
+                gasUsed,
+                sbhRefund,
+                gasPrice,
+                output,
+                recipient,
+                revertReason,
+                haltReason);
         this.stateChanges = stateChanges;
         this.actions = actions;
     }
@@ -137,62 +121,24 @@ public class TransactionProcessingResult {
         this.createdContracts = createdContracts;
     }
 
-    /**
-     * Returns whether or not the transaction was successfully processed.
-     *
-     * @return {@code true} if the transaction was successfully processed; otherwise {@code false}
-     */
-    public boolean isSuccessful() {
-        return status == Status.SUCCESSFUL;
-    }
-
-    public long getGasPrice() {
-        return gasPrice;
-    }
-
-    public long getGasUsed() {
-        return gasUsed;
-    }
-
-    public long getSbhRefund() {
-        return sbhRefund;
-    }
-
-    public Bytes getOutput() {
-        return output;
-    }
-
-    public List<Log> getLogs() {
-        return logs;
-    }
-
-    public Optional<Address> getRecipient() {
-        return recipient;
+    public List<ContractID> getCreatedContracts() {
+        return createdContracts;
     }
 
     public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
         return stateChanges;
     }
 
-    public List<ContractID> getCreatedContracts() {
-        return createdContracts;
-    }
-
-    /**
-     * Returns the exceptional halt reason
-     *
-     * @return the halt reason
-     */
-    public Optional<ExceptionalHaltReason> getHaltReason() {
-        return haltReason;
+    public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+        this.stateChanges = stateChanges;
     }
 
     public List<SolidityAction> getActions() {
         return actions;
     }
 
-    public Optional<Bytes> getRevertReason() {
-        return revertReason;
+    public void setActions(final List<SolidityAction> actions) {
+        this.actions = actions;
     }
 
     /**

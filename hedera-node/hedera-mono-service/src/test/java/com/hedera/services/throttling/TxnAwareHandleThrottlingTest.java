@@ -104,11 +104,9 @@ class TxnAwareHandleThrottlingTest {
         ThrottleDefinitions defs = new ThrottleDefinitions();
         List<DeterministicThrottle> whatever = List.of(DeterministicThrottle.withTps(1));
 
-        given(delegate.allActiveThrottles()).willReturn(whatever);
         given(delegate.activeThrottlesFor(HederaFunctionality.CryptoTransfer)).willReturn(whatever);
 
         // when:
-        var all = subject.allActiveThrottles();
         var onlyXfer = subject.activeThrottlesFor(HederaFunctionality.CryptoTransfer);
         subject.rebuildFor(defs);
         subject.resetUsage();
@@ -116,7 +114,6 @@ class TxnAwareHandleThrottlingTest {
         // then:
         verify(delegate).rebuildFor(defs);
         verify(delegate).resetUsage();
-        assertSame(whatever, all);
         assertSame(whatever, onlyXfer);
     }
 

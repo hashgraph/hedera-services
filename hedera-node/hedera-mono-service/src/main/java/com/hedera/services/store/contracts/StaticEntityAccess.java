@@ -19,7 +19,9 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.services.utils.EntityNum.fromEvmAddress;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -34,11 +36,8 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.migration.*;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -48,7 +47,6 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -65,9 +63,9 @@ public class StaticEntityAccess implements EntityAccess {
     private final ContractAliases aliases;
     private final OptionValidator validator;
     private final MerkleMap<EntityNum, MerkleToken> tokens;
-    private final MerkleMap<EntityNum, MerkleAccount> accounts;
+    private final AccountStorageAdapter accounts;
     private final UniqueTokenMapAdapter nfts;
-    private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    private final TokenRelStorageAdapter tokenAssociations;
     private final VirtualMap<ContractKey, IterableContractValue> storage;
     private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
@@ -100,13 +98,13 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public long getBalance(AccountID id) {
-        return accounts.get(fromAccountId(id)).getBalance();
+    public long getBalance(final Address address) {
+        return accounts.get(fromEvmAddress(address)).getBalance();
     }
 
     @Override
-    public ByteString alias(final AccountID id) {
-        return accounts.get(fromAccountId(id)).getAlias();
+    public ByteString alias(final Address address) {
+        return accounts.get(fromEvmAddress(address)).getAlias();
     }
 
     @Override
@@ -115,19 +113,21 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(AccountID id) {
-        final var account = accounts.get(fromAccountId(id));
+    public boolean isUsable(Address address) {
+        final var account = accounts.get(fromEvmAddress(address));
         if (account == null || account.isDeleted()) {
             return false;
         }
         return validator.expiryStatusGiven(
-                        account.getBalance(), account.getExpiry(), account.isSmartContract())
+                        account.getBalance(),
+                        account.isExpiredAndPendingRemoval(),
+                        account.isSmartContract())
                 == OK;
     }
 
     @Override
-    public boolean isExtant(AccountID id) {
-        return accounts.get(fromAccountId(id)) != null;
+    public boolean isExtant(final Address address) {
+        return accounts.get(fromEvmAddress(address)) != null;
     }
 
     @Override
@@ -136,20 +136,21 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public void putStorage(AccountID id, UInt256 key, UInt256 value) {
+    public void putStorage(AccountID id, Bytes key, Bytes value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UInt256 getStorage(AccountID id, UInt256 key) {
-        final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
+    public UInt256 getStorage(Address address, Bytes key) {
+        final var num = numFromEvmAddress(address.toArrayUnsafe());
+        final var contractKey = new ContractKey(num, key.toArray());
         IterableContractValue value = storage.get(contractKey);
         return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
     }
 
     @Override
     public void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
@@ -159,8 +160,8 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public Bytes fetchCodeIfPresent(final AccountID id) {
-        return explicitCodeFetch(bytecode, id);
+    public Bytes fetchCodeIfPresent(final Address address) {
+        return explicitCodeFetch(bytecode, accountIdFromEvmAddress(address));
     }
 
     @Nullable
@@ -180,7 +181,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Override
     public void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 

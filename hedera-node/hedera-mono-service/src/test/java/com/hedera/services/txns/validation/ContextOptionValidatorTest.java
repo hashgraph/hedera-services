@@ -62,6 +62,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -121,7 +123,7 @@ class ContextOptionValidatorTest {
     private MerkleTopic expiredMerkleTopic;
     private MerkleTopic merkleTopic;
     private MerkleMap topics;
-    private MerkleMap accounts;
+    private AccountStorageAdapter accounts;
     private TransactionContext txnCtx;
     private ContextOptionValidator subject;
     private JKey wacl;
@@ -136,7 +138,7 @@ class ContextOptionValidatorTest {
     void setup() throws Exception {
         txnCtx = mock(TransactionContext.class);
         given(txnCtx.consensusTime()).willReturn(now);
-        accounts = mock(MerkleMap.class);
+        accounts = mock(AccountStorageAdapter.class);
         given(accounts.get(EntityNum.fromAccountId(a))).willReturn(aV);
         given(accounts.get(EntityNum.fromAccountId(deleted))).willReturn(deletedV);
         given(accounts.get(fromContractId(contract))).willReturn(contractV);
@@ -183,7 +185,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsLedgerExpiryCheckIfNoExpiryEnabled() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(false);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
@@ -192,7 +194,7 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsLedgerExpiryCheckIfBalanceIsNonZero() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(1L);
@@ -201,26 +203,26 @@ class ContextOptionValidatorTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shortCircuitsIfBalanceIsZeroButExpiryIsFuture() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts =
+    void shortCircuitsIfBalanceIsZeroButNotDetached() {
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() + 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(false);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void shortCircuitsIfContractExpiryNotEnabled() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
         assertEquals(OK, subject.expiryStatusGiven(accounts, thisNodeAccount));
     }
@@ -228,13 +230,13 @@ class ContextOptionValidatorTest {
     @Test
     @SuppressWarnings("unchecked")
     void usesPreciseExpiryCheckIfBalanceIsZero() {
-        final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts =
+        final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts =
                 mock(TransactionalLedger.class);
         given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.BALANCE)).willReturn(0L);
-        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRY))
-                .willReturn(now.getEpochSecond() - 1);
+        given(accounts.get(thisNodeAccount, AccountProperty.EXPIRED_AND_PENDING_REMOVAL))
+                .willReturn(true);
         given(accounts.get(thisNodeAccount, AccountProperty.IS_SMART_CONTRACT)).willReturn(true);
         assertEquals(
                 CONTRACT_EXPIRED_AND_PENDING_REMOVAL,
@@ -243,33 +245,39 @@ class ContextOptionValidatorTest {
 
     @Test
     void alwaysOkExpiryStatusIfNonzeroBalance() {
-        final var status = subject.expiryStatusGiven(1L, 0, true);
+        final var status = subject.expiryStatusGiven(1L, true, true);
+        assertEquals(OK, status);
+    }
+
+    @Test
+    void alwaysOkIfNotDetached() {
+        final var status = subject.expiryStatusGiven(0L, false, true);
         assertEquals(OK, status);
     }
 
     @Test
     void contractIsExpiredIfZeroBalanceAndPastExpiry() {
         given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, true);
+        final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
-    void accountIsExpiredIfZeroBalanceAndPastExpiry() {
+    void accountIsExpiredIfZeroBalanceAndDetached() {
         given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() - 1, false);
+        final var status = subject.expiryStatusGiven(0, true, false);
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, status);
     }
 
     @Test
     void ifAccountExpiryNotEnabledItsOk() {
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, false);
+        final var status = subject.expiryStatusGiven(0, true, false);
         assertEquals(OK, status);
     }
 
     @Test
     void ifContractExpiryNotEnabledItsOk() {
-        final var status = subject.expiryStatusGiven(0, now.getEpochSecond() + 1, true);
+        final var status = subject.expiryStatusGiven(0, true, true);
         assertEquals(OK, status);
     }
 

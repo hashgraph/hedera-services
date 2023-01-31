@@ -30,9 +30,10 @@ public final class StateChildIndices {
     public static final int ADDRESS_BOOK = 10;
     public static final int CONTRACT_STORAGE = 11;
     public static final int STAKING_INFO = 12;
+    public static final int PAYER_RECORDS = 13;
 
     public static final int NUM_025X_CHILDREN = 12;
-    public static final int NUM_POST_0260_CHILDREN = 13;
+    public static final int NUM_032X_CHILDREN = 14;
 
     private StateChildIndices() {
         throw new UnsupportedOperationException("Utility Class");

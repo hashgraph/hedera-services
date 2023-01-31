@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -45,6 +46,7 @@ import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -107,7 +109,7 @@ class GetTxnRecordAnswerTest {
         accounts = mock(MerkleMap.class);
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
         view = new StateView(null, children, null);
         optionValidator = mock(OptionValidator.class);
         answerFunctions = mock(AnswerFunctions.class);
@@ -303,7 +305,7 @@ class GetTxnRecordAnswerTest {
     @Test
     void syntaxCheckPrioritizesAccountStatus() {
         final var query = queryOf(txnRecordQuery(targetTxnId, ANSWER_ONLY, 123L));
-        given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts))
+        given(optionValidator.queryableAccountStatus(eq(targetTxnId.getAccountID()), any()))
                 .willReturn(ACCOUNT_DELETED);
 
         final var validity = subject.checkValidity(query, view);
@@ -322,7 +324,7 @@ class GetTxnRecordAnswerTest {
         final var query = queryOf(op);
         given(answerFunctions.txnRecord(recordCache, op))
                 .willReturn(Optional.of(cachedTargetRecord));
-        given(optionValidator.queryableAccountStatus(targetTxnId.getAccountID(), accounts))
+        given(optionValidator.queryableAccountStatus(eq(targetTxnId.getAccountID()), any()))
                 .willReturn(OK);
 
         final var validity = subject.checkValidity(query, view);

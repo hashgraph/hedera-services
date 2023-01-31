@@ -16,18 +16,37 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NEVER_USED_SNAPSHOT;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -81,10 +100,11 @@ class MerkleNetworkContextTest {
     private ExchangeRates midnightRateSet;
     private ExchangeRates midnightRateSetCopy;
     private Instant[] congestionStarts;
+    private Instant[] evmCongestionStarts;
     private DeterministicThrottle.UsageSnapshot[] usageSnapshots;
 
     private FunctionalityThrottling throttling;
-    private FeeMultiplierSource feeMultiplierSource;
+    private MultiplierSources multiplierSources;
 
     private GasLimitDeterministicThrottle gasLimitDeterministicThrottle;
     private DeterministicThrottle.UsageSnapshot gasLimitUsageSnapshot;
@@ -100,6 +120,11 @@ class MerkleNetworkContextTest {
                 new Instant[] {
                     Instant.ofEpochSecond(1_234_567L, 54321L),
                     Instant.ofEpochSecond(1_234_789L, 12345L)
+                };
+        evmCongestionStarts =
+                new Instant[] {
+                    Instant.ofEpochSecond(2_234_567L, 54321L),
+                    Instant.ofEpochSecond(2_234_789L, 12345L)
                 };
 
         consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
@@ -130,6 +155,7 @@ class MerkleNetworkContextTest {
         subject.setGasThrottleUsageSnapshot(gasLimitUsageSnapshot);
         subject.setExpiryUsageSnapshot(expiryUsageSnapshot);
         subject.setCongestionLevelStarts(congestionStarts());
+        subject.setEvmCongestionLevelStarts(evmCongestionStarts);
         subject.setStateVersion(stateVersion);
         subject.updateAutoRenewSummaryCounts(
                 (int) entitiesScannedThisSecond, (int) entitiesTouchedThisSecond);
@@ -252,9 +278,9 @@ class MerkleNetworkContextTest {
         assertTrue(subject.isImmutable());
         assertFalse(subjectCopy.isImmutable());
         assertNull(subject.getThrottling());
-        assertNull(subject.getMultiplierSource());
+        assertNull(subject.getMultiplierSources());
         assertNull(subjectCopy.getThrottling());
-        assertNull(subjectCopy.getMultiplierSource());
+        assertNull(subjectCopy.getMultiplierSources());
         // and:
         assertEquals(subject.getHash(), subjectCopy.getHash());
         subjectCopy.setBlockNo(subject.getAlignmentBlockNo() + 1L);
@@ -269,24 +295,26 @@ class MerkleNetworkContextTest {
         // setup:
         throttling = mock(FunctionalityThrottling.class);
         final var expiryThrottle = mock(ExpiryThrottle.class);
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
         gasLimitDeterministicThrottle = mock(GasLimitDeterministicThrottle.class);
 
         final var someThrottle = DeterministicThrottle.withTpsAndBurstPeriod(1, 23);
         someThrottle.allow(1, Instant.now());
         final var someStart = Instant.ofEpochSecond(7_654_321L, 0);
         final var syncedStarts = new Instant[] {someStart};
+        final var syncedGasStarts = new Instant[] {someStart};
 
         given(throttling.allActiveThrottles()).willReturn(List.of(someThrottle));
 
         given(throttling.gasLimitThrottle()).willReturn(gasLimitDeterministicThrottle);
         given(expiryThrottle.getThrottleSnapshot()).willReturn(expiryUsageSnapshot);
         given(gasLimitDeterministicThrottle.usageSnapshot()).willReturn(gasLimitUsageSnapshot);
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(syncedStarts);
+        given(multiplierSources.genericCongestionStarts()).willReturn(syncedStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(syncedGasStarts);
         // and:
         subject.syncThrottling(throttling);
         subject.syncExpiryThrottle(expiryThrottle);
-        subject.syncMultiplierSource(feeMultiplierSource);
+        subject.syncMultiplierSources(multiplierSources);
 
         // when:
         var subjectCopy = subject.copy();
@@ -317,9 +345,9 @@ class MerkleNetworkContextTest {
         // and:
         assertNull(subject.getThrottling());
         assertNull(subject.getExpiryThrottle());
-        assertNull(subject.getMultiplierSource());
+        assertNull(subject.getMultiplierSources());
         assertNull(subjectCopy.getThrottling());
-        assertNull(subjectCopy.getMultiplierSource());
+        assertNull(subjectCopy.getMultiplierSources());
         assertNull(subjectCopy.getExpiryThrottle());
     }
 
@@ -350,6 +378,7 @@ class MerkleNetworkContextTest {
         assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
         assertEquals(a.expiryUsageSnapshot(), b.expiryUsageSnapshot());
         assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
+        assertArrayEquals(a.getEvmCongestionLevelStarts(), b.getEvmCongestionLevelStarts());
         assertEquals(a.getStateVersion(), b.getStateVersion());
         assertEquals(a.idsScannedThisSecond(), b.idsScannedThisSecond());
         assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
@@ -440,20 +469,21 @@ class MerkleNetworkContextTest {
     void syncsWork() {
         // setup:
         throttling = mock(FunctionalityThrottling.class);
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
         // when:
         subject.syncThrottling(throttling);
-        subject.syncMultiplierSource(feeMultiplierSource);
+        subject.syncMultiplierSources(multiplierSources);
 
         // then:
         assertSame(throttling, subject.getThrottling());
-        assertSame(feeMultiplierSource, subject.getMultiplierSource());
+        assertSame(multiplierSources, subject.getMultiplierSources());
     }
 
     @Test
     void summarizesUnavailableAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
+        subject.setEvmCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
         subject.setExpiryUsageSnapshot(NEVER_USED_SNAPSHOT);
 
@@ -471,7 +501,8 @@ class MerkleNetworkContextTest {
                     + "  Entities touched last consensus second     :: 123\n"
                     + "  Expiry work usage snapshot is              :: <N/A>\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
-                    + "  Congestion level start times are           :: <N/A>\n"
+                    + "  Generic congestion level start times are   :: <N/A>\n"
+                    + "  EVM congestion level start times are       :: <N/A>\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -486,6 +517,7 @@ class MerkleNetworkContextTest {
     @Test
     void summarizesHashesAsExpected() {
         subject.setCongestionLevelStarts(new Instant[0]);
+        subject.setEvmCongestionLevelStarts(new Instant[0]);
         subject.setUsageSnapshots(new DeterministicThrottle.UsageSnapshot[0]);
         final var aFixedHash =
                 org.hyperledger.besu.datatypes.Hash.wrap(
@@ -511,7 +543,8 @@ class MerkleNetworkContextTest {
                     + "  Expiry work usage snapshot is              :: \n"
                     + "    666 used (last decision time +1000000000-12-31T23:59:59.999999999Z)\n"
                     + "  Throttle usage snapshots are               :: <N/A>\n"
-                    + "  Congestion level start times are           :: <N/A>\n"
+                    + "  Generic congestion level start times are   :: <N/A>\n"
+                    + "  EVM congestion level start times are       :: <N/A>\n"
                     + "  Block number is                            :: 2\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:11.000013579Z\n"
@@ -557,9 +590,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -586,9 +622,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -614,9 +653,12 @@ class MerkleNetworkContextTest {
                     + "    200 used (last decision time 1970-01-01T00:00:02.000000200Z)\n"
                     + "    300 used (last decision time 1970-01-01T00:00:03.000000300Z)\n"
                     + "    0 gas used (last decision time <N/A>)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -669,9 +711,12 @@ class MerkleNetworkContextTest {
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
                     + "    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -699,9 +744,12 @@ class MerkleNetworkContextTest {
                     + "    123 used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
                     + "    456 used (last decision time 1970-01-15T06:56:08.000054321Z)\n"
                     + "    1234 gas used (last decision time 1970-01-15T06:56:07.000054321Z)\n"
-                    + "  Congestion level start times are           :: \n"
+                    + "  Generic congestion level start times are   :: \n"
                     + "    1970-01-15T06:56:07.000054321Z\n"
                     + "    1970-01-15T06:59:49.000012345Z\n"
+                    + "  EVM congestion level start times are       :: \n"
+                    + "    1970-01-26T20:42:47.000054321Z\n"
+                    + "    1970-01-26T20:46:29.000012345Z\n"
                     + "  Block number is                            :: 0\n"
                     + "  Block timestamp is                         ::"
                     + " 1970-01-15T06:56:07.000013579Z\n"
@@ -758,12 +806,13 @@ class MerkleNetworkContextTest {
     @Test
     void updatesEmptyLevelStartsAsExpected() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(NO_CONGESTION_STARTS);
+        given(multiplierSources.gasCongestionStarts()).willReturn(NO_CONGESTION_STARTS);
+        given(multiplierSources.genericCongestionStarts()).willReturn(NO_CONGESTION_STARTS);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
@@ -772,12 +821,13 @@ class MerkleNetworkContextTest {
     @Test
     void updatesNullCongestionLevelStartsAsExpected() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(null);
+        given(multiplierSources.gasCongestionStarts()).willReturn(null);
+        given(multiplierSources.genericCongestionStarts()).willReturn(null);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertEquals(NO_CONGESTION_STARTS, subject.getCongestionLevelStarts());
@@ -817,15 +867,17 @@ class MerkleNetworkContextTest {
         // setup:
         subject = new MerkleNetworkContext();
 
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
 
-        given(feeMultiplierSource.congestionLevelStarts()).willReturn(congestionStarts);
+        given(multiplierSources.genericCongestionStarts()).willReturn(congestionStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(evmCongestionStarts);
 
         // when:
-        subject.updateCongestionStartsFrom(feeMultiplierSource);
+        subject.updateCongestionStartsFrom(multiplierSources);
 
         // then:
         assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+        assertArrayEquals(evmCongestionStarts, subject.getEvmCongestionLevelStarts());
     }
 
     @Test
@@ -964,17 +1016,20 @@ class MerkleNetworkContextTest {
     @Test
     void updatesFromSavedCongestionStartsEvenIfNull() {
         // setup:
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
         congestionStarts[1] = null;
+        evmCongestionStarts[1] = null;
 
         // given:
         subject.getCongestionLevelStarts()[1] = null;
+        subject.getEvmCongestionLevelStarts()[1] = null;
 
         // when:
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGenericCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGasCongestionLevelStarts(evmCongestionStarts);
     }
 
     @Test
@@ -985,16 +1040,20 @@ class MerkleNetworkContextTest {
 
     @Test
     void updatesFromSavedCongestionStarts() {
-        feeMultiplierSource = mock(FeeMultiplierSource.class);
+        multiplierSources = mock(MultiplierSources.class);
+        given(multiplierSources.genericCongestionStarts()).willReturn(congestionStarts);
+        given(multiplierSources.gasCongestionStarts()).willReturn(evmCongestionStarts);
 
         // when:
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
         // and:
         subject.setCongestionLevelStarts(NO_CONGESTION_STARTS);
-        subject.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+        subject.setEvmCongestionLevelStarts(NO_CONGESTION_STARTS);
+        subject.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
 
         // then:
-        verify(feeMultiplierSource, times(1)).resetCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGenericCongestionLevelStarts(congestionStarts);
+        verify(multiplierSources, times(1)).resetGasCongestionLevelStarts(evmCongestionStarts);
     }
 
     @Test

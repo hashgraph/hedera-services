@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -54,11 +54,10 @@ class LivePricesSourceTest {
     private static final ExchangeRate activeRate =
             ExchangeRate.newBuilder().setHbarEquiv(1).setCentEquiv(12).build();
     private static final long reasonableMultiplier = 7;
-    private static final long insaneMultiplier = Long.MAX_VALUE / 2;
 
     @Mock private HbarCentExchange exchange;
     @Mock private UsagePricesProvider usagePrices;
-    @Mock private FeeMultiplierSource feeMultiplierSource;
+    @Mock private MultiplierSources multiplierSources;
     @Mock private TransactionContext txnCtx;
     @Mock private TxnAccessor accessor;
 
@@ -66,7 +65,7 @@ class LivePricesSourceTest {
 
     @BeforeEach
     void setUp() {
-        subject = new LivePricesSource(exchange, usagePrices, feeMultiplierSource, txnCtx);
+        subject = new LivePricesSource(exchange, usagePrices, multiplierSources, txnCtx);
     }
 
     @Test
@@ -89,27 +88,10 @@ class LivePricesSourceTest {
         assertEquals(expected, subject.currentGasPriceInTinycents(now, ContractCall));
     }
 
-    @Test
-    void getsExpectedSbhPriceWithReasonableMultiplier() {
-        givenCollabsWithMultiplier(reasonableMultiplier);
-
-        final var expected =
-                getTinybarsFromTinyCents(activeRate, sbhPriceTinybars) * reasonableMultiplier;
-
-        assertEquals(expected, subject.currentStorageByteHoursPrice(now, ContractCall));
-    }
-
-    @Test
-    void getsExpectedSbhPriceWithInsaneMultiplier() {
-        givenCollabsWithMultiplier(insaneMultiplier);
-
-        assertEquals(Long.MAX_VALUE, subject.currentStorageByteHoursPrice(now, ContractCall));
-    }
-
     private void givenCollabsWithMultiplier(final long multiplier) {
         given(exchange.rate(timeNow)).willReturn(activeRate);
         given(usagePrices.defaultPricesGiven(ContractCall, timeNow)).willReturn(providerPrices);
-        given(feeMultiplierSource.currentMultiplier(accessor)).willReturn(multiplier);
+        given(multiplierSources.maxCurrentMultiplier(accessor)).willReturn(multiplier);
         given(txnCtx.accessor()).willReturn(accessor);
     }
 }

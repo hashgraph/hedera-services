@@ -18,6 +18,7 @@ package com.hedera.services.stream;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.state.virtual.annotations.StateSetter;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -129,6 +130,7 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
     }
 
     public RecordsRunningHashLeaf copy() {
+        setImmutable(true);
         return new RecordsRunningHashLeaf(this);
     }
 
@@ -164,7 +166,9 @@ public class RecordsRunningHashLeaf extends PartialMerkleLeaf implements MerkleL
         return nMinus3RunningHash;
     }
 
+    @StateSetter
     public void setRunningHash(final RunningHash runningHash) {
+        throwIfImmutable();
         // update the previous running hashes
         nMinus3RunningHash = nMinus2RunningHash;
         nMinus2RunningHash = nMinus1RunningHash;

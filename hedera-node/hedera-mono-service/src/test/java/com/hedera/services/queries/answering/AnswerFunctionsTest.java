@@ -23,7 +23,6 @@ import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -34,6 +33,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
 import com.hedera.services.utils.EntityNum;
@@ -76,7 +77,7 @@ class AnswerFunctionsTest {
                         .build();
         setupAccountsView();
 
-        assertSame(Collections.emptyList(), subject.mostRecentRecords(view, op));
+        assertEquals(Collections.emptyList(), subject.mostRecentRecords(view, op));
     }
 
     @Test
@@ -169,7 +170,9 @@ class AnswerFunctionsTest {
 
     private void setupAccountsView() {
         final var children = new MutableStateChildren();
-        children.setAccounts(accounts);
+        children.setAccounts(AccountStorageAdapter.fromInMemory(accounts));
+        children.setPayerRecords(RecordsStorageAdapter.fromLegacy(accounts));
+
         view = new StateView(null, children, null);
     }
 

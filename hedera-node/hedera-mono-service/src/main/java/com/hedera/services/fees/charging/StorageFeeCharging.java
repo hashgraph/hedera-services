@@ -17,7 +17,7 @@ package com.hedera.services.fees.charging;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
@@ -40,5 +40,5 @@ public interface StorageFeeCharging {
     void chargeStorageRent(
             long numTotalKvPairs,
             Map<Long, KvUsageInfo> newUsageInfos,
-            TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts);
+            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts);
 }

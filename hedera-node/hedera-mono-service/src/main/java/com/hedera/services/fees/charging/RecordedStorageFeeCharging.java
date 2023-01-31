@@ -32,7 +32,7 @@ import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -88,7 +88,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
     public void chargeStorageRent(
             final long totalKvPairs,
             final Map<Long, KvUsageInfo> newUsageInfos,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         if (newUsageInfos.isEmpty()) {
             return;
         }
@@ -124,7 +124,7 @@ public class RecordedStorageFeeCharging implements StorageFeeCharging {
             final long totalKvPairs,
             final Map<Long, KvUsageInfo> newUsageInfos,
             final ContractStoragePriceTiers storagePriceTiers,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
         final var now = txnCtx.consensusTime();
         final var rate = exchange.activeRate(now);
         final var thisSecond = now.getEpochSecond();

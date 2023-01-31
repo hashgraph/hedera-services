@@ -31,7 +31,20 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -49,7 +62,22 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MESSAGE_SIZE_TOO_LARGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -103,7 +131,6 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
@@ -424,15 +451,19 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 "100_000_000")))
                 .when(
                         /* The first call to insert adds 5 mappings */
-                        contractCall(contract, INSERT_ABI, 1, 1)
+                        contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         /* Each subsequent call to adds 3 mappings; so 8 total after this */
-                        contractCall(contract, INSERT_ABI, 2, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         /* And this one fails because 8 + 3 = 11 > 10 */
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_CONTRACT_STORAGE_EXCEEDED)
                                 .gas(gasToOffer),
@@ -445,7 +476,11 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(
                                                 INDIVIDUAL_KV_LIMIT_PROP, "1_000_000_000",
                                                 AGGREGATE_KV_LIMIT_PROP, "1")),
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED)
                                 .gas(gasToOffer),
@@ -462,10 +497,18 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 DEFAULT_MAX_KV_PAIRS,
                                                 CONS_MAX_GAS_PROP,
                                                 DEFAULT_MAX_CONS_GAS)),
-                        contractCall(contract, INSERT_ABI, 3, 9)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(9))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
-                        contractCall(contract, INSERT_ABI, 4, 16)
+                        contractCall(
+                                        contract,
+                                        INSERT_ABI,
+                                        BigInteger.valueOf(4),
+                                        BigInteger.valueOf(16))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer),
                         getContractInfo(contract).has(contractWith().numKvPairs(14)));
@@ -489,19 +532,23 @@ public class FileUpdateSuite extends HapiApiSuite {
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        contractCall(contract, INSERT_ABI, 1, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.valueOf(4))
                                 .payingWith(civilian)
                                 .gas(gasToOffer)
                                 .via(unrefundedTxn))
                 .when(
                         usableTxnIdNamed(refundedTxn).payerId(civilian),
-                        contractCall(contract, INSERT_ABI, 2, 4)
+                        contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
                                 .payingWith(GENESIS)
                                 .gas(gasToOffer)
                                 .hasAnyStatusAtAll()
                                 .deferStatusResolution(),
                         uncheckedSubmit(
-                                        contractCall(contract, INSERT_ABI, 3, 4)
+                                        contractCall(
+                                                        contract,
+                                                        INSERT_ABI,
+                                                        BigInteger.valueOf(3),
+                                                        BigInteger.valueOf(4))
                                                 .signedBy(civilian)
                                                 .gas(gasToOffer)
                                                 .txnId(refundedTxn))
@@ -657,14 +704,14 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 "staking.fees.stakingRewardPercentage",
                                 "0"),
                         // Validate free tier is respected
-                        contractCall(slotUser, "consumeB", 1L).via(bSet),
+                        contractCall(slotUser, "consumeB", BigInteger.ONE).via(bSet),
                         getTxnRecord(bSet).hasNonStakingChildRecordCount(0),
                         contractCallLocal(slotUser, "slotB")
                                 .exposingTypedResultsTo(
                                         results -> assertEquals(BigInteger.ONE, results[0])),
                         overriding(FREE_PRICE_TIER_PROP, "0"),
                         // And validate auto-renew account must be storage fees must be payable
-                        contractCall(slotUser, "consumeA", 2L, 3L)
+                        contractCall(slotUser, "consumeA", BigInteger.TWO, BigInteger.valueOf(3))
                                 .gas(oddGasAmount)
                                 .via(failedSet)
                                 .hasKnownStatus(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT),
@@ -684,7 +731,8 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         results -> assertEquals(BigInteger.ZERO, results[0])),
                         // Now fund the contract's auto-renew account and confirm payment accepted
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, autoRenew, 5 * ONE_HBAR)),
-                        contractCall(slotUser, "consumeA", 2L, 1L).via(aSet),
+                        contractCall(slotUser, "consumeA", BigInteger.TWO, BigInteger.ONE)
+                                .via(aSet),
                         contractCallLocal(slotUser, "slotA")
                                 .exposingTypedResultsTo(
                                         results -> assertEquals(BigInteger.TWO, results[0])),

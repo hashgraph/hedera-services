@@ -23,8 +23,10 @@ public enum EntityType {
     ACCOUNT,
     CONTRACT,
     FILE,
+    NFT,
     SCHEDULE,
     TOKEN,
+    TOKEN_ASSOCIATION,
     TOPIC;
 
     public static Set<EntityType> csvTypeSet(final String propertyValue) {

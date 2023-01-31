@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -78,7 +79,7 @@ class BackingTokenRelsTest {
         rels.put(aKey, aValue);
         rels.put(bKey, bValue);
 
-        subject = new BackingTokenRels(() -> rels);
+        subject = new BackingTokenRels(() -> TokenRelStorageAdapter.fromInMemory(rels));
     }
 
     @Test
@@ -171,6 +172,6 @@ class BackingTokenRelsTest {
         rels = mock(MerkleMap.class);
         given(rels.keySet()).willReturn(Collections.emptySet());
         given(rels.entrySet()).willReturn(Collections.emptySet());
-        subject = new BackingTokenRels(() -> rels);
+        subject = new BackingTokenRels(() -> TokenRelStorageAdapter.fromInMemory(rels));
     }
 }

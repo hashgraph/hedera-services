@@ -59,11 +59,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -72,7 +74,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
@@ -191,10 +192,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeysAndExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
@@ -203,23 +205,27 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_TO_ASSOCIATE)))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_TO_ASSOCIATE))))
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -233,9 +239,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -324,18 +330,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .alsoSigningWithFullPrefix(
@@ -350,9 +359,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -439,14 +448,17 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            new byte[] {},
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    new byte[20]),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -459,9 +471,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         "Explicit create result is"
                                                                                 + " {}",
                                                                         result[0]);
-                                                                final var res = (byte[]) result[0];
+                                                                final var res = (Address) result[0];
                                                                 createdNftTokenNum.set(
-                                                                        new BigInteger(res)
+                                                                        res.value()
                                                                                 .longValueExact());
                                                             })
                                                     .hasKnownStatus(SUCCESS);
@@ -527,10 +539,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeysAndExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
@@ -539,21 +552,25 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                new byte[] {}, // set empty
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]), // set empty
                                                                 // autoRenewAccount
                                                                 AUTO_RENEW_PERIOD,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT_TO_ASSOCIATE)))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT_TO_ASSOCIATE))))
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -567,9 +584,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }))))
                 .then(
@@ -612,16 +629,20 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -633,9 +654,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         "Explicit create result is"
                                                                                 + " {}",
                                                                         result[0]);
-                                                                final var res = (byte[]) result[0];
+                                                                final var res = (Address) result[0];
                                                                 createdTokenNum.set(
-                                                                        new BigInteger(res)
+                                                                        res.value()
                                                                                 .longValueExact());
                                                             })
                                                     .refusingEthConversion()
@@ -744,22 +765,26 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenWithCustomFees",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -781,9 +806,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -859,10 +884,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -875,9 +901,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -961,14 +987,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenThenQuery",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -980,9 +1008,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createdTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
@@ -1065,9 +1093,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             "createTokenWithEmptyKeysArray",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -1123,10 +1153,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithKeyWithMultipleValues",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1162,14 +1193,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1277,10 +1310,11 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createTokenWithInvalidExpiry",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1331,22 +1365,26 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "createNonFungibleTokenWithInvalidRoyaltyFee",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getContractId(
-                                                                                        TOKEN_CREATE_CONTRACT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD,
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
@@ -1396,19 +1434,24 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                                ArrayUtils.toPrimitive(
-                                                                        Utils.asSolidityAddress(
-                                                                                0,
-                                                                                0,
-                                                                                999_999_999L)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        (byte[])
+                                                                                ArrayUtils
+                                                                                        .toPrimitive(
+                                                                                                Utils
+                                                                                                        .asSolidityAddress(
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                999_999_999L))),
                                                                 spec.registry()
                                                                         .getKey(ED25519KEY)
                                                                         .getEd25519()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1456,18 +1499,21 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        feeCollector)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1514,17 +1560,25 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                         .getKey(ECDSA_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                ArrayUtils.toPrimitive(
-                                                                        Utils.asSolidityAddress(
-                                                                                0, 0, 15252L)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        EXISTING_TOKEN)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        (byte[])
+                                                                                ArrayUtils
+                                                                                        .toPrimitive(
+                                                                                                Utils
+                                                                                                        .asSolidityAddress(
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                15252L))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1577,16 +1631,20 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             CREATE_NFT_WITH_KEYS_AND_EXPIRY_FUNCTION,
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             spec.registry()
                                                                     .getKey(ED25519KEY)
                                                                     .getEd25519()
                                                                     .toByteArray(),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ACCOUNT)),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ACCOUNT))),
                                                             AUTO_RENEW_PERIOD)
                                                     .via(FIRST_CREATE_TXN)
                                                     .gas(GAS_TO_OFFER)
@@ -1651,14 +1709,16 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_CREATE_CONTRACT,
                                                                 "delegateCallCreate",
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getAccountID(
-                                                                                        ACCOUNT)),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -1727,9 +1787,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                             EXPLICIT_CREATE_RESULT,
                                                                             result[0]);
                                                                     final var res =
-                                                                            (byte[]) result[0];
+                                                                            (Address) result[0];
                                                                     createTokenNum.set(
-                                                                            new BigInteger(res)
+                                                                            res.value()
                                                                                     .longValueExact());
                                                                 }),
                                                 newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)

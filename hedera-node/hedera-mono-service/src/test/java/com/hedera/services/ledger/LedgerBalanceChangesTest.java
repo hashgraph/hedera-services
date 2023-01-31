@@ -64,6 +64,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
@@ -93,15 +95,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
     private final BackingStore<NftId, UniqueTokenAdapter> backingNfts = new HashMapBackingNfts();
-    private final BackingStore<AccountID, MerkleAccount> backingAccounts =
+    private final BackingStore<AccountID, HederaAccount> backingAccounts =
             new HashMapBackingAccounts();
     private final BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
-    private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
+    private final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels =
             new HashMapBackingTokenRels();
     private HederaTokenStore tokenStore;
     private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private TransferLogic transferLogic;
@@ -413,7 +415,7 @@ class LedgerBalanceChangesTest {
                             change.replaceNonEmptyAliasWith(validAliasEntityNum);
                             return Pair.of(OK, 100L);
                         });
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(aliasManager.lookupIdBy(aliasA.toByteString())).willReturn(EntityNum.MISSING_NUM);
 
         subject.begin();
@@ -471,7 +473,7 @@ class LedgerBalanceChangesTest {
 
     private void givenUnexpiredEntities() {
         given(validator.expiryStatusGiven(eq(accountsLedger), any())).willReturn(OK);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void givenInitialBalancesAndOwnership() {

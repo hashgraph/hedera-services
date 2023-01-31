@@ -141,7 +141,7 @@ class HapiThrottlingTest {
         given(delegate.allActiveThrottles()).willReturn(List.of());
         given(delegate.gasLimitThrottle()).willReturn(new GasLimitDeterministicThrottle(123));
         assertTrue(subject.allActiveThrottles().isEmpty());
-        assertEquals(123, subject.gasLimitThrottle().getCapacity());
+        assertEquals(123, subject.gasLimitThrottle().capacity());
     }
 
     @Test

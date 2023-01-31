@@ -16,21 +16,21 @@
 package com.hedera.services.ledger.accounts;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * reconnect. Entries from the map are removed when the entity expires
  */
 @Singleton
-public class AliasManager extends AbstractContractAliases implements ContractAliases {
+public class AliasManager extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LogManager.getLogger(AliasManager.class);
 
     private static final String NON_TRANSACTIONAL_MSG =
@@ -162,14 +162,13 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
      * @param observer an observer to be called with each traversed account
      */
     public void rebuildAliasesMap(
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
-            final BiConsumer<EntityNum, MerkleAccount> observer) {
+            final AccountStorageAdapter accounts,
+            final BiConsumer<EntityNum, HederaAccount> observer) {
         final var numCreate2Aliases = new AtomicInteger();
         final var numEOAliases = new AtomicInteger();
         final var workingAliases = curAliases();
         workingAliases.clear();
-        forEach(
-                accounts,
+        accounts.forEach(
                 (k, v) -> {
                     final var alias = v.getAlias();
                     observer.accept(k, v);
@@ -182,7 +181,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
                             try {
                                 final Key key = Key.parseFrom(v.getAlias());
                                 final JKey jKey = JKey.mapKey(key);
-                                if (maybeLinkEvmAddress(jKey, v.getKey())) {
+                                if (maybeLinkEvmAddress(jKey, EntityNum.fromInt(v.number()))) {
                                     numEOAliases.incrementAndGet();
                                 }
                             } catch (InvalidProtocolBufferException

@@ -17,15 +17,8 @@ package com.hedera.services.state.merkle;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
@@ -96,6 +89,7 @@ class MerkleAccountTest {
     private static final long stakedNum = 1111L;
     private static final boolean declinedReward = false;
     private static final long balanceAtStartOfLastRewardedPeriod = 347_576_123L;
+    private static final boolean expiredAndPendingRemoval = true;
 
     private MerkleAccountState state;
     private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -154,7 +148,8 @@ class MerkleAccountTest {
                         stakePeriodStart,
                         stakedNum,
                         declinedReward,
-                        balanceAtStartOfLastRewardedPeriod);
+                        balanceAtStartOfLastRewardedPeriod,
+                        expiredAndPendingRemoval);
 
         subject = new MerkleAccount(List.of(state, payerRecords));
     }
@@ -174,7 +169,7 @@ class MerkleAccountTest {
     }
 
     @Test
-    void namecanGetHeadNftKey() {
+    void canGetHeadNftKey() {
         final var expected = EntityNumPair.fromLongs(lastAssociatedNftNum, lastAssociatedNftSerial);
         assertEquals(expected, subject.getHeadNftKey());
     }
@@ -235,6 +230,7 @@ class MerkleAccountTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void gettersDelegate() {
         // expect:
         assertEquals(new EntityNum(number), subject.getKey());
@@ -273,6 +269,7 @@ class MerkleAccountTest {
         assertEquals(
                 state.getStakeAtStartOfLastRewardedPeriod(),
                 subject.totalStakeAtStartOfLastRewardedPeriod());
+        assertEquals(state.isExpiredAndPendingRemoval(), subject.isExpiredAndPendingRemoval());
     }
 
     @Test
@@ -286,6 +283,7 @@ class MerkleAccountTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void settersDelegate() throws NegativeAccountBalanceException {
         subject = new MerkleAccount(List.of(delegate, new FCQueue<>()));
         given(delegate.getMaxAutomaticAssociations()).willReturn(maxAutoAssociations);
@@ -317,6 +315,7 @@ class MerkleAccountTest {
         subject.setDeclineReward(declinedReward);
         subject.setStakedId(-stakedNum);
         subject.setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+        subject.setExpiredAndPendingRemoval(!expiredAndPendingRemoval);
 
         verify(delegate).setExpiry(otherExpiry);
         verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -345,6 +344,7 @@ class MerkleAccountTest {
         verify(delegate).setStakePeriodStart(stakePeriodStart);
         verify(delegate).setDeclineReward(declinedReward);
         verify(delegate).setStakeAtStartOfLastRewardedPeriod(balanceAtStartOfLastRewardedPeriod);
+        verify(delegate).setExpiredAndPendingRemoval(!expiredAndPendingRemoval);
 
         subject.setStakedId(stakedNum);
         verify(delegate).setStakedNum(stakedNum);
@@ -431,32 +431,6 @@ class MerkleAccountTest {
         subject.release();
 
         verify(payerRecords).release();
-    }
-
-    @Test
-    void canForgetMerkleAccountTokensPlaceholder() {
-        final var normalSubject =
-                new MerkleAccount(List.of(new MerkleAccountState(), new FCQueue<>()));
-        normalSubject.forgetThirdChildIfPlaceholder();
-        assertEquals(2, normalSubject.getNumberOfChildren());
-
-        final var forgettableSubject =
-                new MerkleAccount(
-                        List.of(
-                                new MerkleAccountState(),
-                                new FCQueue<>(),
-                                new MerkleAccountTokensPlaceholder()));
-        forgettableSubject.forgetThirdChildIfPlaceholder();
-        assertEquals(2, forgettableSubject.getNumberOfChildren());
-
-        final var strangelyMemorableSubject =
-                new MerkleAccount(
-                        List.of(
-                                new MerkleAccountState(),
-                                new FCQueue<>(),
-                                new MerkleAccountState()));
-        strangelyMemorableSubject.forgetThirdChildIfPlaceholder();
-        assertEquals(3, strangelyMemorableSubject.getNumberOfChildren());
     }
 
     @Test

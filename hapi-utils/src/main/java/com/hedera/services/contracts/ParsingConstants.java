@@ -41,10 +41,14 @@ public final class ParsingConstants {
 
     // struct types
     public static final String EXPIRY = "(uint32,address,uint32)";
+    public static final String EXPIRY_V2 = "(int64,address,int64)";
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
+    public static final String FIXED_FEE_V2 = "(int64,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
+    public static final String FRACTIONAL_FEE_V2 = "(int64,int64,int64,int64,bool,address)";
     public static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+    public static final String ROYALTY_FEE_V2 = "(int64,int64,int64,address,bool,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
 
     public static final String HEDERA_TOKEN =

@@ -17,11 +17,7 @@ package com.hedera.services.txns.submission;
 
 import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -71,6 +67,7 @@ public final class StructuralPrecheck {
         this.accessorFactory = accessorFactory;
     }
 
+    @SuppressWarnings("java:S1874")
     public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
         final var hasSignedTxnBytes = !signedTxn.getSignedTransactionBytes().isEmpty();
         final var hasDeprecatedSigMap = signedTxn.hasSigMap();
@@ -99,6 +96,9 @@ public final class StructuralPrecheck {
 
         try {
             final var accessor = accessorFactory.constructSpecializedAccessor(signedTxn);
+            if (accessor.hasConsequentialUnknownFields()) {
+                return WELL_KNOWN_FLAWS.get(TRANSACTION_HAS_UNKNOWN_FIELDS);
+            }
 
             final var signedStateView = stateViewFactory.latestSignedStateView();
             signedStateView.ifPresent(accessor::setStateView);

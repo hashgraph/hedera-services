@@ -23,14 +23,15 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityIdUtils;
@@ -88,7 +89,7 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
  * @param <W> the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
-        implements WorldUpdater {
+        extends AbstractLedgerEvmWorldUpdater {
     protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
     private final W world;
@@ -103,6 +104,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
+        super(new AccountAccessorImpl(trackingLedgers));
         this.world = world;
         this.trackingLedgers = trackingLedgers;
     }
@@ -150,7 +152,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     @Override
     public Account get(final Address addressOrAlias) {
-        if (!addressOrAlias.equals(trackingLedgers.canonicalAddress(addressOrAlias))) {
+        if (!addressOrAlias.equals(accountAccessor.canonicalAddress(addressOrAlias))) {
             return null;
         }
 
@@ -350,7 +352,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return updatedAccounts.values();
     }
 
-    public TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
+    public TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts() {
         return trackingLedgers.accounts();
     }
 

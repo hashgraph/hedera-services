@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -52,6 +53,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -131,7 +133,7 @@ class MerkleTopicUpdateTransitionLogicTest {
         ledger = mock(HederaLedger.class);
         subject =
                 new TopicUpdateTransitionLogic(
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> topics,
                         validator,
                         transactionContext,
@@ -514,7 +516,7 @@ class MerkleTopicUpdateTransitionLogicTest {
     private void givenTransactionWithInvalidAutoRenewAccount() {
         givenTransaction(
                 getBasicValidTransactionBodyBuilder().setAutoRenewAccount(MISSING_ACCOUNT));
-        given(validator.queryableAccountStatus(MISSING_ACCOUNT, accounts))
+        given(validator.queryableAccountStatus(eq(MISSING_ACCOUNT), any()))
                 .willReturn(INVALID_ACCOUNT_ID);
     }
 
@@ -523,13 +525,13 @@ class MerkleTopicUpdateTransitionLogicTest {
                 getBasicValidTransactionBodyBuilder()
                         .setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()))
                         .setAutoRenewAccount(MISC_ACCOUNT));
-        given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
     private void givenTransactionWithAutoRenewAccountNotClearingAdminKey() {
         givenTransaction(getBasicValidTransactionBodyBuilder().setAutoRenewAccount(MISC_ACCOUNT));
-        given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
@@ -557,7 +559,7 @@ class MerkleTopicUpdateTransitionLogicTest {
         var clearKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance());
         givenTransaction(
                 getBasicValidTransactionBodyBuilder().setAdminKey(clearKey).setSubmitKey(clearKey));
-        given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
         given(validator.hasGoodEncoding(any())).willReturn(true);
     }
 
@@ -578,7 +580,7 @@ class MerkleTopicUpdateTransitionLogicTest {
         given(validator.hasGoodEncoding(updatedAdminKey)).willReturn(true);
         given(validator.hasGoodEncoding(updatedSubmitKey)).willReturn(true);
         given(validator.isValidExpiry(any())).willReturn(true);
-        given(validator.queryableAccountStatus(MISC_ACCOUNT, accounts)).willReturn(OK);
+        given(validator.queryableAccountStatus(eq(MISC_ACCOUNT), any())).willReturn(OK);
     }
 
     private void givenTransactionWithInvalidMemo() {

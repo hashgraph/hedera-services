@@ -18,7 +18,8 @@ package com.hedera.services.fees.calculation.utils;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 
 import com.hedera.services.calc.OverflowCheckingCalc;
-import com.hedera.services.fees.FeeMultiplierSource;
+import com.hedera.services.fees.annotations.GenericPriceMultiplier;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -40,7 +41,7 @@ public class PricedUsageCalculator {
     @Inject
     public PricedUsageCalculator(
             AccessorBasedUsages accessorBasedUsages,
-            FeeMultiplierSource feeMultiplierSource,
+            @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
             OverflowCheckingCalc calculator) {
         this.accessorBasedUsages = accessorBasedUsages;
         this.feeMultiplierSource = feeMultiplierSource;

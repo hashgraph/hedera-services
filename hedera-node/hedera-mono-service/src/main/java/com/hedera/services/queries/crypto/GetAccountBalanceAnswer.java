@@ -26,7 +26,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -64,7 +63,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        MerkleMap<EntityNum, MerkleAccount> accounts = view.accounts();
+        AccountStorageAdapter accounts = view.accounts();
         CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
         return validityOf(op, accounts);
     }
@@ -120,8 +119,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
     }
 
     private ResponseCodeEnum validityOf(
-            final CryptoGetAccountBalanceQuery op,
-            final MerkleMap<EntityNum, MerkleAccount> accounts) {
+            final CryptoGetAccountBalanceQuery op, final AccountStorageAdapter accounts) {
         if (op.hasContractID()) {
             final var effId = resolvedContract(op.getContractID());
             return optionValidator.queryableContractStatus(effId, accounts);

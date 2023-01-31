@@ -30,14 +30,14 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -46,7 +46,6 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -70,12 +69,12 @@ class SignedStateViewFactoryTest {
     @Mock private NetworkInfo networkInfo;
     @Mock private ServicesState state;
     @Mock private ServicesState secondState;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private VirtualMap<ContractKey, IterableContractValue> contractStorage;
     @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+    @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleScheduledTransactions scheduleTxs;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private AddressBook addressBook;
@@ -113,7 +112,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void canUpdateSuccessfully() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         var childrenToUpdate = new MutableStateChildren();
         givenStateWithMockChildren();
@@ -127,7 +126,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void throwsIfUpdatedWithInvalidState() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
@@ -138,7 +137,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void returnsEmptyWhenGettingFromInvalidState() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
@@ -148,7 +147,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void getsLatestImmutableChildren() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(12345));
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
@@ -160,7 +159,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void getsNewStateEachTime() {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}))
                 .willReturn(new AutoCloseableWrapper<>(secondState, () -> {}));
         final var firstHandleTime = Instant.ofEpochSecond(12345);
@@ -182,7 +181,7 @@ class SignedStateViewFactoryTest {
 
     @Test
     void updatesUsingNewStateEachTime() throws NoValidSignedStateException {
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}))
                 .willReturn(new AutoCloseableWrapper<>(secondState, () -> {}));
         final var firstHandleTime = Instant.ofEpochSecond(12345);
@@ -210,7 +209,7 @@ class SignedStateViewFactoryTest {
         given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
         given(state.isInitialized()).willReturn(true);
         assertTrue(factory.isUsable(state));
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertFalse(stateView.isEmpty());
@@ -220,7 +219,7 @@ class SignedStateViewFactoryTest {
     void failsToConstructStateViewIfChildrenEmpty() {
         given(state.getTimeOfLastHandledTxn()).willReturn(null);
         assertFalse(factory.isUsable(state));
-        given(platform.getLastCompleteSwirldState())
+        given(platform.getLatestImmutableState())
                 .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         final var stateView = factory.latestSignedStateView();
         assertTrue(stateView.isEmpty());

@@ -28,9 +28,9 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
@@ -56,7 +56,7 @@ public class EndOfStakingPeriodCalculator {
             "End of staking period calculation record";
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final SyntheticTxnFactory syntheticTxnFactory;
@@ -67,7 +67,7 @@ public class EndOfStakingPeriodCalculator {
 
     @Inject
     public EndOfStakingPeriodCalculator(
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos,
             final Supplier<MerkleNetworkContext> networkCtx,
             final SyntheticTxnFactory syntheticTxnFactory,

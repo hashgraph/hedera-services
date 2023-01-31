@@ -22,7 +22,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,7 +47,7 @@ public class NonHapiFeeCharging {
             @Nullable final EntityId preferredPayer,
             final AccountID finalPayer,
             final long fee,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
             final ResponseCodeEnum failureStatus) {
         var leftToPay = fee;
 
@@ -73,7 +73,7 @@ public class NonHapiFeeCharging {
             final AccountID payer,
             final long amount,
             final boolean isLastResort,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
             final ResponseCodeEnum failureStatus) {
         long paid;
         final var balance = (long) accounts.get(payer, BALANCE);

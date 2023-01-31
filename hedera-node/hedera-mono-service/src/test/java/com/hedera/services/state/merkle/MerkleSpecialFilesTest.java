@@ -240,12 +240,15 @@ class MerkleSpecialFilesTest {
     void liveFireSerdeWorksWithNonEmpty() throws IOException, ConstructableRegistryException {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(FCQueue.class, FCQueue::new));
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(BytesElement.class, BytesElement::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                MerkleSpecialFiles.class, MerkleSpecialFiles::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(BytesElement.class, BytesElement::new));
 
         subject.update(fid, Arrays.copyOfRange(stuff, 0, stuff.length / 2));
         subject.update(secondFid, Arrays.copyOfRange(stuff, stuff.length / 2, stuff.length));
@@ -273,8 +276,10 @@ class MerkleSpecialFilesTest {
     void liveFireSerdeWorksWithEmpty() throws IOException, ConstructableRegistryException {
         final var baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(MerkleSpecialFiles.class, MerkleSpecialFiles::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(
+                        new ClassConstructorPair(
+                                MerkleSpecialFiles.class, MerkleSpecialFiles::new));
 
         subject.serialize(dos);
         dos.flush();

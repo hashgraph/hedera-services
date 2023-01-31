@@ -45,13 +45,14 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -61,7 +62,6 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -69,7 +69,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -96,9 +95,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     private final CreateEvmTxProcessor evmTxProcessor;
     private final GlobalDynamicProperties properties;
     private final SigImpactHistorian sigImpactHistorian;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final SyntheticTxnFactory syntheticTxnFactory;
+    private final AliasManager aliasManager;
 
     @Inject
     public ContractCreateTransitionLogic(
@@ -114,8 +114,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties properties,
             final SigImpactHistorian sigImpactHistorian,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-            final NodeInfo nodeInfo) {
+            final Supplier<AccountStorageAdapter> accounts,
+            final NodeInfo nodeInfo,
+            final AliasManager aliasManager) {
         this.hfs = hfs;
         this.txnCtx = txnCtx;
         this.validator = validator;
@@ -130,6 +131,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         this.properties = properties;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
+        this.aliasManager = aliasManager;
     }
 
     @Override
@@ -171,7 +173,21 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         final var sender = accountStore.loadAccount(senderId);
         final var consensusTime = txnCtx.consensusTime();
         final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
-        final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+
+        Address newContractAddress;
+
+        if (relayerId == null) {
+            newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+        } else {
+            // Since there is an Ethereum origin, set the contract address as the CREATE format
+            // specified in the Yellow Paper
+            final var create1ContractAddress =
+                    Address.contractAddress(sender.canonicalAddress(), sender.getEthereumNonce());
+            aliasManager.link(
+                    create1ContractAddress,
+                    worldState.newContractAddress(sender.getId().asEvmAddress()));
+            newContractAddress = create1ContractAddress;
+        }
 
         // --- Do the business logic ---
         ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
@@ -216,6 +232,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();
+
+            if (aliasManager.isInUse(newContractAddress)) {
+                aliasManager.unlink(newContractAddress);
+            }
         }
 
         // --- Externalise changes
@@ -224,7 +244,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (result.isSuccessful()) {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
-            final var newContractId = contractIdFromEvmAddress(newEvmAddress);
+            final var newEvmAddressResolved = aliasManager.resolveForEvm(newContractAddress);
+            final var newContractId = contractIdFromEvmAddress(newEvmAddressResolved);
             final var contractBytecodeSidecar =
                     op.getInitcodeSourceCase() != INITCODE
                             ? SidecarUtils.createContractBytecodeSidecarFrom(
@@ -254,6 +275,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             }
             txnCtx.setTargetedContract(newContractId);
             sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
+            if (relayerId != null) {
+                sigImpactHistorian.markAliasChanged(
+                        ByteStringUtils.wrapUnsafely(newContractAddress.toArrayUnsafe()));
+            }
         } else {
             if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
                     && op.getInitcodeSourceCase() != INITCODE) {

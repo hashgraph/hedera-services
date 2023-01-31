@@ -43,6 +43,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.KvUsageInfo;
@@ -83,7 +84,7 @@ class RecordedStorageFeeChargingTest {
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private TransactionContext txnCtx;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private FeeDistribution feeDistribution;
     private NonHapiFeeCharging nonHapiFeeCharging;
 
@@ -305,7 +306,7 @@ class RecordedStorageFeeChargingTest {
                         REFERENCE_LIFETIME,
                         usageInfos.get(aContract.getAccountNum()));
         // setup:
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
                 MerkleAccountFactory.newContract()
                         .balance(1_000_000_000)
@@ -374,7 +375,7 @@ class RecordedStorageFeeChargingTest {
         given(dynamicProperties.getNodeRewardPercent()).willReturn(33);
         given(dynamicProperties.getStakingRewardPercent()).willReturn(33);
         // setup:
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
                 MerkleAccountFactory.newContract()
                         .balance(1_000_000_000)
@@ -454,7 +455,7 @@ class RecordedStorageFeeChargingTest {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         given(dynamicProperties.getStakingRewardPercent()).willReturn(100);
         // setup:
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
                 MerkleAccountFactory.newContract()
                         .balance(1_000_000_000)
@@ -527,7 +528,7 @@ class RecordedStorageFeeChargingTest {
                         usageInfos.get(aContract.getAccountNum()));
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         // setup:
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
                 MerkleAccountFactory.newContract()
                         .balance(1_000_000_000)
@@ -591,7 +592,7 @@ class RecordedStorageFeeChargingTest {
                         bContract.getAccountNum(),
                         freeUsageFor(12));
         // setup:
-        final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
+        final BackingStore<AccountID, HederaAccount> backingAccounts = new HashMapBackingAccounts();
         final var a =
                 MerkleAccountFactory.newContract()
                         .balance(1_000_000_000)

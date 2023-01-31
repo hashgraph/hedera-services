@@ -37,8 +37,8 @@ import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -70,7 +70,7 @@ class NetworkCtxManagerTest {
     @Mock private NodeLocalProperties nodeLocalProperties;
     @Mock private HapiOpCounters opCounters;
     @Mock private HbarCentExchange exchange;
-    @Mock private FeeMultiplierSource feeMultiplierSource;
+    @Mock private MultiplierSources multiplierSources;
     @Mock private SystemFilesManager systemFilesManager;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private FunctionalityThrottling handleThrottling;
@@ -97,7 +97,7 @@ class NetworkCtxManagerTest {
                         opCounters,
                         exchange,
                         systemFilesManager,
-                        feeMultiplierSource,
+                        multiplierSources,
                         mockDynamicProps,
                         handleThrottling,
                         () -> networkCtx,
@@ -139,8 +139,8 @@ class NetworkCtxManagerTest {
         verify(systemFilesManager, never()).loadObservableSystemFiles();
         verify(networkCtx, never()).resetThrottlingFromSavedSnapshots(handleThrottling);
         verify(networkCtx, never())
-                .resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
-        verify(feeMultiplierSource, never()).resetExpectations();
+                .resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
+        verify(multiplierSources, never()).resetExpectations();
     }
 
     @Test
@@ -154,8 +154,8 @@ class NetworkCtxManagerTest {
         verify(systemFilesManager).loadObservableSystemFiles();
         verify(networkCtx).resetThrottlingFromSavedSnapshots(handleThrottling);
         verify(networkCtx).resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
-        verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
-        verify(feeMultiplierSource).resetExpectations();
+        verify(networkCtx).resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
+        verify(multiplierSources).resetExpectations();
     }
 
     @Test
@@ -166,7 +166,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(opCounters).countHandled(TokenMint);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
         verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(any(), anyLong());
     }
 
@@ -187,7 +187,7 @@ class NetworkCtxManagerTest {
         verify(opCounters).countHandled(ContractCall);
         verify(handleThrottling).leakUnusedGasPreviouslyReserved(txnAccessor, 9_000L);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
     }
 
     @Test
@@ -201,7 +201,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(opCounters).countHandled(ContractCall);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
         verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
     }
 
@@ -217,7 +217,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(opCounters).countHandled(ContractCall);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
         verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
     }
 
@@ -237,7 +237,7 @@ class NetworkCtxManagerTest {
         verify(opCounters).countHandled(ContractCreate);
         verify(handleThrottling).leakUnusedGasPreviouslyReserved(txnAccessor, 9_000L);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
     }
 
     @Test
@@ -252,7 +252,7 @@ class NetworkCtxManagerTest {
         // then:
         verify(opCounters).countHandled(ContractCreate);
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
         verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
     }
 
@@ -268,7 +268,7 @@ class NetworkCtxManagerTest {
         verify(opCounters).countHandled(ContractCreate);
         verify(handleThrottling, never()).leakUnusedGasPreviouslyReserved(any(), anyLong());
         verify(networkCtx).syncThrottling(handleThrottling);
-        verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
+        verify(networkCtx).syncMultiplierSources(multiplierSources);
     }
 
     @Test
@@ -490,7 +490,7 @@ class NetworkCtxManagerTest {
                         opCounters,
                         exchange,
                         systemFilesManager,
-                        feeMultiplierSource,
+                        multiplierSources,
                         mockDynamicProps,
                         handleThrottling,
                         () -> networkCtx,

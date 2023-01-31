@@ -16,6 +16,7 @@
 package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,11 +27,11 @@ import static org.mockito.Mockito.mock;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
-import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
@@ -49,6 +50,8 @@ class GlobalDynamicPropertiesTest {
             new String[] {"/opt/hgcapp/HapiApp2.0/data/upgrade", "data/upgrade"};
 
     private static final String[] evmVersions = new String[] {"vEven", "vOdd"};
+    private static final EntityScaleFactors entityScaleFactors =
+            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)");
 
     private static final String literalBlockValues =
             "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
@@ -61,10 +64,8 @@ class GlobalDynamicPropertiesTest {
             CongestionMultipliers.from("90,11x,95,27x,99,103x");
     private CongestionMultipliers evenCongestion =
             CongestionMultipliers.from("90,10x,95,25x,99,100x");
-    private ThrottleReqOpsScaleFactor oddFactor = ThrottleReqOpsScaleFactor.from("5:2");
-    private ThrottleReqOpsScaleFactor evenFactor = ThrottleReqOpsScaleFactor.from("7:2");
-    private LegacyContractIdActivations contractIdActivations =
-            LegacyContractIdActivations.from("1058134by[1062784]");
+    private ScaleFactor oddFactor = ScaleFactor.from("5:2");
+    private ScaleFactor evenFactor = ScaleFactor.from("7:2");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -106,6 +107,9 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.dynamicEvmVersion());
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
+        assertTrue(subject.isLazyCreationEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.isAtomicCryptoTransferEnabled());
     }
 
     @Test
@@ -214,6 +218,7 @@ class GlobalDynamicPropertiesTest {
 
         // expect:
         assertEquals(accountWith(1L, 2L, 7L), subject.fundingAccount());
+        assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 7L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[1], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
         assertEquals(oddCongestion, subject.congestionMultipliers());
@@ -224,7 +229,7 @@ class GlobalDynamicPropertiesTest {
                 ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L),
                 subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
-        assertEquals(contractIdActivations, subject.legacyContractIdActivations());
+        assertEquals(entityScaleFactors, subject.entityScaleFactors());
     }
 
     @Test
@@ -261,6 +266,9 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.areTokenAutoCreationsEnabled());
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
+        assertFalse(subject.isLazyCreationEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
     }
 
     @Test
@@ -359,6 +367,7 @@ class GlobalDynamicPropertiesTest {
 
         // expect:
         assertEquals(accountWith(1L, 2L, 8L), subject.fundingAccount());
+        assertEquals(asTypedEvmAddress(accountWith(1L, 2L, 8L)), subject.fundingAccountAddress());
         assertEquals(balanceExportPaths[0], subject.pathToBalancesExportDir());
         assertEquals(Set.of(HederaFunctionality.CryptoCreate), subject.schedulingWhitelist());
         assertEquals(evenCongestion, subject.congestionMultipliers());
@@ -528,8 +537,13 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(i + 87L);
         given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
                 .willReturn(i + 88L);
-        given(properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS))
-                .willReturn(contractIdActivations);
+        given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED))
+                .willReturn((i + 90) % 2 == 0);
+        given(properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS))
+                .willReturn(entityScaleFactors);
+        given(properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE))
+                .willReturn((i + 91) % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

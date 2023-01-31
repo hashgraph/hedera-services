@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.primitives.Ints;
 import com.hedera.services.exports.FileCompressionUtils;
+import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.common.crypto.Cryptography;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -33,14 +34,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class StandardSigFileWriterTest {
-    String toSign = "src/test/resources/bootstrap/standard.properties";
-    String cannotSign = "src/test/resources/oops/bootstrap/not-so-standard.properties";
-    byte[] pretendSig = "not-really-a-sig-at-all".getBytes();
-    FileHashReader hashReader = new Sha384HashReader();
+    private static final byte[] pretendSig = "not-really-a-sig-at-all".getBytes();
+    private final String toSign = "src/test/resources/bootstrap/standard.properties";
+    private final String cannotSign =
+            "src/test/resources/oops/bootstrap/not-so-standard.properties";
+    private final FileHashReader hashReader = new Sha384HashReader();
+    @TempDir private File tempDir;
 
-    SigFileWriter subject = new StandardSigFileWriter();
+    private final SigFileWriter subject = new StandardSigFileWriter();
 
     @Test
     void rethrowsIaeOnIoFailure() {
@@ -51,12 +55,15 @@ class StandardSigFileWriterTest {
     }
 
     @Test
+    @SuppressWarnings("java:S3415")
     void writesExpectedFile() {
         // setup:
         var hash = hashReader.readHash(toSign);
 
         // when:
-        var actualWritten = subject.writeSigFile(toSign, pretendSig, hash);
+        var actualWritten =
+                subject.writeSigFile(
+                        TestFileUtils.toPath(tempDir, "standard.properties"), pretendSig, hash);
 
         // then
         try (final var inputStream = new FileInputStream(actualWritten)) {
@@ -75,17 +82,22 @@ class StandardSigFileWriterTest {
             fail("IOException while reading signature file.");
         }
         assertTrue(actualWritten.endsWith(StandardSigFileWriter.SIG_FILE_EXTENSION));
-        new File(actualWritten).delete();
     }
 
     @Test
+    @SuppressWarnings("java:S3415")
     void writesExpectedFileWhenCompressionIsEnabled() throws IOException {
         // setup:
         var hash = hashReader.readHash(toSign);
 
         // when:
         var actualWritten =
-                subject.writeSigFile(toSign + COMPRESSION_ALGORITHM_EXTENSION, pretendSig, hash);
+                subject.writeSigFile(
+                        TestFileUtils.toPath(
+                                tempDir.getPath(),
+                                "standard.properties" + COMPRESSION_ALGORITHM_EXTENSION),
+                        pretendSig,
+                        hash);
 
         // then
         final var uncompressedStreamFileBytes =
@@ -109,6 +121,5 @@ class StandardSigFileWriterTest {
                 actualWritten.endsWith(
                         StandardSigFileWriter.SIG_FILE_EXTENSION
                                 + COMPRESSION_ALGORITHM_EXTENSION));
-        new File(actualWritten).delete();
     }
 }

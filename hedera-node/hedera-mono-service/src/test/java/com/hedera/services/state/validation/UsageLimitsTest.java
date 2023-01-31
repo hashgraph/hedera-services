@@ -111,6 +111,18 @@ class UsageLimitsTest {
     }
 
     @Test
+    void roundedPercentUsedIs100IfNoEntitiesAllowed() {
+        assertEquals(100, subject.roundedAccountPercentUtil());
+        assertEquals(100, subject.roundedContractPercentUtil());
+        assertEquals(100, subject.roundedFilePercentUtil());
+        assertEquals(100, subject.roundedSchedulePercentUtil());
+        assertEquals(100, subject.roundedTokenPercentUtil());
+        assertEquals(100, subject.roundedTokenRelPercentUtil());
+        assertEquals(100, subject.roundedTopicPercentUtil());
+        assertEquals(100, subject.roundedNftPercentUtil());
+    }
+
+    @Test
     void getsPercentsUsed() {
         given(dynamicProperties.maxNumAccounts()).willReturn(5L);
         given(dynamicProperties.maxNumContracts()).willReturn(5L);
@@ -131,7 +143,15 @@ class UsageLimitsTest {
         given(stateChildren.numTopics()).willReturn(2L);
         given(stateChildren.numStorageSlots()).willReturn(2L);
         given(stateChildren.numNfts()).willReturn(2L);
-        subject.updateCounts();
+
+        assertEquals(40, subject.roundedAccountPercentUtil());
+        assertEquals(40, subject.roundedContractPercentUtil());
+        assertEquals(40, subject.roundedFilePercentUtil());
+        assertEquals(40, subject.roundedSchedulePercentUtil());
+        assertEquals(40, subject.roundedTokenPercentUtil());
+        assertEquals(40, subject.roundedTokenRelPercentUtil());
+        assertEquals(40, subject.roundedTopicPercentUtil());
+        assertEquals(40, subject.roundedNftPercentUtil());
 
         assertEquals(40.0, subject.percentAccountsUsed());
         assertEquals(40.0, subject.percentContractsUsed());
@@ -140,8 +160,10 @@ class UsageLimitsTest {
         assertEquals(40.0, subject.percentTokensUsed());
         assertEquals(40.0, subject.percentTokenRelsUsed());
         assertEquals(40.0, subject.percentTopicsUsed());
-        assertEquals(40.0, subject.percentStorageSlotsUsed());
         assertEquals(40.0, subject.percentNftsUsed());
+
+        subject.updateCounts();
+        assertEquals(40.0, subject.percentStorageSlotsUsed());
     }
 
     @Test

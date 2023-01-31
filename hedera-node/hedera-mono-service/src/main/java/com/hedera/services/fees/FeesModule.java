@@ -21,6 +21,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
 import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.services.fees.annotations.GasPriceMultiplier;
+import com.hedera.services.fees.annotations.GenericPriceMultiplier;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
@@ -45,6 +47,10 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.fees.charging.NarratedLedgerCharging;
 import com.hedera.services.fees.charging.RecordedStorageFeeCharging;
 import com.hedera.services.fees.charging.StorageFeeCharging;
+import com.hedera.services.fees.congestion.FeeMultiplierSource;
+import com.hedera.services.fees.congestion.GasPriceMultiplierSource;
+import com.hedera.services.fees.congestion.MultiplierSources;
+import com.hedera.services.fees.congestion.TxnRateFeeMultiplierSource;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -84,8 +90,23 @@ public interface FeesModule {
 
     @Binds
     @Singleton
-    FeeMultiplierSource bindFeeMultiplierSource(
+    @GenericPriceMultiplier
+    FeeMultiplierSource bindGenericFeeMultiplierSource(
             TxnRateFeeMultiplierSource txnRateFeeMultiplierSource);
+
+    @Binds
+    @Singleton
+    @GasPriceMultiplier
+    FeeMultiplierSource bindGasFeeMultiplierSource(
+            GasPriceMultiplierSource gasPriceMultiplierSource);
+
+    @Provides
+    @Singleton
+    static MultiplierSources provideMultiplierSources(
+            final @GasPriceMultiplier FeeMultiplierSource gasMultiplier,
+            final @GenericPriceMultiplier FeeMultiplierSource genericMultiplier) {
+        return new MultiplierSources(genericMultiplier, gasMultiplier);
+    }
 
     @Binds
     @Singleton

@@ -95,6 +95,8 @@ public class StakingSuite extends HapiApiSuite {
         // These specs cannot really be run in CI; they are mostly useful for local
         // validation on a network started with a staking.periodMins=1 override
         return List.of(
+                losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation(),
+                evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation(),
                 rewardsWorkAsExpected(),
                 rewardPaymentsNotRepeatedInSamePeriod(),
                 getInfoQueriesReturnsPendingRewards(),
@@ -346,7 +348,7 @@ public class StakingSuite extends HapiApiSuite {
         final long bobPendingRewardsCase1 =
                 rewardSumHistoryCase1 * (ONE_HUNDRED_HBARS / TINY_PARTS_PER_WHOLE);
 
-        return defaultHapiSpec("rewardsWorkAsExpected")
+        return defaultHapiSpec("SecondOrderRewardSituationsWork")
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
                         overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
@@ -383,6 +385,44 @@ public class StakingSuite extends HapiApiSuite {
                                                 Pair.of(ALICE, alicePendingRewardsCase1),
                                                 Pair.of(BOB, bobPendingRewardsCase1)))
                                 .logged());
+    }
+
+    private HapiApiSpec
+            evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
+        return defaultHapiSpec(
+                        "EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
+                .given(
+                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+                        overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)))
+                .when(
+                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(BOB).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                        sleepFor(INTER_PERIOD_SLEEP_MS),
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .then(
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, CAROL, 1)).via(FIRST_TRANSFER),
+                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
+    }
+
+    private HapiApiSpec losingEvenAZeroBalanceStakerTriggersStakeeRewardSituation() {
+        return defaultHapiSpec("LosingEvenAZeroBalanceStakerTriggersStakeeRewardSituation")
+                .given(
+                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+                        overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)))
+                .when(
+                        cryptoCreate(ALICE).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(BOB).stakedAccountId(ALICE).balance(0L),
+                        cryptoCreate(CAROL).stakedAccountId(ALICE).balance(ONE_HUNDRED_HBARS),
+                        sleepFor(INTER_PERIOD_SLEEP_MS),
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .then(
+                        cryptoUpdate(BOB).newStakedNodeId(0L).via(FIRST_TRANSFER),
+                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 
     private HapiApiSpec getInfoQueriesReturnsPendingRewards() {

@@ -32,15 +32,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -95,11 +94,10 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 IS_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        vanillaTokenID
-                                                                                                .get()))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .logged()
                                                         .has(
                                                                 resultWith()
@@ -115,11 +113,10 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCallLocal(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 GET_TOKEN_TYPE,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        vanillaTokenID
-                                                                                                .get()))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .logged()
                                                         .has(
                                                                 resultWith()
@@ -138,7 +135,7 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
 
     private HapiApiSpec checkTokenAndTypeNegativeCases() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        Object notAnAddress = new byte[0];
+        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("checkTokenAndTypeNegativeCases")
                 .given(
@@ -160,14 +157,16 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 IS_TOKEN,
-                                                                notAnAddress)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        notAnAddress))
                                                         .via("FakeAddressTokenCheckTx")
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                                 GET_TOKEN_TYPE,
-                                                                notAnAddress)
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        notAnAddress))
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .via("FakeAddressTokenTypeCheckTx")
                                                         .payingWith(ACCOUNT)

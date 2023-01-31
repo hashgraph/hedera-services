@@ -18,6 +18,7 @@ package com.hedera.services.ledger.accounts;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
@@ -55,6 +56,7 @@ public final class TestAccountCustomizer
         OPTION_PROPERTIES.put(AUTO_RENEW_ACCOUNT_ID, OBJ);
         OPTION_PROPERTIES.put(DECLINE_REWARD, FLAG);
         OPTION_PROPERTIES.put(STAKED_ID, OBJ);
+        OPTION_PROPERTIES.put(EXPIRED_AND_PENDING_REMOVAL, FLAG);
     }
 
     public TestAccountCustomizer(

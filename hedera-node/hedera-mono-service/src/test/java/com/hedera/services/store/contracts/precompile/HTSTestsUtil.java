@@ -24,6 +24,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
@@ -42,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -56,8 +58,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -90,6 +91,12 @@ public class HTSTestsUtil {
     public static final Address tokenAddress = Address.ECREC;
     public static final Address contractAddr = Address.ALTBN128_MUL;
     public static final Address senderAddress = Address.ALTBN128_PAIRING;
+    public static final Address create1ContractAddress =
+            Address.wrap(Bytes.fromHexString("0x4388985fc3efb7978b71b7fc59114aa64a42e285"));
+    public static final ContractID create1ContractId =
+            EntityIdUtils.contractIdFromEvmAddress(create1ContractAddress);
+    public static final Address create1ContractResolvedAddress =
+            EntityIdUtils.asTypedEvmAddress(create1ContractId);
     public static final Address parentContractAddress = Address.BLAKE2B_F_COMPRESSION;
     public static final EntityId treasuryEntityId =
             EntityId.fromAddress(
@@ -264,7 +271,10 @@ public class HTSTestsUtil {
             new TokenTransferWrapper(
                     List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
                     new ArrayList<>() {});
-
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_NFT_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(nftTransferList));
     public static final SyntheticTxnFactory.FungibleTokenTransfer transfer =
             new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, false, token, sender, receiver);
     public static final SyntheticTxnFactory.FungibleTokenTransfer transferSenderOnly =
@@ -273,20 +283,70 @@ public class HTSTestsUtil {
             new SyntheticTxnFactory.FungibleTokenTransfer(AMOUNT, false, token, null, receiver);
     public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER =
             new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_TOKEN_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper tokensTransferList =
             new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer, transfer));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(tokensTransferList));
     public static final TokenTransferWrapper tokensTransferListSenderOnly =
             new TokenTransferWrapper(
                     new ArrayList<>() {}, List.of(transferSenderOnly, transferSenderOnly));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_SENDER_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(tokensTransferListSenderOnly));
     public static final TokenTransferWrapper tokensTransferListReceiverOnly =
             new TokenTransferWrapper(
                     new ArrayList<>() {}, List.of(transferReceiverOnly, transferReceiverOnly));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_RECEIVER_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(tokensTransferListReceiverOnly));
     public static final TokenTransferWrapper nftsTransferList =
             new TokenTransferWrapper(
                     List.of(
                             new SyntheticTxnFactory.NftExchange(1, token, sender, receiver),
                             new SyntheticTxnFactory.NftExchange(2, token, sender, receiver)),
                     new ArrayList<>() {});
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_NFTS_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()),
+                    Collections.singletonList(nftsTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_EMPTY_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(Collections.emptyList()), Collections.emptyList());
+    public static final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers =
+            List.of(
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiver),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
+            new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
+    public static final List<SyntheticTxnFactory.HbarTransfer> twoHbarTransfers =
+            List.of(
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, receiver),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, sender, null),
+                    new SyntheticTxnFactory.HbarTransfer(AMOUNT, false, null, sender),
+                    new SyntheticTxnFactory.HbarTransfer(-AMOUNT, false, receiver, null));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(twoHbarTransfers), Collections.emptyList());
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers),
+                    Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_NFT_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers),
+                    Collections.singletonList(nftsTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER =
+            new CryptoTransferWrapper(
+                    new TransferWrapper(hbarTransfers),
+                    List.of(tokensTransferList, nftsTransferList));
     public static final List<BalanceChange> tokenTransferChanges =
             List.of(
                     BalanceChange.changingFtUnits(
@@ -378,6 +438,99 @@ public class HTSTestsUtil {
 
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(1L)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(2L)
+                                    .build(),
+                            payer));
+    public static final List<BalanceChange> hbarOnlyChanges =
+            List.of(
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiver)
+                                    .setAmount(AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer));
+
+    public static final List<BalanceChange> hbarAndTokenChanges =
+            List.of(
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiver)
+                                    .setAmount(AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingFtUnits(
+                            Id.fromGrpcToken(token),
+                            token,
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingFtUnits(
+                            Id.fromGrpcToken(token),
+                            token,
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiver)
+                                    .setAmount(+AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingFtUnits(
+                            Id.fromGrpcToken(token),
+                            token,
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingFtUnits(
+                            Id.fromGrpcToken(token),
+                            token,
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiver)
+                                    .setAmount(+AMOUNT)
+                                    .build(),
+                            payer));
+    public static final List<BalanceChange> hbarAndNftsTransferChanges =
+            List.of(
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(receiver)
+                                    .setAmount(AMOUNT)
+                                    .build(),
+                            payer),
+                    BalanceChange.changingHbar(
+                            AccountAmount.newBuilder()
+                                    .setAccountID(sender)
+                                    .setAmount(-AMOUNT)
+                                    .build(),
+                            payer),
                     BalanceChange.changingNftOwnership(
                             Id.fromGrpcToken(token),
                             token,

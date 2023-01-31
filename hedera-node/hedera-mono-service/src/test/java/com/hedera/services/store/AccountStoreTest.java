@@ -34,6 +34,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -56,7 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AccountStoreTest {
     @Mock private OptionValidator validator;
     @Mock private GlobalDynamicProperties dynamicProperties;
-    @Mock private BackingStore<AccountID, MerkleAccount> accounts;
+    @Mock private BackingStore<AccountID, HederaAccount> accounts;
     @Mock private TypedTokenStore tokenStore;
 
     private AccountStore subject;
@@ -115,7 +116,8 @@ class AccountStoreTest {
     void failsLoadingDetached() throws NegativeAccountBalanceException {
         setupWithAccount(miscMerkleId, miscMerkleAccount);
         miscMerkleAccount.setBalance(0L);
-        given(validator.expiryStatusGiven(0L, 1234567L, false))
+        miscMerkleAccount.setExpiredAndPendingRemoval(true);
+        given(validator.expiryStatusGiven(0L, true, false))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -199,7 +201,8 @@ class AccountStoreTest {
 
         miscMerkleAccount.setDeleted(false);
         miscMerkleAccount.setBalance(0L);
-        given(validator.expiryStatusGiven(0L, expiry, false))
+        miscMerkleAccount.setExpiredAndPendingRemoval(true);
+        given(validator.expiryStatusGiven(0L, true, false))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         var ex2 =
@@ -257,12 +260,12 @@ class AccountStoreTest {
 
     private void setupWithUnexpiredAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getImmutableRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void setupWithMutableAccount(EntityNum anId, MerkleAccount anAccount) {
         given(accounts.getRef(anId.toGrpcAccountId())).willReturn(anAccount);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
     }
 
     private void assertMiscAccountLoadFailsWith(ResponseCodeEnum status) {

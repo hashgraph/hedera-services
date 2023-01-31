@@ -31,8 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,13 +40,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.contracts.execution.BlockMetaSource;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
@@ -132,14 +132,14 @@ class ContractCallLocalAnswerTest {
 
     @Test
     void rejectsInvalidCid() throws Throwable {
-        given(view.contracts()).willReturn(contracts);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
         // given:
         Query query = validQuery(COST_ANSWER, fee);
         given(dynamicProperties.maxGasPerSec()).willReturn(gas);
 
         // and:
-        given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
+        given(validator.queryableContractStatus(eq(EntityNum.fromContractId(target)), any()))
                 .willReturn(CONTRACT_DELETED);
 
         // expect:

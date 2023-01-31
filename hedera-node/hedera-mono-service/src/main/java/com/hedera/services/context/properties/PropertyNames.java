@@ -51,6 +51,7 @@ public class PropertyNames {
     public static final String ACCOUNTS_SYSTEM_DELETE_ADMIN = "accounts.systemDeleteAdmin";
     public static final String ACCOUNTS_SYSTEM_UNDELETE_ADMIN = "accounts.systemUndeleteAdmin";
     public static final String ACCOUNTS_TREASURY = "accounts.treasury";
+    public static final String ACCOUNTS_STORE_ON_DISK = "accounts.storeOnDisk";
     public static final String ENTITIES_MAX_LIFETIME = "entities.maxLifetime";
     public static final String ENTITIES_SYSTEM_DELETABLE = "entities.systemDeletable";
     public static final String FILES_ADDRESS_BOOK = "files.addressBook";
@@ -75,6 +76,8 @@ public class PropertyNames {
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";
     public static final String AUTO_CREATION_ENABLED = "autoCreation.enabled";
+    public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String BALANCES_EXPORT_DIR_PATH = "balances.exportDir.path";
     public static final String BALANCES_EXPORT_ENABLED = "balances.exportEnabled";
     public static final String BALANCES_EXPORT_PERIOD_SECS = "balances.exportPeriodSecs";
@@ -98,6 +101,8 @@ public class PropertyNames {
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS =
             "contracts.allowAutoAssociations";
+    public static final String CONTRACTS_ENFORCE_CREATION_THROTTLE =
+            "contracts.enforceCreationThrottle";
     public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     public static final String CONTRACTS_MAX_KV_PAIRS_AGGREGATE = "contracts.maxKvPairs.aggregate";
     public static final String CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL =
@@ -120,6 +125,8 @@ public class PropertyNames {
             "contracts.precompile.exportRecordResults";
     public static final String CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE =
             "contracts.precompile.htsEnableTokenCreate";
+    public static final String CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED =
+            "contracts.precompile.atomicCryptoTransfer.enabled";
     public static final String CONTRACTS_DYNAMIC_EVM_VERSION = "contracts.evm.version.dynamic";
     public static final String CONTRACTS_EVM_VERSION = "contracts.evm.version";
     public static final String FILES_MAX_NUM = "files.maxNumber";
@@ -129,6 +136,8 @@ public class PropertyNames {
     public static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
     public static final String FEES_PERCENT_CONGESTION_MULTIPLIERS =
             "fees.percentCongestionMultipliers";
+    public static final String FEES_PERCENT_UTILIZATION_SCALE_FACTORS =
+            "fees.percentUtilizationScaleFactors";
     public static final String FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER =
             "fees.tokenTransferUsageMultiplier";
     public static final String HEDERA_TXN_MAX_MEMO_UTF8_BYTES =
@@ -190,6 +199,7 @@ public class PropertyNames {
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String STAKING_START_THRESH = "staking.startThreshold";
     public static final String TOKENS_MAX_AGGREGATE_RELS = "tokens.maxAggregateRels";
+    public static final String TOKENS_STORE_RELS_ON_DISK = "tokens.storeRelsOnDisk";
     public static final String TOKENS_MAX_NUM = "tokens.maxNumber";
     public static final String TOKENS_MAX_RELS_PER_INFO_QUERY = "tokens.maxRelsPerInfoQuery";
     public static final String TOKENS_MAX_PER_ACCOUNT = "tokens.maxPerAccount";

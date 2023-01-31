@@ -26,12 +26,15 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -69,7 +72,7 @@ class GetBytecodeAnswerTest {
         contracts = mock(MerkleMap.class);
 
         view = mock(StateView.class);
-        given(view.contracts()).willReturn(contracts);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
         optionValidator = mock(OptionValidator.class);
         aliasManager = mock(AliasManager.class);
 
@@ -196,7 +199,7 @@ class GetBytecodeAnswerTest {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableContractStatus(EntityNum.fromLong(123), contracts))
+        given(optionValidator.queryableContractStatus(eq(EntityNum.fromLong(123)), any()))
                 .willReturn(CONTRACT_DELETED);
 
         // when:

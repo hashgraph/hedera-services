@@ -16,6 +16,7 @@
 package com.hedera.services.state.virtual;
 
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -36,6 +37,14 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
     public static final int CURRENT_VERSION = 1;
 
     private long value;
+
+    public static EntityNumVirtualKey from(final EntityNum num) {
+        return new EntityNumVirtualKey(num.longValue());
+    }
+
+    public static EntityNumVirtualKey fromPair(final EntityNumPair num) {
+        return new EntityNumVirtualKey(num.value());
+    }
 
     public EntityNumVirtualKey() {
         this(-1);

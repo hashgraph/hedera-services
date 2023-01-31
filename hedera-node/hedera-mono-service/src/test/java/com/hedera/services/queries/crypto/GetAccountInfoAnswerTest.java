@@ -51,6 +51,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
@@ -86,8 +88,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetAccountInfoAnswerTest {
     private StateView view;
     @Mock private ScheduleStore scheduleStore;
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+    @Mock private AccountStorageAdapter accounts;
     @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private OptionValidator optionValidator;
@@ -98,6 +99,7 @@ class GetAccountInfoAnswerTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private RewardCalculator rewardCalculator;
 
+    private TokenRelStorageAdapter tokenRels;
     private final MutableStateChildren children = new MutableStateChildren();
 
     private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
@@ -127,7 +129,7 @@ class GetAccountInfoAnswerTest {
 
     @BeforeEach
     void setup() throws Throwable {
-        tokenRels = new MerkleMap<>();
+        tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
         final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);
         firstRel.setKey(firstRelKey);

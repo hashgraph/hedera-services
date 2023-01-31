@@ -18,8 +18,8 @@ package com.hedera.services.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 /**
  * Small manager component that does the work of tracking network utilization (and its impact on
  * congestion pricing) by delegating to an injected {@link FunctionalityThrottling} and {@link
- * FeeMultiplierSource}.
+ * MultiplierSources}.
  *
  * <p>Also responsible for setting {@code CONSENSUS_GAS_EXHAUSTED} and refunding the payer service
  * fee if a contract transaction was gas-throttled.
@@ -66,18 +66,18 @@ public class NetworkUtilization {
     }
 
     private final TransactionContext txnCtx;
-    private final FeeMultiplierSource feeMultiplierSource;
+    private final MultiplierSources multiplierSources;
     private final TxnChargingPolicyAgent chargingPolicyAgent;
     private final FunctionalityThrottling handleThrottling;
 
     @Inject
     public NetworkUtilization(
             final TransactionContext txnCtx,
-            final FeeMultiplierSource feeMultiplierSource,
+            final MultiplierSources multiplierSources,
             final TxnChargingPolicyAgent chargingPolicyAgent,
             final @HandleThrottle FunctionalityThrottling handleThrottling) {
         this.txnCtx = txnCtx;
-        this.feeMultiplierSource = feeMultiplierSource;
+        this.multiplierSources = multiplierSources;
         this.chargingPolicyAgent = chargingPolicyAgent;
         this.handleThrottling = handleThrottling;
     }
@@ -92,7 +92,7 @@ public class NetworkUtilization {
 
     private void track(final TxnAccessor accessor, final Instant now) {
         handleThrottling.shouldThrottleTxn(accessor);
-        feeMultiplierSource.updateMultiplier(accessor, now);
+        multiplierSources.updateMultiplier(accessor, now);
     }
 
     boolean screenForAvailableCapacity() {

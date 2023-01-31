@@ -15,6 +15,7 @@
  */
 package com.hedera.test.utils;
 
+import static com.hedera.services.context.properties.EntityType.*;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -24,71 +25,30 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.core.jproto.*;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleEntityId;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleScheduledTransactionsState;
-import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.merkle.internals.BytesElement;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.EvmLog;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.state.submerkle.NftAdjustments;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.*;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SplittableRandom;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -97,6 +57,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class SeededPropertySource {
     private static final long BASE_SEED = 4_242_424L;
+    private static final EntityType[] BACKWARD_COMPATIBLE_TYPES =
+            new EntityType[] {ACCOUNT, CONTRACT, FILE, SCHEDULE, TOKEN, TOPIC};
 
     private final SplittableRandom SEEDED_RANDOM;
 
@@ -389,10 +351,20 @@ public class SeededPropertySource {
                         -1,
                         0,
                         false,
-                        -1);
+                        -1,
+                        false);
         misorderedState.setNftsOwned(nextUnsignedLong());
         misorderedState.setNumTreasuryTitles(nextUnsignedInt());
         return misorderedState;
+    }
+
+    public MerklePayerRecords nextPayerRecords() {
+        final var payerRecords = new MerklePayerRecords();
+        payerRecords.setKey(nextNum());
+        for (int i = 0, n = nextInt(3); i < n; i++) {
+            payerRecords.offer(nextRecord());
+        }
+        return payerRecords;
     }
 
     public MerkleAccountState nextAccountState() {
@@ -436,7 +408,8 @@ public class SeededPropertySource {
                 nextUnsignedLong(),
                 nextInRangeLong(),
                 nextBoolean(),
-                nextUnsignedLong());
+                nextUnsignedLong(),
+                nextBoolean());
     }
 
     public MerkleScheduledTransactionsState nextScheduledTransactionsState() {
@@ -595,6 +568,12 @@ public class SeededPropertySource {
         return base;
     }
 
+    public MerkleNetworkContext next0320NetworkContext() {
+        final var base = next0310NetworkContext();
+        base.setEvmCongestionLevelStarts(nextNullableInstants(nextInt(3)));
+        return base;
+    }
+
     public Instant[] nextNullableInstants(final int n) {
         return IntStream.range(0, n).mapToObj(i -> nextNullableInstant()).toArray(Instant[]::new);
     }
@@ -715,6 +694,61 @@ public class SeededPropertySource {
         final var ids = nextInRangeLongs(numAdjustments);
         final var amounts = nextLongs(numAdjustments);
         return new CurrencyAdjustments(amounts, ids);
+    }
+
+    public OnDiskAccount nextOnDiskAccount() {
+        final var account = new OnDiskAccount();
+
+        // Boolean values
+        account.setIsDeleted(nextBoolean());
+        account.setIsContract(nextBoolean());
+        account.setIsReceiverSigRequired(nextBoolean());
+        account.setIsDeclineReward(nextBoolean());
+        // Int values
+        account.setNumContractKvPairs(nextInt());
+        account.setMaxAutoAssociations(nextInt());
+        account.setUsedAutoAssociations(nextInt());
+        account.setNumAssociations(nextInt());
+        account.setNumPositiveBalances(nextInt());
+        account.setNumTreasuryTitles(nextInt());
+        // Long values
+        account.setExpiry(nextLong());
+        account.setHbarBalance(nextLong());
+        account.setAutoRenewSecs(nextLong());
+        account.setNftsOwned(nextLong());
+        account.setAccountNumber(nextLong());
+        account.setHeadTokenId(nextLong());
+        account.setHeadNftId(nextLong());
+        account.setHeadNftSerialNum(nextLong());
+        account.setEthereumNonce(nextLong());
+        account.setStakedToMe(nextLong());
+        account.setStakePeriodStart(nextLong());
+        account.setStakedNum(nextLong());
+        account.setStakeAtStartOfLastRewardedPeriod(nextLong());
+        account.setAutoRenewAccountNumber(nextLong());
+        // Object values
+        account.setKey(nextKey());
+        if (nextBoolean()) {
+            account.setMemo(nextString(32));
+        }
+        if (nextBoolean()) {
+            account.setAlias(nextByteString(20));
+        }
+        if (nextBoolean()) {
+            account.setHbarAllowances(nextGrantedCryptoAllowances(nextInt(4)));
+        }
+        if (nextBoolean()) {
+            account.setFungibleAllowances(nextGrantedFungibleAllowances(nextInt(3)));
+        }
+        if (nextBoolean()) {
+            account.setNftOperatorApprovals(nextApprovedForAllAllowances(2));
+        }
+        if (account.isContract() && nextBoolean()) {
+            account.setFirstStorageKey(nextPackedInts(8));
+        }
+        account.setExpiredAndPendingRemoval(nextBoolean());
+
+        return account;
     }
 
     public EvmFnResult nextEvmFnResult() {
@@ -843,8 +877,7 @@ public class SeededPropertySource {
     }
 
     public EntityType nextEntityType(final int range) {
-        final var choices = EntityType.class.getEnumConstants();
-        return choices[SEEDED_RANDOM.nextInt(range)];
+        return BACKWARD_COMPATIBLE_TYPES[SEEDED_RANDOM.nextInt(range)];
     }
 
     public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(
@@ -1121,6 +1154,18 @@ public class SeededPropertySource {
         seeded.setPrev(nextUnsignedLong());
         seeded.setNext(nextUnsignedLong());
         return seeded;
+    }
+
+    public OnDiskTokenRel nextOnDiskTokenRel() {
+        final var rel = new OnDiskTokenRel();
+        rel.setPrev(nextLong());
+        rel.setNext(nextLong());
+        rel.setNumbers(nextLong());
+        rel.setBalance(nextUnsignedLong());
+        rel.setFrozen(nextBoolean());
+        rel.setKycGranted(nextBoolean());
+        rel.setAutomaticAssociation(nextBoolean());
+        return rel;
     }
 
     public SerializableSemVers nextSerializableSemVers() {

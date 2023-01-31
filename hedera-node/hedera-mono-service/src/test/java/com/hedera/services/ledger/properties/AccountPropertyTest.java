@@ -23,6 +23,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
@@ -105,10 +106,12 @@ class AccountPropertyTest {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void gettersAndSettersWork() throws Exception {
         final boolean origIsDeleted = false;
         final boolean origIsReceiverSigReq = false;
         final boolean origIsContract = false;
+        final boolean origIsExpiredAndPendingRemoval = true;
         final long origBalance = 1L;
         final long origEthereumNonce = 1L;
         final long origAutoRenew = 1L;
@@ -119,7 +122,6 @@ class AccountPropertyTest {
         final int origAlreadyUsedAutoAssociations = 7;
         final var origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
         final String origMemo = "a";
-        final var origProxy = AccountID.getDefaultInstance();
         final List<ExpirableTxnRecord> origRecords = new ArrayList<>();
         origRecords.add(expirableRecord(ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT));
         origRecords.add(expirableRecord(ResponseCodeEnum.INVALID_PAYER_SIGNATURE));
@@ -151,13 +153,12 @@ class AccountPropertyTest {
         final int newNumPositiveBalances = 7;
         final int newNumTreasuryTitles = 77;
         final long origStakedToMe = 12_345L;
-        final long newStakedToMe = 4_567_890L;
         final long origStakePeriodStart = 786L;
-        final long newStakePeriodStart = 945L;
         final long origStakedNum = 1111L;
         final long newStakedNum = 5L;
         final boolean origDeclinedReward = false;
         final boolean newDeclinedReward = true;
+        final boolean newExpiredAndPendingRemoval = !origIsExpiredAndPendingRemoval;
         final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
         final EntityNum payerNum = EntityNum.fromAccountId(payer);
         final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -195,16 +196,17 @@ class AccountPropertyTest {
         final int[] explicitNewFirstKey = ContractKey.asPackedInts(newFirstKey);
 
         final var account =
-                new HederaAccountCustomizer()
-                        .key(JKey.mapKey(origKey))
-                        .expiry(origExpiry)
-                        .autoRenewPeriod(origAutoRenew)
-                        .isDeleted(origIsDeleted)
-                        .alias(oldAlias)
-                        .memo(origMemo)
-                        .isSmartContract(origIsContract)
-                        .isReceiverSigRequired(origIsReceiverSigReq)
-                        .customizing(new MerkleAccount());
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .key(JKey.mapKey(origKey))
+                                .expiry(origExpiry)
+                                .autoRenewPeriod(origAutoRenew)
+                                .isDeleted(origIsDeleted)
+                                .alias(oldAlias)
+                                .memo(origMemo)
+                                .isSmartContract(origIsContract)
+                                .isReceiverSigRequired(origIsReceiverSigReq)
+                                .customizing(new MerkleAccount());
         account.setFirstUint256StorageKey(explicitOldFirstKey);
         account.setNumContractKvPairs(oldNumKvPairs);
         account.setNftsOwned(origNumNfts);
@@ -222,6 +224,7 @@ class AccountPropertyTest {
         account.setStakedId(-origStakedNum);
         account.setStakePeriodStart(origStakePeriodStart);
         account.setStakedToMe(origStakedToMe);
+        account.setExpiredAndPendingRemoval(origIsExpiredAndPendingRemoval);
 
         final var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
         final var unfrozenToken =
@@ -273,6 +276,7 @@ class AccountPropertyTest {
         DECLINE_REWARD.setter().accept(account, newDeclinedReward);
         STAKED_ID.setter().accept(account, newStakedNum);
         ETHEREUM_NONCE.setter().accept(account, newEthereumNonce);
+        EXPIRED_AND_PENDING_REMOVAL.setter().accept(account, newExpiredAndPendingRemoval);
 
         assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
         assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -300,6 +304,8 @@ class AccountPropertyTest {
         assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
         assertEquals(newDeclinedReward, DECLINE_REWARD.getter().apply(account));
         assertEquals(newStakedNum, STAKED_ID.getter().apply(account));
+        assertEquals(
+                newExpiredAndPendingRemoval, EXPIRED_AND_PENDING_REMOVAL.getter().apply(account));
 
         STAKED_ID.setter().accept(account, origStakedNum);
         assertEquals(origStakedNum, STAKED_ID.getter().apply(account));

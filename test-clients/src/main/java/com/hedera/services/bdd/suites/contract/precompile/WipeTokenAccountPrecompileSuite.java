@@ -22,24 +22,39 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DOES_NOT_OWN_WIPED_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_WIPING_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
@@ -103,8 +118,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("accountDoesNotOwnWipeKeyTxn")
@@ -114,8 +133,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
                                                                 1_000L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("amountLargerThanBalanceTxn")
@@ -124,8 +147,14 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(secondAccountID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                secondAccountID
+                                                                                        .get())),
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("accountDoesNotOwnTokensTxn")
@@ -134,8 +163,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
                                                                 10L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxn")
@@ -143,8 +176,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 WIPE_CONTRACT,
                                                                 WIPE_FUNGIBLE_TOKEN,
-                                                                asAddress(vanillaTokenID.get()),
-                                                                asAddress(accountID.get()),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
                                                                 0L)
                                                         .payingWith(ADMIN_ACCOUNT)
                                                         .via("wipeFungibleTxnWithZeroAmount")
@@ -228,15 +265,17 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var serialNumbers = new ArrayList<>();
-                                    serialNumbers.add(1L);
+                                    final var serialNumbers = new long[] {1L};
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            vanillaTokenID.get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(accountID.get())),
                                                             serialNumbers)
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .via(
@@ -247,9 +286,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
-                                                            List.of(2L))
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            vanillaTokenID.get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(accountID.get())),
+                                                            new long[] {2L})
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .via(
                                                             "wipeNonFungibleAccountDoesNotOwnTheSerialTxn")
@@ -258,9 +300,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
-                                                            List.of(-2L))
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            vanillaTokenID.get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(accountID.get())),
+                                                            new long[] {-2L})
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleNegativeSerialTxn")
                                                     .gas(GAS_TO_OFFER)
@@ -268,9 +313,12 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
-                                                            List.of(3L))
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            vanillaTokenID.get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(accountID.get())),
+                                                            new long[] {3L})
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleSerialDoesNotExistsTxn")
                                                     .gas(GAS_TO_OFFER)
@@ -278,8 +326,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                             contractCall(
                                                             WIPE_CONTRACT,
                                                             WIPE_NON_FUNGIBLE_TOKEN,
-                                                            asAddress(vanillaTokenID.get()),
-                                                            asAddress(accountID.get()),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            vanillaTokenID.get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(accountID.get())),
                                                             serialNumbers)
                                                     .payingWith(ADMIN_ACCOUNT)
                                                     .via("wipeNonFungibleTxn")

@@ -31,8 +31,8 @@ import com.hedera.services.context.domain.trackers.IssEventInfo;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -68,7 +68,7 @@ public class NetworkCtxManager {
     private final HapiOpCounters opCounters;
     private final HbarCentExchange exchange;
     private final SystemFilesManager systemFilesManager;
-    private final FeeMultiplierSource feeMultiplierSource;
+    private final MultiplierSources multiplierSources;
     private final GlobalDynamicProperties dynamicProperties;
     private final FunctionalityThrottling handleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -85,7 +85,7 @@ public class NetworkCtxManager {
             final HapiOpCounters opCounters,
             final HbarCentExchange exchange,
             final SystemFilesManager systemFilesManager,
-            final FeeMultiplierSource feeMultiplierSource,
+            final MultiplierSources multiplierSources,
             final GlobalDynamicProperties dynamicProperties,
             final @HandleThrottle FunctionalityThrottling handleThrottling,
             final Supplier<MerkleNetworkContext> networkCtx,
@@ -101,7 +101,7 @@ public class NetworkCtxManager {
         this.exchange = exchange;
         this.networkCtx = networkCtx;
         this.systemFilesManager = systemFilesManager;
-        this.feeMultiplierSource = feeMultiplierSource;
+        this.multiplierSources = multiplierSources;
         this.handleThrottling = handleThrottling;
         this.dynamicProperties = dynamicProperties;
         this.runningAvgs = runningAvgs;
@@ -121,8 +121,8 @@ public class NetworkCtxManager {
             systemFilesManager.loadObservableSystemFiles();
             log.info("Loaded observable files");
             networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
-            feeMultiplierSource.resetExpectations();
-            networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(feeMultiplierSource);
+            multiplierSources.resetExpectations();
+            networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
             networkCtxNow.resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
         }
     }
@@ -210,7 +210,7 @@ public class NetworkCtxManager {
 
         var networkCtxNow = networkCtx.get();
         networkCtxNow.syncThrottling(handleThrottling);
-        networkCtxNow.syncMultiplierSource(feeMultiplierSource);
+        networkCtxNow.syncMultiplierSources(multiplierSources);
     }
 
     public static boolean inSameUtcDay(Instant now, Instant then) {

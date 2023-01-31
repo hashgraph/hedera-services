@@ -17,6 +17,7 @@ package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import javax.inject.Inject;
@@ -34,10 +35,12 @@ public class ServicesIssListener implements IssListener {
             "In round %d, this node received a signed state from node %d differing signature";
 
     private final IssEventInfo issEventInfo;
+    private final Platform platform;
 
     @Inject
-    public ServicesIssListener(final IssEventInfo issEventInfo) {
+    public ServicesIssListener(final IssEventInfo issEventInfo, final Platform platform) {
         this.issEventInfo = issEventInfo;
+        this.platform = platform;
     }
 
     @Override
@@ -45,8 +48,8 @@ public class ServicesIssListener implements IssListener {
         final var round = notice.getRound();
         final var otherNodeId = notice.getOtherNodeId();
         try {
-            ServicesState issState = notice.getSwirldState();
-            issEventInfo.alert(notice.getConsensusTimestamp());
+            ServicesState issState = (ServicesState) platform.getLatestImmutableState().get();
+            issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
                 var msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);

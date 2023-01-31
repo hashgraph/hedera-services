@@ -46,7 +46,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // Definition of version numbers for all libraries
-            version("besu-version", "22.7.1")
+            version("besu-version", "22.7.5-20221005.164856-10")
             version("besu-native-version", "0.5.0")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
@@ -59,7 +59,7 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.39.0")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.31.0")
+            version("hapi-version", "0.32.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("jackson-version", "2.12.6.1")
             version("javax-annotation-version", "1.3.2")
@@ -68,7 +68,7 @@ dependencyResolutionManagement {
             version("log4j-version", "2.17.2")
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
-            version("swirlds-version", "0.31.1")
+            version("swirlds-version", "0.32.0-alpha.3")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
 
@@ -143,7 +143,6 @@ dependencyResolutionManagement {
             version("awaitility-version", "4.2.0")
             version("besu-internal-version", "22.1.1")
             version("commons-collections4-version", "4.4")
-            version("ethereumj-version", "1.12.0-v0.5.0")
             version("hamcrest-version", "2.2")
             version("json-version", "20210307")
             version("junit5-version", "5.8.2")
@@ -162,7 +161,6 @@ dependencyResolutionManagement {
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
             library("commons-collections4", "org.apache.commons", "commons-collections4").versionRef("commons-collections4-version")
-            library("ethereumj", "com.hedera.hashgraph", "ethereumj-core").versionRef("ethereumj-version")
             library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
             library("json", "org.json", "json").versionRef("json-version")
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")

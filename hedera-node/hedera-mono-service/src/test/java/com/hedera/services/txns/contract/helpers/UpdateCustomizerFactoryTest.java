@@ -16,12 +16,14 @@
 package com.hedera.services.txns.contract.helpers;
 
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -30,6 +32,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.sigs.utils.ImmutableKeyUtils;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -74,6 +77,7 @@ class UpdateCustomizerFactoryTest {
                 MerkleAccountFactory.newContract()
                         .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
                         .get();
+        mutableContract.setExpiredAndPendingRemoval(true);
         // and:
         var op =
                 ContractUpdateTransactionBody.newBuilder()
@@ -93,7 +97,7 @@ class UpdateCustomizerFactoryTest {
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
         // and when:
-        mutableContract = result.getLeft().get().customizing(mutableContract);
+        mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
         // then:
         assertEquals(newAdminKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
@@ -102,9 +106,10 @@ class UpdateCustomizerFactoryTest {
         assertEquals(newMemo, mutableContract.getMemo());
         assertEquals(newAutoRenewAccount, mutableContract.getAutoRenewAccount().toGrpcAccountId());
         assertEquals(maxAutoAssociations, mutableContract.getMaxAutomaticAssociations());
-        assertEquals(null, mutableContract.getProxy());
+        assertNull(mutableContract.getProxy());
         assertEquals(-12346, mutableContract.getStakedId());
-        assertEquals(false, mutableContract.isDeclinedReward());
+        assertFalse(mutableContract.isDeclinedReward());
+        assertFalse(mutableContract.isExpiredAndPendingRemoval());
     }
 
     @Test
@@ -146,7 +151,7 @@ class UpdateCustomizerFactoryTest {
         // when:
         var result = subject.customizerFor(mutableContract, optionValidator, op);
         // and when:
-        mutableContract = result.getLeft().get().customizing(mutableContract);
+        mutableContract = (MerkleAccount) result.getLeft().get().customizing(mutableContract);
 
         // then:
         assertEquals(targetKey, MiscUtils.asKeyUnchecked(mutableContract.getAccountKey()));
@@ -172,6 +177,33 @@ class UpdateCustomizerFactoryTest {
         // then:
         assertTrue(result.getLeft().isEmpty());
         assertEquals(INVALID_ADMIN_KEY, result.getRight());
+    }
+
+    @Test
+    void disallowsNotExtendingExpiryIfDetached() {
+        // given:
+        var mutableContract =
+                MerkleAccountFactory.newContract()
+                        .accountKeys(MISC_ADMIN_KT.asJKeyUnchecked())
+                        .get();
+        mutableContract.setExpiredAndPendingRemoval(true);
+
+        // and:
+        var op =
+                ContractUpdateTransactionBody.newBuilder()
+                        .setAdminKey(
+                                Key.newBuilder()
+                                        .setEd25519(
+                                                ByteString.copyFromUtf8(
+                                                        "01234567890123456789012345678901")))
+                        .build();
+
+        // when:
+        var result = subject.customizerFor(mutableContract, optionValidator, op);
+
+        // then:
+        assertTrue(result.getLeft().isEmpty());
+        assertEquals(CONTRACT_EXPIRED_AND_PENDING_REMOVAL, result.getRight());
     }
 
     @Test

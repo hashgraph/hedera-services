@@ -15,16 +15,8 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.hedera.services.context.properties.SerializableSemVers.forHapiAndHedera;
-
-import com.hedera.services.context.properties.SerializableSemVers;
-import javax.annotation.Nullable;
-
 /** Gives the versions of the current and previous world states. */
 public final class StateVersions {
-    private static final String BASE_0260_VERSION = "0.26.0";
-    private static final String BASE_0270_VERSION = "0.27.0";
-
     // For the record,
     //   - Release 0.7.x was state version 1
     //   - Release 0.8.x was state version 2
@@ -48,40 +40,11 @@ public final class StateVersions {
     //   - Release 0.28.x was state version 21
     //   - Release 0.29.x was state version 22
     //   - Release 0.30.x was state version 23
-    public static final int RELEASE_025X_VERSION = 18;
-    public static final int RELEASE_0260_VERSION = 19;
-    public static final int RELEASE_0270_VERSION = 20;
+    public static final int RELEASE_030X_VERSION = 23;
     public static final int RELEASE_0310_VERSION = 24;
 
-    public static final SerializableSemVers LAST_025X_VERSION =
-            forHapiAndHedera("0.25.1", "0.25.4");
-    public static final SerializableSemVers FIRST_026X_VERSION =
-            forHapiAndHedera(BASE_0260_VERSION, BASE_0260_VERSION);
-    public static final SerializableSemVers LAST_026X_VERSION =
-            forHapiAndHedera(BASE_0260_VERSION, "0.26.3");
-    public static final SerializableSemVers FIRST_027X_VERSION =
-            forHapiAndHedera(BASE_0270_VERSION, BASE_0270_VERSION);
-    public static final SerializableSemVers LAST_027X_VERSION =
-            forHapiAndHedera(BASE_0270_VERSION, "0.27.4");
-    public static final SerializableSemVers FIRST_028X_VERSION =
-            forHapiAndHedera("0.28.0", "0.28.0");
-    public static final SerializableSemVers FIRST_030X_VERSION =
-            forHapiAndHedera("0.30.0", "0.30.0");
-    public static final SerializableSemVers FIRST_031X_VERSION =
-            forHapiAndHedera("0.31.0", "0.31.0");
-
-    public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_025X_VERSION;
+    public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_030X_VERSION;
     public static final int CURRENT_VERSION = RELEASE_0310_VERSION;
-
-    @Nullable
-    public static SerializableSemVers lastSoftwareVersionOf(final int stateVersion) {
-        return switch (stateVersion) {
-            case RELEASE_025X_VERSION -> LAST_025X_VERSION;
-            case RELEASE_0260_VERSION -> LAST_026X_VERSION;
-            case RELEASE_0270_VERSION -> LAST_027X_VERSION;
-            default -> null;
-        };
-    }
 
     private StateVersions() {
         throw new UnsupportedOperationException("Utility Class");

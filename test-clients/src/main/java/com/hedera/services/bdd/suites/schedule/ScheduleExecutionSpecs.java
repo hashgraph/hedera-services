@@ -2686,6 +2686,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
         final var percentCongestionMultiplier = "fees.percentCongestionMultipliers";
 
         AtomicLong normalPrice = new AtomicLong();
+        final var largeFee = ONE_HUNDRED_HBARS;
 
         return defaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
                 .given(
@@ -2695,16 +2696,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         contractCreate(contract),
                         scheduleCreate(
                                         "cheapSchedule",
-                                        contractCall(contract)
-                                                .fee(ONE_HUNDRED_HBARS)
-                                                .sending(ONE_HBAR))
+                                        contractCall(contract).fee(largeFee).sending(ONE_HBAR))
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(ACCOUNT)
                                 .payingWith(GENESIS)
                                 .via("cheapCall"),
                         scheduleSign("cheapSchedule")
                                 .alsoSigningWith(ACCOUNT)
-                                .fee(ONE_HUNDRED_HBARS)
+                                .fee(largeFee)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(SUCCESS),
                         getTxnRecord("cheapCall")
@@ -2716,15 +2715,13 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         }),
                         scheduleCreate(
                                         A_SCHEDULE,
-                                        contractCall(contract)
-                                                .fee(ONE_HUNDRED_HBARS)
-                                                .sending(ONE_HBAR))
+                                        contractCall(contract).fee(largeFee).sending(ONE_HBAR))
                                 .withEntityMemo(randomUppercase(100))
                                 .designatingPayer(ACCOUNT)
                                 .payingWith(GENESIS)
                                 .via("pricyCall"),
                         fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
+                                .fee(largeFee)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
                                         Map.of(
@@ -2747,8 +2744,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                                                             contractCall(contract)
                                                                                     .signedBy(
                                                                                             ACCOUNT)
-                                                                                    .fee(
-                                                                                            ONE_HUNDRED_HBARS)
+                                                                                    .fee(largeFee)
                                                                                     .sending(
                                                                                             ONE_HBAR)
                                                                                     .txnId(
@@ -2761,16 +2757,16 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                         .toArray(HapiSpecOperation[]::new)),
                         scheduleSign(A_SCHEDULE)
                                 .alsoSigningWith(ACCOUNT)
-                                .fee(ONE_HUNDRED_HBARS)
+                                .fee(largeFee)
                                 .payingWith(GENESIS)
                                 .hasKnownStatus(SUCCESS))
                 .then(
                         fileUpdate(THROTTLE_DEFS)
-                                .fee(ONE_HUNDRED_HBARS)
+                                .fee(largeFee)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .contents(defaultThrottles.toByteArray()),
                         fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
+                                .fee(largeFee)
                                 .payingWith(EXCHANGE_RATE_CONTROL)
                                 .overridingProps(
                                         Map.of(

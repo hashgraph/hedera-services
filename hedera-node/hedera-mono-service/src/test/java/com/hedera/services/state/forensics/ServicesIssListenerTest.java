@@ -17,9 +17,7 @@ package com.hedera.services.state.forensics;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -29,7 +27,9 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssNotification;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +47,7 @@ class ServicesIssListenerTest {
     @Mock private ServicesState state;
     @Mock private IssEventInfo issEventInfo;
     @Mock private IssNotification issNotification;
+    @Mock private Platform platform;
 
     @LoggingTarget private LogCaptor logCaptor;
 
@@ -54,15 +55,12 @@ class ServicesIssListenerTest {
 
     @BeforeEach
     void setup() {
-        subject = new ServicesIssListener(issEventInfo);
+        subject = new ServicesIssListener(issEventInfo, platform);
         givenNoticeMeta();
     }
 
     @Test
     void logsFallbackInfo() {
-        // given:
-        willThrow(IllegalStateException.class).given(issEventInfo).alert(any());
-
         // when:
         subject.notify(issNotification);
 
@@ -75,8 +73,9 @@ class ServicesIssListenerTest {
     @Test
     void onlyLogsIfConfiguredInfo() {
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
-        given(issNotification.getSwirldState()).willReturn(state);
-        given(issNotification.getConsensusTimestamp()).willReturn(consensusTime);
+        given(platform.getLatestImmutableState())
+                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
         subject.notify(issNotification);
 
@@ -91,7 +90,9 @@ class ServicesIssListenerTest {
     @Test
     void shouldDumpThisRoundIsFalse() {
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
-        given(issNotification.getConsensusTimestamp()).willReturn(consensusTime);
+        given(platform.getLatestImmutableState())
+                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
         // when:
         subject.notify(issNotification);

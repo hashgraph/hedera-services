@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static com.hedera.services.context.properties.PropUtils.loadOverride;
 import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.services.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
 import static java.util.stream.Collectors.toSet;
@@ -187,6 +188,7 @@ public final class BootstrapProperties implements PropertySource {
                     ACCOUNTS_SYSTEM_DELETE_ADMIN,
                     ACCOUNTS_SYSTEM_UNDELETE_ADMIN,
                     ACCOUNTS_TREASURY,
+                    ACCOUNTS_STORE_ON_DISK,
                     AUTO_RENEW_GRANT_FREE_RENEWALS,
                     ENTITIES_MAX_LIFETIME,
                     ENTITIES_SYSTEM_DELETABLE,
@@ -205,13 +207,14 @@ public final class BootstrapProperties implements PropertySource {
                     LEDGER_TOTAL_TINY_BAR_FLOAT,
                     LEDGER_ID,
                     STAKING_PERIOD_MINS,
-                    STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
-                    STAKING_STARTUP_HELPER_RECOMPUTE);
+                    STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS =
             Set.of(
                     ACCOUNTS_MAX_NUM,
                     AUTO_CREATION_ENABLED,
+                    LAZY_CREATION_ENABLED,
+                    CRYPTO_CREATE_WITH_ALIAS_ENABLED,
                     BALANCES_EXPORT_DIR_PATH,
                     BALANCES_EXPORT_ENABLED,
                     BALANCES_EXPORT_PERIOD_SECS,
@@ -220,7 +223,7 @@ public final class BootstrapProperties implements PropertySource {
                     BALANCES_COMPRESS_ON_CREATION,
                     CACHE_RECORDS_TTL,
                     CONTRACTS_DEFAULT_LIFETIME,
-                    CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
+                    CONTRACTS_ENFORCE_CREATION_THROTTLE,
                     CONTRACTS_KNOWN_BLOCK_HASH,
                     CONTRACTS_LOCAL_CALL_EST_RET_BYTES,
                     CONTRACTS_ALLOW_CREATE2,
@@ -243,6 +246,7 @@ public final class BootstrapProperties implements PropertySource {
                     CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST,
                     CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS,
                     CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE,
+                    CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
                     CONTRACTS_EVM_VERSION,
                     CONTRACTS_DYNAMIC_EVM_VERSION,
                     EXPIRY_MIN_CYCLE_ENTRY_CAPACITY,
@@ -252,6 +256,7 @@ public final class BootstrapProperties implements PropertySource {
                     HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB,
                     FEES_MIN_CONGESTION_PERIOD,
                     FEES_PERCENT_CONGESTION_MULTIPLIERS,
+                    FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
                     FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER,
                     HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
                     TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO,
@@ -295,6 +300,7 @@ public final class BootstrapProperties implements PropertySource {
                     STAKING_REWARD_RATE,
                     STAKING_START_THRESH,
                     TOKENS_MAX_AGGREGATE_RELS,
+                    TOKENS_STORE_RELS_ON_DISK,
                     TOKENS_MAX_NUM,
                     TOKENS_MAX_RELS_PER_INFO_QUERY,
                     TOKENS_MAX_PER_ACCOUNT,
@@ -393,6 +399,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, AS_LONG),
                     entry(ACCOUNTS_TREASURY, AS_LONG),
+                    entry(ACCOUNTS_STORE_ON_DISK, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_ENABLED, AS_BOOLEAN),
                     entry(BALANCES_EXPORT_PERIOD_SECS, AS_INT),
                     entry(BALANCES_NODE_BALANCE_WARN_THRESHOLD, AS_LONG),
@@ -439,6 +446,8 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
                     entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
                     entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
+                    entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, AS_BOOLEAN),
                     entry(AUTO_RENEW_TARGET_TYPES, AS_ENTITY_TYPES),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, AS_INT),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, AS_INT),
@@ -460,6 +469,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(FEES_MIN_CONGESTION_PERIOD, AS_INT),
                     entry(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, AS_INT),
                     entry(FEES_PERCENT_CONGESTION_MULTIPLIERS, AS_CONGESTION_MULTIPLIERS),
+                    entry(FEES_PERCENT_UTILIZATION_SCALE_FACTORS, AS_ENTITY_SCALE_FACTORS),
                     entry(LEDGER_CHANGE_HIST_MEM_SECS, AS_INT),
                     entry(LEDGER_XFER_BAL_CHANGES_MAX_LEN, AS_INT),
                     entry(LEDGER_FUNDING_ACCOUNT, AS_LONG),
@@ -484,11 +494,11 @@ public final class BootstrapProperties implements PropertySource {
                     entry(STAKING_FEES_STAKING_REWARD_PERCENT, AS_INT),
                     entry(STAKING_PERIOD_MINS, AS_LONG),
                     entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, AS_INT),
-                    entry(STAKING_STARTUP_HELPER_RECOMPUTE, AS_RECOMPUTE_TYPES),
                     entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
                     entry(STAKING_REWARD_RATE, AS_LONG),
                     entry(STAKING_START_THRESH, AS_LONG),
                     entry(TOKENS_MAX_AGGREGATE_RELS, AS_LONG),
+                    entry(TOKENS_STORE_RELS_ON_DISK, AS_BOOLEAN),
                     entry(TOKENS_MAX_NUM, AS_LONG),
                     entry(TOKENS_MAX_PER_ACCOUNT, AS_INT),
                     entry(TOKENS_MAX_RELS_PER_INFO_QUERY, AS_INT),
@@ -507,7 +517,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, AS_BOOLEAN),
                     entry(TOPICS_MAX_NUM, AS_LONG),
                     entry(CONTRACTS_MAX_NUM, AS_LONG),
-                    entry(CONTRACTS_KEYS_LEGACY_ACTIVATIONS, AS_LEGACY_ACTIVATIONS),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, AS_KNOWN_BLOCK_VALUES),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, AS_INT),
                     entry(CONTRACTS_ALLOW_CREATE2, AS_BOOLEAN),
@@ -515,6 +524,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_DEFAULT_LIFETIME, AS_LONG),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, AS_LONG),
                     entry(CONTRACTS_ITEMIZE_STORAGE_FEES, AS_BOOLEAN),
+                    entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, AS_BOOLEAN),
                     entry(CONTRACTS_REFERENCE_SLOT_LIFETIME, AS_LONG),
                     entry(CONTRACTS_FREE_STORAGE_TIER_LIMIT, AS_INT),
                     entry(CONTRACTS_MAX_KV_PAIRS_AGGREGATE, AS_LONG),
@@ -528,6 +538,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
+                    entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(CONTRACTS_EVM_VERSION, AS_STRING),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),

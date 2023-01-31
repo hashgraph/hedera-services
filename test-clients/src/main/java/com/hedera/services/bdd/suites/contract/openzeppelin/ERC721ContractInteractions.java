@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -26,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +51,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
 
     private HapiApiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
-        final var NFT_ID = 1;
+        final var nftId = BigInteger.ONE;
         final var CREATE_TX = "create";
         final var MINT_TX = "mint";
         final var APPROVE_TX = "approve";
@@ -81,11 +83,18 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                                                     .getAccountInfo(DEFAULT_CONTRACT_RECEIVER)
                                                     .getContractAccountID();
 
-                                    final var mintParams = new Object[] {nftSenderId, NFT_ID};
+                                    final var mintParams =
+                                            new Object[] {asHeadlongAddress(nftSenderId), nftId};
                                     final var approveParams =
-                                            new Object[] {contractCreatorId, NFT_ID};
+                                            new Object[] {
+                                                asHeadlongAddress(contractCreatorId), nftId
+                                            };
                                     final var transferFromParams =
-                                            new Object[] {nftSenderId, contractCreatorId, NFT_ID};
+                                            new Object[] {
+                                                asHeadlongAddress(nftSenderId),
+                                                asHeadlongAddress(contractCreatorId),
+                                                nftId
+                                            };
 
                                     final var mint =
                                             contractCall(CONTRACT, "mint", mintParams)

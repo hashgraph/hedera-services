@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
@@ -121,8 +122,14 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                         contract,
                                                         getABIFor(FUNCTION, "donate", contract),
                                                         new Object[] {
-                                                            asAddress(civilianAccountID.get()),
-                                                            asAddress(detachedAccountID.get())
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            civilianAccountID
+                                                                                    .get())),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            detachedAccountID
+                                                                                    .get()))
                                                         })
                                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
                         getAccountBalance(civilian).hasTinyBars(0L),
@@ -136,8 +143,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                                 contract,
                                                 getABIFor(FUNCTION, "donate", contract),
                                                 new Object[] {
-                                                    asAddress(civilianAccountID.get()),
-                                                    asAddress(detachedAccountID.get())
+                                                    HapiParserUtil.asHeadlongAddress(
+                                                            asAddress(civilianAccountID.get())),
+                                                    HapiParserUtil.asHeadlongAddress(
+                                                            asAddress(detachedAccountID.get()))
                                                 })),
                         getAccountBalance(civilian).hasTinyBars(1L),
                         getAccountBalance(detachedAccount).hasTinyBars(1L));
@@ -232,7 +241,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                         createTopic(topicSansDetachedAsAutoRenew)
                                 .adminKeyName(adminKey)
                                 .autoRenewAccountId(civilian),
-                        sleepFor(3_500L))
+                        sleepFor(3_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         createTopic(notToBe)
                                 .adminKeyName(adminKey)
@@ -267,7 +279,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                         tokenCreate(tokenSansDetachedAsAutoRenew)
                                 .autoRenewAccount(civilian)
                                 .adminKey(adminKey),
-                        sleepFor(2_500L))
+                        sleepFor(2_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         tokenCreate(notToBe)
                                 .autoRenewAccount(detachedAccount)
@@ -300,7 +315,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                                 .initialSupply(expectedSupply)
                                 .treasury(detachedAccount),
                         tokenAssociate(civilian, aToken),
-                        sleepFor(4_500L))
+                        sleepFor(4_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         tokenUpdate(aToken)
                                 .treasury(civilian)
@@ -330,7 +348,10 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                 .when(
                         cryptoCreate(detachedAccount).balance(0L).autoRenewSecs(4),
                         tokenAssociate(detachedAccount, tokenAlreadyAssociated),
-                        sleepFor(3_500L))
+                        sleepFor(3_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         tokenCreate(notToBe)
                                 .treasury(detachedAccount)
@@ -364,7 +385,11 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                         createDefaultContract(tbd).adminKey(adminKey),
                         cryptoCreate(civilian),
                         cryptoCreate(detachedAccount).balance(0L).autoRenewSecs(2))
-                .when(sleepFor(1_500L))
+                .when(
+                        sleepFor(1_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         cryptoDelete(detachedAccount)
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),
@@ -387,7 +412,11 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                         cryptoCreate(detachedAccount).balance(0L).autoRenewSecs(4),
                         tokenCreate(aToken).treasury(detachedAccount),
                         tokenAssociate(civilian, aToken))
-                .when(sleepFor(3_500L))
+                .when(
+                        sleepFor(3_500L),
+                        // Add a triggering transfer to let the ENTITY_EXPIRATION task
+                        // mark the detached account as expired-and-pending-removal
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, detachedAccount, ONE_MILLION_HBARS))
                                 .hasKnownStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL),

@@ -99,7 +99,7 @@ public class SigReqsManager {
     /**
      * Uses the "best available" {@link SigRequirements} implementation to expand the platform
      * signatures linked to the given transaction; prefers the implementation backed by the latest
-     * signed state as returned from {@link Platform#getLastCompleteSwirldState()}.
+     * signed state as returned from {@link Platform#getLatestImmutableState()}.
      *
      * @param sourceState an immutable state appropriate for signature expansion
      * @param accessor a transaction that needs linked signatures expanded

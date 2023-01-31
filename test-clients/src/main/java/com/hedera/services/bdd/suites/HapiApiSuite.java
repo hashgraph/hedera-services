@@ -69,6 +69,12 @@ public abstract class HapiApiSuite {
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
+    public static final String CHAIN_ID_PROP = "contracts.chainId";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
+    public static final Integer CHAIN_ID = 298;
+    public static final String ETH_HASH_KEY = "EthHash";
+    public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
+
     public static final String RELAYER = "RELAYER";
     public static final KeyShape SECP_256K1_SHAPE = KeyShape.SECP256K1;
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
@@ -180,6 +186,12 @@ public abstract class HapiApiSuite {
         }
 
         List<HapiApiSpec> specs = getSpecsInSuite();
+        for (final var spec : specs) {
+            if (spec.isOnlySpecToRunInSuite()) {
+                specs = List.of(spec);
+                break;
+            }
+        }
         final var name = name();
         specs.forEach(spec -> spec.setSuitePrefix(name));
         runner.accept(specs);

@@ -15,9 +15,11 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,19 +39,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
 import java.util.Map;
@@ -78,6 +84,8 @@ class HederaWorldStateTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private ContractCustomizer customizer;
     @Mock private UsageLimits usageLimits;
+    @Mock NodeLocalProperties properties;
+    @Mock private FunctionalityThrottling handleThrottling;
 
     private CodeCache codeCache;
 
@@ -85,7 +93,6 @@ class HederaWorldStateTest {
     final Id sponsor = new Id(0, 0, 1);
     final Id contract = new Id(0, 0, 2);
     final EntityNum tokenNum = EntityNum.fromLong(1234);
-    final AccountID accountId = IdUtils.asAccount("0.0.12345");
     final Bytes code = Bytes.of("0x60606060".getBytes());
     private static final Bytes TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS =
             Bytes.fromHexString(
@@ -94,7 +101,7 @@ class HederaWorldStateTest {
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(0, entityAccess);
+        codeCache = new CodeCache(properties, entityAccess);
         subject =
                 new HederaWorldState(
                         usageLimits,
@@ -102,7 +109,8 @@ class HederaWorldStateTest {
                         entityAccess,
                         codeCache,
                         sigImpactHistorian,
-                        dynamicProperties);
+                        dynamicProperties,
+                        handleThrottling);
     }
 
     @Test
@@ -147,7 +155,7 @@ class HederaWorldStateTest {
 
         updater.commit();
 
-        verify(entityAccess, never()).isExtant(tokenNum.toGrpcAccountId());
+        verify(entityAccess, never()).isExtant(tokenNum.toEvmAddress());
     }
 
     @Test
@@ -234,7 +242,7 @@ class HederaWorldStateTest {
     }
 
     private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
-        given(entityAccess.getBalance(account)).willReturn(balance);
+        given(entityAccess.getBalance(asTypedEvmAddress(account))).willReturn(balance);
         given(entityAccess.isUsable(any())).willReturn(true);
         if (bytecode != null) {
             given(entityAccess.fetchCodeIfPresent(any())).willReturn(bytecode);
@@ -278,9 +286,12 @@ class HederaWorldStateTest {
     void failsFastIfDeletionsHappenOnStaticWorld() {
         subject =
                 new HederaWorldState(
-                        ids, entityAccess, new CodeCache(0, entityAccess), dynamicProperties);
+                        ids,
+                        entityAccess,
+                        new CodeCache(properties, entityAccess),
+                        dynamicProperties);
         final var tbd = IdUtils.asAccount("0.0.321");
-        final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
+        final var tbdAddress = asTypedEvmAddress(tbd);
         givenNonNullWorldLedgers();
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
@@ -295,7 +306,7 @@ class HederaWorldStateTest {
     @Test
     void staticInnerUpdaterWorksAsExpected() {
         final var tbd = IdUtils.asAccount("0.0.321");
-        final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
+        final var tbdAddress = asTypedEvmAddress(tbd);
         givenNonNullWorldLedgers();
         given(worldLedgers.aliases()).willReturn(aliases);
 
@@ -326,17 +337,17 @@ class HederaWorldStateTest {
     void updaterGetsHederaAccount() {
         givenNonNullWorldLedgers();
 
-        final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
+        final var zeroAddress = Address.ZERO;
         final var updater = subject.updater();
         // and:
         given(entityAccess.isUsable(zeroAddress)).willReturn(true);
         given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
         // and:
         final var expected =
-                new WorldStateAccount(Address.ZERO, Wei.of(balance), codeCache, entityAccess);
+                new WorldStateAccount(zeroAddress, Wei.of(balance), codeCache, entityAccess);
 
         // when:
-        final var result = updater.getAccount(Address.ZERO);
+        final var result = updater.getAccount(zeroAddress);
 
         // then:
         assertEquals(expected.getAddress(), result.getAddress());
@@ -353,8 +364,7 @@ class HederaWorldStateTest {
         final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
         final var updater = subject.updater();
         // and:
-        given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress)))
-                .willReturn(true);
+        given(entityAccess.isTokenAccount(asTypedEvmAddress(zeroAddress))).willReturn(true);
         given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
         // and:
         final var expected =
@@ -382,7 +392,7 @@ class HederaWorldStateTest {
                 .resolveForEvm(any());
         given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 
-        final var expected = new WorldStateTokenAccount(htsProxyAddress);
+        final var expected = new HederaEvmWorldStateTokenAccount(htsProxyAddress);
 
         final var realSubject = subject.updater().updater();
         final var result = realSubject.get(htsProxyAddress);
@@ -391,12 +401,16 @@ class HederaWorldStateTest {
         assertEquals(expected.getAddress(), result.getAddress());
         assertEquals(expected.getBalance(), result.getBalance());
         assertEquals(-1, result.getNonce());
-        assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), result.getCode());
+        assertEquals(
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress),
+                result.getCode());
         // and:
         assertEquals(expected.getAddress(), evmResult.getAddress());
         assertEquals(expected.getBalance(), evmResult.getBalance());
         assertEquals(-1, evmResult.getNonce());
-        assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), evmResult.getCode());
+        assertEquals(
+                HederaEvmWorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress),
+                evmResult.getCode());
     }
 
     @Test
@@ -466,6 +480,45 @@ class HederaWorldStateTest {
     }
 
     @Test
+    void updaterCreatesDeletedAccountUponCommitIfDontNeedToThrottle() {
+        givenNonNullWorldLedgers();
+        final var tbdAddress = contract.asEvmAddress();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(dynamicProperties.shouldEnforceAccountCreationThrottleForContracts())
+                .willReturn(true);
+
+        final var updater = subject.updater();
+        updater.deleteAccount(tbdAddress);
+
+        // when:
+        updater.commit();
+
+        // then:
+        verify(entityAccess).flushStorage(any());
+        verify(usageLimits).assertCreatableContracts(1);
+        verify(worldLedgers).commit(sigImpactHistorian);
+        verify(entityAccess).recordNewKvUsageTo(any());
+    }
+
+    @Test
+    void updaterThrottlesOnCreationIfRequested() {
+        givenNonNullWorldLedgers();
+        given(dynamicProperties.shouldEnforceAccountCreationThrottleForContracts())
+                .willReturn(true);
+        final var tbdAddress = contract.asEvmAddress();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(handleThrottling.shouldThrottleNOfUnscaled(1, HederaFunctionality.CryptoCreate))
+                .willReturn(true);
+
+        final var updater = subject.updater();
+        updater.deleteAccount(tbdAddress);
+
+        assertExhaustsResourceLimit(updater::commit, CONSENSUS_GAS_EXHAUSTED);
+    }
+
+    @Test
     void stateChangesInUpdaterAreSorted() {
         givenNonNullWorldLedgers();
         final var updater = subject.updater();
@@ -504,9 +557,7 @@ class HederaWorldStateTest {
         final var allStateChanges = stateChangesGrpc.getStateChanges();
         // first state changes should be for the smallest address
         final var contractStateChanges0 = allStateChanges.getContractStateChanges(0);
-        assertEquals(
-                smallestAddress,
-                EntityIdUtils.asTypedEvmAddress(contractStateChanges0.getContractId()));
+        assertEquals(smallestAddress, asTypedEvmAddress(contractStateChanges0.getContractId()));
         final var storageChanges0 = contractStateChanges0.getStorageChangesList();
         assertEquals(3, storageChanges0.size());
         // slot order should also be from smallest to biggest
@@ -521,9 +572,7 @@ class HederaWorldStateTest {
                 storageChanges0.get(2).getSlot().toByteArray());
         // second state changes should be for the intermediate address
         final var contractStateChanges1 = allStateChanges.getContractStateChanges(1);
-        assertEquals(
-                intermediateAddress,
-                EntityIdUtils.asTypedEvmAddress(contractStateChanges1.getContractId()));
+        assertEquals(intermediateAddress, asTypedEvmAddress(contractStateChanges1.getContractId()));
         final var storageChanges1 = contractStateChanges1.getStorageChangesList();
         assertEquals(3, storageChanges1.size());
         // slot order should also be from smallest to biggest
@@ -538,9 +587,7 @@ class HederaWorldStateTest {
                 storageChanges1.get(2).getSlot().toByteArray());
         // last state changes should be for the biggest address
         final var contractStateChanges2 = allStateChanges.getContractStateChanges(2);
-        assertEquals(
-                biggestAddress,
-                EntityIdUtils.asTypedEvmAddress(contractStateChanges2.getContractId()));
+        assertEquals(biggestAddress, asTypedEvmAddress(contractStateChanges2.getContractId()));
         final var storageChanges2 = contractStateChanges2.getStorageChangesList();
         assertEquals(3, storageChanges2.size());
         // slot order should also be from smallest to biggest
@@ -587,13 +634,13 @@ class HederaWorldStateTest {
         // and:
         final var accountID =
                 EntityIdUtils.accountIdFromEvmAddress(contract.asEvmAddress().toArray());
-        given(entityAccess.isExtant(accountID)).willReturn(true);
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(true);
 
         // when:
         actualSubject.commit();
 
         // then:
-        verify(entityAccess).isExtant(accountID);
+        verify(entityAccess).isExtant(contract.asEvmAddress());
         verify(entityAccess).putStorage(accountID, storageKey, storageValue);
         verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
         // and:
@@ -641,9 +688,8 @@ class HederaWorldStateTest {
 
         final var actualSubject = subject.updater();
 
-        final var accountId = accountIdFromEvmAddress(someAddress);
-        given(entityAccess.isUsable(accountId)).willReturn(true);
-        given(entityAccess.getBalance(accountId)).willReturn(balance);
+        given(entityAccess.isUsable(someAddress)).willReturn(true);
+        given(entityAccess.getBalance(someAddress)).willReturn(balance);
 
         actualSubject.getAccount(someAddress);
         actualSubject.commit();
@@ -661,7 +707,7 @@ class HederaWorldStateTest {
         final var actualSubject = subject.updater();
         actualSubject.createAccount(newAddress, 0, Wei.of(balance));
         // and:
-        given(entityAccess.isExtant(contract.asGrpcAccount())).willReturn(false);
+        given(entityAccess.isExtant(contract.asEvmAddress())).willReturn(false);
         // and:
 
         // when:
@@ -670,7 +716,7 @@ class HederaWorldStateTest {
         final var result = subject.getCreatedContractIds();
 
         // then:
-        verify(entityAccess).isExtant(contract.asGrpcAccount());
+        verify(entityAccess).isExtant(contract.asEvmAddress());
         // and:
         assertEquals(1, result.size());
         assertEquals(contract.asGrpcContract(), result.get(0));

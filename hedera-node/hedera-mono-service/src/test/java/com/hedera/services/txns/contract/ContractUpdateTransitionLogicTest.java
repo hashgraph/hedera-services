@@ -31,8 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -52,6 +51,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -128,7 +128,7 @@ class ContractUpdateTransitionLogicTest {
                         sigImpactHistorian,
                         txnCtx,
                         customizerFactory,
-                        () -> contracts,
+                        () -> AccountStorageAdapter.fromInMemory(contracts),
                         dynamicProperties,
                         nodeInfo);
     }
@@ -236,7 +236,7 @@ class ContractUpdateTransitionLogicTest {
     void rejectsInvalidCid() {
         givenValidTxnCtx();
         // and:
-        given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
+        given(validator.queryableContractStatus(eq(EntityNum.fromContractId(target)), any()))
                 .willReturn(CONTRACT_DELETED);
 
         // expect:
@@ -476,7 +476,7 @@ class ContractUpdateTransitionLogicTest {
     private void withRubberstampingValidator() {
         Duration autoRenewDuration =
                 Duration.newBuilder().setSeconds(customAutoRenewPeriod).build();
-        given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts))
+        given(validator.queryableContractStatus(eq(EntityNum.fromContractId(target)), any()))
                 .willReturn(OK);
         given(validator.isValidAutoRenewPeriod(autoRenewDuration)).willReturn(true);
         given(validator.memoCheck(memo)).willReturn(OK);

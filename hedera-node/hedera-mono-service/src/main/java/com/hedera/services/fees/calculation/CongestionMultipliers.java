@@ -15,68 +15,19 @@
  */
 package com.hedera.services.fees.calculation;
 
-import java.util.ArrayList;
+import static com.hedera.services.fees.calculation.utils.TriggeredValuesParser.sansDecimals;
+
+import com.hedera.services.fees.calculation.utils.TriggeredValuesParser;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 
-public final record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
+public record CongestionMultipliers(int[] usagePercentTriggers, long[] multipliers) {
     public static CongestionMultipliers from(final String csv) {
-        final List<Integer> triggers = new ArrayList<>();
-        final List<Long> multipliers = new ArrayList<>();
-
-        var sb = new StringBuilder();
-        boolean nextTokenIsTrigger = true;
-        for (int i = 0, n = csv.length(); i < n; i++) {
-            final var here = csv.charAt(i);
-            if (here == ',') {
-                append(triggers, multipliers, sb.toString(), nextTokenIsTrigger);
-                nextTokenIsTrigger = !nextTokenIsTrigger;
-                sb = new StringBuilder();
-            } else {
-                sb.append(here);
-            }
-        }
-        append(triggers, multipliers, sb.toString(), nextTokenIsTrigger);
-
-        if (triggers.size() != multipliers.size()) {
-            throw new IllegalArgumentException(
-                    "Cannot use input of "
-                            + triggers.size()
-                            + "triggers and "
-                            + multipliers.size()
-                            + " multipliers!");
-        }
-        assertIncreasing(triggers, "triggers");
-        assertIncreasing(multipliers, "multipliers");
-
+        final var triggeredMultipliers =
+                TriggeredValuesParser.parseFrom(csv, CongestionMultipliers::multiplierFrom);
         return new CongestionMultipliers(
-                triggers.stream().mapToInt(v -> v).toArray(),
-                multipliers.stream().mapToLong(l -> l).toArray());
-    }
-
-    private static void append(
-            final List<Integer> triggers,
-            final List<Long> multipliers,
-            final String token,
-            final boolean nextTokenIsTrigger) {
-        if (nextTokenIsTrigger) {
-            triggers.add(triggerFrom(token));
-        } else {
-            multipliers.add(multiplierFrom(token));
-        }
-    }
-
-    private static <T extends Comparable<T>> void assertIncreasing(
-            final List<T> vals, final String desc) {
-        for (int i = 0, n = vals.size() - 1; i < n; i++) {
-            final var a = vals.get(i);
-            final var b = vals.get(i + 1);
-            if (a.compareTo(b) >= 0) {
-                throw new IllegalArgumentException(
-                        "Given " + desc + " are not strictly increasing!");
-            }
-        }
+                triggeredMultipliers.triggers().stream().mapToInt(v -> v).toArray(),
+                triggeredMultipliers.values().stream().mapToLong(l -> l).toArray());
     }
 
     private static Long multiplierFrom(final String s) {
@@ -88,22 +39,6 @@ public final record CongestionMultipliers(int[] usagePercentTriggers, long[] mul
             throw new IllegalArgumentException("Cannot use multiplier value " + multiplier + "!");
         }
         return multiplier;
-    }
-
-    private static Integer triggerFrom(final String s) {
-        final var trigger = Integer.valueOf(sansDecimals(s));
-        if (trigger <= 0 || trigger > 100) {
-            throw new IllegalArgumentException("Cannot use trigger value " + trigger + "!");
-        }
-        return trigger;
-    }
-
-    private static String sansDecimals(final String s) {
-        final var i = s.indexOf(".");
-        if (-1 == i) {
-            return s;
-        }
-        return s.substring(0, i);
     }
 
     @Override

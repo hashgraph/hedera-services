@@ -24,6 +24,7 @@ import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ec
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
@@ -199,6 +200,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         }
     }
 
+    @VisibleForTesting
     static byte[] concatLeftPadded(final byte[] r, final byte[] s) {
         byte[] signature = new byte[64];
         final var rLeadingZeros = 32 - r.length;

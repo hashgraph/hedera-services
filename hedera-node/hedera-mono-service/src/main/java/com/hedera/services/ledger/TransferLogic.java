@@ -37,8 +37,8 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
@@ -71,10 +71,9 @@ public class TransferLogic {
     private final SideEffectsTracker sideEffectsTracker;
     private final RecordsHistorian recordsHistorian;
     private final MerkleAccountScopedCheck scopedCheck;
-    private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
-    private final TransactionalLedger<
-                    Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRelsLedger;
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
@@ -82,10 +81,9 @@ public class TransferLogic {
 
     @Inject
     public TransferLogic(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
             final TokenStore tokenStore,
             final SideEffectsTracker sideEffectsTracker,
@@ -209,9 +207,8 @@ public class TransferLogic {
     public static void dropTokenChanges(
             final SideEffectsTracker sideEffectsTracker,
             final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-            final TransactionalLedger<
-                            Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger) {
         if (tokenRelsLedger.isInTransaction()) {
             tokenRelsLedger.rollback();

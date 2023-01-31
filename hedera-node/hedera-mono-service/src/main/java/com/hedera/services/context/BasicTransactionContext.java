@@ -27,15 +27,14 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -47,7 +46,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -105,12 +103,12 @@ public class BasicTransactionContext implements TransactionContext {
     private final HbarCentExchange exchange;
     private final SideEffectsTracker sideEffectsTracker;
     private final List<ExpiringEntity> expiringEntities = new ArrayList<>();
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
 
     @Inject
     BasicTransactionContext(
             final NarratedCharging narratedCharging,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
             final HbarCentExchange exchange,
             final EntityCreator creator,

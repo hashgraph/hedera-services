@@ -18,14 +18,15 @@ package com.hedera.services.context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -33,7 +34,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
@@ -50,15 +50,16 @@ import java.util.Objects;
  * since the compiler does not seem to ever inline those calls.)
  */
 public class MutableStateChildren implements StateChildren {
-    private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private NonAtomicReference<AccountStorageAdapter> accounts;
     private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
     private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
     // UniqueTokenMapAdapter is constructed on demand, so a strong reference needs to be held.
     private NonAtomicReference<UniqueTokenMapAdapter> uniqueTokens;
+    private NonAtomicReference<RecordsStorageAdapter> payerRecords;
     private WeakReference<MerkleScheduledTransactions> schedules;
     private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
     private WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
-    private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+    private NonAtomicReference<TokenRelStorageAdapter> tokenAssociations;
     private WeakReference<MerkleNetworkContext> networkCtx;
     private WeakReference<AddressBook> addressBook;
     private WeakReference<MerkleSpecialFiles> specialFiles;
@@ -77,7 +78,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNum, MerkleAccount> accounts() {
+    public AccountStorageAdapter accounts() {
         return Objects.requireNonNull(accounts.get());
     }
 
@@ -85,8 +86,8 @@ public class MutableStateChildren implements StateChildren {
         return accounts().size();
     }
 
-    public void setAccounts(final MerkleMap<EntityNum, MerkleAccount> accounts) {
-        this.accounts = new WeakReference<>(accounts);
+    public void setAccounts(final AccountStorageAdapter accounts) {
+        this.accounts = new NonAtomicReference<>(accounts);
     }
 
     @Override
@@ -152,7 +153,7 @@ public class MutableStateChildren implements StateChildren {
     }
 
     @Override
-    public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
+    public TokenRelStorageAdapter tokenAssociations() {
         return Objects.requireNonNull(tokenAssociations.get());
     }
 
@@ -160,9 +161,8 @@ public class MutableStateChildren implements StateChildren {
         return tokenAssociations().size();
     }
 
-    public void setTokenAssociations(
-            final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
-        this.tokenAssociations = new WeakReference<>(tokenAssociations);
+    public void setTokenAssociations(final TokenRelStorageAdapter tokenAssociations) {
+        this.tokenAssociations = new NonAtomicReference<>(tokenAssociations);
     }
 
     @Override
@@ -195,6 +195,15 @@ public class MutableStateChildren implements StateChildren {
 
     public void setUniqueTokens(final UniqueTokenMapAdapter uniqueTokens) {
         this.uniqueTokens = new NonAtomicReference<>(uniqueTokens);
+    }
+
+    @Override
+    public RecordsStorageAdapter payerRecords() {
+        return Objects.requireNonNull(payerRecords.get());
+    }
+
+    public void setPayerRecords(final RecordsStorageAdapter payerRecords) {
+        this.payerRecords = new NonAtomicReference<>(payerRecords);
     }
 
     @Override
@@ -231,17 +240,18 @@ public class MutableStateChildren implements StateChildren {
     }
 
     public void updatePrimitiveChildrenFrom(final ServicesState state) {
-        accounts = new WeakReference<>(state.accounts());
+        accounts = new NonAtomicReference<>(state.accounts());
         topics = new WeakReference<>(state.topics());
         storage = new WeakReference<>(state.storage());
         contractStorage = new WeakReference<>(state.contractStorage());
         tokens = new WeakReference<>(state.tokens());
-        tokenAssociations = new WeakReference<>(state.tokenAssociations());
+        tokenAssociations = new NonAtomicReference<>(state.tokenAssociations());
         schedules = new WeakReference<>(state.scheduleTxs());
         networkCtx = new WeakReference<>(state.networkCtx());
         addressBook = new WeakReference<>(state.addressBook());
         specialFiles = new WeakReference<>(state.specialFiles());
         uniqueTokens = new NonAtomicReference<>(state.uniqueTokens());
+        payerRecords = new NonAtomicReference<>(state.payerRecords());
         runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
         aliases = new WeakReference<>(state.aliases());
         stakingInfo = new WeakReference<>(state.stakingInfo());

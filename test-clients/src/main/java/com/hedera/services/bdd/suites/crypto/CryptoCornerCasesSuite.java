@@ -26,6 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -70,7 +71,9 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
                 .then(
                         cryptoCreate("newPayee")
                                 .balance(10000L)
-                                .withLegacyProtoStructure() // Ensure legacy construction so
+                                .withProtoStructure(
+                                        HapiSpecSetup.TxnProtoStructure
+                                                .OLD) // Ensure legacy construction so
                                 // removeTransactionBody() works
                                 .scrambleTxnBody(CryptoCornerCasesSuite::removeTransactionBody)
                                 .hasPrecheckFrom(INVALID_TRANSACTION_BODY, INVALID_TRANSACTION));

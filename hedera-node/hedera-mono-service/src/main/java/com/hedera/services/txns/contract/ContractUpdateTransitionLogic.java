@@ -37,7 +37,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.UpdateCustomizerFactory;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -45,7 +45,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -61,7 +60,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final UpdateCustomizerFactory customizerFactory;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+    private final Supplier<AccountStorageAdapter> contracts;
     private final GlobalDynamicProperties properties;
     private final NodeInfo nodeInfo;
 
@@ -72,7 +71,7 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
             final UpdateCustomizerFactory customizerFactory,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+            final Supplier<AccountStorageAdapter> contracts,
             final GlobalDynamicProperties properties,
             final NodeInfo nodeInfo) {
         this.ledger = ledger;

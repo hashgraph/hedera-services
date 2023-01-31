@@ -53,10 +53,10 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -195,7 +195,7 @@ class ApproveAllowanceChecksTest {
         given(merkleTokenFungible.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
         given(merkleTokenNFT.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
-        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<AccountID, HederaAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
         final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
         uniqueTokenAdapter =
@@ -206,8 +206,7 @@ class ApproveAllowanceChecksTest {
                                 RichInstant.MISSING_INSTANT));
         uniqueTokenAdapter.setSpender(EntityId.fromGrpcAccountId(spender1));
 
-        BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> rels =
-                mock(BackingTokenRels.class);
+        BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> rels = mock(BackingTokenRels.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
         given(view.asReadOnlyTokenStore()).willReturn(tokens);
         given(view.asReadOnlyNftStore()).willReturn(nfts);
@@ -225,7 +224,6 @@ class ApproveAllowanceChecksTest {
 
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
     }
 
     @Test
@@ -481,7 +479,7 @@ class ApproveAllowanceChecksTest {
     void returnsInvalidOwnerId() {
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
 
-        final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+        final BackingStore<AccountID, HederaAccount> store = mock(BackingAccounts.class);
         final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
         final BackingStore<NftId, UniqueTokenAdapter> nfts = mock(BackingNfts.class);
         given(view.asReadOnlyAccountStore()).willReturn(store);
@@ -494,7 +492,6 @@ class ApproveAllowanceChecksTest {
         given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
         given(store.getImmutableRef(payer)).willReturn(ownerAccount);
-        given(ownerAccount.state()).willReturn(new MerkleAccountState());
 
         cryptoApproveAllowanceTxn =
                 TransactionBody.newBuilder()
@@ -528,7 +525,7 @@ class ApproveAllowanceChecksTest {
         op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
         given(ownerAccount.getNumAssociations()).willReturn(1);
         given(ownerAccount.getNumPositiveBalances()).willReturn(0);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         assertEquals(
                 INVALID_ALLOWANCE_OWNER_ID,
@@ -656,7 +653,7 @@ class ApproveAllowanceChecksTest {
 
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         assertEquals(
                 OK,

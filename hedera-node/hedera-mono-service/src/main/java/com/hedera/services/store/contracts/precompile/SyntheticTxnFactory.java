@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.utils.EntityNum;
@@ -402,6 +403,23 @@ public class SyntheticTxnFactory {
             builders.forEach(opBuilder::addTokenTransfers);
         }
         return TransactionBody.newBuilder().setCryptoTransfer(opBuilder);
+    }
+
+    /**
+     * Given a {@link com.hedera.services.store.contracts.precompile.codec.TransferWrapper},
+     *
+     * <p>returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
+     * consolidates the wrappers which embodies hbar transfers between accounts.
+     *
+     * @param wrapper the wrappers to consolidate in a synthetic transaction
+     * @return the synthetic transaction
+     */
+    public TransactionBody createCryptoTransferForHbar(final TransferWrapper wrapper) {
+        final var opBuilder = CryptoTransferTransactionBody.newBuilder();
+        if (!wrapper.hbarTransfers().isEmpty()) {
+            opBuilder.setTransfers(wrapper.asGrpcBuilder());
+        }
+        return TransactionBody.newBuilder().setCryptoTransfer(opBuilder).build();
     }
 
     public TransactionBody.Builder createAssociate(final Association association) {
@@ -761,7 +779,7 @@ public class SyntheticTxnFactory {
             return new NftExchange(serialNo, tokenType, sender, receiver, true);
         }
 
-        private NftExchange(
+        public NftExchange(
                 final long serialNo,
                 final TokenID tokenType,
                 final AccountID sender,

@@ -174,7 +174,7 @@ public class HederaTracer implements HederaOperationTracer {
                     syntheticInvalidAction.setCallingContract(
                             EntityId.fromAddress(
                                     asMirrorAddress(frame.getContractAddress(), frame)));
-                    syntheticInvalidAction.setInvalidSolidityAddress(
+                    syntheticInvalidAction.setTargetedAddress(
                             Words.toAddress(frame.getStackItem(1)).toArray());
                     syntheticInvalidAction.setError(
                             INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));

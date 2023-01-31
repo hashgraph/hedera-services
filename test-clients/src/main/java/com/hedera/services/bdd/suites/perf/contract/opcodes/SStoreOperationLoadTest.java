@@ -52,9 +52,6 @@ public class SStoreOperationLoadTest extends LoadTest {
             log.info("Set sizeInKb as " + size);
         }
 
-        /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        new org.ethereum.crypto.HashUtil();
-
         SStoreOperationLoadTest suite = new SStoreOperationLoadTest();
         suite.runSuiteSync();
     }

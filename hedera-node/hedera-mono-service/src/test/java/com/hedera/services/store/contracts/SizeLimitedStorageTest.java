@@ -41,6 +41,8 @@ import com.hedera.services.fees.charging.StorageFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.ContractStorageLimits;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -70,7 +72,7 @@ class SizeLimitedStorageTest {
     @Mock private SizeLimitedStorage.IterableStorageRemover storageRemover;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private VirtualMap<ContractKey, IterableContractValue> storage;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
     private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
@@ -86,7 +88,7 @@ class SizeLimitedStorageTest {
                         usageLimits,
                         storageUpserter,
                         storageRemover,
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> storage);
     }
 

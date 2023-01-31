@@ -555,9 +555,6 @@ public class SuiteRunner {
 
     @SuppressWarnings("java:S2440")
     public static void main(String... args) throws Exception {
-        /* Has a static initializer whose behavior seems influenced by initialization of ForkJoinPool#commonPool. */
-        new org.ethereum.crypto.HashUtil();
-
         String[] effArgs = trueArgs(args);
         log.info("Effective args :: {}", List.of(effArgs));
         if (Arrays.asList(effArgs).contains("-CI")) {

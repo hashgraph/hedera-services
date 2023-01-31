@@ -74,6 +74,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -1116,6 +1117,131 @@ class SyntheticTxnFactoryTest {
         assertEquals(fungible, target.getToken());
         final var transfers = target.getTransfersList();
         assertEquals(List.of(aaWith(b, -1), aaWith(c, +2), aaWith(a, -1)), transfers);
+    }
+
+    @Test
+    void createsExpectedCryptoTransferForFungibleAndHbarTransfer() {
+        final var fungibleTransfer =
+                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+
+        final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
+
+        final var result =
+                subject.createCryptoTransfer(
+                        Collections.singletonList(
+                                new TokenTransferWrapper(
+                                        Collections.emptyList(), List.of(fungibleTransfer))));
+        final var resultHBar =
+                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+
+        result.mergeFrom(resultHBar);
+
+        final var txnBody = result.build();
+
+        final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+        final var expFungibleTransfer = tokenTransfers.get(0);
+        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(
+                List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
+                expFungibleTransfer.getTransfersList());
+        assertEquals(1, tokenTransfers.size());
+
+        final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers();
+        assertTrue(txnBody.getCryptoTransfer().hasTransfers());
+        assertEquals(
+                List.of(hbarTransfer.senderAdjustment(), hbarTransfer.receiverAdjustment()),
+                hbarTransfers.getAccountAmountsList());
+        assertEquals(2, hbarTransfers.getAccountAmountsList().size());
+    }
+
+    @Test
+    void createsExpectedCryptoTransferForNFTAndHbarTransfer() {
+        final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
+        final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
+
+        final var result =
+                subject.createCryptoTransfer(
+                        Collections.singletonList(
+                                new TokenTransferWrapper(
+                                        List.of(nftExchange), Collections.emptyList())));
+
+        final var resultHBar =
+                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+
+        result.mergeFrom(resultHBar);
+        final var txnBody = result.build();
+
+        final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+        final var expNftTransfer = tokenTransfers.get(0);
+        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
+        assertEquals(1, tokenTransfers.size());
+
+        final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers();
+        assertTrue(txnBody.getCryptoTransfer().hasTransfers());
+        assertEquals(
+                List.of(hbarTransfer.senderAdjustment(), hbarTransfer.receiverAdjustment()),
+                hbarTransfers.getAccountAmountsList());
+        assertEquals(2, hbarTransfers.getAccountAmountsList().size());
+    }
+
+    @Test
+    void createsExpectedCryptoTransferHbarOnlyTransfer() {
+        final var hbarTransfer = new SyntheticTxnFactory.HbarTransfer(secondAmount, false, a, b);
+
+        final var result = subject.createCryptoTransfer(Collections.emptyList());
+        final var resultHBar =
+                subject.createCryptoTransferForHbar(new TransferWrapper(List.of(hbarTransfer)));
+
+        result.mergeFrom(resultHBar);
+
+        final var txnBody = result.build();
+
+        final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+        assertEquals(0, tokenTransfers.size());
+
+        final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers();
+        assertTrue(txnBody.getCryptoTransfer().hasTransfers());
+        assertEquals(
+                List.of(hbarTransfer.senderAdjustment(), hbarTransfer.receiverAdjustment()),
+                hbarTransfers.getAccountAmountsList());
+        assertEquals(2, hbarTransfers.getAccountAmountsList().size());
+    }
+
+    @Test
+    void createsExpectedCryptoTransferTokensOnlyTransfer() {
+        final var nftExchange = new SyntheticTxnFactory.NftExchange(serialNo, nonFungible, a, c);
+        final var fungibleTransfer =
+                new SyntheticTxnFactory.FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+
+        final var result =
+                subject.createCryptoTransfer(
+                        List.of(
+                                new TokenTransferWrapper(
+                                        Collections.emptyList(), List.of(fungibleTransfer)),
+                                new TokenTransferWrapper(
+                                        List.of(nftExchange), Collections.emptyList())));
+        final var resultHBar =
+                subject.createCryptoTransferForHbar(new TransferWrapper(Collections.emptyList()));
+
+        result.mergeFrom(resultHBar);
+        final var txnBody = result.build();
+
+        final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+
+        final var expFungibleTransfer = tokenTransfers.get(0);
+        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(
+                List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
+                expFungibleTransfer.getTransfersList());
+
+        final var expNftTransfer = tokenTransfers.get(1);
+        assertEquals(nonFungible, expNftTransfer.getToken());
+        assertEquals(List.of(nftExchange.asGrpc()), expNftTransfer.getNftTransfersList());
+
+        final var hbarTransfers = txnBody.getCryptoTransfer().getTransfers();
+        assertEquals(0, hbarTransfers.getAccountAmountsList().size());
+        assertFalse(txnBody.getCryptoTransfer().hasTransfers());
     }
 
     @Test

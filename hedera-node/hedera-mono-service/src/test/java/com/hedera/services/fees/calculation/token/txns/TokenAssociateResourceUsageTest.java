@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;
@@ -68,7 +69,7 @@ class TokenAssociateResourceUsageTest {
         accounts = mock(MerkleMap.class);
         given(accounts.get(EntityNum.fromAccountId(target))).willReturn(account);
         view = mock(StateView.class);
-        given(view.accounts()).willReturn(accounts);
+        given(view.accounts()).willReturn(AccountStorageAdapter.fromInMemory(accounts));
 
         tokenAssociateTxn = mock(TransactionBody.class);
         given(tokenAssociateTxn.hasTokenAssociate()).willReturn(true);

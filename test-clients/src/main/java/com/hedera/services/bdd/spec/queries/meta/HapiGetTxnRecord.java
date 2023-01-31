@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.ABIJSON;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -74,13 +75,10 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import javax.annotation.Nullable;
-import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.solidity.Abi;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
@@ -134,11 +132,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private boolean noPseudoRandomData = false;
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
+    private int numStakingRewardsPaid = -1;
 
     private Consumer<List<?>> eventDataObserver;
-    private Predicate<Abi.Event> eventMatcher;
+    private String eventName;
     private String contractResultAbi = null;
-    @Nullable private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
 
     public static ByteString sha384HashOf(final Transaction transaction) {
         if (transaction.getSignedTransactionBytes().isEmpty()) {
@@ -177,11 +175,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     public HapiGetTxnRecord exposingFilteredCallResultVia(
-            final String abi,
-            final Predicate<Abi.Event> eventMatcher,
-            final Consumer<List<?>> dataObserver) {
+            final String abi, final String eventName, final Consumer<List<?>> dataObserver) {
         this.contractResultAbi = abi;
-        this.eventMatcher = eventMatcher;
+        this.eventName = eventName;
         this.eventDataObserver = dataObserver;
 
         return this;
@@ -194,11 +190,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord assertingOnlyPriority() {
         assertOnlyPriority = true;
-        return this;
-    }
-
-    public HapiGetTxnRecord exposingStakingRewardsTo(final Consumer<List<AccountAmount>> observer) {
-        stakingRewardsObserver = observer;
         return this;
     }
 
@@ -244,6 +235,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord hasPaidStakingRewards(List<Pair<String, Long>> rewards) {
         paidStakingRewards = rewards;
+        return this;
+    }
+
+    public HapiGetTxnRecord hasPaidStakingRewardsCount(final int n) {
+        numStakingRewardsPaid = n;
         return this;
     }
 
@@ -611,6 +607,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 }
             }
         }
+        if (numStakingRewardsPaid != -1) {
+            assertEquals(
+                    numStakingRewardsPaid,
+                    actualRecord.getPaidStakingRewardsCount(),
+                    "Wrong # of staking rewards paid");
+        }
         if (!paidStakingRewards.isEmpty()) {
             if (actualRecord.getPaidStakingRewardsList().isEmpty()) {
                 Assertions.fail("PaidStakingRewards not present in the txnRecord");
@@ -847,9 +849,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
         }
-        if (stakingRewardsObserver != null) {
-            stakingRewardsObserver.accept(rcd.getPaidStakingRewardsList());
-        }
         observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
         childRecordsCount.ifPresent(
@@ -920,8 +919,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     private void exposeRequestedEventsFrom(final TransactionRecord rcd) {
-        final var abi = Abi.fromJson(contractResultAbi);
-        final var matcher = abi.findEvent(eventMatcher);
+        final var events = ABIJSON.parseEvents(contractResultAbi);
+        final var event = events.stream().filter(e -> eventName.equals(e.getName())).findFirst();
         final var logs = rcd.getContractCallResult().getLogInfoList();
         for (final var log : logs) {
             final var data = log.getData().toByteArray();
@@ -929,8 +928,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             for (int i = 0, n = log.getTopicCount(); i < n; i++) {
                 topics[i] = log.getTopic(i).toByteArray();
             }
-            final var decodedLog = matcher.decode(data, topics);
-            eventDataObserver.accept(decodedLog);
+            if (event.isPresent()) {
+                final var decodedLog = event.get().decodeArgs(topics, data);
+                eventDataObserver.accept(decodedLog.toList());
+            }
         }
     }
 

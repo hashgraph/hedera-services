@@ -94,8 +94,8 @@ class FcAssessedCustomFeeTest {
         final var amount = 345L;
         final var subject = new FcAssessedCustomFee(account, token, amount, effectivePayers);
         // and:
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(EntityId.class, EntityId::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
@@ -130,8 +130,8 @@ class FcAssessedCustomFeeTest {
                         amount,
                         FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(EntityId.class, EntityId::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
@@ -160,8 +160,8 @@ class FcAssessedCustomFeeTest {
         final var amount = 345L;
         final var subject = new FcAssessedCustomFee(account, amount, effectivePayers);
         // and:
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(EntityId.class, EntityId::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);
@@ -192,8 +192,8 @@ class FcAssessedCustomFeeTest {
                 new FcAssessedCustomFee(
                         account, amount, FcAssessedCustomFee.UNKNOWN_EFFECTIVE_PAYER_ACCOUNT_NUMS);
         // and:
-        ConstructableRegistry.registerConstructable(
-                new ClassConstructorPair(EntityId.class, EntityId::new));
+        ConstructableRegistry.getInstance()
+                .registerConstructable(new ClassConstructorPair(EntityId.class, EntityId::new));
         // and:
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final var dos = new SerializableDataOutputStream(baos);

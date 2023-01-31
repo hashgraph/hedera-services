@@ -19,13 +19,13 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.QueryableRecords;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
@@ -57,16 +57,9 @@ public class AnswerFunctions {
      */
     public List<TransactionRecord> mostRecentRecords(
             final StateView view, final CryptoGetAccountRecordsQuery op) {
-        final var targetId = EntityNum.fromAccountId(op.getAccountID());
-        final var targetAccount = view.accounts().get(targetId);
-        if (targetAccount == null) {
-            return Collections.emptyList();
-        }
-        final var numAvailable = targetAccount.numRecords();
-        final var maxQueryable = dynamicProperties.maxNumQueryableRecords();
-        return numAvailable <= maxQueryable
-                ? recordsFrom(targetAccount, numAvailable)
-                : mostRecentFrom(targetAccount, maxQueryable, numAvailable);
+        final var payerNum = EntityNum.fromAccountId(op.getAccountID());
+        final var queryableRecords = view.payerRecords().getReadOnlyPayerRecords(payerNum);
+        return mostRecentFrom(queryableRecords, dynamicProperties.maxNumQueryableRecords());
     }
 
     /**
@@ -86,17 +79,6 @@ public class AnswerFunctions {
 
     /* --- Internal helpers --- */
     /**
-     * Returns up to {@code n} payer records from an account in gRPC form.
-     *
-     * @param account the account of interest
-     * @param n the expected number of records in the account
-     * @return the available records
-     */
-    private List<TransactionRecord> recordsFrom(final MerkleAccount account, final int n) {
-        return mostRecentFrom(account, n, n);
-    }
-
-    /**
      * Returns up to the last {@code m}-of-{@code n} payer records from an account in gRPC form.
      *
      * <p>Since records are added FIFO to the payer account, the last records are the most recent;
@@ -107,15 +89,15 @@ public class AnswerFunctions {
      * iterate over before hitting a {@link ConcurrentModificationException} or {@link
      * NoSuchElementException}.
      *
-     * @param account the account of interest
+     * @param payerRecords queryable records from the account of interest
      * @param m the maximum number of records to return
-     * @param n the expected number of records in the account
      * @return the available records
      */
     private List<TransactionRecord> mostRecentFrom(
-            final MerkleAccount account, final int m, final int n) {
+            final QueryableRecords payerRecords, final int m) {
         final List<TransactionRecord> ans = new ArrayList<>();
-        final Iterator<ExpirableTxnRecord> iter = account.recordIterator();
+        final var n = payerRecords.expectedSize();
+        final Iterator<ExpirableTxnRecord> iter = payerRecords.iterator();
         try {
             for (int i = 0, cutoff = n - m; i < n; i++) {
                 final var nextRecord = iter.next();

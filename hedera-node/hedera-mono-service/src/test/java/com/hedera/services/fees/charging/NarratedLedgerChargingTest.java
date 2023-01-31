@@ -29,6 +29,8 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -59,7 +61,7 @@ class NarratedLedgerChargingTest {
     @Mock private FeeExemptions feeExemptions;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
     @Mock private FeeDistribution feeDistribution;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
 
     private NarratedLedgerCharging subject;
 
@@ -67,7 +69,10 @@ class NarratedLedgerChargingTest {
     void setUp() {
         subject =
                 new NarratedLedgerCharging(
-                        nodeInfo, feeDistribution, feeExemptions, () -> accounts);
+                        nodeInfo,
+                        feeDistribution,
+                        feeExemptions,
+                        () -> AccountStorageAdapter.fromInMemory(accounts));
         subject.setLedger(ledger);
     }
 

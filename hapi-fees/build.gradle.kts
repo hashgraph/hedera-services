@@ -23,7 +23,9 @@ dependencies {
     implementation(project(":hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
-    implementation(libs.hapi)
+    implementation(libs.hapi) {
+        exclude("javax.annotation", "javax.annotation-api")
+    }
     implementation(libs.javax.inject)
     implementation(libs.jackson)
     implementation(libs.jetbrains.annotation)

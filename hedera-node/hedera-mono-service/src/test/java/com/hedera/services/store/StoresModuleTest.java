@@ -15,17 +15,22 @@
  */
 package com.hedera.services.store;
 
+import static com.hedera.services.context.properties.PropertyNames.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.store.models.NftId;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import org.junit.jupiter.api.Test;
@@ -36,7 +41,7 @@ class StoresModuleTest {
         final var bootstrapProperties = mock(BootstrapProperties.class);
         final var usageLimits = mock(UsageLimits.class);
         final var uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+        given(bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);
         final var virtualMap =
                 new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
@@ -52,5 +57,35 @@ class StoresModuleTest {
         transactionalLedger.put(nftId, token);
         transactionalLedger.commit();
         assertEquals(token, transactionalLedger.getImmutableRef(nftId));
+    }
+
+    @Test
+    void picksOnDiskAccountWhenOnDiskIsTrue() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        given(bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)).willReturn(true);
+        final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
+        assertInstanceOf(OnDiskAccount.class, subject.get());
+    }
+
+    @Test
+    void picksMerkleAccountWhenOnDiskIsFalse() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
+        assertInstanceOf(MerkleAccount.class, subject.get());
+    }
+
+    @Test
+    void picksOnDiskRelWhenOnDiskIsTrue() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        given(bootstrapProperties.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK)).willReturn(true);
+        final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
+        assertInstanceOf(OnDiskTokenRel.class, subject.get());
+    }
+
+    @Test
+    void picksMerkleRelWhenOnDiskIsFalse() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
+        assertInstanceOf(MerkleTokenRelStatus.class, subject.get());
     }
 }

@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 
 import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
+import static com.hedera.services.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
@@ -52,7 +53,6 @@ public class DecodingFacade {
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
     public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
     public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
-
     public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
     public static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
     public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
@@ -70,6 +70,13 @@ public class DecodingFacade {
                     + ARRAY_BRACKETS
                     + ","
                     + EXPIRY
+                    + ")";
+    public static final String HEDERA_TOKEN_STRUCT_V3 =
+            "(string,string,address,string,bool,int64,bool,"
+                    + TOKEN_KEY
+                    + ARRAY_BRACKETS
+                    + ","
+                    + EXPIRY_V2
                     + ")";
     public static final String HEDERA_TOKEN_STRUCT_DECODER =
             "(string,string,bytes32,string,bool,int64,bool,"
@@ -182,8 +189,13 @@ public class DecodingFacade {
             final var receiver =
                     convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver);
             final var serialNo = (long) exchange.get(2);
+            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
+            // otherwise default to false in order to preserve the existing behaviour.
+            // The isApproval parameter only exists in the new form of cryptoTransfer
+            final boolean isApproval = (exchange.size() > 3) && (boolean) exchange.get(3);
             nftExchanges.add(
-                    new SyntheticTxnFactory.NftExchange(serialNo, tokenType, sender, receiver));
+                    new SyntheticTxnFactory.NftExchange(
+                            serialNo, tokenType, sender, receiver, isApproval));
         }
         return nftExchanges;
     }
@@ -197,34 +209,56 @@ public class DecodingFacade {
             final AccountID accountID =
                     convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount);
+            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
+            // otherwise default to false in order to preserve the existing behaviour.
+            // The isApproval parameter only exists in the new form of cryptoTransfer
+            final boolean isApproval = (transfer.size() > 2) && (boolean) transfer.get(2);
+            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
         }
         return fungibleTransfers;
     }
 
-    public static void addApprovedAdjustment(
-            @NotNull final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
-            final TokenID tokenId,
-            final AccountID accountId,
-            final long amount) {
-        fungibleTransfers.add(
-                new SyntheticTxnFactory.FungibleTokenTransfer(
-                        -amount, true, tokenId, accountId, null));
+    public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
+            @NotNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+        final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
+        for (final var transfer : abiTransfers) {
+            final AccountID accountID =
+                    convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
+            final long amount = transfer.get(1);
+            final boolean isApproval = transfer.get(2);
+            addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
+        }
+        return hbarTransfers;
     }
 
     public static void addSignedAdjustment(
             final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers,
             final TokenID tokenType,
             final AccountID accountID,
-            final long amount) {
+            final long amount,
+            final boolean isApproval) {
         if (amount > 0) {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            amount, false, tokenType, null, accountID));
+                            amount, isApproval, tokenType, null, accountID));
         } else {
             fungibleTransfers.add(
                     new SyntheticTxnFactory.FungibleTokenTransfer(
-                            -amount, false, tokenType, accountID, null));
+                            -amount, isApproval, tokenType, accountID, null));
+        }
+    }
+
+    public static void addSignedHBarAdjustment(
+            final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers,
+            final AccountID accountID,
+            final long amount,
+            final boolean isApproval) {
+        if (amount > 0) {
+            hbarTransfers.add(
+                    new SyntheticTxnFactory.HbarTransfer(amount, isApproval, null, accountID));
+        } else {
+            hbarTransfers.add(
+                    new SyntheticTxnFactory.HbarTransfer(-amount, isApproval, accountID, null));
         }
     }
 

@@ -21,8 +21,8 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.HederaAccount;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -47,24 +47,19 @@ public class RewardCalculator {
         rewardsPaid = 0;
     }
 
-    public long computePendingReward(final MerkleAccount account) {
-        final var effectiveStart =
-                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
-        if (!stakePeriodManager.isRewardable(effectiveStart)) {
-            return 0;
-        }
+    public long computePendingReward(final HederaAccount account) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
                         stakeInfoManager.mutableStakeInfoFor(account.getStakedNodeAddressBookId()),
                         stakePeriodManager.currentStakePeriod(),
-                        effectiveStart);
+                        stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
     public boolean applyReward(
             final long reward,
-            @Nullable final MerkleAccount account,
+            @Nullable final HederaAccount account,
             @NotNull final Map<AccountProperty, Object> changes) {
         if (reward > 0) {
             final var isDeclined =
@@ -86,18 +81,13 @@ public class RewardCalculator {
     }
 
     public long estimatePendingRewards(
-            final MerkleAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
-        final var effectiveStart =
-                stakePeriodManager.effectivePeriod(account.getStakePeriodStart());
-        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart)) {
-            return 0;
-        }
+            final HederaAccount account, final MerkleStakingInfo nodeStakingInfo) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
                         nodeStakingInfo,
                         stakePeriodManager.estimatedCurrentStakePeriod(),
-                        effectiveStart);
+                        stakePeriodManager.effectivePeriod(account.getStakePeriodStart()));
         return account.isDeclinedReward() ? 0 : rewardOffered;
     }
 
@@ -107,11 +97,11 @@ public class RewardCalculator {
 
     @VisibleForTesting
     public long computeRewardFromDetails(
-            final MerkleAccount account,
-            @Nullable final MerkleStakingInfo nodeStakingInfo,
+            final HederaAccount account,
+            final MerkleStakingInfo nodeStakingInfo,
             final long currentStakePeriod,
             final long effectiveStart) {
-        if (nodeStakingInfo == null) {
+        if (!stakePeriodManager.isRewardable(effectiveStart)) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();
@@ -119,7 +109,7 @@ public class RewardCalculator {
     }
 
     private long rewardFor(
-            final MerkleAccount account,
+            final HederaAccount account,
             final long[] rewardSumHistory,
             final long currentStakePeriod,
             final long effectiveStart) {

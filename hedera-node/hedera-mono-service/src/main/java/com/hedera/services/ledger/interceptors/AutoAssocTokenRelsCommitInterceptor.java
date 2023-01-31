@@ -23,7 +23,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -34,8 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 /** Interceptor that externalizes any auto-associations created during a transaction. */
 public class AutoAssocTokenRelsCommitInterceptor
-        implements CommitInterceptor<
-                Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> {
+        implements CommitInterceptor<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty> {
     private static final Set<HederaFunctionality> AUTO_ASSOCIATING_OPS =
             EnumSet.of(CryptoTransfer, TokenCreate);
 
@@ -60,7 +59,7 @@ public class AutoAssocTokenRelsCommitInterceptor
     /** {@inheritDoc} */
     @Override
     public void preview(
-            final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty>
+            final EntityChangeSet<Pair<AccountID, TokenID>, HederaTokenRel, TokenRelProperty>
                     pendingChanges) {
         if (txnCtx != null && activeOpIsNotAutoAssociating()) {
             return;

@@ -78,6 +78,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -640,7 +641,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                 .given(uploadInitCode(PAY_RECEIVABLE_NAME))
                 .when(contractCreate(PAY_RECEIVABLE_NAME).via("createTxn"))
                 .then(
-                        contractCall(PAY_RECEIVABLE_NAME, "deposit", 1_000L)
+                        contractCall(PAY_RECEIVABLE_NAME, "deposit", BigInteger.valueOf(1_000L))
                                 .via("callTxn")
                                 .sending(1_000L));
     }

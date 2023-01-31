@@ -42,8 +42,8 @@ public class MiscSpeedometers {
     }
 
     public void registerWith(final Platform platform) {
-        syncVerifications = platform.getOrCreateMetric(syncVerificationsConfig);
-        platformTxnRejections = platform.getOrCreateMetric(platformTxnRejectionsConfig);
+        syncVerifications = platform.getMetrics().getOrCreate(syncVerificationsConfig);
+        platformTxnRejections = platform.getMetrics().getOrCreate(platformTxnRejectionsConfig);
 
         syncVerificationsConfig = null;
         platformTxnRejectionsConfig = null;

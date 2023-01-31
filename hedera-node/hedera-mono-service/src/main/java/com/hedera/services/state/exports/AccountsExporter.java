@@ -15,10 +15,8 @@
  */
 package com.hedera.services.state.exports;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.merkle.map.MerkleMap;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 
 public interface AccountsExporter {
-    void toFile(MerkleMap<EntityNum, MerkleAccount> accounts);
+    void toFile(AccountStorageAdapter accounts);
 }

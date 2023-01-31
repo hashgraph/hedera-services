@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttles.BucketThrottle;
 import com.hedera.services.throttles.DeterministicThrottle;
 import java.time.Instant;
@@ -55,7 +55,7 @@ class ThrottleReqsManagerTest {
     void usesExpectedCapacityWithAllReqsAndScaleFactor() {
         // setup:
         final var numOps = 7;
-        final var scaleFactor = ThrottleReqOpsScaleFactor.from("3:2");
+        final var scaleFactor = ScaleFactor.from("3:2");
         final var modifiedAReq = (numOps * aReq * 3) / 2;
         final var modifiedBReq = (numOps * bReq * 3) / 2;
         // and:

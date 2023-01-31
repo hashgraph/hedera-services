@@ -51,6 +51,12 @@ class GasLimitDeterministicThrottleTest {
     }
 
     @Test
+    void implementsCongestibleThrottle() {
+        assertEquals(DEFAULT_CAPACITY * 1000, subject.mtps());
+        assertEquals("Gas", subject.name());
+    }
+
+    @Test
     void canGetPercentUsed() {
         final var now = Instant.ofEpochSecond(1_234_567L);
         final var capacity = 1_000_000;
@@ -121,12 +127,12 @@ class GasLimitDeterministicThrottleTest {
 
     @Test
     void capacityReturnsCorrectValue() {
-        assertEquals(DEFAULT_CAPACITY, subject.getCapacity());
+        assertEquals(DEFAULT_CAPACITY, subject.capacity());
     }
 
     @Test
     void usedReturnsCorrectValue() {
-        assertEquals(0, subject.getUsed());
+        assertEquals(0, subject.used());
     }
 
     @Test
@@ -191,7 +197,7 @@ class GasLimitDeterministicThrottleTest {
         // then:
         assertTrue(result);
         assertTrue(result2);
-        assertEquals(gasLimitForTX, subject.getUsed());
+        assertEquals(gasLimitForTX, subject.used());
         assertEquals(DEFAULT_CAPACITY - gasLimitForTX, subject.delegate().bucket().capacityFree());
     }
 

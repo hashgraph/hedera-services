@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +60,7 @@ public class LogsSuite extends HapiApiSuite {
                         UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log0", 15).via("log0"))
+                .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15)).via("log0"))
                 .then(
                         getTxnRecord("log0")
                                 .logged()
@@ -83,7 +84,7 @@ public class LogsSuite extends HapiApiSuite {
                         UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log1", 15).via("log1"))
+                .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15)).via("log1"))
                 .then(
                         getTxnRecord("log1")
                                 .logged()
@@ -112,7 +113,7 @@ public class LogsSuite extends HapiApiSuite {
                         UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log2", 1, 2).via("log2"))
+                .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO).via("log2"))
                 .then(
                         getTxnRecord("log2")
                                 .logged()
@@ -143,7 +144,14 @@ public class LogsSuite extends HapiApiSuite {
                         UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log3", 1, 2, 3).via("log3"))
+                .when(
+                        contractCall(
+                                        CONTRACT,
+                                        "log3",
+                                        BigInteger.ONE,
+                                        BigInteger.TWO,
+                                        BigInteger.valueOf(3))
+                                .via("log3"))
                 .then(
                         getTxnRecord("log3")
                                 .logged()
@@ -176,7 +184,15 @@ public class LogsSuite extends HapiApiSuite {
                         UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, "log4", 1, 2, 3, 4).via("log4"))
+                .when(
+                        contractCall(
+                                        CONTRACT,
+                                        "log4",
+                                        BigInteger.ONE,
+                                        BigInteger.TWO,
+                                        BigInteger.valueOf(3),
+                                        BigInteger.valueOf(4))
+                                .via("log4"))
                 .then(
                         getTxnRecord("log4")
                                 .logged()

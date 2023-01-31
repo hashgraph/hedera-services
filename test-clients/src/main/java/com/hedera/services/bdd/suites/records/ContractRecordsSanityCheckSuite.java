@@ -127,7 +127,10 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                                         STAKING_REWARD,
                                         NODE_REWARD,
                                         DEFAULT_PAYER)))
-                .when(contractCall(PAYABLE_CONTRACT, "deposit", 1_000L).via("txn").sending(1_000L))
+                .when(
+                        contractCall(PAYABLE_CONTRACT, "deposit", BigInteger.valueOf(1_000L))
+                                .via("txn")
+                                .sending(1_000L))
                 .then(
                         validateTransferListForBalances(
                                 "txn",

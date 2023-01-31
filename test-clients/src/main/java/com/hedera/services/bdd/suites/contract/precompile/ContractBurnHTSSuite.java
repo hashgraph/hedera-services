@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -57,10 +58,11 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.ArrayList;
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -125,15 +127,21 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(TOKEN)))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                TOKEN))))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        contractCall(THE_CONTRACT, "burnTokenWithEvent", 1, new ArrayList<Long>())
+                        contractCall(
+                                        THE_CONTRACT,
+                                        "burnTokenWithEvent",
+                                        BigInteger.ONE,
+                                        new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -174,7 +182,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                         .newTotalSupply(49)),
                         newKeyNamed(CONTRACT_KEY).shape(DELEGATE_CONTRACT.signedWith(THE_CONTRACT)),
                         tokenUpdate(TOKEN).supplyKey(CONTRACT_KEY),
-                        contractCall(THE_CONTRACT, "burnToken", 1, new ArrayList<Long>())
+                        contractCall(THE_CONTRACT, "burnToken", BigInteger.ONE, new long[0])
                                 .via("burn with contract key")
                                 .gas(GAS_TO_OFFER),
                         childRecordsCheck(
@@ -218,9 +226,11 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 THE_CONTRACT,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(TOKEN)))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                TOKEN))))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
@@ -228,14 +238,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var serialNumbers = new ArrayList<>();
-                                    serialNumbers.add(1L);
+                                    final var serialNumbers = new long[] {1L};
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             THE_CONTRACT,
                                                             "burnToken",
-                                                            0,
+                                                            BigInteger.ZERO,
                                                             serialNumbers)
                                                     .payingWith(ALICE)
                                                     .alsoSigningWithFullPrefix(MULTI_KEY)
@@ -284,8 +293,10 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 outerContract,
-                                                                getNestedContractAddress(
-                                                                        innerContract, spec))
+                                                                asHeadlongAddress(
+                                                                        getNestedContractAddress(
+                                                                                innerContract,
+                                                                                spec)))
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
@@ -306,11 +317,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 outerContract,
                                                                 BURN_AFTER_NESTED_MINT_TX,
-                                                                1,
-                                                                asAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(TOKEN)),
-                                                                new ArrayList<>())
+                                                                BigInteger.ONE,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                TOKEN))),
+                                                                new long[0])
                                                         .payingWith(ALICE)
                                                         .via(BURN_AFTER_NESTED_MINT_TX))),
                         childRecordsCheck(
@@ -378,10 +391,11 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                                 theContract,
-                                                                asHexedAddress(
-                                                                        spec.registry()
-                                                                                .getTokenID(
-                                                                                        tokenWithHbarFee)))
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                tokenWithHbarFee))))
                                                         .payingWith(bob)
                                                         .gas(GAS_TO_OFFER))),
                         tokenAssociate(ALICE, tokenWithHbarFee),
@@ -396,20 +410,23 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var serialNumbers = new ArrayList<>();
-                                    serialNumbers.add(1L);
+                                    final var serialNumbers = new long[] {1L};
                                     allRunFor(
                                             spec,
                                             contractCall(
                                                             theContract,
                                                             "transferBurn",
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(ALICE)),
-                                                            asAddress(
-                                                                    spec.registry()
-                                                                            .getAccountID(bob)),
-                                                            0,
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            ALICE))),
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            bob))),
+                                                            BigInteger.ZERO,
                                                             2L,
                                                             serialNumbers)
                                                     .alsoSigningWithFullPrefix(ALICE, SUPPLY_KEY)

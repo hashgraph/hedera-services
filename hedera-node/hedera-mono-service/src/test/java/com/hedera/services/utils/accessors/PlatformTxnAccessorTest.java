@@ -71,6 +71,7 @@ class PlatformTxnAccessorTest {
         final var delegate = SignedTxnAccessor.uncheckedFrom(txn);
         final var subject = new PlatformTxnAccessor(delegate, new SwirldTransaction());
         assertEquals(delegate.opEthTxData(), subject.opEthTxData());
+        assertFalse(subject.hasConsequentialUnknownFields());
     }
 
     @Test

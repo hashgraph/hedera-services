@@ -28,7 +28,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -105,27 +105,35 @@ public class ContractCustomizer {
      */
     public static ContractCustomizer fromSponsorContract(
             final AccountID sponsor,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         var key = (JKey) ledger.get(sponsor, KEY);
         if (key instanceof JContractIDKey) {
             key = null;
         }
-        final var customizer =
-                new HederaAccountCustomizer()
-                        .memo((String) ledger.get(sponsor, MEMO))
-                        .expiry((long) ledger.get(sponsor, EXPIRY))
-                        .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
-                        .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
-                        .maxAutomaticAssociations(
-                                (int)
-                                        ledger.get(
-                                                sponsor,
-                                                AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
-                        .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
-                        .isDeclinedReward(
-                                (boolean) ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
-                        .isSmartContract(true);
+        final var customizer = getAccountCustomizer(sponsor, ledger);
         return new ContractCustomizer(key, customizer);
+    }
+
+    public static ContractCustomizer fromSponsorContractWithoutKey(
+            final AccountID sponsor,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+        final var customizer = getAccountCustomizer(sponsor, ledger);
+        return new ContractCustomizer(customizer);
+    }
+
+    private static HederaAccountCustomizer getAccountCustomizer(
+            final AccountID sponsor,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
+        return new HederaAccountCustomizer()
+                .memo((String) ledger.get(sponsor, MEMO))
+                .expiry((long) ledger.get(sponsor, EXPIRY))
+                .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
+                .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+                .maxAutomaticAssociations(
+                        (int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
+                .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
+                .isDeclinedReward((boolean) ledger.get(sponsor, AccountProperty.DECLINE_REWARD))
+                .isSmartContract(true);
     }
 
     /**
@@ -137,7 +145,7 @@ public class ContractCustomizer {
      */
     public void customize(
             final AccountID id,
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         accountCustomizer.customize(id, ledger);
         final var newKey =
                 (cryptoAdminKey == null)

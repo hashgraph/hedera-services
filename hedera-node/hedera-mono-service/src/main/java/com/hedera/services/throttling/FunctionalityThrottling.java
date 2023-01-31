@@ -32,6 +32,10 @@ public interface FunctionalityThrottling {
      */
     boolean shouldThrottleTxn(TxnAccessor accessor);
 
+    default boolean shouldThrottleNOfUnscaled(final int n, final HederaFunctionality function) {
+        throw new UnsupportedOperationException();
+    }
+
     boolean shouldThrottleQuery(HederaFunctionality queryFunction, Query query);
 
     /**

@@ -25,6 +25,7 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
@@ -72,7 +73,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
             final AccountStore accountStore,
             final BackingStore<TokenID, MerkleToken> tokens,
             final BackingStore<NftId, UniqueTokenAdapter> uniqueTokens,
-            final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
+            final BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> tokenRels,
             final SideEffectsTracker sideEffectsTracker) {
         super(accountStore, tokens, uniqueTokens, tokenRels);
         this.sideEffectsTracker = sideEffectsTracker;

@@ -21,12 +21,10 @@ import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +37,7 @@ public class ReleaseThirtyMigration {
     static final int SEVEN_DAYS_IN_SECONDS = 604800;
 
     public static void rebuildNftOwners(
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final AccountStorageAdapter accounts,
             final UniqueTokenMapAdapter uniqueTokensMapAdapter) {
 
         // First reset all account owned-NFT-list root pointers
@@ -117,7 +115,7 @@ public class ReleaseThirtyMigration {
 
     private static void setNewExpiry(
             final long lastKnownConsensusSecond,
-            final MerkleMap<EntityNum, MerkleAccount> contracts,
+            final AccountStorageAdapter contracts,
             final EntityNum key) {
         final var account = contracts.getForModify(key);
         final var currentExpiry = account.getExpiry();

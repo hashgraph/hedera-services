@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
@@ -34,6 +35,9 @@ import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.Assertions;
 
 public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo> {
+
+    public static final String BAD_ALIAS = "Bad Alias!";
+
     public static AccountInfoAsserts accountWith() {
         return new AccountInfoAsserts();
     }
@@ -271,13 +275,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                         assertEquals(
                                 spec.registry().getKey(alias).toByteString(),
                                 ((AccountInfo) o).getAlias(),
-                                "Bad Alias!"));
+                                BAD_ALIAS));
+        return this;
+    }
+
+    public AccountInfoAsserts evmAddressAlias(ByteString evmAddress) {
+        registerProvider(
+                (spec, o) -> assertEquals(evmAddress, ((AccountInfo) o).getAlias(), BAD_ALIAS));
         return this;
     }
 
     public AccountInfoAsserts noAlias() {
         registerProvider(
-                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!"));
+                (spec, o) -> assertTrue(((AccountInfo) o).getAlias().isEmpty(), BAD_ALIAS));
         return this;
     }
 

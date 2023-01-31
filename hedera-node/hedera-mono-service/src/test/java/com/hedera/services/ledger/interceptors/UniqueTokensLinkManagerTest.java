@@ -27,6 +27,7 @@ import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.virtual.UniqueTokenValue;
@@ -67,13 +68,16 @@ class UniqueTokensLinkManagerTest {
                 .thenReturn(false);
         subject =
                 new UniqueTokensLinkManager(
-                        () -> accounts, () -> tokens, () -> uniqueTokens, bootstrapProperties);
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> tokens,
+                        () -> uniqueTokens,
+                        bootstrapProperties);
 
         when(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .thenReturn(true);
         subjectForVm =
                 new UniqueTokensLinkManager(
-                        () -> accounts,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
                         () -> tokens,
                         () -> virtualUniqueTokens,
                         bootstrapProperties);

@@ -16,13 +16,12 @@
 package com.hedera.services.fees.calculation;
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,8 +38,7 @@ public final class FeeCalcUtils {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static Timestamp lookupAccountExpiry(
-            EntityNum key, MerkleMap<EntityNum, MerkleAccount> accounts) {
+    public static Timestamp lookupAccountExpiry(EntityNum key, AccountStorageAdapter accounts) {
         try {
             final var account = accounts.get(key);
             final var expiration = account.getExpiry();

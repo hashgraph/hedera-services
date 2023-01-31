@@ -37,9 +37,11 @@ import com.hedera.services.state.expiry.removal.*;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;
 import com.hedera.services.state.expiry.renewal.RenewalWork;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
+import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -92,7 +94,7 @@ class ExpiryProcessTest {
     @Mock private ExpiryRecordsHelper recordsHelper;
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private FeeDistribution feeDistribution;
     @Mock private SideEffectsTracker sideEffectsTracker;
     @Mock private ConsensusTimeTracker consensusTimeTracker;
@@ -130,7 +132,8 @@ class ExpiryProcessTest {
                         dynamicProperties,
                         contractGC,
                         accountGC,
-                        recordsHelper);
+                        recordsHelper,
+                        expiryThrottle);
     }
 
     @Test
@@ -169,19 +172,6 @@ class ExpiryProcessTest {
                 .willReturn(COME_BACK_LATER);
 
         assertDoesNotThrow(() -> subject.process(nonExpiredAccountNum, now));
-    }
-
-    @Test
-    void doesNothingDuringGracePeriod() {
-        given(classifier.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
-                .willReturn(DETACHED_ACCOUNT);
-
-        var result = subject.process(nonExpiredAccountNum, now);
-
-        // then:
-        assertEquals(NOTHING_TO_DO, result);
-        verifyNoMoreInteractions(classifier);
-        verifyNoMoreInteractions(sideEffectsTracker);
     }
 
     @Test
@@ -243,6 +233,36 @@ class ExpiryProcessTest {
 
         verify(accountGC).expireBestEffort(expiredNum, mockAccount);
         verify(recordsHelper).streamCryptoRemovalStep(false, expiredNum, treasuryReturns);
+    }
+
+    @Test
+    void canMarkContractDetached() {
+        dynamicProperties.enableContractAutoRenew();
+
+        long detachedContractNum = 1003L;
+        final var detachedNum = EntityNum.fromLong(detachedContractNum);
+        given(classifier.classify(detachedNum, now)).willReturn(DETACHED_CONTRACT);
+        given(expiryThrottle.allowOne(MapAccessType.ACCOUNTS_GET_FOR_MODIFY)).willReturn(true);
+
+        final var result = subject.process(detachedContractNum, now);
+
+        assertEquals(DONE, result);
+        verify(accountGC).markDetached(detachedNum);
+    }
+
+    @Test
+    void canMarkAccountDetached() {
+        dynamicProperties.enableAutoRenew();
+
+        long detachedAccountNum = 1003L;
+        final var detachedNum = EntityNum.fromLong(detachedAccountNum);
+        given(classifier.classify(detachedNum, now)).willReturn(DETACHED_ACCOUNT);
+        given(expiryThrottle.allowOne(MapAccessType.ACCOUNTS_GET_FOR_MODIFY)).willReturn(true);
+
+        final var result = subject.process(detachedAccountNum, now);
+
+        assertEquals(DONE, result);
+        verify(accountGC).markDetached(detachedNum);
     }
 
     @Test

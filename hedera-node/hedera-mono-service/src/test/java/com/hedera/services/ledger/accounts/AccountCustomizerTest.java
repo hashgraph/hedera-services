@@ -18,6 +18,7 @@ package com.hedera.services.ledger.accounts;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
@@ -114,6 +115,22 @@ class AccountCustomizerTest {
                         any(EnumMap.class),
                         argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(KEY)::equals),
                         argThat(key::equals));
+    }
+
+    @Test
+    void changesExpectedDetachedProperty() {
+        setupWithMockChangeManager();
+
+        subject.isExpiredAndPendingRemoval(true);
+
+        verify(changeManager)
+                .update(
+                        any(EnumMap.class),
+                        argThat(
+                                TestAccountCustomizer.OPTION_PROPERTIES.get(
+                                                EXPIRED_AND_PENDING_REMOVAL)
+                                        ::equals),
+                        argThat(Boolean.TRUE::equals));
     }
 
     @Test

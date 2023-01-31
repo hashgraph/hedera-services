@@ -50,7 +50,7 @@ import com.hedera.services.state.initialization.SystemAccountsCreator;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.initialization.TreasuryCloner;
 import com.hedera.services.state.logic.NetworkCtxManager;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.state.tasks.TaskModule;
 import com.hedera.services.state.validation.LedgerValidator;
@@ -189,7 +189,7 @@ public interface ServicesApp {
 
     Supplier<NotificationEngine> notificationEngine();
 
-    BackingStore<AccountID, MerkleAccount> backingAccounts();
+    BackingStore<AccountID, HederaAccount> backingAccounts();
 
     @Component.Builder
     interface Builder {
@@ -201,6 +201,9 @@ public interface ServicesApp {
 
         @BindsInstance
         Builder platform(Platform platform);
+
+        @BindsInstance
+        Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
         Builder selfId(long selfId);

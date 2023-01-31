@@ -17,7 +17,7 @@ package com.hedera.services.txns.validation;
 
 import static com.hedera.services.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -40,8 +40,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -86,7 +86,7 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
             final AccountID id) {
         if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
             return OK;
@@ -95,8 +95,8 @@ public class ContextOptionValidator implements OptionValidator {
         if (balance > 0) {
             return OK;
         }
-        final var expiry = (long) accounts.get(id, EXPIRY);
-        if (isAfterConsensusSecond(expiry)) {
+        final var isDetached = (boolean) accounts.get(id, EXPIRED_AND_PENDING_REMOVAL);
+        if (!isDetached) {
             return OK;
         }
         final var isContract = (boolean) accounts.get(id, IS_SMART_CONTRACT);
@@ -105,8 +105,8 @@ public class ContextOptionValidator implements OptionValidator {
 
     @Override
     public ResponseCodeEnum expiryStatusGiven(
-            final long balance, final long expiry, final boolean isContract) {
-        if (balance > 0 || isAfterConsensusSecond(expiry)) {
+            final long balance, final boolean isDetached, final boolean isContract) {
+        if (balance > 0 || !isDetached) {
             return OK;
         }
         return expiryStatusForNominallyDetached(isContract);

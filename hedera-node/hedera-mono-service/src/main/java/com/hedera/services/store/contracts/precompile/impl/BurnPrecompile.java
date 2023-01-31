@@ -21,7 +21,9 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -33,6 +35,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
@@ -52,11 +55,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class BurnPrecompile extends AbstractWritePrecompile {
+    private final int functionId;
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
     private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
     private static final Function BURN_TOKEN_FUNCTION =
             new Function("burnToken(address,uint64,int64[])", INT);
+    private static final Function BURN_TOKEN_FUNCTION_V2 =
+            new Function("burnToken(address,int64,int64[])", INT);
     private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
+    private static final Bytes BURN_TOKEN_SELECTOR_V2 =
+            Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
     private static final ABIType<Tuple> BURN_TOKEN_DECODER =
             TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;
@@ -72,17 +80,24 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrecompilePricingUtils pricingUtils,
+            final int functionId) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.encoder = encoder;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
+        this.functionId = functionId;
     }
 
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp = decodeBurn(input);
+        burnOp =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_BURN_TOKEN -> decodeBurn(input);
+                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> decodeBurnV2(input);
+                    default -> null;
+                };
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -145,8 +160,12 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     public static BurnWrapper decodeBurn(final Bytes input) {
+        return getBurnWrapper(input, BURN_TOKEN_SELECTOR);
+    }
+
+    private static BurnWrapper getBurnWrapper(Bytes input, Bytes burnTokenSelector) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
+                decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);
@@ -158,5 +177,9 @@ public class BurnPrecompile extends AbstractWritePrecompile {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
         }
+    }
+
+    public static BurnWrapper decodeBurnV2(final Bytes input) {
+        return getBurnWrapper(input, BURN_TOKEN_SELECTOR_V2);
     }
 }

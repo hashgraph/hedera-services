@@ -274,6 +274,16 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         return this;
     }
 
+    public ContractInfoAsserts defaultAdminKey() {
+        registerProvider(
+                (spec, o) -> {
+                    final var contractId = object2ContractInfo(o).getContractID();
+                    final var expectedKey = Key.newBuilder().setContractID(contractId).build();
+                    assertEquals(expectedKey, object2ContractInfo(o).getAdminKey(), BAD_ADMIN_KEY);
+                });
+        return this;
+    }
+
     public ContractInfoAsserts immutableContractKey(String name) {
         registerProvider(
                 (spec, o) -> {

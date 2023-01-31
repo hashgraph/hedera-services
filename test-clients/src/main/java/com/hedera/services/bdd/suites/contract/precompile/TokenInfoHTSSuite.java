@@ -42,13 +42,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.expandByteArrayTo32Length;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
@@ -196,23 +195,21 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        PRIMARY_TOKEN_NAME)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))
                                                         .via(TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                PRIMARY_TOKEN_NAME))))))))
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        PRIMARY_TOKEN_NAME)))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -306,23 +303,21 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        tokenName)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                tokenName))))
                                                         .via(FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                tokenName))))))))
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        tokenName)))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -437,25 +432,23 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                Tuple.of(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        NON_FUNGIBLE_TOKEN_NAME))),
-                                                                        1L))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))),
+                                                                1L)
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                        Tuple.of(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN_NAME))),
-                                                                1L)))))
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN_NAME))),
+                                                        1L))))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -561,24 +554,22 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        PRIMARY_TOKEN_NAME)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))
                                                         .via(TOKEN_INFO_TXN + 1)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        PRIMARY_TOKEN_NAME)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))
                                                         .via(TOKEN_INFO_TXN + 2)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
@@ -616,7 +607,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_TOKEN,
-                                                                Tuple.singleton(new byte[32]))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]))
                                                         .via(TOKEN_INFO_TXN + 1)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -625,7 +617,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_FUNGIBLE_TOKEN,
-                                                                Tuple.singleton(new byte[32]))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]))
                                                         .via(TOKEN_INFO_TXN + 2)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -670,13 +663,12 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                Tuple.of(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        NON_FUNGIBLE_TOKEN_NAME))),
-                                                                        1L))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))),
+                                                                1L)
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
@@ -716,7 +708,9 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                Tuple.of(new byte[32], 1L))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        new byte[20]),
+                                                                1L)
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 1)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -725,13 +719,12 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN,
-                                                                Tuple.of(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        NON_FUNGIBLE_TOKEN_NAME))),
-                                                                        2L))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))),
+                                                                2L)
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(
@@ -776,23 +769,21 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_CUSTOM_FEES_FOR_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        PRIMARY_TOKEN_NAME)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                PRIMARY_TOKEN_NAME))))
                                                         .via(TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_CUSTOM_FEES_FOR_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                PRIMARY_TOKEN_NAME))))))))
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        PRIMARY_TOKEN_NAME)))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -875,23 +866,21 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 TOKEN_INFO_CONTRACT,
                                                                 GET_CUSTOM_FEES_FOR_TOKEN,
-                                                                Tuple.singleton(
-                                                                        expandByteArrayTo32Length(
-                                                                                asAddress(
-                                                                                        spec.registry()
-                                                                                                .getTokenID(
-                                                                                                        NON_FUNGIBLE_TOKEN_NAME)))))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NON_FUNGIBLE_TOKEN_NAME))))
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L),
                                                 contractCallLocal(
                                                         TOKEN_INFO_CONTRACT,
                                                         GET_CUSTOM_FEES_FOR_TOKEN,
-                                                        Tuple.singleton(
-                                                                expandByteArrayTo32Length(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN_NAME))))))))
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(
+                                                                        spec.registry()
+                                                                                .getTokenID(
+                                                                                        NON_FUNGIBLE_TOKEN_NAME)))))))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->

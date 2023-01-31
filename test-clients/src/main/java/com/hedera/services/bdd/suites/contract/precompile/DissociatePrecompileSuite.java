@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -48,8 +49,10 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -198,9 +201,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(
-                                                                        zeroBalanceFrozenID.get()),
-                                                                asAddress(tbdTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                zeroBalanceFrozenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tbdTokenID.get())))
                                                         .alsoSigningWithFullPrefix(
                                                                 zeroBalanceFrozen)
                                                         .gas(GAS_TO_OFFER)
@@ -211,10 +218,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(
-                                                                        zeroBalanceUnfrozenID
-                                                                                .get()),
-                                                                asAddress(tbdTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                zeroBalanceUnfrozenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tbdTokenID.get())))
                                                         .alsoSigningWithFullPrefix(
                                                                 zeroBalanceUnfrozen)
                                                         .gas(GAS_TO_OFFER)
@@ -225,10 +235,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(
-                                                                        nonZeroBalanceFrozenID
-                                                                                .get()),
-                                                                asAddress(tbdTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                nonZeroBalanceFrozenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tbdTokenID.get())))
                                                         .alsoSigningWithFullPrefix(
                                                                 nonZeroBalanceFrozen)
                                                         .gas(GAS_TO_OFFER)
@@ -239,10 +252,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(
-                                                                        nonZeroBalanceUnfrozenID
-                                                                                .get()),
-                                                                asAddress(tbdTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                nonZeroBalanceUnfrozenID
+                                                                                        .get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tbdTokenID.get())))
                                                         .alsoSigningWithFullPrefix(
                                                                 nonZeroBalanceUnfrozen)
                                                         .gas(GAS_TO_OFFER)
@@ -253,8 +269,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
-                                                                asAddress(treasuryID.get()),
-                                                                asAddress(tbdUniqueTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                treasuryID.get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                tbdUniqueTokenID
+                                                                                        .get())))
                                                         .alsoSigningWithFullPrefix(TOKEN_TREASURY)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
@@ -334,14 +355,19 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCreate(
                                                         OUTER_CONTRACT,
-                                                        getNestedContractAddress(
-                                                                NESTED_CONTRACT, spec)),
+                                                        asHeadlongAddress(
+                                                                getNestedContractAddress(
+                                                                        NESTED_CONTRACT, spec))),
                                                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
                                                 contractCall(
                                                                 OUTER_CONTRACT,
                                                                 "dissociateAssociateContractCall",
-                                                                asAddress(accountID.get()),
-                                                                asAddress(vanillaTokenID.get()))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())))
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("nestedDissociateTxn")
                                                         .gas(3_000_000L)
@@ -412,14 +438,20 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokensDissociate",
-                                                                asAddress(accountID.get()),
-                                                                List.of(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get()),
-                                                                        asAddress(
-                                                                                knowableTokenTokenID
-                                                                                        .get())))
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(accountID.get())),
+                                                                new Address[] {
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            vanillaTokenID
+                                                                                                    .get())),
+                                                                    HapiParserUtil
+                                                                            .asHeadlongAddress(
+                                                                                    asAddress(
+                                                                                            knowableTokenTokenID
+                                                                                                    .get()))
+                                                                })
                                                         .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("multipleDissociationTxn")
                                                         .gas(GAS_TO_OFFER)

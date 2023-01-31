@@ -19,7 +19,8 @@ test-clients/yahcli/cost-snapshots
 test-clients/yahcli/run/test/local/
 
 # VIM
-*.sw*
+*.swp
+*.swo
 
 # Docker Compose runtime
 compose-network/

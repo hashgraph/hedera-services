@@ -103,12 +103,14 @@ class ServicesAppTest {
                         .bootstrapProps(props)
                         .initialHash(EMPTY_HASH)
                         .platform(platform)
+                        .consoleCreator((ignore, visible) -> null)
                         .crypto(cryptography)
                         .selfId(selfId)
                         .build();
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void objectGraphRootsAreAvailable() {
         assertThat(subject.eventExpansion(), instanceOf(EventExpansion.class));
         assertThat(subject.treasuryCloner(), instanceOf(TreasuryCloner.class));
@@ -142,7 +144,7 @@ class ServicesAppTest {
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
         assertSame(subject.nodeId(), selfNodeId);
-        assertSame(subject.pause(), SLEEPING_PAUSE);
+        assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
     }
 }

@@ -16,6 +16,7 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SELF_RENEWAL_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SUPPORTED_RENEWAL_WORK;
@@ -39,6 +40,8 @@ import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.classification.EntityLookup;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
@@ -62,7 +65,7 @@ class RenewalHelperTest {
     @Mock private ExpiryThrottle expiryThrottle;
     @Mock private ExpiryStats expiryStats;
     @Mock private FeeDistribution feeDistribution;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private SideEffectsTracker sideEffectsTracker;
 
     private NonHapiFeeCharging nonHapiFeeCharging;
@@ -72,7 +75,7 @@ class RenewalHelperTest {
 
     @BeforeEach
     void setUp() {
-        lookup = new EntityLookup(() -> accounts);
+        lookup = new EntityLookup(() -> AccountStorageAdapter.fromInMemory(accounts));
         classificationWork = new ClassificationWork(properties, lookup, expiryThrottle);
         nonHapiFeeCharging = new NonHapiFeeCharging(feeDistribution);
         subject =
@@ -164,6 +167,7 @@ class RenewalHelperTest {
         verify(recordsHelper)
                 .streamCryptoRenewal(targetNum, nonZeroBalance, expectedNewExpiry, true);
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
+        verify(accountsLedger).set(key.toGrpcAccountId(), EXPIRED_AND_PENDING_REMOVAL, false);
     }
 
     @Test

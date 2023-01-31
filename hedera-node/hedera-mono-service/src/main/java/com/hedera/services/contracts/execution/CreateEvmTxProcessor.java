@@ -16,6 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.models.Account;
@@ -42,6 +43,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
+    private final AliasManager aliasManager;
 
     @Inject
     public CreateEvmTxProcessor(
@@ -52,6 +54,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final AliasManager aliasManager,
             final InHandleBlockMetaSource blockMetaSource) {
         super(
                 worldState,
@@ -62,6 +65,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
                 ccps,
                 blockMetaSource);
         this.codeCache = codeCache;
+        this.aliasManager = aliasManager;
     }
 
     public TransactionProcessingResult execute(
@@ -109,7 +113,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
                 code,
                 true,
                 false,
-                receiver,
+                aliasManager.resolveForEvm(receiver),
                 providedMaxGasPrice,
                 maxGasAllowance,
                 relayer);

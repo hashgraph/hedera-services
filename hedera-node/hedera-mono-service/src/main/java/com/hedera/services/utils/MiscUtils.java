@@ -158,6 +158,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
@@ -1008,5 +1009,37 @@ public final class MiscUtils {
                 noThrowSha384HashOf(unwrapUnsafelyIfPossible(synthTxn.getSignedTransactionBytes()));
         inProgress.setTxnHash(synthHash);
         return synthTxn;
+    }
+
+    public static Key asPrimitiveKeyUnchecked(final ByteString alias) {
+        try {
+            return Key.parseFrom(alias);
+        } catch (InvalidProtocolBufferException internal) {
+            throw new IllegalStateException(internal);
+        }
+    }
+
+    public static boolean hasUnknownFields(final GeneratedMessageV3 msg) {
+        if (hasUnknownFieldsHere(msg)) {
+            return true;
+        }
+        var ans = false;
+        for (final var field : msg.getAllFields().values()) {
+            if (field instanceof GeneratedMessageV3 generatedMessageV3) {
+                ans |= hasUnknownFields(generatedMessageV3);
+            } else if (field instanceof List<? extends Object> list) {
+                for (final var item : list) {
+                    if (item instanceof GeneratedMessageV3 generatedMessageV3) {
+                        ans |= hasUnknownFields(generatedMessageV3);
+                    }
+                }
+            }
+            /* Otherwise the field is a primitive and cannot include unknown fields */
+        }
+        return ans;
+    }
+
+    public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
+        return !msg.getUnknownFields().asMap().isEmpty();
     }
 }

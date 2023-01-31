@@ -7,6 +7,9 @@ networks:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
       - { id: 1, account: 4, ipv4Addr: 35.199.15.177 }
+  staging-sm:
+    nodes:
+      - { id: 0, account: 3, ipv4Addr: 104.196.48.231 }
   stabletestnet:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }

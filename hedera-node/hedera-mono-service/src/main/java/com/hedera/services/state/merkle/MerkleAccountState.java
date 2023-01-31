@@ -28,12 +28,12 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.readableContract
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hedera.services.utils.SerializationUtils.deserializeApproveForAllNftsAllowances;
-import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
-import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeApproveForAllNftsAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeCryptoAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeTokenAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeFungibleAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftOperatorApprovals;
+import static com.hedera.services.utils.SerializationUtils.serializeFungibleAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorApprovals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -68,7 +68,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
     static final int RELEASE_0250_VERSION = 12;
     static final int RELEASE_0260_VERSION = 13;
     static final int RELEASE_0270_VERSION = 14;
-    private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    static final int RELEASE_0320_VERSION = 15;
+    public static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
     public static final String DEFAULT_MEMO = "";
@@ -112,6 +113,11 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
     // When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
     private long stakedNum;
     private boolean declineReward;
+    // The entity expiration system task toggles on this flag when it reaches this account
+    // and finds it expired; we need this to prevent a zero-balance account with a funded
+    // auto-renew account from being treated as expired in the interval between its expiration
+    // and the time the system task actually auto-renews it
+    private boolean expiredAndPendingRemoval;
     private long stakeAtStartOfLastRewardedPeriod = -1;
 
     // C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
@@ -160,6 +166,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         this.stakedNum = that.stakedNum;
         this.declineReward = that.declineReward;
         this.stakeAtStartOfLastRewardedPeriod = that.stakeAtStartOfLastRewardedPeriod;
+        this.expiredAndPendingRemoval = that.expiredAndPendingRemoval;
     }
 
     public MerkleAccountState(
@@ -195,7 +202,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
             final long stakePeriodStart,
             final long stakedNum,
             final boolean declineReward,
-            final long stakeAtStartOfLastRewardedPeriod) {
+            final long stakeAtStartOfLastRewardedPeriod,
+            final boolean expiredAndPendingRemoval) {
         this.key = key;
         this.expiry = expiry;
         this.hbarBalance = hbarBalance;
@@ -229,6 +237,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         this.stakedNum = stakedNum;
         this.declineReward = declineReward;
         this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
+        this.expiredAndPendingRemoval = expiredAndPendingRemoval;
     }
 
     /* --- MerkleLeaf --- */
@@ -278,9 +287,9 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         // Added in 0.22
         numContractKvPairs = in.readInt();
         if (version >= RELEASE_0230_VERSION) {
-            cryptoAllowances = deserializeCryptoAllowances(in);
-            fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
-            approveForAllNfts = deserializeApproveForAllNftsAllowances(in);
+            cryptoAllowances = deserializeHbarAllowances(in);
+            fungibleTokenAllowances = deserializeFungibleAllowances(in);
+            approveForAllNfts = deserializeNftOperatorApprovals(in);
         }
         if (version >= RELEASE_0250_ALPHA_VERSION) {
             numAssociations = in.readInt();
@@ -314,6 +323,9 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
             declineReward = in.readBoolean();
             stakeAtStartOfLastRewardedPeriod = in.readLong();
         }
+        if (version >= RELEASE_0320_VERSION) {
+            expiredAndPendingRemoval = in.readBoolean();
+        }
     }
 
     @Override
@@ -333,9 +345,9 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         out.writeInt(number);
         out.writeByteArray(alias.toByteArray());
         out.writeInt(numContractKvPairs);
-        serializeCryptoAllowances(out, cryptoAllowances);
-        serializeTokenAllowances(out, fungibleTokenAllowances);
-        serializeApproveForAllNftsAllowances(out, approveForAllNfts);
+        serializeHbarAllowances(out, cryptoAllowances);
+        serializeFungibleAllowances(out, fungibleTokenAllowances);
+        serializeNftOperatorApprovals(out, approveForAllNfts);
         out.writeInt(numAssociations);
         out.writeInt(numPositiveBalances);
         out.writeLong(headTokenId);
@@ -352,6 +364,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         out.writeLong(stakedNum);
         out.writeBoolean(declineReward);
         out.writeLong(stakeAtStartOfLastRewardedPeriod);
+        out.writeBoolean(expiredAndPendingRemoval);
     }
 
     /* --- Copyable --- */
@@ -402,7 +415,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 && this.stakePeriodStart == that.stakePeriodStart
                 && this.stakedNum == that.stakedNum
                 && this.declineReward == that.declineReward
-                && this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod;
+                && this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod
+                && this.expiredAndPendingRemoval == that.expiredAndPendingRemoval;
     }
 
     @Override
@@ -438,7 +452,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 stakePeriodStart,
                 stakedNum,
                 declineReward,
-                stakeAtStartOfLastRewardedPeriod);
+                stakeAtStartOfLastRewardedPeriod,
+                expiredAndPendingRemoval);
     }
 
     /* --- Bean --- */
@@ -477,6 +492,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 .add("stakedNum", stakedNum)
                 .add("declineReward", declineReward)
                 .add("balanceAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
+                .add("expiredAndPendingRemoval", expiredAndPendingRemoval)
                 .toString();
     }
 
@@ -538,6 +554,14 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
 
     public ByteString getAlias() {
         return alias;
+    }
+
+    public boolean isExpiredAndPendingRemoval() {
+        return expiredAndPendingRemoval;
+    }
+
+    public void setExpiredAndPendingRemoval(final boolean expiredAndPendingRemoval) {
+        this.expiredAndPendingRemoval = expiredAndPendingRemoval;
     }
 
     public void setAccountKey(JKey key) {
@@ -749,6 +773,10 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         } else {
             firstUint256KeyNonZeroBytes = 0;
         }
+    }
+
+    public byte getFirstUint256KeyNonZeroBytes() {
+        return firstUint256KeyNonZeroBytes;
     }
 
     public boolean hasAutoRenewAccount() {

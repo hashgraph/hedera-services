@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -60,9 +61,9 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, hashOf, invalidAddress)
+                        contractCall(contract, hashOf, asHeadlongAddress(invalidAddress))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        contractCallLocal(contract, hashOf, invalidAddress)
+                        contractCallLocal(contract, hashOf, asHeadlongAddress(invalidAddress))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -74,7 +75,11 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
                                     final var contractAddress = asHexedSolidityAddress(contractID);
 
                                     final var call =
-                                            contractCall(contract, hashOf, accountSolidityAddress)
+                                            contractCall(
+                                                            contract,
+                                                            hashOf,
+                                                            asHeadlongAddress(
+                                                                    accountSolidityAddress))
                                                     .via("callRecord");
                                     final var callRecord = getTxnRecord("callRecord");
 
@@ -82,11 +87,15 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
                                             contractCallLocal(
                                                             contract,
                                                             hashOf,
-                                                            accountSolidityAddress)
+                                                            asHeadlongAddress(
+                                                                    accountSolidityAddress))
                                                     .saveResultTo("accountCodeHash");
 
                                     final var contractCodeHash =
-                                            contractCallLocal(contract, hashOf, contractAddress)
+                                            contractCallLocal(
+                                                            contract,
+                                                            hashOf,
+                                                            asHeadlongAddress(contractAddress))
                                                     .saveResultTo("contractCodeHash");
 
                                     final var getBytecode =

@@ -19,7 +19,8 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYT
 import static com.hedera.services.throttling.MapAccessType.*;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractStorageListMutation;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -29,7 +30,6 @@ import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MapValueListUtils;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -48,7 +48,7 @@ public class ContractGC {
             List.of(STORAGE_REMOVE, STORAGE_GET, STORAGE_GET, STORAGE_PUT);
 
     private final ExpiryThrottle expiryThrottle;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
+    private final Supplier<AccountStorageAdapter> contracts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
     private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
@@ -58,7 +58,7 @@ public class ContractGC {
     @Inject
     public ContractGC(
             final ExpiryThrottle expiryThrottle,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+            final Supplier<AccountStorageAdapter> contracts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
             final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode) {
         this.expiryThrottle = expiryThrottle;
@@ -68,7 +68,7 @@ public class ContractGC {
     }
 
     public boolean expireBestEffort(
-            final EntityNum expiredContractNum, final MerkleAccount contract) {
+            final EntityNum expiredContractNum, final HederaAccount contract) {
         final var numKvPairs = contract.getNumContractKvPairs();
         var isDeleted = contract.isDeleted();
         if (numKvPairs > 0) {

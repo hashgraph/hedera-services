@@ -15,53 +15,53 @@
  */
 package com.hedera.services.ledger.properties;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaTokenRel;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
+public enum TokenRelProperty implements BeanProperty<HederaTokenRel> {
     TOKEN_BALANCE {
         @Override
-        public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+        public BiConsumer<HederaTokenRel, Object> setter() {
             return (a, l) -> a.setBalance((long) l);
         }
 
         @Override
-        public Function<MerkleTokenRelStatus, Object> getter() {
-            return MerkleTokenRelStatus::getBalance;
+        public Function<HederaTokenRel, Object> getter() {
+            return HederaTokenRel::getBalance;
         }
     },
     IS_FROZEN {
         @Override
-        public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+        public BiConsumer<HederaTokenRel, Object> setter() {
             return (a, f) -> a.setFrozen((boolean) f);
         }
 
         @Override
-        public Function<MerkleTokenRelStatus, Object> getter() {
-            return MerkleTokenRelStatus::isFrozen;
+        public Function<HederaTokenRel, Object> getter() {
+            return HederaTokenRel::isFrozen;
         }
     },
     IS_KYC_GRANTED {
         @Override
-        public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+        public BiConsumer<HederaTokenRel, Object> setter() {
             return (a, f) -> a.setKycGranted((boolean) f);
         }
 
         @Override
-        public Function<MerkleTokenRelStatus, Object> getter() {
-            return MerkleTokenRelStatus::isKycGranted;
+        public Function<HederaTokenRel, Object> getter() {
+            return HederaTokenRel::isKycGranted;
         }
     },
     IS_AUTOMATIC_ASSOCIATION {
         @Override
-        public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+        public BiConsumer<HederaTokenRel, Object> setter() {
             return (a, f) -> a.setAutomaticAssociation((boolean) f);
         }
 
         @Override
-        public Function<MerkleTokenRelStatus, Object> getter() {
-            return MerkleTokenRelStatus::isAutomaticAssociation;
+        public Function<HederaTokenRel, Object> getter() {
+            return HederaTokenRel::isAutomaticAssociation;
         }
     },
 }

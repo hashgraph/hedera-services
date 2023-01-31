@@ -39,24 +39,17 @@ sourceSets {
 dependencies {
     implementation(project(":hapi-utils"))
     implementation(project(":hapi-fees"))
-    implementation(libs.bundles.besu)
+    implementation(libs.bundles.besu) {
+        exclude("javax.annotation", "javax.annotation-api")
+    }
     implementation(libs.bundles.logging)
     implementation(testLibs.besu.internal)
     implementation(testLibs.commons.collections4)
     implementation(libs.commons.io)
-    implementation(testLibs.ethereumj) {
-        exclude("", "junit")
-        exclude("com.cedarsoftware")
-        exclude("com.googlecode.json-simple")
-        exclude("io.netty")
-        exclude("org.apache.logging.log4j")
-        exclude("org.ethereum")
-        exclude("org.iq80.leveldb")
-        exclude("org.slf4j")
-        exclude("org.xerial.snappy")
-    }
     implementation(libs.guava)
-    implementation(libs.hapi)
+    implementation(libs.hapi) {
+        exclude("javax.annotation", "javax.annotation-api")
+    }
     implementation(libs.headlong)
     implementation(testLibs.json)
     implementation(testLibs.junit.jupiter.api)
@@ -65,7 +58,6 @@ dependencies {
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
     implementation(testLibs.testcontainers.core)
-    itestImplementation(project.parent!!.project("hedera-node"))
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
     eetImplementation(testLibs.bundles.testcontainers)

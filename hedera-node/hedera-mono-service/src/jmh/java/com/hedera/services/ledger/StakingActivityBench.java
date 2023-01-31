@@ -36,7 +36,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
@@ -91,7 +91,7 @@ public class StakingActivityBench {
     private StakingActivityApp app;
     private SideEffectsTracker sideEffects;
     private InfrastructureBundle bundle;
-    private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger;
+    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger;
 
     @Setup(Level.Trial)
     public void setupInfrastructure() {

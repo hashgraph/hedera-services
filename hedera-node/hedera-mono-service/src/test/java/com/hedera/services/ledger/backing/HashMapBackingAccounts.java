@@ -16,20 +16,21 @@
 package com.hedera.services.ledger.backing;
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAccount> {
+public class HashMapBackingAccounts implements BackingStore<AccountID, HederaAccount> {
     final AccountID GENESIS = IdUtils.asAccount("0.0.2");
     final long GENESIS_BALANCE = 50_000_000_000L;
 
-    private Map<AccountID, MerkleAccount> accounts = new HashMap<>();
+    private Map<AccountID, HederaAccount> accounts = new HashMap<>();
 
     {
-        MerkleAccount genesisAccount = new MerkleAccount();
+        final var genesisAccount = new MerkleAccount();
         try {
             genesisAccount.setBalance(GENESIS_BALANCE);
         } catch (Exception ignore) {
@@ -38,12 +39,12 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
     }
 
     @Override
-    public MerkleAccount getRef(AccountID id) {
+    public HederaAccount getRef(AccountID id) {
         return accounts.get(id);
     }
 
     @Override
-    public void put(AccountID id, MerkleAccount account) {
+    public void put(AccountID id, HederaAccount account) {
         accounts.put(id, account);
     }
 
@@ -68,7 +69,7 @@ public class HashMapBackingAccounts implements BackingStore<AccountID, MerkleAcc
     }
 
     @Override
-    public MerkleAccount getImmutableRef(AccountID id) {
+    public HederaAccount getImmutableRef(AccountID id) {
         return accounts.get(id);
     }
 }

@@ -21,6 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import javax.inject.Inject;
@@ -91,19 +92,6 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         updatedNumTopics();
     }
 
-    public void updateCounts() {
-        // As a side effect these capture the snapshots; note the number of contracts cannot
-        // be directly "read off" from anywhere, hence depends on calls to recordContracts()
-        updatedNumAccounts();
-        updatedNumFiles();
-        updatedNumNfts();
-        updatedNumSchedules();
-        updatedNumStorageSlots();
-        updatedNumTokens();
-        updatedNumTokenRels();
-        updatedNumTopics();
-    }
-
     public void assertCreatableAccounts(final int n) {
         final var candidateNum = updatedNumAccounts() + n;
         ensure(candidateNum <= dynamicProperties.maxNumAccounts());
@@ -168,24 +156,54 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         return 100.0 * numAccounts / dynamicProperties.maxNumAccounts();
     }
 
+    public int roundedAccountPercentUtil() {
+        final var n = dynamicProperties.maxNumAccounts();
+        return n == 0 ? 100 : (int) ((100 * updatedNumAccounts()) / n);
+    }
+
     public double percentContractsUsed() {
         return 100.0 * numContracts / dynamicProperties.maxNumContracts();
+    }
+
+    public int roundedContractPercentUtil() {
+        final var n = dynamicProperties.maxNumContracts();
+        return n == 0 ? 100 : (int) ((100 * numContracts) / n);
     }
 
     public double percentFilesUsed() {
         return 100.0 * numFiles / dynamicProperties.maxNumFiles();
     }
 
+    public int roundedFilePercentUtil() {
+        final var n = dynamicProperties.maxNumFiles();
+        return n == 0 ? 100 : (int) ((100 * updatedNumFiles()) / n);
+    }
+
     public double percentNftsUsed() {
         return 100.0 * numNfts / dynamicProperties.maxNftMints();
+    }
+
+    public int roundedNftPercentUtil() {
+        final var n = dynamicProperties.maxNftMints();
+        return n == 0 ? 100 : (int) ((100 * updatedNumNfts()) / n);
     }
 
     public double percentTokensUsed() {
         return 100.0 * numTokens / dynamicProperties.maxNumTokens();
     }
 
+    public int roundedTokenPercentUtil() {
+        final var n = dynamicProperties.maxNumTokens();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTokens()) / n);
+    }
+
     public double percentTopicsUsed() {
         return 100.0 * numTopics / dynamicProperties.maxNumTopics();
+    }
+
+    public int roundedTopicPercentUtil() {
+        final var n = dynamicProperties.maxNumTopics();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTopics()) / n);
     }
 
     public double percentStorageSlotsUsed() {
@@ -196,8 +214,18 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
         return 100.0 * numTokenRels / dynamicProperties.maxNumTokenRels();
     }
 
+    public int roundedTokenRelPercentUtil() {
+        final var n = dynamicProperties.maxNumTokenRels();
+        return n == 0 ? 100 : (int) ((100 * updatedNumTokenRels()) / n);
+    }
+
     public double percentSchedulesUsed() {
         return 100.0 * numSchedules / dynamicProperties.maxNumSchedules();
+    }
+
+    public int roundedSchedulePercentUtil() {
+        final var n = dynamicProperties.maxNumSchedules();
+        return n == 0 ? 100 : (int) ((100 * updatedNumSchedules()) / n);
     }
 
     public long getNumAccounts() {
@@ -280,5 +308,19 @@ public class UsageLimits implements ContractStorageLimits, AccountUsageTracking 
 
     private void ensure(final boolean test) {
         validateResourceLimit(test, MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+    }
+
+    @VisibleForTesting
+    void updateCounts() {
+        // As a side effect these capture the snapshots; note the number of contracts cannot
+        // be directly "read off" from anywhere, hence depends on calls to recordContracts()
+        updatedNumAccounts();
+        updatedNumFiles();
+        updatedNumNfts();
+        updatedNumSchedules();
+        updatedNumStorageSlots();
+        updatedNumTokens();
+        updatedNumTokenRels();
+        updatedNumTopics();
     }
 }

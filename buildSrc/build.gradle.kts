@@ -34,4 +34,5 @@ dependencies {
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
     implementation("net.swiftzer.semver:semver:1.1.2")
+    implementation("org.gradlex:extra-java-module-info:1.0")
 }

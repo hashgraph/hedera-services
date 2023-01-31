@@ -26,14 +26,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.math.BigInteger;
 import java.util.List;
@@ -42,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 public class BalanceOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
+    private static final String BALANCE_OF = "balanceOf";
 
     public static void main(String[] args) {
         new BalanceOperationSuite().runSuiteAsync();
@@ -65,19 +69,22 @@ public class BalanceOperationSuite extends HapiApiSuite {
                         contractCreate(contract))
                 .when()
                 .then(
-                        contractCall(contract, "balanceOf", INVALID_ADDRESS)
+                        contractCall(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-                        contractCallLocal(contract, "balanceOf", INVALID_ADDRESS)
+                        contractCallLocal(contract, BALANCE_OF, asHeadlongAddress(INVALID_ADDRESS))
                                 .hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var id = spec.registry().getAccountID(ACCOUNT);
                                     final var contractID = spec.registry().getContractId(contract);
-                                    final var solidityAddress = asHexedSolidityAddress(id);
-                                    final var contractAddress = asHexedSolidityAddress(contractID);
+
+                                    final var solidityAddress =
+                                            HapiParserUtil.asHeadlongAddress(asAddress(id));
+                                    final var contractAddress =
+                                            asHeadlongAddress(asHexedSolidityAddress(contractID));
 
                                     final var call =
-                                            contractCall(contract, "balanceOf", solidityAddress)
+                                            contractCall(contract, BALANCE_OF, solidityAddress)
                                                     .via("callRecord");
 
                                     final var callRecord =
@@ -89,7 +96,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
                                                                                     .resultThruAbi(
                                                                                             getABIFor(
                                                                                                     FUNCTION,
-                                                                                                    "balanceOf",
+                                                                                                    BALANCE_OF,
                                                                                                     contract),
                                                                                             isLiteralResult(
                                                                                                     new Object
@@ -100,14 +107,13 @@ public class BalanceOperationSuite extends HapiApiSuite {
                                                                                                     }))));
 
                                     final var callLocal =
-                                            contractCallLocal(
-                                                            contract, "balanceOf", solidityAddress)
+                                            contractCallLocal(contract, BALANCE_OF, solidityAddress)
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(
                                                                             getABIFor(
                                                                                     FUNCTION,
-                                                                                    "balanceOf",
+                                                                                    BALANCE_OF,
                                                                                     contract),
                                                                             ContractFnResultAsserts
                                                                                     .isLiteralResult(
@@ -119,14 +125,13 @@ public class BalanceOperationSuite extends HapiApiSuite {
                                                                                             })));
 
                                     final var contractCallLocal =
-                                            contractCallLocal(
-                                                            contract, "balanceOf", contractAddress)
+                                            contractCallLocal(contract, BALANCE_OF, contractAddress)
                                                     .has(
                                                             ContractFnResultAsserts.resultWith()
                                                                     .resultThruAbi(
                                                                             getABIFor(
                                                                                     FUNCTION,
-                                                                                    "balanceOf",
+                                                                                    BALANCE_OF,
                                                                                     contract),
                                                                             ContractFnResultAsserts
                                                                                     .isLiteralResult(

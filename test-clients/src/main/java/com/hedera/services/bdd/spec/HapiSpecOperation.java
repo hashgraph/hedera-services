@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnknownFieldSet;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
@@ -46,6 +47,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,7 +82,7 @@ public abstract class HapiSpecOperation {
     protected boolean useDefaultTxnAsAnswerOnlyPayment = false;
     protected boolean usePresetTimestamp = false;
     protected boolean asTxnWithOnlySigMap = false;
-    protected boolean alwaysWithLegacyProtoStructure = false;
+    @Nullable protected HapiSpecSetup.TxnProtoStructure explicitProtoStructure = null;
     protected boolean asTxnWithSignedTxnBytesAndSigMap = false;
     protected boolean asTxnWithSignedTxnBytesAndBodyBytes = false;
 
@@ -107,6 +109,15 @@ public abstract class HapiSpecOperation {
     protected Optional<Supplier<AccountID>> nodeSupplier = Optional.empty();
     protected OptionalDouble usdFee = OptionalDouble.empty();
     protected Optional<Integer> retryLimits = Optional.empty();
+
+    @Nullable protected UnknownFieldLocation unknownFieldLocation = null;
+
+    public enum UnknownFieldLocation {
+        TRANSACTION,
+        SIGNED_TRANSACTION,
+        TRANSACTION_BODY,
+        OP_BODY
+    }
 
     protected abstract long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys)
             throws Throwable;
@@ -148,8 +159,8 @@ public abstract class HapiSpecOperation {
 
     private void configureProtoStructureFor(HapiApiSpec spec) {
         txnProtoStructure =
-                alwaysWithLegacyProtoStructure
-                        ? HapiSpecSetup.TxnProtoStructure.OLD
+                (explicitProtoStructure != null)
+                        ? explicitProtoStructure
                         : spec.setup().txnProtoStructure();
     }
 
@@ -325,22 +336,36 @@ public abstract class HapiSpecOperation {
         return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);
     }
 
+    protected static UnknownFieldSet nonEmptyUnknownFields() {
+        return UnknownFieldSet.newBuilder()
+                .addField(666, UnknownFieldSet.Field.newBuilder().addFixed32(42).build())
+                .build();
+    }
+
     private Transaction finalizedTxnFromTxnWithBodyBytesAndSigMap(
             Transaction txnWithBodyBytesAndSigMap) throws Throwable {
         if (asTxnWithOnlySigMap) {
             return txnWithBodyBytesAndSigMap.toBuilder().clearBodyBytes().build();
         }
-        if (alwaysWithLegacyProtoStructure) {
+        if (explicitProtoStructure == HapiSpecSetup.TxnProtoStructure.OLD) {
             return txnWithBodyBytesAndSigMap;
         }
         ByteString bodyByteString =
                 CommonUtils.extractTransactionBodyByteString(txnWithBodyBytesAndSigMap);
+        if (unknownFieldLocation == UnknownFieldLocation.TRANSACTION_BODY) {
+            bodyByteString =
+                    TransactionBody.parseFrom(bodyByteString).toBuilder()
+                            .setUnknownFields(nonEmptyUnknownFields())
+                            .build()
+                            .toByteString();
+        }
         SignatureMap sigMap = CommonUtils.extractSignatureMap(txnWithBodyBytesAndSigMap);
-        SignedTransaction signedTransaction =
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(bodyByteString)
-                        .setSigMap(sigMap)
-                        .build();
+        final var wrapper =
+                SignedTransaction.newBuilder().setBodyBytes(bodyByteString).setSigMap(sigMap);
+        if (unknownFieldLocation == UnknownFieldLocation.SIGNED_TRANSACTION) {
+            wrapper.setUnknownFields(nonEmptyUnknownFields());
+        }
+        var signedTransaction = wrapper.build();
         Transaction.Builder txnWithSignedTxnBytesBuilder =
                 Transaction.newBuilder()
                         .setSignedTransactionBytes(signedTransaction.toByteString());
@@ -351,9 +376,18 @@ public abstract class HapiSpecOperation {
             return txnWithSignedTxnBytesBuilder.setBodyBytes(bodyByteString).build();
         }
         if (txnProtoStructure == HapiSpecSetup.TxnProtoStructure.OLD) {
+            if (unknownFieldLocation == UnknownFieldLocation.TRANSACTION) {
+                txnWithBodyBytesAndSigMap =
+                        txnWithBodyBytesAndSigMap.toBuilder()
+                                .setUnknownFields(nonEmptyUnknownFields())
+                                .build();
+            }
             return txnWithBodyBytesAndSigMap;
         }
 
+        if (unknownFieldLocation == UnknownFieldLocation.TRANSACTION) {
+            txnWithSignedTxnBytesBuilder.setUnknownFields(nonEmptyUnknownFields());
+        }
         return txnWithSignedTxnBytesBuilder.build();
     }
 

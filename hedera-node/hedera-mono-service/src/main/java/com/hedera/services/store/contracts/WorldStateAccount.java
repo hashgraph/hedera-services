@@ -16,6 +16,7 @@
 package com.hedera.services.store.contracts;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.NavigableMap;
@@ -89,7 +90,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public UInt256 getStorageValue(final UInt256 key) {
-        return entityAccess.getStorage(account, key);
+        return UInt256.fromBytes(entityAccess.getStorage(asTypedEvmAddress(account), key));
     }
 
     @Override

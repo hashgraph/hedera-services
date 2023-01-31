@@ -44,6 +44,7 @@ class VirtualMapFactoryTest {
         assertThrows(UncheckedIOException.class, () -> subject.newScheduleListStorage());
         assertThrows(UncheckedIOException.class, () -> subject.newScheduleTemporalStorage());
         assertThrows(UncheckedIOException.class, () -> subject.newScheduleEqualityStorage());
+        assertThrows(UncheckedIOException.class, () -> subject.newOnDiskAccountStorage());
     }
 
     @Test

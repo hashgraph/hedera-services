@@ -36,10 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hedera.services.keys.LegacyContractIdActivations;
-import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
+import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
+import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -102,12 +101,14 @@ class BootstrapPropertiesTest {
                     entry(ACCOUNTS_SYSTEM_ADMIN, 50L),
                     entry(ACCOUNTS_SYSTEM_DELETE_ADMIN, 59L),
                     entry(ACCOUNTS_SYSTEM_UNDELETE_ADMIN, 60L),
+                    entry(ACCOUNTS_STORE_ON_DISK, false),
                     entry(ACCOUNTS_TREASURY, 2L),
                     entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
                     entry(CONTRACTS_ALLOW_CREATE2, true),
                     entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
                     entry(CONTRACTS_DEFAULT_LIFETIME, 7890000L),
                     entry(CONTRACTS_DYNAMIC_EVM_VERSION, false),
+                    entry(CONTRACTS_ENFORCE_CREATION_THROTTLE, false),
                     entry(CONTRACTS_EVM_VERSION, EVM_VERSION_0_30),
                     entry(CONTRACTS_LOCAL_CALL_EST_RET_BYTES, 32),
                     entry(CONTRACTS_MAX_GAS_PER_SEC, 15000000L),
@@ -115,9 +116,6 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
                     entry(CONTRACTS_CHAIN_ID, 295),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
-                    entry(
-                            CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
-                            LegacyContractIdActivations.from("1058134by[1062784]")),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
                     entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
                     entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
@@ -127,6 +125,7 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, true),
                     entry(CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, true),
                     entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
+                    entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
                     entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
                     entry(ENTITIES_MAX_LIFETIME, 3153600000L),
                     entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
@@ -143,6 +142,9 @@ class BootstrapPropertiesTest {
                     entry(
                             FEES_PERCENT_CONGESTION_MULTIPLIERS,
                             CongestionMultipliers.from("90,10x,95,25x,99,100x")),
+                    entry(
+                            FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
+                            EntityScaleFactors.from("DEFAULT(90,10:1,95,25:1,99,100:1)")),
                     entry(FEES_MIN_CONGESTION_PERIOD, 60),
                     entry(FILES_ADDRESS_BOOK, 101L),
                     entry(FILES_NETWORK_PROPERTIES, 121L),
@@ -181,6 +183,8 @@ class BootstrapPropertiesTest {
                     entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, 10),
                     entry(LEDGER_TOTAL_TINY_BAR_FLOAT, 5000000000000000000L),
                     entry(AUTO_CREATION_ENABLED, true),
+                    entry(LAZY_CREATION_ENABLED, true),
+                    entry(CRYPTO_CREATE_WITH_ALIAS_ENABLED, true),
                     entry(AUTO_RENEW_TARGET_TYPES, EnumSet.of(EntityType.CONTRACT)),
                     entry(AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN, 100),
                     entry(AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE, 2),
@@ -205,6 +209,7 @@ class BootstrapPropertiesTest {
                     entry(QUERIES_BLOB_LOOK_UP_RETRIES, 3),
                     entry(TOKENS_MAX_RELS_PER_INFO_QUERY, 1_000),
                     entry(TOKENS_MAX_PER_ACCOUNT, 1_000),
+                    entry(TOKENS_STORE_RELS_ON_DISK, true),
                     entry(TOKENS_MAX_SYMBOL_UTF8_BYTES, 100),
                     entry(TOKENS_MAX_TOKEN_NAME_UTF8_BYTES, 100),
                     entry(TOKENS_MAX_CUSTOM_FEES_ALLOWED, 10),
@@ -243,9 +248,6 @@ class BootstrapPropertiesTest {
                     entry(STAKING_PERIOD_MINS, 1440L),
                     entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
                     entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
-                    entry(
-                            STAKING_STARTUP_HELPER_RECOMPUTE,
-                            EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
                     entry(STAKING_REWARD_RATE, 0L),
                     entry(STAKING_START_THRESH, 25000000000000000L),
                     entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),
@@ -264,9 +266,7 @@ class BootstrapPropertiesTest {
                     entry(TOKENS_NFTS_MAX_BATCH_SIZE_BURN, 10),
                     entry(TOKENS_NFTS_MAX_METADATA_BYTES, 100),
                     entry(TOKENS_NFTS_MAX_ALLOWED_MINTS, 5000000L),
-                    entry(
-                            TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR,
-                            ThrottleReqOpsScaleFactor.from("5:2")),
+                    entry(TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, ScaleFactor.from("5:2")),
                     entry(TOKENS_NFTS_USE_VIRTUAL_MERKLE, false),
                     entry(
                             UPGRADE_ARTIFACTS_PATH,

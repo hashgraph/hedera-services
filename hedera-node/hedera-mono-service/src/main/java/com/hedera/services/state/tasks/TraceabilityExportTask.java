@@ -15,14 +15,19 @@
  */
 package com.hedera.services.state.tasks;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.DONE;
+import static com.hedera.services.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+import static com.hedera.services.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.BLOBS_GET;
+import static com.hedera.services.throttling.MapAccessType.STORAGE_GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.EntityAccess;
@@ -37,7 +42,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SidecarUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -79,7 +83,7 @@ public class TraceabilityExportTask implements SystemTask {
     private final FunctionalityThrottling handleThrottling;
     private final GlobalDynamicProperties dynamicProperties;
     private final TraceabilityRecordsHelper recordsHelper;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+    private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 
     // Used to occasionally log the progress of the traceability export; because this is
@@ -95,7 +99,7 @@ public class TraceabilityExportTask implements SystemTask {
             final GlobalDynamicProperties dynamicProperties,
             final TraceabilityRecordsHelper recordsHelper,
             final @HandleThrottle FunctionalityThrottling handleThrottling,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+            final Supplier<AccountStorageAdapter> accounts,
             final Supplier<VirtualMap<ContractKey, IterableContractValue>> contractStorage) {
         this.entityAccess = entityAccess;
         this.expiryThrottle = expiryThrottle;
@@ -163,7 +167,7 @@ public class TraceabilityExportTask implements SystemTask {
 
     private void addStateChangesSideCar(
             final ContractID contractId,
-            final MerkleAccount contract,
+            final HederaAccount contract,
             final List<TransactionSidecarRecord.Builder> sidecars) {
         var contractStorageKey = contract.getFirstContractStorageKey();
         if (contractStorageKey == null) {
@@ -192,7 +196,7 @@ public class TraceabilityExportTask implements SystemTask {
             final ContractID contractId) {
         expiryThrottle.allowOne(BLOBS_GET);
         final var runtimeCode =
-                entityAccess.fetchCodeIfPresent(EntityIdUtils.asAccount(contractId));
+                entityAccess.fetchCodeIfPresent(EntityIdUtils.asTypedEvmAddress(contractId));
         if (runtimeCode == null) {
             return null;
         }

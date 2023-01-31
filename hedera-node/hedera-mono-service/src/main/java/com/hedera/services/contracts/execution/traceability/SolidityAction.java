@@ -103,7 +103,7 @@ public class SolidityAction {
         this.error = error;
     }
 
-    public void setInvalidSolidityAddress(byte[] invalidSolidityAddress) {
+    public void setTargetedAddress(byte[] invalidSolidityAddress) {
         this.invalidSolidityAddress = invalidSolidityAddress;
     }
 
@@ -171,7 +171,7 @@ public class SolidityAction {
         } else if (recipientContract != null) {
             grpc.setRecipientContract(recipientContract.toGrpcContractId());
         } else if (invalidSolidityAddress != null) {
-            grpc.setInvalidSolidityAddress(ByteStringUtils.wrapUnsafely(invalidSolidityAddress));
+            grpc.setTargetedAddress(ByteStringUtils.wrapUnsafely(invalidSolidityAddress));
         }
         grpc.setValue(value);
         grpc.setGasUsed(gasUsed);

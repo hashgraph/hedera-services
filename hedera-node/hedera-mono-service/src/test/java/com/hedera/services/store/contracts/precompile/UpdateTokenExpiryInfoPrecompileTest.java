@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -26,6 +27,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenA
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapperWithInvalidTokenID;
 import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.decodeUpdateTokenExpiryInfo;
+import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.decodeUpdateTokenExpiryInfoV2;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,9 +52,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -105,10 +107,10 @@ class UpdateTokenExpiryInfoPrecompileTest {
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
 
     @Mock
-    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus>
+    private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
             tokenRels;
 
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
     @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
@@ -127,6 +129,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
     public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT =
             Bytes.fromHexString(
                     "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
+    public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2 =
+            Bytes.fromHexString(
+                    "0xd27be6cd00000000000000000000000000000000000000000000000000000000000008d3000000000000000000000000000000000000000000000000000000000bf7edc700000000000000000000000000000000000000000000000000000000000008d00000000000000000000000000000000000000000000000000000000000000008");
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
@@ -161,7 +166,9 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @AfterEach
     void closeMocks() {
-        updateTokenExpiryInfoPrecompile.close();
+        if (!updateTokenExpiryInfoPrecompile.isClosed()) {
+            updateTokenExpiryInfoPrecompile.close();
+        }
     }
 
     @Test
@@ -176,6 +183,28 @@ class UpdateTokenExpiryInfoPrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
         givenUpdateTokenContext();
+        givenPricingUtilsContext();
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void updateTokenExpiryInfoV2HappyPath() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenFrameContext();
+        givenLedgers();
+        givenMinimalContextForSuccessfulCall();
+        givenMinimalRecordStructureForSuccessfulCall();
+        givenUpdateTokenContextV2();
         givenPricingUtilsContext();
         // when
         subject.prepareFields(frame);
@@ -218,14 +247,21 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @Test
     void decodeUpdateExpiryInfoForTokenInput() {
-        updateTokenExpiryInfoPrecompile
-                .when(
-                        () ->
-                                decodeUpdateTokenExpiryInfo(
-                                        UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity()))
-                .thenCallRealMethod();
+        updateTokenExpiryInfoPrecompile.close();
         final var decodedInput =
                 decodeUpdateTokenExpiryInfo(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity());
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.expiry().second() > 0);
+        assertTrue(decodedInput.expiry().autoRenewAccount().getAccountNum() > 0);
+        assertTrue(decodedInput.expiry().autoRenewPeriod() > 0);
+    }
+
+    @Test
+    void decodeUpdateExpiryInfoV2ForTokenInput() {
+        updateTokenExpiryInfoPrecompile.close();
+        final var decodedInput =
+                decodeUpdateTokenExpiryInfoV2(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity());
 
         assertTrue(decodedInput.tokenID().getTokenNum() > 0);
         assertTrue(decodedInput.expiry().second() > 0);
@@ -264,6 +300,25 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         updateTokenExpiryInfoPrecompile
                 .when(() -> decodeUpdateTokenExpiryInfo(any(), any()))
+                .thenReturn(tokenUpdateExpiryInfoWrapper);
+        given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+    }
+
+    private void givenUpdateTokenContextV2() {
+        given(sigsVerifier.hasActiveAdminKey(true, tokenAddress, fungibleTokenAddr, wrappedLedgers))
+                .willReturn(true);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTokenUpdateLogic(
+                                hederaTokenStore, wrappedLedgers, sideEffects))
+                .willReturn(updateLogic);
+        given(updateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
+        updateTokenExpiryInfoPrecompile
+                .when(() -> decodeUpdateTokenExpiryInfoV2(any(), any()))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
                 .willReturn(

@@ -30,7 +30,7 @@ public final class SerializationUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static void serializeCryptoAllowances(
+    public static void serializeHbarAllowances(
             SerializableDataOutputStream out, final Map<EntityNum, Long> cryptoAllowances)
             throws IOException {
         out.writeInt(cryptoAllowances.size());
@@ -40,7 +40,7 @@ public final class SerializationUtils {
         }
     }
 
-    public static void serializeTokenAllowances(
+    public static void serializeFungibleAllowances(
             final SerializableDataOutputStream out,
             final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances)
             throws IOException {
@@ -51,7 +51,7 @@ public final class SerializationUtils {
         }
     }
 
-    public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(
+    public static Map<FcTokenAllowanceId, Long> deserializeFungibleAllowances(
             final SerializableDataInputStream in) throws IOException {
         var numFungibleTokenAllowances = in.readInt();
         if (numFungibleTokenAllowances == 0) {
@@ -66,7 +66,7 @@ public final class SerializationUtils {
         return fungibleTokenAllowances;
     }
 
-    public static void serializeApproveForAllNftsAllowances(
+    public static void serializeNftOperatorApprovals(
             SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts)
             throws IOException {
         out.writeInt(approveForAllNfts.size());
@@ -75,7 +75,7 @@ public final class SerializationUtils {
         }
     }
 
-    public static Map<EntityNum, Long> deserializeCryptoAllowances(
+    public static Map<EntityNum, Long> deserializeHbarAllowances(
             final SerializableDataInputStream in) throws IOException {
         var numCryptoAllowances = in.readInt();
         if (numCryptoAllowances == 0) {
@@ -90,7 +90,7 @@ public final class SerializationUtils {
         return cryptoAllowances;
     }
 
-    public static Set<FcTokenAllowanceId> deserializeApproveForAllNftsAllowances(
+    public static Set<FcTokenAllowanceId> deserializeNftOperatorApprovals(
             final SerializableDataInputStream in) throws IOException {
         var numApproveForAllNftsAllowances = in.readInt();
         if (numApproveForAllNftsAllowances == 0) {

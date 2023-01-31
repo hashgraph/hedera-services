@@ -18,7 +18,7 @@ package com.hedera.services.fees;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -72,5 +72,5 @@ public interface FeeCalculator {
      * @return the corresponding RenewAssessment
      */
     RenewAssessment assessCryptoAutoRenewal(
-            MerkleAccount expiredAccount, long requestedRenewal, Instant now, MerkleAccount payer);
+            HederaAccount expiredAccount, long requestedRenewal, Instant now, HederaAccount payer);
 }

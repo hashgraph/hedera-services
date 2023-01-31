@@ -47,7 +47,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
@@ -84,7 +84,7 @@ class AutoCreationLogicTest {
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private FeeCalculator feeCalculator;
     @Mock private SigImpactHistorian sigImpactHistorian;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private GlobalDynamicProperties properties;
 

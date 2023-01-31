@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -41,6 +42,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -282,9 +284,9 @@ class GetContractInfoAnswerTest {
         // setup:
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableContractStatus(asContract(target), contracts))
+        given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(INVALID_CONTRACT_ID);
-        given(view.contracts()).willReturn(contracts);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
         // when:
         ResponseCodeEnum validity = subject.checkValidity(query, view);
@@ -297,9 +299,9 @@ class GetContractInfoAnswerTest {
     void allowsQueryingDeletedContracts() throws Throwable {
         Query query = validQuery(COST_ANSWER, fee, target);
 
-        given(optionValidator.queryableContractStatus(asContract(target), contracts))
+        given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
                 .willReturn(CONTRACT_DELETED);
-        given(view.contracts()).willReturn(contracts);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
         ResponseCodeEnum validity = subject.checkValidity(query, view);
 
