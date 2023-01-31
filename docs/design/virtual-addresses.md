@@ -60,11 +60,15 @@ public interface HederaAccount {
 - The limitation for accounts to have a maximum limit of virtual addresses will not be applicable to this system account i.e. this account will have unbounded list of virtual addresses 
 
 #### State migration
-- Create new class in `com.hedera.node.app.service.mono.state.migration` that implements the migration logic for the accounts and contracts
+- Create new class in `com.hedera.node.app.service.mono.state.migration` that implements the [migration logic](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#alias-to-virtual-account-migration) for the accounts and contracts
+  - The class should implement separate methods for each case of the migration:
+    - Migrate accounts with an explicit alias (ECDSA alias or hollow accounts) e.g. `public static void migrateAliasedAccounts()`
+    - Migrate all ECDSA accounts e.g. `public static void migrateECDSAAccounts()`
+    - Migrate contracts with valid `CREATE` or `CREATE2` addresses e.g. `public static void migrateContracts()`
+  - The invocation of the methods of the migration class should be put behind feature flags so that performing separate migration cases is configurable e.g. we want to perform only contract migration
 - During migration all `evmAddress` entries that are currently in `AliasManager` map should be moved to the `evmAddress -> accountId` map
 - After migration is done the `AliasManager` map should contain only key based alias entries
 - The migration is not reversible so if data expected in the new version of the state is missing we should fall back to the way we retrieve data from the old version of the state
-- Migration steps are described [here](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#alias-to-virtual-account-migration)
 
 ### Transactions
 
@@ -100,6 +104,9 @@ public interface HederaAccount {
   - `virtualAddresses.maxNumber` - the maximum number of virtual addresses per account
   - `virtualAddresses.canDisable` - toggle for the ability to disable virtual accounts
   - `virtualAddresses.canRemove` - toggle for the ability to remove virtual accounts (will not be needed initially since removal is not a goal)
+  - `virtualAddresses.migrate.aliasedAccounts` - toggle to enable migration of aliased accounts
+  - `virtualAddresses.migrate.ECDSAAccounts` - toggle to enable migration of ECDSA accounts
+  - `virtualAddresses.migrate.contracts` - toggle to enable migration of contracts
 
 ## Phases of development
 
