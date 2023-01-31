@@ -30,16 +30,14 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.utils.SidecarUtils;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -51,12 +49,9 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
     private static final int MAX_STACK_DEPTH = 1024;
 
     protected static final Operation.OperationResult INVALID_RESPONSE =
-            new OperationResult(
-                    OptionalLong.of(0L), Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
+            new OperationResult(0L, ExceptionalHaltReason.INVALID_OPERATION);
     protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
-            new Operation.OperationResult(
-                    OptionalLong.empty(),
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
 
     protected final GlobalDynamicProperties dynamicProperties;
     private final EntityCreator creator;
@@ -94,12 +89,10 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
         }
 
         final long cost = cost(frame);
-        final OptionalLong optionalCost = OptionalLong.of(cost);
         if (frame.isStatic()) {
-            return haltWith(optionalCost, ILLEGAL_STATE_CHANGE);
+            return haltWith(cost, ILLEGAL_STATE_CHANGE);
         } else if (frame.getRemainingGas() < cost) {
-            return new Operation.OperationResult(
-                    optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            return new Operation.OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
         }
         final Wei value = Wei.wrap(frame.getStackItem(0));
 
@@ -115,12 +108,11 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
             spawnChildMessage(frame);
         }
 
-        return new Operation.OperationResult(optionalCost, Optional.empty());
+        return new Operation.OperationResult(cost, null);
     }
 
-    static Operation.OperationResult haltWith(
-            final OptionalLong optionalCost, final ExceptionalHaltReason reason) {
-        return new Operation.OperationResult(optionalCost, Optional.of(reason));
+    static Operation.OperationResult haltWith(final long cost, final ExceptionalHaltReason reason) {
+        return new Operation.OperationResult(cost, reason);
     }
 
     protected abstract boolean isEnabled();
@@ -172,7 +164,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                         .sender(frame.getRecipientAddress())
                         .value(value)
                         .apparentValue(value)
-                        .code(Code.createLegacyCode(inputData, Hash.EMPTY))
+                        .code(CodeFactory.createCode(inputData, Hash.EMPTY, 0, false))
                         .blockValues(frame.getBlockValues())
                         .depth(frame.getMessageStackDepth() + 1)
                         .completer(child -> complete(frame, child))
@@ -218,7 +210,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
                 final var contractBytecodeSidecar =
                         SidecarUtils.createContractBytecodeSidecarFrom(
                                 updater.idOfLastNewAddress(),
-                                childFrame.getCode().getBytes().toArrayUnsafe(),
+                                childFrame.getCode().getContainerBytes().toArrayUnsafe(),
                                 updater.get(childFrame.getContractAddress())
                                         .getCode()
                                         .toArrayUnsafe());

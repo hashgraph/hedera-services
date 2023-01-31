@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,21 +28,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
     @Mock private AccountStore store;
+    @Mock private PreHandleContext context;
 
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CryptoPreTransactionHandlerImpl(store);
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
     }
 
     @Test
     void notImplementedStuffIsntImplemented() {
-        assertThrows(NotImplementedException.class, () -> subject.preHandleUpdateAccount(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoDelete(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleApproveAllowances(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteAllowances(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null));
     }

@@ -51,6 +51,7 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.sigs.SigWrappers;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -164,7 +165,8 @@ class HederaKeyActivationTest {
                 createCryptoSigsFrom(
                                 explicitList, mockSigs, new ReusableBodySigningFactory(accessor))
                         .getPlatformSigs();
-        new CryptoEngine(getStaticThreadManager()).verifySync(cryptoSigs);
+        new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                .verifySync(cryptoSigs);
         final var subject = pkToSigMapFrom(cryptoSigs);
 
         final var ed25519Sig = subject.apply(ed25519Key.getEd25519());

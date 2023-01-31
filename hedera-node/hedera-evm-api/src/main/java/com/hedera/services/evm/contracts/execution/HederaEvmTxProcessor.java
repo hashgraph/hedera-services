@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all the peripherals upon
  * instantiation. Provides a base {@link HederaEvmTxProcessor#execute(HederaEvmAccount, Address,
- * long, long, long, Bytes, boolean, boolean, Address)} method that handles the end-to-end execution
- * of an EVM transaction.
+ * long, long, long, Bytes, boolean, Address)} method that handles the end-to-end execution of an
+ * EVM transaction.
  */
 public abstract class HederaEvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
@@ -64,15 +64,6 @@ public abstract class HederaEvmTxProcessor {
     protected MessageFrame initialFrame;
     protected long gasUsed;
     protected long sbhRefund;
-
-    protected HederaEvmTxProcessor(
-            final PricesAndFeesProvider livePricesSource,
-            final EvmProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps) {
-        this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
-    }
 
     public void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
         this.blockMetaSource = blockMetaSource;
@@ -118,7 +109,6 @@ public abstract class HederaEvmTxProcessor {
      * @param value transaction value
      * @param payload transaction payload. For Create transactions, the bytecode + constructor
      *     arguments
-     * @param contractCreation if this is a contract creation transaction
      * @param isStatic Whether the execution is static
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
@@ -130,13 +120,9 @@ public abstract class HederaEvmTxProcessor {
             final long gasLimit,
             final long value,
             final Bytes payload,
-            final boolean contractCreation,
             final boolean isStatic,
             final Address mirrorReceiver) {
-        this.intrinsicGas =
-                gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
-        this.updater = worldState.updater();
-        this.coinbase = dynamicProperties.fundingAccountAddress();
+
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -198,6 +184,13 @@ public abstract class HederaEvmTxProcessor {
                     initialFrame.getRevertReason(),
                     initialFrame.getExceptionalHaltReason());
         }
+    }
+
+    public void setupFields(final boolean contractCreation) {
+        this.intrinsicGas =
+                gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+        this.updater = worldState.updater();
+        this.coinbase = dynamicProperties.fundingAccountAddress();
     }
 
     protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {

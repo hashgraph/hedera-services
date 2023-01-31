@@ -15,11 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl.sigs;
 
-import com.hedera.services.ledger.accounts.*;
-import com.hedera.services.store.contracts.*;
-import com.hedera.services.store.contracts.precompile.utils.*;
-import org.hyperledger.besu.datatypes.*;
-import org.hyperledger.besu.evm.frame.*;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationTest;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 @FunctionalInterface
 public interface KeyValidator {

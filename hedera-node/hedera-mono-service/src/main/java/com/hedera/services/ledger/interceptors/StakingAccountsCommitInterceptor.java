@@ -19,6 +19,7 @@ import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
+import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalIsDeletedGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.hasStakeMetaChanges;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.roundedToHbar;
@@ -47,6 +48,7 @@ import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -236,7 +238,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                             -curStakedId - 1, effStakeRewardStart);
                 }
             }
-            if (scenario.awardsToNode()) {
+            if (scenario.awardsToNode() && !finalIsDeletedGiven(account, changes)) {
                 final var stakeToAward =
                         finalBalanceGiven(account, changes)
                                 + finalStakedToMeGiven(i, account, stakedToMeUpdates);
@@ -251,9 +253,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             } else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
                 stakeAtStartOfLastRewardedPeriodUpdates[i] = roundedToHbar(account.totalStake());
             }
+            final var wasRewarded =
+                    rewardsEarned[i] > 0
+                            || (rewardsEarned[i] == 0
+                                    && earnedZeroRewardsBecauseOfZeroStake(account));
             stakePeriodStartUpdates[i] =
                     stakePeriodManager.startUpdateFor(
-                            curStakedId, newStakedId, rewardsEarned[i] > 0, stakeMetaChanged);
+                            curStakedId, newStakedId, wasRewarded, stakeMetaChanged);
         }
     }
 
@@ -309,6 +315,25 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }
+    }
+
+    /**
+     * Given an existing account that was in a reward situation and earned zero rewards, checks if
+     * this was because the account had effective stake of zero whole hbars during the rewardable
+     * periods. (The alternative is that it had zero rewardable periods; i.e., it started staking
+     * this period, or the last.)
+     *
+     * <p>This distinction matters because in the case of zero stake, we still want to update the
+     * account's {@code stakePeriodStart} and {@code stakeAtStartOfLastRewardedPeriod}. Otherwise,
+     * we don't want to update {@code stakePeriodStart}; and only want to update {@code
+     * stakeAtStartOfLastRewardedPeriod} if the account began staking in exactly the last period.
+     *
+     * @param account an account presumed to have just earned zero rewards
+     * @return whether the zero rewards were due to having zero stake
+     */
+    private boolean earnedZeroRewardsBecauseOfZeroStake(final HederaAccount account) {
+        return Objects.requireNonNull(account.getStakePeriodStart())
+                < stakePeriodManager.firstNonRewardableStakePeriod();
     }
 
     private void alterStakedToMe(
@@ -453,7 +478,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
 
-    private boolean shouldRememberStakeStartFor(
+    @VisibleForTesting
+    boolean shouldRememberStakeStartFor(
             @Nullable final HederaAccount account, final long curStakedId, final long reward) {
         if (account == null || curStakedId >= 0 || account.isDeclinedReward()) {
             // Alice cannot receive a reward for today, so nothing to remember here
@@ -468,6 +494,24 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // current value to reward her correctly for today no matter what happens later on
             return true;
         } else {
+            // At this point, Alice is an account staking to a node, accepting rewards, and in
+            // a reward situation---who nonetheless received zero rewards. There are essentially
+            // four scenarios:
+            //   1. Alice's stakePeriodStart is before the first non-rewardable period, but
+            //   she was either staking zero whole hbars during those periods (or the reward rate
+            //   was zero).
+            //   2. Alice's stakePeriodStart is the first non-rewardable period because she
+            //   was already rewarded earlier today.
+            //   3. Alice's stakePeriodStart is the first non-rewardable period, but she was not
+            //   rewarded today.
+            //   4. Alice's stakePeriodStart is the current period.
+            // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
+            // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
+            // preserve an already-recorded memory of her stake at the beginning of this period;
+            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            if (earnedZeroRewardsBecauseOfZeroStake(account)) {
+                return true;
+            }
             if (account.totalStakeAtStartOfLastRewardedPeriod()
                     != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
                 // Alice was in a reward situation, but did not earn anything because she already

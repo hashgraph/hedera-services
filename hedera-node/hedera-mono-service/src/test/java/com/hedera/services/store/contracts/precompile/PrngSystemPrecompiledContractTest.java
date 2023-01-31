@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PSEUDORANDOM_SEED_GENERATOR_SELECTOR;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
@@ -31,8 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.context.SideEffectsTracker;
@@ -40,6 +43,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.submerkle.EntityId;
@@ -48,8 +52,10 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.txns.util.PrngLogic;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
@@ -133,7 +139,8 @@ class PrngSystemPrecompiledContractTest {
     }
 
     @Test
-    void insufficientGasThrows() {
+    void insufficientGasRecordStillIncludesUtilPrngBody() throws UnknownHederaFunctionality {
+        final var captor = ArgumentCaptor.forClass(TransactionBody.Builder.class);
         final var input = random256BitGeneratorInput();
         initialSetUp();
         given(creator.createUnsuccessfulSyntheticRecord(any())).willReturn(childRecord);
@@ -146,6 +153,10 @@ class PrngSystemPrecompiledContractTest {
 
         final var result = subject.computePrecompile(input, frame);
         assertNull(result.getOutput());
+        verify(updater).manageInProgressRecord(eq(recordsHistorian), any(), captor.capture());
+        final var synthTxn = captor.getValue().build();
+        final var synthTxnType = MiscUtils.functionOf(synthTxn);
+        assertEquals(UtilPrng, synthTxnType);
     }
 
     @Test

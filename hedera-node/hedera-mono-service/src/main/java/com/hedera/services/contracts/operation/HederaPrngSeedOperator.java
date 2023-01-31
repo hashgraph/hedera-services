@@ -15,11 +15,9 @@
  */
 package com.hedera.services.contracts.operation;
 
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.*;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.services.txns.util.PrngLogic;
-import java.util.Optional;
-import java.util.OptionalLong;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -41,9 +39,8 @@ public class HederaPrngSeedOperator extends AbstractOperation {
         super(0x44, "PRNGSEED", 0, 1, 1, gasCalculator);
         this.prngLogic = prngLogic;
         this.gasCost = gasCalculator.getBaseTierGasCost();
-        OptionalLong optionalGasCost = OptionalLong.of(gasCost);
-        this.successResponse = new OperationResult(optionalGasCost, Optional.empty());
-        this.oogResponse = new OperationResult(optionalGasCost, Optional.of(INSUFFICIENT_GAS));
+        this.successResponse = new OperationResult(gasCost, null);
+        this.oogResponse = new OperationResult(gasCost, INSUFFICIENT_GAS);
     }
 
     @Override

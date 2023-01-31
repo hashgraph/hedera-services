@@ -69,6 +69,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String TRUE = "true";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
@@ -526,8 +527,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private HapiApiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
         return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
-                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
@@ -744,7 +745,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private HapiApiSpec createAnAccountWithEVMAddressAliasAndECKey() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(

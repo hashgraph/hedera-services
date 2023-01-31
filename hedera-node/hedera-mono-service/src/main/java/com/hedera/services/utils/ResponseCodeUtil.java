@@ -47,7 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

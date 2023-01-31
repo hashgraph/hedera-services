@@ -75,6 +75,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -128,11 +129,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
+    @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
+
     private boolean pseudorandomBytesExpected = false;
 
     private boolean noPseudoRandomData = false;
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
     private int numStakingRewardsPaid = -1;
+
+    @Nullable private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
 
     private Consumer<List<?>> eventDataObserver;
     private String eventName;
@@ -183,6 +188,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
+    public HapiGetTxnRecord exposingTokenCreationsTo(
+            final Consumer<List<TokenID>> createdTokenIdsObserver) {
+        this.createdTokenIdsObserver = createdTokenIdsObserver;
+        return this;
+    }
+
     public HapiGetTxnRecord scheduled() {
         scheduled = true;
         return this;
@@ -190,6 +201,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord assertingOnlyPriority() {
         assertOnlyPriority = true;
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingStakingRewardsTo(final Consumer<List<AccountAmount>> observer) {
+        stakingRewardsObserver = observer;
         return this;
     }
 
@@ -849,6 +865,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
         }
+        if (stakingRewardsObserver != null) {
+            stakingRewardsObserver.accept(rcd.getPaidStakingRewardsList());
+        }
         observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
         childRecordsCount.ifPresent(
@@ -864,7 +883,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         assertEquals(count, observedCount, "Wrong # of non-staking records");
                     }
                 });
+        final List<TokenID> tokenCreations =
+                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (var rec : childRecords) {
+            if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
+                tokenCreations.add(rec.getReceipt().getTokenID());
+            }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
                         .saveAccountId(
@@ -877,6 +901,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         rec.getAlias()::toStringUtf8,
                         rec.getReceipt()::getAccountID);
             }
+        }
+        if (createdTokenIdsObserver != null) {
+            createdTokenIdsObserver.accept(tokenCreations);
         }
 
         if (verboseLoggingOn) {

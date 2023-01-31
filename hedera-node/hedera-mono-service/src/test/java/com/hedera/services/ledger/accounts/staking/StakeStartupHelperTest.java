@@ -32,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -109,7 +110,11 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing();
 
         assertDoesNotThrow(
-                () -> subject.doUpgradeHousekeeping(networkContext, accounts, stakingInfos));
+                () ->
+                        subject.doUpgradeHousekeeping(
+                                networkContext,
+                                AccountStorageAdapter.fromInMemory(accounts),
+                                stakingInfos));
     }
 
     @Test
@@ -118,7 +123,8 @@ class StakeStartupHelperTest {
         final var expectedQuantities = givenStakingAccountsWithExpectedQuantities();
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
 
-        subject.doUpgradeHousekeeping(networkContext, accounts, stakingInfos);
+        subject.doUpgradeHousekeeping(
+                networkContext, AccountStorageAdapter.fromInMemory(accounts), stakingInfos);
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
 
@@ -173,6 +179,11 @@ class StakeStartupHelperTest {
                 account.setStakePeriodStart(currentStakingPeriod - r.nextInt(2));
                 final var nodeId = preUpgradeNodeIds[r.nextInt(preUpgradeNodeIds.length)];
                 account.setStakedId(-nodeId - 1);
+                // Delete the account 10% of the time
+                if (r.nextDouble() < 0.10) {
+                    account.setDeleted(true);
+                    continue;
+                }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
                 given(
                                 rewardCalculator.estimatePendingRewards(
@@ -260,21 +271,29 @@ class StakeStartupHelperTest {
 
     private static void registerConstructables() {
         try {
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(
-                            MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-            ConstructableRegistry.registerConstructable(
-                    new ClassConstructorPair(FCQueue.class, FCQueue::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleBinaryTree.class, MerkleBinaryTree::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleAccountState.class, MerkleAccountState::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }

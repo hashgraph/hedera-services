@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -80,8 +81,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     public void run(MessageFrame frame) {
         final var txn = transactionBody.build();
         final var updateOp = txn.getTokenUpdate();
-
-        var hederaTokenStore = initializeHederaTokenStore();
+        final var hederaTokenStore = initializeHederaTokenStore();
 
         /* --- Check required signatures --- */
         final var hasAdminSig =
@@ -91,20 +91,19 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
                         sigsVerifier::hasActiveAdminKey,
                         ledgers,
                         aliases);
-        validateTrue(hasAdminSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
+        validateTrue(hasAdminSig, INVALID_SIGNATURE);
         if (updateOp.hasTreasury()) {
             validateTreasurySig(frame, updateOp);
         }
         if (updateOp.hasAutoRenewAccount()) {
             validateAutoRenewSig(frame, updateOp);
         }
-
         hederaTokenStore.setAccountsLedger(ledgers.accounts());
         /* --- Build the necessary infrastructure to execute the transaction --- */
         TokenUpdateLogic updateLogic =
                 infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, ledgers, sideEffects);
 
-        final var validity = updateLogic.validate(txn);
+        final var validity = updateLogic.validate(transactionBody.build());
         validateTrue(validity == OK, validity);
         /* --- Execute the transaction and capture its results --- */
         switch (type) {

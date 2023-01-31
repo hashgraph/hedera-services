@@ -17,17 +17,15 @@ package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
-import static com.hedera.services.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
-import static com.hedera.services.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
@@ -83,9 +81,8 @@ public class StakeStartupHelper {
      * this address book.
      *
      * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
-     * the {@code createGenesisChildren()} work currently still done by {@link
-     * com.hedera.services.state.migration.ReleaseTwentySevenMigration#buildStakingInfoMap(AddressBook,
-     * BootstrapProperties)}.
+     * the {@code createGenesisChildren()} work currently still done by {@code
+     * StakingInfoMapBuilder}.
      *
      * @param addressBook the genesis address book
      */
@@ -131,7 +128,7 @@ public class StakeStartupHelper {
      */
     public void doUpgradeHousekeeping(
             final MerkleNetworkContext networkContext,
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final AccountStorageAdapter accounts,
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         // Recompute anything requested by the staking.startupHelper.recompute property
@@ -141,8 +138,8 @@ public class StakeStartupHelper {
             withLoggedDuration(
                     () ->
                             recomputeQuantities(
-                                    recomputeTypes.contains(NODE_STAKES),
-                                    recomputeTypes.contains(PENDING_REWARDS),
+                                    recomputeTypes.contains(RecomputeType.NODE_STAKES),
+                                    recomputeTypes.contains(RecomputeType.PENDING_REWARDS),
                                     networkContext,
                                     accounts,
                                     stakingInfos),
@@ -180,7 +177,7 @@ public class StakeStartupHelper {
             final boolean doNodeStakes,
             final boolean doPendingRewards,
             final MerkleNetworkContext networkContext,
-            final MerkleMap<EntityNum, MerkleAccount> accounts,
+            final AccountStorageAdapter accounts,
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         final AtomicLong newPendingRewards = new AtomicLong();
@@ -189,7 +186,7 @@ public class StakeStartupHelper {
 
         accounts.forEach(
                 (num, account) -> {
-                    if (account.getStakedId() < 0) {
+                    if (!account.isDeleted() && account.getStakedId() < 0) {
                         if (doPendingRewards) {
                             final var truePending =
                                     rewardCalculator.estimatePendingRewards(
@@ -229,7 +226,7 @@ public class StakeStartupHelper {
     }
 
     private void updateForNodeStaked(
-            final MerkleAccount account,
+            final HederaAccount account,
             final Map<EntityNum, Long> newStakesToReward,
             final Map<EntityNum, Long> newStakesToNotReward) {
         final var nodeNum = EntityNum.fromLong(account.getStakedNodeAddressBookId());

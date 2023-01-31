@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -182,6 +183,8 @@ public interface ServicesApp {
     ReconnectCompleteListener reconnectListener();
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
+
+    PlatformStatusChangeListener statusChangeListener();
 
     IssListener issListener();
 

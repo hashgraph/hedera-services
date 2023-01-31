@@ -29,7 +29,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -72,7 +72,7 @@ class AbstractTokenUpdatePrecompileTest {
     @Mock private HederaTokenStore tokenStore;
     @Mock private TokenUpdateLogic updateLogic;
     @Mock private BlockValues blockValues;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private LegacyKeyValidator legacyKeyValidator;
     @Mock private LegacyActivationTest legacyActivationTest;
 

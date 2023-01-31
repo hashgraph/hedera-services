@@ -15,15 +15,17 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.spi.key.HederaKey.asHederaKey;
+import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -35,9 +37,14 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
+    private final PreHandleContext preHandleContext;
+    private CryptoSignatureWaiversImpl waivers;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(
+            @Nonnull final AccountStore accountStore, @Nonnull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
+        this.preHandleContext = Objects.requireNonNull(ctx);
+        this.waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
     }
 
     @Override
@@ -52,31 +59,87 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
-        throw new NotImplementedException();
+        final var op = txn.getCryptoDelete();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var deleteAccountId = op.getDeleteAccountID();
+        final var transferAccountId = op.getTransferAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        meta.addNonPayerKey(deleteAccountId);
+        meta.addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+        return meta;
     }
 
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
+        final var op = txn.getCryptoApproveAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
+
+        for (final var allowance : op.getCryptoAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+        }
+        for (final var allowance : op.getTokenAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+        }
+        for (final var allowance : op.getNftAllowancesList()) {
+            final var ownerId = allowance.getOwner();
+            // If a spender who is granted approveForAll from owner and is granting
+            // allowance for a serial to another spender, need signature from the approveForAll
+            // spender
+            var operatorId =
+                    allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            // If approveForAll is set to true, need signature from owner
+            // since only the owner can grant approveForAll
+            if (allowance.getApprovedForAll().getValue()) {
+                operatorId = ownerId;
+            }
+            if (operatorId != ownerId) {
+                failureStatus = INVALID_DELEGATING_SPENDER;
+            }
+            meta.addNonPayerKey(operatorId, failureStatus);
+        }
+        return meta;
     }
 
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+        final var op = txn.getCryptoDeleteAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        // Every owner whose allowances are being removed should sign, if the owner is not payer
+        for (final var allowance : op.getNftAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
+        }
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
+        final var op = txn.getCryptoUpdateAccount();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var updateAccountId = op.getAccountIDToUpdate();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+
+        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
+        if (targetAccountKeyMustSign) {
+            meta.addNonPayerKey(updateAccountId);
+        }
+        if (newAccountKeyMustSign && op.hasKey()) {
+            var candidate = asHederaKey(op.getKey());
+            candidate.ifPresent(meta::addToReqKeys);
+        }
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
         throw new NotImplementedException();
     }
 
@@ -92,14 +155,38 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         throw new NotImplementedException();
     }
 
+    /* --------------- Helper methods --------------- */
+    /**
+     * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
+     * for signing the transaction
+     *
+     * @param tx given transaction body
+     * @param key key provided in the transaction body
+     * @param receiverSigReq flag for receiverSigReq on the given transaction body
+     * @param payer payer for the transaction
+     * @return transaction's metadata needed to validate signatures
+     */
     private TransactionMetadata createAccountSigningMetadata(
             final TransactionBody tx,
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
+        final var meta = new SigTransactionMetadata(accountStore, tx, payer);
         if (receiverSigReq && key.isPresent()) {
-            return new SigTransactionMetadata(accountStore, tx, payer, List.of(key.get()));
+            meta.addToReqKeys(key.get());
         }
-        return new SigTransactionMetadata(accountStore, tx, payer);
+        return meta;
+    }
+
+    /**
+     * @deprecated This method is needed for testing until {@link CryptoSignatureWaiversImpl} is
+     *     implemented. FUTURE: This method should be removed once {@link
+     *     CryptoSignatureWaiversImpl} is implemented.
+     * @param waivers signature waivers for crypto service
+     */
+    @Deprecated(forRemoval = true)
+    @VisibleForTesting
+    void setWaivers(final CryptoSignatureWaiversImpl waivers) {
+        this.waivers = waivers;
     }
 }

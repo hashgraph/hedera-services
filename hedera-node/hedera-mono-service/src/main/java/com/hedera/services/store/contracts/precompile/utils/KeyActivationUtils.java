@@ -17,13 +17,11 @@ package com.hedera.services.store.contracts.precompile.utils;
 
 import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
-import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -52,8 +50,8 @@ public final class KeyActivationUtils {
      *       part of a non-delegate call.
      * </ol>
      *
-     * <p>Note that because the {@link DecodingFacade} converts every address to its "mirror"
-     * address form (as needed for e.g. the {@link TransferLogic} implementation), we can assume the
+     * <p>Note that because the {@code DecodingFacade} converts every address to its "mirror"
+     * address form (as needed for e.g. the {@code TransferLogic} implementation), we can assume the
      * target address is a mirror address. All other addresses we resolve to their mirror form
      * before proceeding.
      *

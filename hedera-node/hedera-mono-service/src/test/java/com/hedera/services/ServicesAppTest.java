@@ -146,5 +146,6 @@ class ServicesAppTest {
         assertSame(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
+        assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
     }
 }

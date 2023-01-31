@@ -17,11 +17,13 @@ package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,17 +33,20 @@ public class SendSuite extends HapiApiSuite {
     private final Map<String, String> specConfig;
     private final String memo;
     private final String beneficiary;
-    private final long tinybarsToSend;
+    @Nullable private final String denomination;
+    private final long unitsToSend;
 
     public SendSuite(
             final Map<String, String> specConfig,
             final String beneficiary,
-            final long tinybarsToSend,
-            final String memo) {
+            final long unitsToSend,
+            final String memo,
+            @Nullable final String denomination) {
         this.memo = memo;
         this.specConfig = specConfig;
         this.beneficiary = Utils.extractAccount(beneficiary);
-        this.tinybarsToSend = tinybarsToSend;
+        this.unitsToSend = unitsToSend;
+        this.denomination = denomination;
     }
 
     @Override
@@ -55,9 +60,17 @@ public class SendSuite extends HapiApiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, beneficiary, tinybarsToSend))
-                                .memo(memo)
-                                .signedBy(DEFAULT_PAYER));
+                        denomination == null
+                                ? cryptoTransfer(
+                                                tinyBarsFromTo(
+                                                        DEFAULT_PAYER, beneficiary, unitsToSend))
+                                        .memo(memo)
+                                        .signedBy(DEFAULT_PAYER)
+                                : cryptoTransfer(
+                                                moving(unitsToSend, denomination)
+                                                        .between(DEFAULT_PAYER, beneficiary))
+                                        .memo(memo)
+                                        .signedBy(DEFAULT_PAYER));
     }
 
     @Override

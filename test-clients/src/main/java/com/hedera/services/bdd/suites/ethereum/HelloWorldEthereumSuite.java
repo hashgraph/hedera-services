@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final long depositAmount = 20_000L;
 
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-    private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
+    static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
     private static final String CHAIN_ID_PROP = "contracts.chainId";

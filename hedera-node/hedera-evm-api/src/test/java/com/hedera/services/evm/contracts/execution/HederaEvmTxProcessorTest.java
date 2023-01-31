@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,15 +39,15 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.CodeCache;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
@@ -69,7 +69,6 @@ class HederaEvmTxProcessorTest {
     private final String EVM_VERSION_0_32 = "v0.32";
     @Mock private PricesAndFeesProvider livePricesSource;
     @Mock private HederaEvmMutableWorldState worldState;
-    @Mock private CodeCache codeCache;
     @Mock private EvmProperties globalDynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private Set<Operation> operations;
@@ -105,7 +104,12 @@ class HederaEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 =
+                new EVM(
+                        operationRegistry,
+                        gasCalculator,
+                        EvmConfiguration.DEFAULT,
+                        EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         EVM_VERSION_0_30,
@@ -155,17 +159,10 @@ class HederaEvmTxProcessorTest {
         givenValidMock(0L);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
+        evmTxProcessor.setupFields(false);
         var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        33_333L,
-                        1234L,
-                        1L,
-                        Bytes.EMPTY,
-                        false,
-                        true,
-                        mirrorReceiver);
+                        sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertTrue(result.isSuccessful());
     }
 
@@ -189,7 +186,7 @@ class HederaEvmTxProcessorTest {
 
         var messageFrame = evmTxProcessor.buildInitialFrame(protoFrame, receiver, Bytes.EMPTY, 33L);
 
-        assertEquals(Code.EMPTY, messageFrame.getCode());
+        assertEquals(CodeV0.EMPTY_CODE, messageFrame.getCode());
     }
 
     @Test
@@ -198,17 +195,10 @@ class HederaEvmTxProcessorTest {
 
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
+        evmTxProcessor.setupFields(false);
         var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        0L,
-                        GAS_LIMIT,
-                        1234L,
-                        Bytes.EMPTY,
-                        false,
-                        false,
-                        mirrorReceiver);
+                        sender, receiver, 0L, GAS_LIMIT, 1234L, Bytes.EMPTY, false, mirrorReceiver);
         assertTrue(result.isSuccessful());
         assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
     }
@@ -223,17 +213,10 @@ class HederaEvmTxProcessorTest {
                 .willReturn(intrinsicGasCost);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
+        evmTxProcessor.setupFields(false);
         var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        0L,
-                        GAS_LIMIT,
-                        1234L,
-                        Bytes.EMPTY,
-                        false,
-                        false,
-                        mirrorReceiver);
+                        sender, receiver, 0L, GAS_LIMIT, 1234L, Bytes.EMPTY, false, mirrorReceiver);
         assertTrue(result.isSuccessful());
         assertEquals(intrinsicGasCost, result.getGasUsed());
     }
@@ -259,17 +242,10 @@ class HederaEvmTxProcessorTest {
         given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(mutableRecipientAccount);
         given(updater.updater()).willReturn(stackedUpdater);
 
+        evmTxProcessor.setupFields(false);
         final var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        333_333L,
-                        1234L,
-                        1L,
-                        Bytes.EMPTY,
-                        false,
-                        true,
-                        mirrorReceiver);
+                        sender, receiver, 333_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertEquals(INSUFFICIENT_GAS, result.getHaltReason().get().name());
     }
 
@@ -296,17 +272,10 @@ class HederaEvmTxProcessorTest {
 
         givenInvalidMock();
 
+        evmTxProcessor.setupFields(false);
         final var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        33_333L,
-                        0L,
-                        1234L,
-                        Bytes.EMPTY,
-                        false,
-                        true,
-                        mirrorReceiver);
+                        sender, receiver, 33_333L, 0L, 1234L, Bytes.EMPTY, true, mirrorReceiver);
         assertEquals(INSUFFICIENT_GAS, result.getHaltReason().get().name());
     }
 
@@ -318,6 +287,7 @@ class HederaEvmTxProcessorTest {
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false))
                 .willReturn(maxGasLimit + 1L);
 
+        evmTxProcessor.setupFields(false);
         final var result =
                 evmTxProcessor.execute(
                         sender,
@@ -326,7 +296,6 @@ class HederaEvmTxProcessorTest {
                         maxGasLimit,
                         1234L,
                         Bytes.EMPTY,
-                        false,
                         false,
                         mirrorReceiver);
         assertEquals(INSUFFICIENT_GAS, result.getHaltReason().get().name());
@@ -375,17 +344,10 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(100);
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
+        evmTxProcessor.setupFields(false);
         var result =
                 evmTxProcessor.execute(
-                        sender,
-                        receiver,
-                        GAS_LIMIT,
-                        0L,
-                        1234L,
-                        Bytes.EMPTY,
-                        false,
-                        true,
-                        mirrorReceiver);
+                        sender, receiver, GAS_LIMIT, 0L, 1234L, Bytes.EMPTY, true, mirrorReceiver);
 
         assertTrue(result.isSuccessful());
         assertEquals(0, result.getGasUsed());
@@ -431,20 +393,22 @@ class HederaEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
 
         // uses default setup
+        evmTxProcessor.setupFields(false);
+
         evmTxProcessor.execute(
-                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, false, true, mirrorReceiver);
+                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertEquals(EVM_VERSION_0_30, mcpVersion);
         assertEquals(EVM_VERSION_0_30, ccpVersion);
 
         // version changes, but dynamic not set
         evmTxProcessor.execute(
-                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, false, true, mirrorReceiver);
+                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertEquals(EVM_VERSION_0_30, mcpVersion);
         assertEquals(EVM_VERSION_0_30, ccpVersion);
 
         // version changes, dynamic set
         evmTxProcessor.execute(
-                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, false, true, mirrorReceiver);
+                sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertEquals(EVM_VERSION_0_32, mcpVersion);
         assertEquals(EVM_VERSION_0_32, ccpVersion);
 
@@ -459,7 +423,6 @@ class HederaEvmTxProcessorTest {
                                 1234L,
                                 1L,
                                 Bytes.EMPTY,
-                                false,
                                 true,
                                 mirrorReceiver));
     }

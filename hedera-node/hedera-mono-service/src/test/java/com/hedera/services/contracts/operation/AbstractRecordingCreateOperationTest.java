@@ -19,18 +19,10 @@ import static com.hedera.services.contracts.operation.AbstractRecordingCreateOpe
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -53,8 +45,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -99,7 +89,7 @@ class AbstractRecordingCreateOperationTest {
     private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
     private static final Address recipient = Address.BLAKE2B_F_COMPRESSION;
     private static final Operation.OperationResult EMPTY_HALT_RESULT =
-            new Operation.OperationResult(Subject.PRETEND_OPTIONAL_COST, Optional.empty());
+            new Operation.OperationResult(Subject.PRETEND_COST, null);
     private static final EntityId autoRenewId = new EntityId(0, 0, 8);
 
     private Subject subject;
@@ -139,7 +129,7 @@ class AbstractRecordingCreateOperationTest {
         given(frame.stackSize()).willReturn(3);
         given(frame.isStatic()).willReturn(true);
 
-        final var expected = haltWith(Subject.PRETEND_OPTIONAL_COST, ILLEGAL_STATE_CHANGE);
+        final var expected = haltWith(Subject.PRETEND_COST, ILLEGAL_STATE_CHANGE);
 
         assertSameResult(expected, subject.execute(frame, evm));
     }
@@ -149,7 +139,7 @@ class AbstractRecordingCreateOperationTest {
         given(frame.stackSize()).willReturn(3);
         given(frame.getRemainingGas()).willReturn(Subject.PRETEND_GAS_COST - 1);
 
-        final var expected = haltWith(Subject.PRETEND_OPTIONAL_COST, INSUFFICIENT_GAS);
+        final var expected = haltWith(Subject.PRETEND_COST, INSUFFICIENT_GAS);
 
         assertSameResult(expected, subject.execute(frame, evm));
     }
@@ -342,7 +332,7 @@ class AbstractRecordingCreateOperationTest {
     static class Subject extends AbstractRecordingCreateOperation {
         static final long PRETEND_GAS_COST = 123L;
         static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
-        static final OptionalLong PRETEND_OPTIONAL_COST = OptionalLong.of(PRETEND_GAS_COST);
+        static final long PRETEND_COST = PRETEND_GAS_COST;
 
         boolean isEnabled = true;
 

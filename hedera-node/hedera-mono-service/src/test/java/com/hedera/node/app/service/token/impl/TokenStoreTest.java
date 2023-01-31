@@ -86,7 +86,7 @@ class TokenStoreTest {
 
     private void initializeToken() {
         given(states.get(TOKENS)).willReturn(tokens);
-        token.setTotalSupply(100);
+        token.setTotalSupply(100L);
         token.setAdminKey(adminKey);
         token.setFreezeKey(freezeKey);
         token.setKycKey(kycKey);
@@ -122,7 +122,7 @@ class TokenStoreTest {
         assertEquals(supplyKey, meta.supplyKey().get());
         assertEquals(feeScheduleKey, meta.feeScheduleKey().get());
         assertEquals(pauseKey, meta.pauseKey().get());
-        assertEquals(false, meta.hasRoyaltyWithFallback());
+        assertFalse(meta.hasRoyaltyWithFallback());
         assertEquals(treasury, meta.treasury());
     }
 
@@ -134,7 +134,7 @@ class TokenStoreTest {
 
         assertTrue(result.failed());
         assertEquals(INVALID_TOKEN_ID, result.failureReason());
-        assertEquals(null, result.metadata());
+        assertNull(result.metadata());
     }
 
     @Test

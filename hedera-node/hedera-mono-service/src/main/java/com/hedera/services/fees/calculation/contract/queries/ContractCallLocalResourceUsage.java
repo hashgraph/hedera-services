@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,7 +60,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
     private final GlobalDynamicProperties properties;
     private final NodeLocalProperties nodeProperties;
     private final SmartContractFeeBuilder usageEstimator;
-    private final CallLocalEvmTxProcessor evmTxProcessor;
+    private final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider;
     private final StaticBlockMetaProvider blockMetaProvider;
 
     @Inject
@@ -68,13 +69,13 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
             final GlobalDynamicProperties properties,
             final NodeLocalProperties nodeProperties,
             final AccountStore accountStore,
-            final CallLocalEvmTxProcessor evmTxProcessor,
+            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
             final EntityIdSource ids,
             final OptionValidator validator,
             final AliasManager aliasManager,
             final StaticBlockMetaProvider blockMetaProvider) {
         this.accountStore = accountStore;
-        this.evmTxProcessor = evmTxProcessor;
+        this.evmTxProcessorProvider = evmTxProcessorProvider;
         this.aliasManager = aliasManager;
         this.ids = ids;
         this.validator = validator;
@@ -122,6 +123,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
                     final var worldState =
                             new HederaWorldState(ids, entityAccess, codeCache, properties);
+                    final var evmTxProcessor = evmTxProcessorProvider.get();
                     evmTxProcessor.setWorldState(worldState);
                     evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
                     response =

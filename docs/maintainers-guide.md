@@ -23,6 +23,8 @@ Make sure you are using JDK17 as the project SDK in IntelliJ.
     <img src="assets/jdk-17.png"/>
 </p>
 
+Follow [intellij-quickstart](intellij-quickstart.md) guide to run network on your local machine and submit transactions.
+
 ## Gradle
 Once the repository is opened in IntelliJ, to build the project from Intellij, open the Gradle tool window and
 run `Tasks/build/assemble` to on the root project. If you are using command line use `./gradlew assemble`.

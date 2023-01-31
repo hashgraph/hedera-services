@@ -26,7 +26,7 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -52,7 +52,7 @@ class TokenCreateReqsTest {
     @Mock private ContractAliases aliases;
     @Mock private EvmSigsVerifier sigsVerifier;
     @Mock private WorldLedgers ledgers;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private LegacyActivationTest legacyActivationTest;
 
     private TokenCreateReqs subject;

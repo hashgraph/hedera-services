@@ -109,6 +109,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
+        final var gasUsed = 14085L;
         return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -137,6 +138,46 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
+                        contractCall(
+                                        THE_CONTRACT,
+                                        "burnTokenWithEvent",
+                                        BigInteger.ZERO,
+                                        new long[0])
+                                .payingWith(ALICE)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .gas(GAS_TO_OFFER)
+                                .via("burnZero"),
+                        getTxnRecord("burnZero")
+                                .hasPriority(
+                                        recordWith()
+                                                .contractCallResult(
+                                                        resultWith()
+                                                                .logs(
+                                                                        inOrder(
+                                                                                logWith()
+                                                                                        .noData()
+                                                                                        .withTopicsInOrder(
+                                                                                                List
+                                                                                                        .of(
+                                                                                                                parsedToByteString(
+                                                                                                                        50))))))),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
+                        childRecordsCheck(
+                                "burnZero",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .forFunction(
+                                                                                FunctionType
+                                                                                        .HAPI_BURN)
+                                                                        .withStatus(SUCCESS)
+                                                                        .withTotalSupply(50))
+                                                        .gasUsed(gasUsed))
+                                        .newTotalSupply(50)),
                         contractCall(
                                         THE_CONTRACT,
                                         "burnTokenWithEvent",
@@ -174,7 +215,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .HAPI_BURN)
                                                                         .withStatus(SUCCESS)
-                                                                        .withTotalSupply(49)))
+                                                                        .withTotalSupply(49))
+                                                        .gasUsed(gasUsed))
                                         .newTotalSupply(49)
                                         .tokenTransfers(
                                                 changingFungibleBalances()
@@ -207,6 +249,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec HSCS_PREC_005_token_burn_of_NFT() {
+        final var gasUsed = 14085;
         return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -264,7 +307,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .HAPI_BURN)
                                                                         .withStatus(SUCCESS)
-                                                                        .withTotalSupply(1)))
+                                                                        .withTotalSupply(1))
+                                                        .gasUsed(gasUsed))
                                         .newTotalSupply(1)))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }

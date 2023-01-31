@@ -299,6 +299,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final Address senderAddress;
     private final AccountID fundingAccount;
     private final Provider<FeeCalculator> feeCalculator;
+
     private final TokenCreateReqs.Factory tokenCreateReqsFactory;
     private TokenCreateWrapper tokenCreateOp;
 

@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLeaf {
-    private static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
+    public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
     private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;

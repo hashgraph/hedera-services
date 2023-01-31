@@ -150,7 +150,7 @@ public final class AbiConstants {
     // createFungibleToken(HederaToken memory token, uint64 initialTotalSupply, uint32 decimals)
     public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V2 = 0xc23baeb6;
     // createFungibleToken(HederaToken memory token, int64 initialTotalSupply, int32 decimals)
-    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 = 0xfb65bf3;
+    public static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_V3 = 0x0fb65bf3;
     // createFungibleTokenWithCustomFees(
     //  HederaToken memory token,
     //  uint initialTotalSupply,

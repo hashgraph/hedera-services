@@ -15,9 +15,12 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.contracts.ContractsModule.provideCallLocalEvmTxProcessorFactory;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -25,6 +28,7 @@ import static org.mockito.Mockito.doNothing;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -32,23 +36,28 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +86,11 @@ class ContractsModuleTest {
     @Mock EntityCreator entityCreator;
     @Mock MessageFrame messageFrame;
     @Mock WorldUpdater worldUpdater;
+    @Mock CodeCache codeCache;
+    @Mock GasCalculator gasCalculator;
+    @Mock AliasManager aliasManager;
+    @Mock MessageCallProcessor messageCallProcessor;
+    @Mock ContractCreationProcessor contractCreationProcessor;
 
     ContractsTestComponent subject;
 
@@ -104,10 +118,26 @@ class ContractsModuleTest {
     }
 
     @Test
+    void canManufactureCallLocalProcessors() {
+        final var pretendVersion = "0.0.1";
+        given(globalDynamicProperties.evmVersion()).willReturn(pretendVersion);
+        final var supplier =
+                provideCallLocalEvmTxProcessorFactory(
+                        codeCache,
+                        livePricesSource,
+                        globalDynamicProperties,
+                        gasCalculator,
+                        Map.of(pretendVersion, () -> messageCallProcessor),
+                        Map.of(pretendVersion, () -> contractCreationProcessor),
+                        aliasManager);
+        assertInstanceOf(CallLocalEvmTxProcessor.class, supplier.get());
+    }
+
+    @Test
     void logOperationsAreProvided() {
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
-            Code legacyCode = Code.createLegacyCode(testCode, Hash.hash(testCode));
+            Code legacyCode = CodeFactory.createCode(testCode, Hash.hash(testCode), 0, false);
             final var log0 = evm.operationAtOffset(legacyCode, 0);
             final var log1 = evm.operationAtOffset(legacyCode, 1);
             final var log2 = evm.operationAtOffset(legacyCode, 2);
@@ -126,7 +156,8 @@ class ContractsModuleTest {
     void prngSeedOverwritesDifficulty() {
         var evm = subject.evmV_0_32();
         var prngOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         byte[] testBytes = {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -141,9 +172,9 @@ class ContractsModuleTest {
 
         var result = prngOperation.execute(messageFrame, evm);
         assertEquals("PRNGSEED", prngOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
     }
 
@@ -151,7 +182,8 @@ class ContractsModuleTest {
     void largePrngSeedTrimsAsExpected() {
         var evm = subject.evmV_0_32();
         var prngOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         byte[] testBytes = {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -171,9 +203,9 @@ class ContractsModuleTest {
 
         var result = prngOperation.execute(messageFrame, evm);
         assertEquals("PRNGSEED", prngOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
     }
 
@@ -181,19 +213,21 @@ class ContractsModuleTest {
     void prngSeedOutOfGas() {
         var evm = subject.evmV_0_32();
         var prngOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
         var result = prngOperation.execute(messageFrame, evm);
-        assertEquals(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, result.getHaltReason());
     }
 
     @Test
     void difficultyInV_0_30() {
         var evm = subject.evmV_0_30();
         var difficultyOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x44), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
 
         final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
 
@@ -210,9 +244,9 @@ class ContractsModuleTest {
 
         var result = difficultyOperation.execute(messageFrame, evm);
         assertEquals("DIFFICULTY", difficultyOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(new byte[32], bytesCaptor.getValue().toArray());
     }
 
@@ -221,7 +255,8 @@ class ContractsModuleTest {
         Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             var chainIdOperation =
-                    evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
+                    evm.operationAtOffset(
+                            CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
 
             final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);
 
@@ -231,9 +266,9 @@ class ContractsModuleTest {
 
             var result = chainIdOperation.execute(messageFrame, evm);
             assertEquals("CHAINID", chainIdOperation.getName());
-            assertEquals(OptionalLong.of(2L), result.getGasCost());
+            assertEquals(2L, result.getGasCost());
             assertEquals(1, result.getPcIncrement());
-            assertEquals(Optional.empty(), result.getHaltReason());
+            assertNull(result.getHaltReason());
             assertArrayEquals(chainIdBytes.toArray(), bytesCaptor.getValue().toArray());
         }
     }
@@ -242,11 +277,11 @@ class ContractsModuleTest {
     void chainIdOutOfGas() {
         for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
             var chainIdOperation =
-                    evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
+                    evm.operationAtOffset(
+                            CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
             given(messageFrame.getRemainingGas()).willReturn(0L);
             var result = chainIdOperation.execute(messageFrame, evm);
-            assertEquals(
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+            assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, result.getHaltReason());
         }
     }
 
@@ -254,21 +289,23 @@ class ContractsModuleTest {
     void balanceBadAddress() {
         var evm = subject.evmV_0_30();
         var balanceOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x31), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
         given(messageFrame.getStackItem(0))
                 .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(any())).willReturn(null);
         var result = balanceOperation.execute(messageFrame, evm);
         assertEquals("BALANCE", balanceOperation.getName());
-        assertEquals(Optional.of(INVALID_SOLIDITY_ADDRESS), result.getHaltReason());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
     }
 
     @Test
     void balanceGoodAddress() {
         var evm = subject.evmV_0_32();
         var balanceOperation =
-                evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x31), Hash.ZERO), 0);
+                evm.operationAtOffset(
+                        CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
         given(messageFrame.getRemainingGas()).willReturn(3000L);
         given(messageFrame.popStackItem())
                 .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
@@ -280,8 +317,8 @@ class ContractsModuleTest {
 
         var result = balanceOperation.execute(messageFrame, evm);
         assertEquals("BALANCE", balanceOperation.getName());
-        assertEquals(Optional.empty(), result.getHaltReason());
-        assertEquals(OptionalLong.of(2600), result.getGasCost());
+        assertNull(result.getHaltReason());
+        assertEquals(2600, result.getGasCost());
         assertEquals(UInt256.ZERO, bytesCaptor.getValue());
     }
 

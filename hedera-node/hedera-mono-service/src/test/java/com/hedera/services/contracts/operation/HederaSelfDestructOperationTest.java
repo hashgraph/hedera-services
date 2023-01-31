@@ -22,11 +22,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -45,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaSelfDestructOperationTest {
     private static final EntityNum beneficiary = EntityNum.fromLong(2_345);
     private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
-    private static final String anotherEthAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
     private static final Address eip1014Address = Address.fromHexString(ethAddress);
 
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
@@ -89,9 +87,8 @@ class HederaSelfDestructOperationTest {
         final var opResult = subject.execute(frame, evm);
 
         verify(txnCtx).recordBeneficiaryOfDeleted(1234L, 4567L);
-        assertEquals(
-                Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(3L), opResult.getGasCost());
+        assertEquals(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE, opResult.getHaltReason());
+        assertEquals(3L, opResult.getGasCost());
     }
 
     @Test
@@ -103,10 +100,8 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(2L), opResult.getGasCost());
+        assertEquals(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     @Test
@@ -120,10 +115,8 @@ class HederaSelfDestructOperationTest {
 
         final var opResult = subject.execute(frame, evm);
 
-        assertEquals(
-                Optional.of(HederaExceptionalHaltReason.CONTRACT_IS_TREASURY),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(2L), opResult.getGasCost());
+        assertEquals(HederaExceptionalHaltReason.CONTRACT_IS_TREASURY, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     @Test
@@ -138,9 +131,9 @@ class HederaSelfDestructOperationTest {
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES,
                 opResult.getHaltReason());
-        assertEquals(OptionalLong.of(2L), opResult.getGasCost());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     @Test
@@ -155,9 +148,8 @@ class HederaSelfDestructOperationTest {
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(2L), opResult.getGasCost());
+                HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     @Test
@@ -170,9 +162,8 @@ class HederaSelfDestructOperationTest {
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(2L), opResult.getGasCost());
+                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     private void givenRubberstampValidator() {

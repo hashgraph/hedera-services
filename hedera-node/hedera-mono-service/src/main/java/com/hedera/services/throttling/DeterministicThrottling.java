@@ -242,6 +242,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
         }
     }
 
+    @Override
     public boolean shouldThrottleNOfUnscaled(
             final int n, final HederaFunctionality function, final Instant now) {
         resetLastAllowedUse();

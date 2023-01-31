@@ -26,4 +26,6 @@ public interface EvmProperties {
     boolean dynamicEvmVersion();
 
     int maxGasRefundPercentage();
+
+    boolean isRedirectTokenCallsEnabled();
 }

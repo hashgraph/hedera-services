@@ -255,7 +255,6 @@ class ERC721PrecompilesTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
@@ -1435,6 +1434,8 @@ class ERC721PrecompilesTest {
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
 
@@ -1530,6 +1531,8 @@ class ERC721PrecompilesTest {
                 .willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(false);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);

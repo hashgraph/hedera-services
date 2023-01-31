@@ -21,8 +21,6 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import com.google.common.collect.ImmutableList;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.utils.EntityNum;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -55,13 +53,10 @@ public class HederaLogOperation extends AbstractOperation {
 
         final long cost =
                 gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
-        final OptionalLong optionalCost = OptionalLong.of(cost);
         if (frame.isStatic()) {
-            return new OperationResult(
-                    optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+            return new OperationResult(cost, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
         } else if (frame.getRemainingGas() < cost) {
-            return new OperationResult(
-                    optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
         }
 
         final var addressOrAlias = frame.getRecipientAddress();
@@ -82,6 +77,6 @@ public class HederaLogOperation extends AbstractOperation {
         }
 
         frame.addLog(new Log(address, data, builder.build()));
-        return new OperationResult(optionalCost, Optional.empty());
+        return new OperationResult(cost, null);
     }
 }

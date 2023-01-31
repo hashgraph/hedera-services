@@ -15,6 +15,7 @@
  */
 package com.hedera.services.throttling;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -52,6 +53,14 @@ class TxnAwareHandleThrottlingTest {
     @BeforeEach
     void setUp() {
         subject = new TxnAwareHandleThrottling(txnCtx, delegate);
+    }
+
+    @Test
+    void delegatesShouldThrottleNOfUnscaled() {
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
+        given(delegate.shouldThrottleNOfUnscaled(23, CryptoCreate, consensusTime)).willReturn(true);
+
+        assertTrue(subject.shouldThrottleNOfUnscaled(23, CryptoCreate));
     }
 
     @Test

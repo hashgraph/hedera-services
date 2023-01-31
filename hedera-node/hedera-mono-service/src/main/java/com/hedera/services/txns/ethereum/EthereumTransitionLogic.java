@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
@@ -205,12 +206,23 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
                 customizedCreate, callerId, true, relayerId, maxGasAllowance, offeredGasPrice);
     }
 
-    private EntityNum validatedCallerOf(final TxnAccessor accessor) {
-        // We take advantage of the validation work done by SpanMapManager, which guaranteed that a
-        // EthTxExpansion exists in the span map; and that if its result is OK, the EthTxData,
-        // EthTxSigs,
-        // and synthetic TransactionBody _also_ exist in the span map
-        final var expansion = Objects.requireNonNull(spanMapAccessor.getEthTxExpansion(accessor));
+    @VisibleForTesting
+    EntityNum validatedCallerOf(final TxnAccessor accessor) {
+        // In a normal transaction flow, we can take advantage of the validation work done by
+        // SpanMapManager
+        // in preHandle, which guarantees that a EthTxExpansion exists in the span map; and that if
+        // its result
+        // is OK, the EthTxData, EthTxSigs, and synthetic TransactionBody _also_ exist in the span
+        // map
+        var expansion = spanMapAccessor.getEthTxExpansion(accessor);
+        // But if running during recovery, there is an edge case where preHandle() is never called,
+        // so
+        // now we need to "make up" for the missing call to preFetch()
+        if (expansion == null) {
+            log.warn("Recovering from missed preHandle() call");
+            spanMapManager.rationalizeEthereumSpan(accessor);
+            expansion = Objects.requireNonNull(spanMapAccessor.getEthTxExpansion(accessor));
+        }
         validateTrue(expansion.result() == OK, expansion.result());
 
         final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);

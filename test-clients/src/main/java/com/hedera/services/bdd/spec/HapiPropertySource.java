@@ -15,8 +15,10 @@
  */
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static java.lang.System.arraycopy;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
@@ -289,6 +291,20 @@ public interface HapiPropertySource {
     static byte[] asSolidityAddress(final AccountID accountId) {
         return asSolidityAddress(
                 (int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
+    }
+
+    static Address idAsHeadlongAddress(final AccountID accountId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) accountId.getShardNum(),
+                        accountId.getRealmNum(),
+                        accountId.getAccountNum()));
+    }
+
+    static Address idAsHeadlongAddress(final TokenID tokenId) {
+        return asHeadlongAddress(
+                asSolidityAddress(
+                        (int) tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum()));
     }
 
     static String asHexedSolidityAddress(final AccountID accountId) {

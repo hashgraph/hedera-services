@@ -23,11 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Singleton
 public class StakeInfoManager {
@@ -80,14 +80,6 @@ public class StakeInfoManager {
         }
     }
 
-    public void clearAllRewardHistory() {
-        final var mutableStakingInfo = stakingInfos.get();
-        for (var key : mutableStakingInfo.keySet()) {
-            final var info = mutableStakingInfo.getForModify(key);
-            info.clearRewardSumHistory();
-        }
-    }
-
     private MerkleStakingInfo getFromCache(final long nodeId) {
         final var curStakingInfos = stakingInfos.get();
         final var i = (int) nodeId;
@@ -99,6 +91,14 @@ public class StakeInfoManager {
             cache[i] = curStakingInfos.getForModify(EntityNum.fromLong(nodeId));
         }
         return cache[i];
+    }
+
+    public void clearAllRewardHistory() {
+        final var mutableStakingInfo = stakingInfos.get();
+        for (var key : mutableStakingInfo.keySet()) {
+            final var info = mutableStakingInfo.getForModify(key);
+            info.clearRewardSumHistory();
+        }
     }
 
     private void clearCache() {

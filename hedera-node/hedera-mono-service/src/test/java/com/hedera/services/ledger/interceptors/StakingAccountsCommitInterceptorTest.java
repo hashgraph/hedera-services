@@ -329,6 +329,15 @@ class StakingAccountsCommitInterceptorTest {
     }
 
     @Test
+    void earningZeroRewardsWithStartBeforeLastNonRewardableStillUpdatesSASOLARP() {
+        final var account = mock(HederaAccount.class);
+        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(3L);
+        given(account.getStakePeriodStart()).willReturn(2L);
+
+        assertTrue(subject.shouldRememberStakeStartFor(account, -1, 0));
+    }
+
+    @Test
     void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         final var changes = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
@@ -371,6 +380,40 @@ class StakingAccountsCommitInterceptorTest {
         verify(stakeChangeManager).withdrawStake(0, changes.entity(1).getBalance(), false);
 
         verify(stakeChangeManager)
+                .awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE), false);
+
+        assertFalse(subject.hasBeenRewarded(0));
+        assertTrue(subject.hasBeenRewarded(1));
+        // both have stakeMeta changes
+        assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[1]);
+    }
+
+    @Test
+    void doesNotAwardStakeFromDeletedAccount() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var changes = buildChanges();
+        final var rewardPayment = 1L;
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+        counterparty.setDeleted(true);
+
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
+        given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1)))
+                .willReturn(true);
+
+        subject.preview(changes);
+
+        verify(rewardCalculator).applyReward(rewardPayment, counterparty, changes.changes(1));
+        verify(sideEffectsTracker)
+                .trackRewardPayment(counterpartyId.getAccountNum(), rewardPayment);
+
+        verify(stakeChangeManager)
+                .awardStake(1, (long) changes.changes(0).get(AccountProperty.BALANCE), false);
+
+        verify(stakeChangeManager).withdrawStake(0, changes.entity(1).getBalance(), false);
+
+        verify(stakeChangeManager, never())
                 .awardStake(1, (long) changes.changes(1).get(AccountProperty.BALANCE), false);
 
         assertFalse(subject.hasBeenRewarded(0));
@@ -569,6 +612,40 @@ class StakingAccountsCommitInterceptorTest {
 
     @Test
     void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var inorderST = inOrder(sideEffectsTracker);
+        final var inorderM = inOrder(stakeChangeManager);
+
+        final var pendingChanges = changesWithNoStakingMetaUpdates();
+        final Map<AccountProperty, Object> stakingFundChanges =
+                Map.of(AccountProperty.BALANCE, 100L);
+        final var stakePeriodStart = 12345678L;
+        counterparty.setStakePeriodStart(stakePeriodStart);
+
+        given(rewardCalculator.computePendingReward(any())).willReturn(0L);
+        given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
+        given(stakePeriodManager.startUpdateFor(-1L, -1L, true, false))
+                .willReturn(stakePeriodStart);
+        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+        stakingFund.setStakePeriodStart(-1);
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+        subject.preview(pendingChanges);
+
+        inorderST.verify(sideEffectsTracker, never()).trackRewardPayment(anyLong(), anyLong());
+
+        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
+        inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
+        // StakingMeta changes
+        assertEquals(
+                counterpartyBalance + counterparty.getStakedToMe(),
+                subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        assertEquals(stakePeriodStart, subject.getStakePeriodStartUpdates()[0]);
+    }
+
+    @Test
+    void sasolarpMgmtWorksAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         final var inorderST = inOrder(sideEffectsTracker);
         final var inorderM = inOrder(stakeChangeManager);

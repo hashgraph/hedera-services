@@ -69,6 +69,7 @@ import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -440,7 +441,9 @@ class SigOpsRegressionTest {
 
     private Rationalization invokeRationalizationScenario() {
         // setup:
-        SyncVerifier syncVerifier = new CryptoEngine(getStaticThreadManager())::verifySync;
+        SyncVerifier syncVerifier =
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                        ::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(

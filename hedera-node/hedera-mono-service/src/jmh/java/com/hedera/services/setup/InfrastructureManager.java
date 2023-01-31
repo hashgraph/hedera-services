@@ -17,12 +17,9 @@ package com.hedera.services.setup;
 
 import static com.hedera.services.setup.InfrastructureBundle.allImplied;
 import static com.hedera.services.setup.InfrastructureInitializer.initializeBundle;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
-import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -36,7 +33,6 @@ import org.apache.commons.io.FileUtils;
 
 public class InfrastructureManager {
     private static final String BASE_STORAGE_DIR = "databases";
-    public static final Cryptography CRYPTO = new CryptoEngine(getStaticThreadManager());
 
     private InfrastructureManager() {
         throw new UnsupportedOperationException();

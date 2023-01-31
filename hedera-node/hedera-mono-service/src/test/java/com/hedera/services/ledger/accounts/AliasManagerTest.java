@@ -16,9 +16,11 @@
 package com.hedera.services.ledger.accounts;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -195,6 +197,18 @@ class AliasManagerTest {
         assertFalse(subject.isInUse(nonMirrorAddress));
         subject.link(nonMirrorAddress, mirrorAddress);
         assertTrue(subject.isInUse(nonMirrorAddress));
+    }
+
+    @Test
+    void retrievesExpectedEvmAddressForEcdsaKey() {
+        final var key = subject.keyAliasToEVMAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
+        assertArrayEquals(ECDSA_PUBLIC_KEY_ADDRESS, key);
+    }
+
+    @Test
+    void retrievesNullFromInvalidKeyAliases() {
+        assertNull(subject.keyAliasToEVMAddress(ByteString.copyFrom(rawNonMirrorAddress)));
+        assertNull(subject.keyAliasToEVMAddress(ByteString.copyFrom(notQuiteEcdsaPublicKey)));
     }
 
     @Test

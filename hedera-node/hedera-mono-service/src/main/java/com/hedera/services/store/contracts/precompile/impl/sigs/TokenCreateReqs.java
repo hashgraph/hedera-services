@@ -39,9 +39,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *   <li>The new token's self-denominated fixed fee collectors (if any).
  * </ol>
  *
- * Note the treasury and admin key signing requirements were already enforced in the {@link
- * com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile} before this component
- * was introduced.
+ * Note the treasury and admin key signing requirements were already enforced in the {@code
+ * TokenCreatePrecompile} before this component was introduced.
  */
 public class TokenCreateReqs {
     private final MessageFrame frame;

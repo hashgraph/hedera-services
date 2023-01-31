@@ -50,7 +50,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -135,7 +134,6 @@ class WipeNonFungiblePrecompileTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private FeeObject mockFeeObject;
     @Mock private StateView stateView;
@@ -184,7 +182,6 @@ class WipeNonFungiblePrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,

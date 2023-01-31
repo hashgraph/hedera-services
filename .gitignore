@@ -43,6 +43,9 @@ hs_err_pid*
 # Local runtime assets
 hedera-node/swirlds-tmp
 
+test-clients/yahcli/*.jar
+test-clients/yahcli/assets/*.jar
+
 *.sh
 !run/generate-changelog.sh
 !run/new-release-branch.sh
@@ -55,6 +58,7 @@ hedera-node/swirlds-tmp
 !test-clients/yahcli/run/*.sh
 !test-clients/yahcli/assets/*.sh
 !test-clients/yahcli/run/test/local/*.sh
+
 *.json
 !hapi-fees/src/main/resources/*.json
 !hapi-fees/src/test/resources/*.json

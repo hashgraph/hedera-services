@@ -131,6 +131,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
@@ -1032,6 +1033,21 @@ class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+    }
+
+    @Test
+    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButReceiverIsTreasury()
+            throws Throwable {
+        // given:
+        setupFor(
+                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
+
+        // when:
+        final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+        // then:
+        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(NO_RECEIVER_SIG_KT.asKey()));
     }
 
     @Test

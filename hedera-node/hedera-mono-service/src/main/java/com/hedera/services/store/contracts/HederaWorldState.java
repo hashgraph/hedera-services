@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -43,30 +44,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @Singleton
-public class HederaWorldState implements HederaMutableWorldState {
+public class HederaWorldState extends HederaEvmWorldState implements HederaMutableWorldState {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
     private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
-    private final CodeCache codeCache;
     private final GlobalDynamicProperties dynamicProperties;
 
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
@@ -81,10 +76,10 @@ public class HederaWorldState implements HederaMutableWorldState {
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties,
             final @HandleThrottle FunctionalityThrottling handleThrottling) {
+        super(entityAccess, dynamicProperties, codeCache);
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
-        this.codeCache = codeCache;
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
         this.handleThrottling = handleThrottling;
@@ -96,9 +91,9 @@ public class HederaWorldState implements HederaMutableWorldState {
             final EntityAccess entityAccess,
             final CodeCache codeCache,
             final GlobalDynamicProperties dynamicProperties) {
+        super(entityAccess, dynamicProperties, codeCache);
         this.ids = ids;
         this.entityAccess = entityAccess;
-        this.codeCache = codeCache;
         this.usageLimits = null;
         this.handleThrottling = null;
         this.sigImpactHistorian = null;
@@ -145,37 +140,6 @@ public class HederaWorldState implements HederaMutableWorldState {
     @Override
     public Updater updater() {
         return new Updater(this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
-    }
-
-    @Override
-    public Hash rootHash() {
-        return Hash.EMPTY;
-    }
-
-    @Override
-    public Hash frontierRootHash() {
-        return rootHash();
-    }
-
-    @Override
-    public Stream<StreamableAccount> streamAccounts(final Bytes32 startKeyHash, final int limit) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Account get(final @Nullable Address address) {
-        if (address == null) {
-            return null;
-        }
-        if (entityAccess.isTokenAccount(address)
-                && dynamicProperties.isRedirectTokenCallsEnabled()) {
-            return new HederaEvmWorldStateTokenAccount(address);
-        }
-        if (!entityAccess.isUsable(address)) {
-            return null;
-        }
-        final long balance = entityAccess.getBalance(address);
-        return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
     }
 
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>

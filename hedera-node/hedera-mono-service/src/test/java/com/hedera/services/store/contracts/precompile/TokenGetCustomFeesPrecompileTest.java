@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
@@ -41,11 +40,9 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -96,7 +93,6 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private UsagePricesProvider resourceCosts;
@@ -116,9 +112,6 @@ class TokenGetCustomFeesPrecompileTest {
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
-
-    // Common token properties
-    private final EntityId treasury = senderId;
 
     @BeforeEach
     void setUp() {
@@ -145,7 +138,6 @@ class TokenGetCustomFeesPrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,

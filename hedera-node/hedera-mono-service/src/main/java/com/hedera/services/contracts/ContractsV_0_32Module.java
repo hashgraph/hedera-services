@@ -27,7 +27,6 @@ import com.hedera.services.contracts.operation.HederaCallOperation;
 import com.hedera.services.contracts.operation.HederaChainIdOperation;
 import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
-import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
 import com.hedera.services.contracts.operation.HederaPrngSeedOperator;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;
@@ -35,6 +34,7 @@ import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -46,6 +46,7 @@ import java.util.function.BiPredicate;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -217,7 +218,8 @@ public interface ContractsV_0_32Module {
         // ChainID will be overridden
         registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        return new EVM(
+                operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
     }
 
     @Provides

@@ -78,6 +78,11 @@ public class ConfigUtils {
             return Optional.of(wordsFile);
         }
 
+        var hexedFile = Paths.get(sansExt + ".hex").toFile();
+        if (hexedFile.exists()) {
+            return Optional.of(hexedFile);
+        }
+
         return Optional.empty();
     }
 

@@ -715,9 +715,29 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                     })
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
+                                                    .gas(GAS_TO_OFFER),
+                                            contractCall(
+                                                            CONTRACT,
+                                                            "transferMultipleTokens",
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -0L),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                0L))
+                                                                                .build()
+                                                                    })
+                                                    .payingWith(GENESIS)
+                                                    .via("cryptoTransferZero")
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
+                        getTxnRecord("cryptoTransferZero").andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
@@ -732,7 +752,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))
+                                                                        .withStatus(SUCCESS))
+                                                        .gasUsed(14085L))
                                         .tokenTransfers(
                                                 SomeFungibleTransfers.changingFungibleBalances()
                                                         .including(FUNGIBLE_TOKEN, SENDER, -50)

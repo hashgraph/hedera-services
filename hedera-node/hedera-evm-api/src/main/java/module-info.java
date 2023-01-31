@@ -9,6 +9,7 @@ module com.hedera.services.evm {
     requires com.google.common;
     requires tuweni.units;
     requires com.github.benmanes.caffeine;
+    requires com.google.protobuf;
 
     exports com.hedera.services.evm.store.contracts.utils;
     exports com.hedera.services.evm.contracts.execution;

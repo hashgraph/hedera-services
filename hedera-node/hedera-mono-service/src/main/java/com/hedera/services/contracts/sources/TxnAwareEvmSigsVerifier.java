@@ -35,6 +35,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.utils.LegacyActivationTest;
@@ -44,11 +45,11 @@ import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
@@ -72,9 +73,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveKey(
             final boolean isDelegateCall,
-            @NotNull final Address accountAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address accountAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         return internalHasActiveKey(
                 isDelegateCall, accountAddress, activeContract, worldLedgers, null, null);
     }
@@ -101,9 +102,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveSupplyKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -116,9 +117,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveKycKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -131,9 +132,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActivePauseKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -146,9 +147,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveWipeKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -161,9 +162,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveFreezeKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -176,9 +177,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveAdminKey(
             final boolean isDelegateCall,
-            @NotNull final Address tokenAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address tokenAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
         validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
@@ -191,9 +192,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     @Override
     public boolean hasActiveKeyOrNoReceiverSigReq(
             final boolean isDelegateCall,
-            @NotNull final Address target,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers) {
+            @NonNull final Address target,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers) {
         final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
         if (txnCtx.activePayer().equals(accountId)) {
             return true;
@@ -222,9 +223,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
     private boolean internalHasActiveKey(
             final boolean isDelegateCall,
-            @NotNull final Address accountAddress,
-            @NotNull final Address activeContract,
-            @NotNull final WorldLedgers worldLedgers,
+            @NonNull final Address accountAddress,
+            @NonNull final Address activeContract,
+            @NonNull final WorldLedgers worldLedgers,
             @Nullable LegacyActivationTest legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts) {
         if (accountAddress.equals(activeContract)) {
@@ -258,6 +259,10 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final ContractAliases aliases,
             @Nullable final LegacyActivationTest legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts) {
+        if (key instanceof JKeyList keyList && keyList.isEmpty()) {
+            // An empty key list is a sentinel for immutability
+            return false;
+        }
         final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
         return activationTest.test(
                 key,

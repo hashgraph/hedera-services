@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;

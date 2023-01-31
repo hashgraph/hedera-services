@@ -153,7 +153,12 @@ public class AutoCreationLogic {
         for (final var pendingCreation : pendingCreations) {
             final var syntheticCreation = pendingCreation.syntheticBody();
             final var childRecord = pendingCreation.recordBuilder();
-            sigImpactHistorian.markAliasChanged(childRecord.getAlias());
+            final var alias = childRecord.getAlias();
+            sigImpactHistorian.markAliasChanged(alias);
+            final var maybeAddress = aliasManager.keyAliasToEVMAddress(alias);
+            if (maybeAddress != null) {
+                sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
+            }
             sigImpactHistorian.markEntityChanged(
                     childRecord.getReceiptBuilder().getAccountId().num());
             recordsHistorian.trackPrecedingChildRecord(

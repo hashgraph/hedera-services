@@ -22,7 +22,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 public interface EntityAccess extends HederaEvmEntityAccess {
     /**
@@ -41,8 +40,6 @@ public interface EntityAccess extends HederaEvmEntityAccess {
 
     /* --- Account access --- */
     void customize(AccountID id, HederaAccountCustomizer customizer);
-
-    boolean isUsable(Address address);
 
     /* --- Storage access --- */
     void recordNewKvUsageTo(

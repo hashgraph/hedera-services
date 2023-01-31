@@ -44,7 +44,6 @@ import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -116,7 +115,6 @@ class TokenUpdatePrecompileTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private ContractAliases aliases;
@@ -163,7 +161,6 @@ class TokenUpdatePrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,

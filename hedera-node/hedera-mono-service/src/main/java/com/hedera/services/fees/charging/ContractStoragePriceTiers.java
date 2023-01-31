@@ -152,7 +152,7 @@ public record ContractStoragePriceTiers(
             final long requestedKvPairs,
             final long contractKvPairsUsed) {
         assertValidArgs(requestedKvPairs, requestedLifetime);
-        if (contractKvPairsUsed < freeTierLimit) {
+        if (requestedKvPairs == 0 || contractKvPairsUsed < freeTierLimit) {
             return 0;
         }
 
@@ -193,8 +193,8 @@ public record ContractStoragePriceTiers(
     }
 
     private void assertValidArgs(final long requestedKvPairs, final long requestedLifetime) {
-        if (requestedKvPairs <= 0) {
-            throw new IllegalArgumentException("Must request a positive number of slots");
+        if (requestedKvPairs < 0) {
+            throw new IllegalArgumentException("Must request a non-negative number of slots");
         }
         if (requestedLifetime < 0) {
             throw new IllegalArgumentException("Must request a non-negative lifetime");

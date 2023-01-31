@@ -16,6 +16,7 @@
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - MONO Service Implementation"
@@ -24,8 +25,19 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     api(project(":hedera-node:hedera-evm-api"))
+    api(project(":hedera-node:hedera-app-spi"))
+    api(project(":modules:hedera-admin-service"))
+    api(project(":modules:hedera-consensus-service"))
+    api(project(":modules:hedera-file-service"))
+    api(project(":modules:hedera-network-service"))
+    api(project(":modules:hedera-schedule-service"))
+    api(project(":modules:hedera-smart-contract-service"))
+    api(project(":modules:hedera-token-service"))
+    api(project(":modules:hedera-util-service"))
+
     implementation(project(":hapi-fees"))
     implementation(project(":hapi-utils"))
+
     implementation(libs.bundles.besu) {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }
@@ -47,6 +59,13 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
+
+    testFixturesApi(project(":hapi-utils"))
+    testFixturesApi(libs.swirlds.merkle)
+    testFixturesApi(libs.swirlds.virtualmap)
+    testFixturesApi(libs.hapi)
+    testFixturesApi(libs.commons.codec)
+    testFixturesImplementation(testLibs.bundles.testing)
 
     jmhImplementation(libs.swirlds.common)
 

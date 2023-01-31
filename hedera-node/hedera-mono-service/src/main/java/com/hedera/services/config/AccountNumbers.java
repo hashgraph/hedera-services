@@ -27,13 +27,15 @@ import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYST
 import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
 import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_TREASURY;
 
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
-public class AccountNumbers {
+public class AccountNumbers implements HederaAccountNumbers {
     private final PropertySource properties;
 
     private long treasury = UNKNOWN_NUMBER;
@@ -52,6 +54,7 @@ public class AccountNumbers {
         this.properties = properties;
     }
 
+    @Override
     public long treasury() {
         if (treasury == UNKNOWN_NUMBER) {
             treasury = properties.getLongProperty(ACCOUNTS_TREASURY);
@@ -59,6 +62,7 @@ public class AccountNumbers {
         return treasury;
     }
 
+    @Override
     public long freezeAdmin() {
         if (freezeAdmin == UNKNOWN_NUMBER) {
             freezeAdmin = properties.getLongProperty(ACCOUNTS_FREEZE_ADMIN);
@@ -66,6 +70,7 @@ public class AccountNumbers {
         return freezeAdmin;
     }
 
+    @Override
     public long systemAdmin() {
         if (systemAdmin == UNKNOWN_NUMBER) {
             systemAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_ADMIN);
@@ -73,6 +78,7 @@ public class AccountNumbers {
         return systemAdmin;
     }
 
+    @Override
     public long addressBookAdmin() {
         if (addressBookAdmin == UNKNOWN_NUMBER) {
             addressBookAdmin = properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN);
@@ -80,6 +86,7 @@ public class AccountNumbers {
         return addressBookAdmin;
     }
 
+    @Override
     public long feeSchedulesAdmin() {
         if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
             feeSchedulesAdmin = properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN);
@@ -87,6 +94,7 @@ public class AccountNumbers {
         return feeSchedulesAdmin;
     }
 
+    @Override
     public long exchangeRatesAdmin() {
         if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
             exchangeRatesAdmin = properties.getLongProperty(ACCOUNTS_EXCHANGE_RATES_ADMIN);
@@ -94,6 +102,7 @@ public class AccountNumbers {
         return exchangeRatesAdmin;
     }
 
+    @Override
     public long systemDeleteAdmin() {
         if (systemDeleteAdmin == UNKNOWN_NUMBER) {
             systemDeleteAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_DELETE_ADMIN);
@@ -101,6 +110,7 @@ public class AccountNumbers {
         return systemDeleteAdmin;
     }
 
+    @Override
     public long systemUndeleteAdmin() {
         if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
             systemUndeleteAdmin = properties.getLongProperty(ACCOUNTS_SYSTEM_UNDELETE_ADMIN);
@@ -108,6 +118,7 @@ public class AccountNumbers {
         return systemUndeleteAdmin;
     }
 
+    @Override
     public long stakingRewardAccount() {
         if (stakingRewardAccount == UNKNOWN_NUMBER) {
             stakingRewardAccount = properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT);
@@ -115,6 +126,7 @@ public class AccountNumbers {
         return stakingRewardAccount;
     }
 
+    @Override
     public long nodeRewardAccount() {
         if (nodeRewardAccount == UNKNOWN_NUMBER) {
             nodeRewardAccount = properties.getLongProperty(ACCOUNTS_NODE_REWARD_ACCOUNT);
@@ -122,6 +134,7 @@ public class AccountNumbers {
         return nodeRewardAccount;
     }
 
+    @Override
     public boolean isSuperuser(long num) {
         return num == treasury() || num == systemAdmin();
     }

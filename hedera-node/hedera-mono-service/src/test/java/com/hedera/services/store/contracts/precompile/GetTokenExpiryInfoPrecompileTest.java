@@ -41,7 +41,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -94,7 +93,6 @@ class GetTokenExpiryInfoPrecompileTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private UsagePricesProvider resourceCosts;
@@ -137,7 +135,6 @@ class GetTokenExpiryInfoPrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,

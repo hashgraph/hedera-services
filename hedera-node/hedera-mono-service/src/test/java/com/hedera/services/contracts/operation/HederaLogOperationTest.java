@@ -32,8 +32,6 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hamcrest.Matchers;
@@ -67,12 +65,11 @@ class HederaLogOperationTest {
     private static final Address unknownAddress = EntityNum.MISSING_NUM.toEvmAddress();
     private static final Bytes data = Bytes.fromHexString("0xabcdef");
     private static final Operation.OperationResult insufficientGasResult =
-            new Operation.OperationResult(OptionalLong.of(reqGas), Optional.of(INSUFFICIENT_GAS));
+            new Operation.OperationResult(reqGas, INSUFFICIENT_GAS);
     private static final Operation.OperationResult illegalStateChangeResult =
-            new Operation.OperationResult(
-                    OptionalLong.of(reqGas), Optional.of(ILLEGAL_STATE_CHANGE));
+            new Operation.OperationResult(reqGas, ILLEGAL_STATE_CHANGE);
     private static final Operation.OperationResult goodResult =
-            new Operation.OperationResult(OptionalLong.of(reqGas), Optional.empty());
+            new Operation.OperationResult(reqGas, null);
 
     @Mock private GasCalculator gasCalculator;
     @Mock private EVM evm;

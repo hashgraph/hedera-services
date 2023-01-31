@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,11 +49,12 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -102,7 +103,12 @@ class CallLocalEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 =
+                new EVM(
+                        operationRegistry,
+                        gasCalculator,
+                        EvmConfiguration.DEFAULT,
+                        EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         EVM_VERSION_0_30,
@@ -144,6 +150,12 @@ class CallLocalEvmTxProcessorTest {
 
     @Test
     void throwsWhenCodeCacheFailsLoading() {
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
+                .willReturn(mock(MutableAccount.class));
+
         given(worldState.updater()).willReturn(updater);
         given(worldState.updater().updater()).willReturn(updater);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
@@ -167,7 +179,7 @@ class CallLocalEvmTxProcessorTest {
     void assertTransactionSenderAndValue() {
         // setup:
         doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
         given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
         given(transaction.getValue()).willReturn(Wei.of(1L));
         final MessageFrame.Builder commonInitialFrame =
@@ -210,7 +222,7 @@ class CallLocalEvmTxProcessorTest {
                 .willReturn(evmAccount);
         given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()).getMutable())
                 .willReturn(mock(MutableAccount.class));
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
 
         var senderMutableAccount = mock(MutableAccount.class);
         given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));

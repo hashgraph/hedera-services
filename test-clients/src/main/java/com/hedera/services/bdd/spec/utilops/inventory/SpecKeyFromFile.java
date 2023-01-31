@@ -17,6 +17,7 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey.exportWithPass;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkFromMnemonic;
+import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkSimpleKey;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem.incorporatePem;
 import static com.hedera.services.yahcli.config.ConfigManager.isValid;
 import static com.hedera.services.yahcli.config.ConfigUtils.*;
@@ -26,6 +27,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
@@ -104,9 +106,13 @@ public class SpecKeyFromFile extends UtilOp {
                     name,
                     linkedId,
                     Optional.empty());
-        } else {
+        } else if (f.getName().endsWith(".words")) {
             var mnemonic = Files.readString(f.toPath());
             createAndLinkFromMnemonic(spec, mnemonic, name, linkedId, null);
+        } else {
+            var hexed = Files.readString(f.toPath()).trim();
+            final var privateKey = CommonUtils.unhex(hexed);
+            createAndLinkSimpleKey(spec, privateKey, name, linkedId, null);
         }
         if (immediateExportLoc.isPresent() && immediateExportPass.isPresent()) {
             final var exportLoc = immediateExportLoc.get();

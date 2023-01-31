@@ -21,6 +21,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.hedera.services.yahcli.Yahcli;
 import com.hedera.services.yahcli.suites.SendSuite;
+import com.hedera.services.yahcli.suites.Utils;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -57,17 +58,32 @@ public class SendCommand implements Callable<Integer> {
     @CommandLine.Option(
             names = {"-d", "--denomination"},
             paramLabel = "denomination",
-            description = "{ tinybar | hbar | kilobar }",
+            description = "{ tinybar | hbar | kilobar | <HTS token num> }",
             defaultValue = "hbar")
     String denomination;
+
+    @CommandLine.Option(
+            names = {"--decimals"},
+            paramLabel = "<decimals>",
+            defaultValue = "6",
+            description = "for an HTS token denomination, the number of decimals")
+    Integer decimals;
 
     @Override
     public Integer call() throws Exception {
         var config = configFrom(accountsCommand.getYahcli());
 
-        long amount = validatedTinybars(accountsCommand.getYahcli(), amountRepr, denomination);
+        long amount;
+        if (isHbarDenomination(denomination)) {
+            amount = validatedTinybars(accountsCommand.getYahcli(), amountRepr, denomination);
+        } else {
+            denomination = Utils.extractAccount(denomination);
+            amount = validatedUnits(amountRepr, decimals);
+        }
         final var effectiveMemo = memo != null ? memo : "";
-        var delegate = new SendSuite(config.asSpecConfig(), beneficiary, amount, effectiveMemo);
+        var delegate =
+                new SendSuite(
+                        config.asSpecConfig(), beneficiary, amount, effectiveMemo, denomination);
         delegate.runSuiteSync();
 
         if (delegate.getFinalSpecs().get(0).getStatus() == PASSED) {
@@ -100,6 +116,12 @@ public class SendCommand implements Callable<Integer> {
         return 0;
     }
 
+    private boolean isHbarDenomination(final String denomination) {
+        return "tinybar".equals(denomination)
+                || "hbar".equals(denomination)
+                || "kilobar".equals(denomination);
+    }
+
     public static long validatedTinybars(
             final Yahcli yahcli, final String amountRepr, final String denomination) {
         final var amount = Long.parseLong(amountRepr.replaceAll("_", ""));
@@ -111,5 +133,37 @@ public class SendCommand implements Callable<Integer> {
             case "hbar" -> amount * TINYBARS_PER_HBAR;
             case "kilobar" -> amount * TINYBARS_PER_KILOBAR;
         };
+    }
+
+    public static long validatedUnits(final String amountRepr, Integer decimals) {
+        long integral;
+        if (amountRepr.contains(".")) {
+            final var parts = amountRepr.split("[.]");
+            integral = Long.parseLong(parts[0]);
+            var n = decimals;
+            while (n-- > 0) {
+                integral *= 10;
+            }
+            if (parts.length > 1) {
+                var rightPadded = parts[1];
+                while (rightPadded.length() < decimals) {
+                    rightPadded += "0";
+                }
+                var m = 0;
+                for (var c : rightPadded.toCharArray()) {
+                    final var v = Long.parseLong("" + c);
+                    m *= 10;
+                    m += v;
+                }
+                integral += m;
+            }
+        } else {
+            integral = Long.parseLong(amountRepr);
+            while (decimals-- > 0) {
+                integral *= 10;
+            }
+            return integral;
+        }
+        return integral;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeFactory;
 
 public class AbstractCodeCache {
     protected final HederaEvmEntityAccess entityAccess;
@@ -50,14 +51,16 @@ public class AbstractCodeCache {
 
         if (entityAccess.isTokenAccount(address)) {
             final var interpolatedBytecode = proxyBytecodeFor(address);
-            code = Code.createLegacyCode(interpolatedBytecode, Hash.hash(interpolatedBytecode));
+            code =
+                    CodeFactory.createCode(
+                            interpolatedBytecode, Hash.hash(interpolatedBytecode), 0, false);
             cache.put(cacheKey, code);
             return code;
         }
 
         final var bytecode = entityAccess.fetchCodeIfPresent(address);
         if (bytecode != null) {
-            code = Code.createLegacyCode(bytecode, Hash.hash(bytecode));
+            code = CodeFactory.createCode(bytecode, Hash.hash(bytecode), 0, false);
             cache.put(cacheKey, code);
         }
 

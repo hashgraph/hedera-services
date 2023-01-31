@@ -43,7 +43,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -182,7 +182,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable SoftwareVersion deserializedVersion) {
+            final SoftwareVersion deserializedVersion) {
         if (trigger == GENESIS) {
             genesisInit(platform, addressBook, dualState);
         } else {
@@ -289,7 +289,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             .initialHash(initialHash)
                             .platform(platform)
                             .consoleCreator(SwirldsGui::createConsole)
-                            .crypto(CryptoFactory.getInstance())
+                            .crypto(CryptographyHolder.get())
                             .selfId(selfId)
                             .build();
             APPS.save(selfId, app);
@@ -313,11 +313,16 @@ public class ServicesState extends PartialNaryMerkleInternal
             app.systemExits().fail(1);
         } else {
             final var isUpgrade = deployedVersion.isAfter(deserializedVersion);
-            if (trigger == RESTART && isUpgrade) {
-                dualState.setFreezeTime(null);
-                networkCtx().discardPreparedUpgradeMeta();
-                if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
-                    networkCtx().markMigrationRecordsNotYetStreamed();
+            if (trigger == RESTART) {
+                // We may still want to change the address book without an upgrade. But note
+                // that without a dynamic address book, this MUST be a no-op during reconnect.
+                app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                if (isUpgrade) {
+                    dualState.setFreezeTime(null);
+                    networkCtx().discardPreparedUpgradeMeta();
+                    if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
+                        networkCtx().markMigrationRecordsNotYetStreamed();
+                    }
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);
@@ -327,6 +332,10 @@ public class ServicesState extends PartialNaryMerkleInternal
             logStateChildrenSizes();
             // This updates the working state accessor with our children
             app.initializationFlow().runWith(this, bootstrapProps);
+            if (trigger == RESTART && isUpgrade) {
+                app.stakeStartupHelper()
+                        .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+            }
 
             // Ensure the prefetch queue is created and thread pool is active instead of waiting
             // for lazy-initialization to take place
@@ -341,6 +350,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         .ensureSystemAccounts(
                                 app.backingAccounts(), app.workingState().addressBook());
                 app.sysFilesManager().createManagedFilesIfMissing();
+                app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
             if (trigger != RECONNECT) {
                 // Once we have a dynamic address book, this will run unconditionally

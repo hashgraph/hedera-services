@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.services.evm.store.contracts.WorldStateAccount;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.WorldStateAccount;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,17 +52,6 @@ class KeyActivationUtilsTest {
     }
 
     @Test
-    void testsAccountIsNotToken() {
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.get(any())).willReturn(worldStateAccount);
-        given(worldStateAccount.getNonce()).willReturn(1L);
-
-        var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
-
-        assertFalse(result);
-    }
-
-    @Test
     void legacyActivationTestDetectsReceiverMatch() {
         final Deque<MessageFrame> stack = new ArrayDeque<>();
         stack.push(grandparent);
@@ -77,5 +66,16 @@ class KeyActivationUtilsTest {
 
         final var subject = KeyActivationUtils.legacyActivationTestFor(messageFrame);
         assertTrue(subject.stackIncludesReceiver(granted));
+    }
+
+    @Test
+    void testsAccountIsNotToken() {
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(worldStateAccount);
+        given(worldStateAccount.getNonce()).willReturn(1L);
+
+        var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
+
+        assertFalse(result);
     }
 }

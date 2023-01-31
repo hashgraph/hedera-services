@@ -1344,15 +1344,14 @@ public class SigRequirements {
                     return tokenResult.failureIfAny();
                 } else {
                     final var tokenMeta = tokenResult.metadata();
-                    if (tokenMeta.hasRoyaltyWithFallback()) {
-                        if (!receivesFungibleValue(counterparty, op)) {
-                            // Fallback situation; but we still need to check if the treasury is
-                            // the sender or receiver, since in neither case will the fallback fee
-                            // actually be charged
-                            final var treasury = tokenMeta.treasury().toGrpcAccountId();
-                            if (!treasury.equals(party) && !treasury.equals(counterparty)) {
-                                required.add(meta.key());
-                            }
+                    if (tokenMeta.hasRoyaltyWithFallback()
+                            && !receivesFungibleValue(counterparty, op)) {
+                        // Fallback situation; but we still need to check if the treasury is
+                        // the sender or receiver, since in neither case will the fallback fee
+                        // actually be charged
+                        final var treasury = tokenMeta.treasury().toGrpcAccountId();
+                        if (!treasury.equals(party) && !treasury.equals(counterparty)) {
+                            required.add(meta.key());
                         }
                     }
                 }

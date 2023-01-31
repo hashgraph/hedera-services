@@ -171,7 +171,7 @@ public class SpanMapManager {
         }
     }
 
-    private void rationalizeEthereumSpan(final TxnAccessor accessor) {
+    public void rationalizeEthereumSpan(final TxnAccessor accessor) {
         final var expansion = spanMapAccessor.getEthTxExpansion(accessor);
         if (expansion == null || areChanged(Objects.requireNonNull(expansion.linkedRefs()))) {
             final Map<String, Object> spanMap = new HashMap<>();

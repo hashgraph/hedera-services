@@ -21,22 +21,22 @@ import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMU
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.ContractsModule.V_0_30;
-import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;
 import com.hedera.services.contracts.operation.HederaChainIdOperation;
 import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
-import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
-import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaBalanceOperation;
+import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeCopyOperation;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.services.evm.contracts.operations.HederaExtCodeSizeOperation;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -259,7 +260,8 @@ public interface ContractsV_0_30Module {
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         hederaOperations.forEach(operationRegistry::put);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        return new EVM(
+                operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
     }
 
     @Provides

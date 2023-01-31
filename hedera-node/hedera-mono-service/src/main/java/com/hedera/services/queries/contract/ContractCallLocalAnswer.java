@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -68,7 +69,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
     private final OptionValidator validator;
     private final GlobalDynamicProperties dynamicProperties;
     private final NodeLocalProperties nodeProperties;
-    private final CallLocalEvmTxProcessor evmTxProcessor;
+    private final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider;
     private final StaticBlockMetaProvider blockMetaProvider;
 
     @Inject
@@ -80,7 +81,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
             final EntityAccess entityAccess,
             final GlobalDynamicProperties dynamicProperties,
             final NodeLocalProperties nodeProperties,
-            final CallLocalEvmTxProcessor evmTxProcessor,
+            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
             final StaticBlockMetaProvider blockMetaProvider) {
         super(
                 ContractCallLocal,
@@ -113,7 +114,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         this.accountStore = accountStore;
         this.dynamicProperties = dynamicProperties;
         this.nodeProperties = nodeProperties;
-        this.evmTxProcessor = evmTxProcessor;
+        this.evmTxProcessorProvider = evmTxProcessorProvider;
         this.blockMetaProvider = blockMetaProvider;
     }
 
@@ -166,7 +167,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         if (queryCtx.isPresent()) {
             var ctx = queryCtx.get();
             if (!ctx.containsKey(CONTRACT_CALL_LOCAL_CTX_KEY)) {
-                log.warn("Usage estimator did not set response used in cost calculation");
+                log.error("Usage estimator did not set response used in cost calculation");
                 response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
             } else {
                 response.mergeFrom(
@@ -187,17 +188,23 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                             new StaticEntityAccess(
                                     Objects.requireNonNull(view), aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
-                    final var worldState =
-                            new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
-                    evmTxProcessor.setWorldState(worldState);
-                    evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
-                    final var opResponse =
-                            CallLocalExecutor.execute(
-                                    accountStore, evmTxProcessor, op, aliasManager, entityAccess);
-                    response.mergeFrom(withCid(opResponse, op.getContractID()));
+                    try (final var worldState =
+                            new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties)) {
+                        final var evmTxProcessor = evmTxProcessorProvider.get();
+                        evmTxProcessor.setWorldState(worldState);
+                        evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
+                        final var opResponse =
+                                CallLocalExecutor.execute(
+                                        accountStore,
+                                        evmTxProcessor,
+                                        op,
+                                        aliasManager,
+                                        entityAccess);
+                        response.mergeFrom(withCid(opResponse, op.getContractID()));
+                    }
                 }
             } catch (Exception e) {
-                log.warn("Unable to answer ContractCallLocal", e);
+                log.error("Unable to answer ContractCallLocal", e);
                 response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
             }
         }

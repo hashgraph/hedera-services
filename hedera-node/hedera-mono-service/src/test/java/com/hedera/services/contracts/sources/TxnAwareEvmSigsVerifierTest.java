@@ -15,28 +15,6 @@
  */
 package com.hedera.services.contracts.sources;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
@@ -74,6 +52,7 @@ import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -90,7 +69,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import javax.annotation.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -265,7 +244,7 @@ class TxnAwareEvmSigsVerifierTest {
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
-        given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
+        given(accountsLedger.get(account, KEY)).willReturn(expectedKey);
         given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
@@ -280,7 +259,7 @@ class TxnAwareEvmSigsVerifierTest {
         given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
-        given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
+        given(accountsLedger.get(account, KEY)).willReturn(expectedKey);
         given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
 
@@ -294,7 +273,7 @@ class TxnAwareEvmSigsVerifierTest {
     void testsMissingAccountKey() {
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
-        given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(null);
+        given(accountsLedger.get(account, KEY)).willReturn(null);
 
         final var verdict =
                 subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
@@ -327,6 +306,20 @@ class TxnAwareEvmSigsVerifierTest {
     @Test
     void testsNullCryptoKey() {
         final var verdict = subject.cryptoKeyIsActive(null);
+
+        assertFalse(verdict);
+    }
+
+    @Test
+    void testsEmptyKeyList() {
+        final JKeyList emptyKeyList = new JKeyList();
+
+        given(ledgers.accounts()).willReturn(accountsLedger);
+        given(accountsLedger.exists(account)).willReturn(true);
+        given(accountsLedger.get(account, KEY)).willReturn(emptyKeyList);
+
+        final var verdict =
+                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertFalse(verdict);
     }
@@ -413,7 +406,7 @@ class TxnAwareEvmSigsVerifierTest {
 
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-        boolean sigRequiredFlag =
+        final boolean sigRequiredFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true,
                         EntityIdUtils.asTypedEvmAddress(sigRequired),
@@ -427,7 +420,7 @@ class TxnAwareEvmSigsVerifierTest {
     void filtersPayerSinceSigIsGuaranteed() {
         given(txnCtx.activePayer()).willReturn(payer);
 
-        boolean payerFlag =
+        final boolean payerFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true, EntityIdUtils.asTypedEvmAddress(payer), PRETEND_SENDER_ADDR, ledgers);
 
@@ -693,6 +686,94 @@ class TxnAwareEvmSigsVerifierTest {
                 subject.hasActiveWipeKey(true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertTrue(verdict);
+    }
+
+    @Test
+    void createsValidityTestThatUsesLegacyActivationsIfOnStack() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_CONTRACT_ADDR));
+
+        assertFalse(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
+    }
+
+    @Test
+    void createsValidityTestThatOnlyUsesLegacyActivationsIfContractGrandfathered() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_TOKEN_ADDR));
+
+        assertFalse(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
+    }
+
+    @Test
+    void usesLegacyActivationsWhenAvailable() {
+        subject =
+                new TxnAwareEvmSigsVerifier(
+                        HederaKeyActivation::isActive, txnCtx, cryptoValidity, dynamicProperties);
+
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        final var legacyActivations =
+                new LegacyContractIdActivations(
+                        Map.of(PRETEND_ACCOUNT_ADDR, Set.of(PRETEND_CONTRACT_ADDR)));
+        given(dynamicProperties.legacyContractIdActivations()).willReturn(legacyActivations);
+
+        given(ledgers.accounts()).willReturn(accountsLedger);
+        given(accountsLedger.exists(account)).willReturn(true);
+        given(accountsLedger.get(account, KEY)).willReturn(controlledKey);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(ledgers.aliases()).willReturn(aliases);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+        given(legacyActivationTest.stackIncludesReceiver(PRETEND_CONTRACT_ADDR)).willReturn(true);
+
+        assertTrue(
+                subject.hasLegacyActiveKey(
+                        false,
+                        PRETEND_ACCOUNT_ADDR,
+                        PRETEND_TOKEN_ADDR,
+                        ledgers,
+                        legacyActivationTest));
+    }
+
+    @Test
+    void createsValidityTestThatUsesLegacyActivationsIfAvailable() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+        given(legacyActivationTest.stackIncludesReceiver(PRETEND_CONTRACT_ADDR)).willReturn(true);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_CONTRACT_ADDR));
+
+        assertTrue(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
     }
 
     private void givenAccessorInCtx() {

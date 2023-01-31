@@ -18,6 +18,7 @@ package com.hedera.services.state.submerkle;
 import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
@@ -848,6 +849,16 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
             final var adjustsHere = this.hbarAdjustments.hbars.length;
             final var adjustsThere = that.hbarAdjustments.hbars.length;
+
+            // At genesis we mint 50B hbar for the treasury account and we need to inform
+            // mirror node about the system account creations as a synthetic creation record as
+            // child records for the first transaction submitted.
+            // This condition avoids aggregating balances for the parent and child
+            // records only in this case for clarity.
+            if (adjustsThere == 1 && that.hbarAdjustments.hbars[0] == MAX_PENDING_REWARDS) {
+                return;
+            }
+
             final var maxAdjusts = adjustsHere + adjustsThere;
             final var changedHere = this.hbarAdjustments.accountNums;
             final var changedThere = that.hbarAdjustments.accountNums;

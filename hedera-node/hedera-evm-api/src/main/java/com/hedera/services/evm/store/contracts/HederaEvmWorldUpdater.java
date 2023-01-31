@@ -23,7 +23,6 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
  * of the state during EVM transaction execution
  */
 public interface HederaEvmWorldUpdater extends WorldUpdater {
-
     /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
      * refunded for the first allocation of new contract storage in order to prevent double charging

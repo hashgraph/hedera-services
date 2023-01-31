@@ -32,10 +32,10 @@ This will both,
    please see [here](./services-configuration.md).)
 </ol>
 
-## Starting a local three-node network
+## Starting a local single-node network
 
 Now browse to `com.hedera.services.ServicesMain`. Its
-`main` method starts a network of Hedera Service nodes by 
+`main` method starts a single node network of Hedera Service by 
 calling `com.swirlds.platform.Browser#main`, which is the
 entrypoint to bootstrap the Platform app named by the
 [_config.txt_](../hedera-node/config.txt) in the working 
@@ -48,7 +48,7 @@ directory is the _hedera-node/_ directory of your clone of this repo:
     <img src="./assets/node-configuration.png" height="300" width="450" />
 </p>
 
-You will see three black panes appear, similar to:
+You will see a single black pane appear, similar to:
 
 <p>
     <img src="./assets/node-startup.png" height="150" width="600"/>
@@ -62,12 +62,15 @@ Looking closer at _config.txt_, you can see you are running Hedera Services
 points to the JAR file you just built; and there are three nodes in your 
 network because you specified "Bob" and "Carol" as well as "Alice".
 
-In fact Alice, Bob, and Carol are all running on your local machine; and 
+
+If multiple nodes Alice, Bob, and Carol are set up to run locally by
+uncommenting lines [27](../hedera-node/config.txt#L27) and [29](../hedera-node/config.txt#L29),
+they will all be running on your local machine; and 
 communicating via the loopback interface. But each still has a private 
 instance of the Platform, and keeps its own state, just as it would in a 
 true distributed network.
 
-During the initial startup, the network creates system accounts `0.0.1` through `0.0.100`. 
+During the initial startup, the network creates system accounts `0.0.1` through `0.0.1000`. 
 It sets the key for each account to a `KeyList` of size one with a well-known Ed25519 
 keypair. The network reads the keypair in a legacy format from [here](../hedera-node/data/onboard/StartUpAccount.txt), 
 but the same keypair is available in PEM format using the PKCS8 encoding 
