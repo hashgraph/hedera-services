@@ -125,7 +125,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     private boolean enabledVirtualNft;
     private boolean enableVirtualAccounts;
     private boolean enableVirtualTokenRels;
-
+    private Platform platform;
     private final BootstrapProperties bootstrapProperties;
 
     public ServicesState() {
@@ -154,6 +154,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         this.bootstrapProperties = that.bootstrapProperties;
         this.enableVirtualAccounts = that.enableVirtualAccounts;
         this.enableVirtualTokenRels = that.enableVirtualTokenRels;
+        this.platform = that.platform;
     }
 
     /** Log out the sizes the state children. */
@@ -232,8 +233,6 @@ public class ServicesState extends PartialNaryMerkleInternal
             @NonNull final SoftwareVersion deserializedVersion) {
         log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
-        // Immediately override the address book from the saved state
-        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         final var bootstrapProps = getBootstrapProperties();
         enableVirtualAccounts = bootstrapProps.getBooleanProperty(ACCOUNTS_STORE_ON_DISK);
         enableVirtualTokenRels = bootstrapProps.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK);
@@ -394,16 +393,13 @@ public class ServicesState extends PartialNaryMerkleInternal
         }
     }
 
-    public AddressBook getAddressBookCopy() {
-        return addressBook().copy();
-    }
-
     /* --- FastCopyable --- */
     @Override
     public synchronized ServicesState copy() {
         setImmutable(true);
 
         final var that = new ServicesState(this);
+        this.platform = that.platform;
         if (metadata != null) {
             metadata.app().workingState().updateFrom(that);
         }
@@ -513,7 +509,7 @@ public class ServicesState extends PartialNaryMerkleInternal
     }
 
     public AddressBook addressBook() {
-        return getChild(StateChildIndices.ADDRESS_BOOK);
+        return platform.getAddressBook();
     }
 
     public MerkleSpecialFiles specialFiles() {
@@ -581,7 +577,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+//        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(
                 StateChildIndices.CONTRACT_STORAGE,
                 virtualMapFactory.newVirtualizedIterableStorage());

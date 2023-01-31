@@ -27,7 +27,7 @@ public final class StateChildIndices {
     public static final int SPECIAL_FILES = 7;
     public static final int SCHEDULE_TXS = 8;
     public static final int RECORD_STREAM_RUNNING_HASH = 9;
-    public static final int ADDRESS_BOOK = 10;
+    public static final int LEGACY_ADDRESS_BOOK = 10;
     public static final int CONTRACT_STORAGE = 11;
     public static final int STAKING_INFO = 12;
     public static final int PAYER_RECORDS = 13;
