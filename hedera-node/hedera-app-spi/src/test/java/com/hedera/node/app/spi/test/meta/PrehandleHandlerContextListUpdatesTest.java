@@ -249,22 +249,19 @@ class PrehandleHandlerContextListUpdatesTest {
         given(keyLookup.getKeyIfReceiverSigRequired(otherContractId))
                 .willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
-        subject =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(createAccountTransaction())
-                        .payerKeyFor(payer);
+        subject = new PrehandleHandlerContext(keyLookup, createAccountTransaction(), payer);
 
-        assertEquals(payerKey, subject.build().payerKey());
-        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
 
         subject.addNonPayerKey(otherContractId);
-        assertEquals(payerKey, subject.build().payerKey());
-        assertIterableEquals(List.of(otherKey), subject.build().requiredNonPayerKeys());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
 
         subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
-        assertEquals(payerKey, subject.build().payerKey());
-        assertIterableEquals(List.of(otherKey, otherKey), subject.build().requiredNonPayerKeys());
-        assertEquals(OK, subject.build().status());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertIterableEquals(List.of(otherKey, otherKey), subject.getRequiredNonPayerKeys());
+        assertEquals(OK, subject.getStatus());
     }
 
     @Test
@@ -286,11 +283,11 @@ class PrehandleHandlerContextListUpdatesTest {
         subject.status(INVALID_ACCOUNT_ID);
 
         subject.addNonPayerKey(otherContractId);
-        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         subject.status(INVALID_CONTRACT_ID);
 
         subject.addNonPayerKeyIfReceiverSigRequired(otherContractId);
-        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
+        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
         subject.status(INVALID_CONTRACT_ID);
     }
 
@@ -335,16 +332,11 @@ class PrehandleHandlerContextListUpdatesTest {
     void doesntFailForInvalidContract() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(createAccountTransaction())
-                        .payerKeyFor(payer)
-                        .addNonPayerKey(ContractID.newBuilder().setContractNum(0L).build());
+        subject = new PrehandleHandlerContext(keyLookup, createAccountTransaction(), payer);
 
-        meta = subject.build();
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
-        assertEquals(OK, meta.status());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertIterableEquals(List.of(), subject.getRequiredNonPayerKeys());
+        assertEquals(OK, subject.getStatus());
     }
 
     @Test
@@ -370,15 +362,12 @@ class PrehandleHandlerContextListUpdatesTest {
         given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
         subject =
-                new SigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(createAccountTransaction())
-                        .payerKeyFor(payer)
+                new PrehandleHandlerContext(keyLookup, createAccountTransaction(), payer)
                         .addNonPayerKey(alias);
 
-        meta = subject.build();
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(otherKey), meta.requiredNonPayerKeys());
-        assertEquals(OK, meta.status());
+        assertEquals(payerKey, subject.getPayerKey());
+        assertIterableEquals(List.of(otherKey), subject.getRequiredNonPayerKeys());
+        assertEquals(OK, subject.getStatus());
     }
 
     @Test
