@@ -24,6 +24,8 @@ import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.system.NodeId;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -37,7 +39,7 @@ public final class Hedera {
     public Hedera() {}
 
     public void start(ServicesApp app, int port) {
-        final var metrics = createMetrics();
+        final var metrics = createMetrics(app.nodeId());
 
         // Create the Ingest workflow. While we are in transition, some required facilities come
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
@@ -97,11 +99,12 @@ public final class Hedera {
         shutdownLatch.countDown();
     }
 
-    private static Metrics createMetrics() {
+    private static Metrics createMetrics(NodeId nodeId) {
         // This is a stub implementation, to be replaced by a real implementation in #4293
         final var metricService =
                 Executors.newSingleThreadScheduledExecutor(
                         getStaticThreadManager().createThreadFactory("metrics", "MetricsWriter"));
-        return new DefaultMetrics(metricService, new DefaultMetricsFactory());
+        return new DefaultMetrics(
+                nodeId, new MetricKeyRegistry(), metricService, new DefaultMetricsFactory());
     }
 }
