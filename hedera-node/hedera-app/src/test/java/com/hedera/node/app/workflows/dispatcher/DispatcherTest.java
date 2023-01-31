@@ -240,7 +240,7 @@ class DispatcherTest {
                         (Consumer<Handlers>)
                                 h ->
                                         verify(h.consensusCreateTopicHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setConsensusUpdateTopic(
