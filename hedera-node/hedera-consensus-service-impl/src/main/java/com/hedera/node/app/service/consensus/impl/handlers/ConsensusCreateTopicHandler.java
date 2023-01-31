@@ -15,11 +15,13 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -45,7 +47,17 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PrehandleHandlerContext context) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getConsensusCreateTopic();
+        final var adminKey = asHederaKey(op.getAdminKey());
+        adminKey.ifPresent(context::addToReqNonPayerKeys);
+        final var submitKey = asHederaKey(op.getSubmitKey());
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.getAutoRenewAccount();
+            context.addNonPayerKey(
+                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        }
     }
 
     /**
