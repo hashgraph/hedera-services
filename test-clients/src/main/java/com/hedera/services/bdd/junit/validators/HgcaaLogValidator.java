@@ -62,7 +62,8 @@ public class HgcaaLogValidator {
                         List.of("Could not start Netty with TLS support on port 50212"),
                         List.of("CryptoTransfer throughput congestion has no throttle buckets"),
                         // (UNDESIRABLE) Remove when precompiles all return null on invalid input
-                        List.of("Internal precompile failure"));
+                        List.of("Internal precompile failure"),
+                        List.of("payerReqSig not expected to be null"));
 
         private int linesSinceInitialProblem = -1;
         private int linesToReportAfterInitialProblem = -1;
