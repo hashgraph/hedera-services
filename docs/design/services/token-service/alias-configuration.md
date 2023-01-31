@@ -4,43 +4,43 @@
 Account aliases allow an account to be referenced via a different id than the `<shard>.<realm>.<num>` account ID format which is native to the Hedera ledger.
 As part of [HIP 32](https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-32.md) the functionality was made available via the auto-create flow in which an `ED25519` or `ECDSA` public key was provided and used as the alias.
 
-To support greater scenario especially smart contract related scenarios for ECDSA based key the ledger needs to support additional ways of setting the alias at creation.
+To support greater scenarios, especially smart contract related scenarios for ECDSA-based key, the ledger needs to support additional ways of setting the alias at creation.
 
 This document explains how additional crypto and smart contract service transaction flows may be used to create an account with an alias.
 
 ## Goals
 
-- Update the `CryptoCreate` transaction to support the provision of an alias and evm address
-- Update the `CryptoTransfer` transaction to support auto creation via evm address
+- Update the `CryptoCreate` transaction to support the provision of an `alias` and `evm address`
+- Update the `CryptoTransfer` transaction to support auto creation via `evm address`
 - Support the `Lazy Account Creation Flow`
   - Provision of an initial transaction with an alias and no public key
   - Support the receiving of value by the new account (hbar and already associated tokens)
-  - Prevent the success of transaction requiring the accounts signature
+  - Prevent the success of transactions requiring the account's signature
   - Extract the public key from a future signed transaction that the account submits
 - Support the `Lazy Account Creation Flow` via the EVM
 - Validate that an account's alias and public keys map to each other
 - Update alias specification to support ED/ECDSA public key or ethereumAddress styled conforming values
 
-## Non Goals
-- Updating existing accounts alias fields
-- Updating the logic of account deletion to include clearing up of the aliases of deleted accounts
+## Non-Goals
+- Updating existing accounts' alias fields
+- Updating the logic of account deletion to include clearing up the aliases of deleted accounts
 
 ## Architecture
 
 ### Alias to Public Key Validation
 
 - In the case of `ED25519`, the provided alias must match the public key of the account that we want to create
-- In the case of `ECDSA`, the alias must match the public key or be the public address of the `ECDSA` key provided/set on the account 
-  - When the alias is the public address of the `ECDSA` key and the key is not set on the account, we have to create the account with empty public key field and to store the public address as alias, i.e. create a `hollow/lazy account`
+- In the case of `ECDSA`, the alias must match the public key or be the public address of the `ECDSA` key provided/set on the account
+  - When the alias is the public address of the `ECDSA` key and the key is not set on the account, we have to create the account with an empty public key field and store the public address as an alias, i.e. create a `hollow/lazy account`
 - For ensuring alias validity, we can use `MiscUtils.isSerializedProtoKey` logic to validate key aliases and a length check for public address aliases (any sequence of 20 bytes can be a public address)
 - We can check existing aliases using the `AliasManager.lookupIdBy()` method
 - To derive the public address from a public key, we can use `EthSigsUtils.recoverAddressFromPubKey()` from `hapi-utils`
 
-### Lazy Account Creation 
+### Lazy Account Creation
 
-Usually accounts are created with the provision of the public key.
+Usually, accounts are created with the provision of the public key.
 However, in other ledgers where accounts are `ECDSA` based (mostly EVM chains) it is possible to reference an account via the Ethereum account address.
-This is the rightmost 20 bytes of the 32 byte `Keccak-256` hash of the `ECDSA` public key of the account. This calculation in the manner described in the Ethereum Yellow Paper.
+This is the rightmost 20 bytes of the 32-byte `Keccak-256` hash of the `ECDSA` public key of the account. This calculation is in the manner described in the Ethereum Yellow Paper.
 
 To support the use of this format as an alias the `Lazy Account (hollow account) Creation Flow` may be adopted.
 ![Lazy Account Create Flow](images/lazy-account-create.png)
@@ -52,13 +52,13 @@ In this flow
 - The ledger should complete the account creation process by setting the key value of the account
 
 ### CryptoCreate Transaction With Alias and Ethereum address
-- Extend the `CryptoCreateTransactionBody` protobuf definition with new `alias` and `evmAddress` fields, corresponding to public key and public address aliases respectively
+- Extend the `CryptoCreateTransactionBody` protobuf definition with new `alias` and `evmAddress` fields, corresponding to a public key and public address aliases respectively
 - Extract `alias` and/or `evmAddress` from `CryptoCreateTransactionBody` and validate in `CryptoCreateChecks`:
-    - add new logic to ensure the given `alias`/`evmAddress` is not already linked to another account
-    - add new logic to ensure that the `key`, `alias`, and `evmAddress` all point to the same key 
-- All the possible combinations of creating a new account via `CryptoCreate` are denoted in the table below. A couple of scenarios, which should be paid more attention:
+  - add new logic to ensure the given `alias`/`evmAddress` is not already linked to another account
+  - add new logic to ensure that the `key`, `alias`, and `evmAddress` all point to the same key
+- All the possible combinations of creating a new account via `CryptoCreate` are denoted in the table below. A couple of scenarios, which should be paid more attention to:
   - In the scenario where only the `key` field is set to an `ECDSA` key, we automatically set its alias to the value of the key as well. We also add an entry in the alias map for the EVM address.
-  - In the scenario where only an `evmAddress` is given, we can't set the key for the account (as it will be missing). That is done as the final part of the lazy account create. The account alias will be set to the value of the ETH address.
+  - In the scenario where only an `evmAddress` is given, we can't set the key for the account (as it will be missing). That is done as the final part of the lazy account creation. The account alias will be set to the value of the ETH address.
 
 | CryptoCreateTransactionBody                                                                 | Resulting account in the consensus node state                                                                | Resulting entries in consensus node in-memory map     | Expected transaction record entries                                                                                                                                                                                                                                                                                                             |
 |---------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -79,7 +79,7 @@ In this flow
 - To support an Ethereum address for `CryptoTransfer` we will need to:
     - Change the implementation in the `AliasResolver.resolveInternalFungible` method, it already has some EVM address handling
     - Change the `AutoCreationLogic.create` to expect an alias that might not be key but a public address, and to charge all related hollow account created fees
-- The following table sums up all the ways a user will be able to create an account via `CryptoTransfer` to an alias:
+- The following table sums up all the ways a user will be able to create an account via `CryptoTransfer` to an alias (the last row is the newly added way of creating lazy accounts):
 
 | CryptoTransfer target      | Resulting synthetic CryptoCreateTransactionBody                                  | Resulting account in consensus node state        | Resulting entries in consensus node in-memory map     | Expected transaction record entries                                                                                                                                                                                                         |
 |----------------------------|----------------------------------------------------------------------------------|--------------------------------------------------|-------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -89,12 +89,17 @@ In this flow
 
 
 ### Lazy Account Creation Through the EVM
-- Implement a new version of the EVM (see [the evm versioning design doc](services/smart-contract-service/evm-versioning.md)) that will allow transfer of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a `lazy account` creation attempt. 
+- Implement a new version of the EVM (see [the evm versioning design doc](services/smart-contract-service/evm-versioning.md)) that will allow transfers of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a `lazy account` creation attempt. 
+- The account creation fees must be charged from the available gas in the frame
+  - Any EVM execution that cannot pay for a lazy account creation through the available gas will halt with `INSUFFICIENT_GAS` exceptional halt reason
+- The EVM can plug into the pre-existing logic in `AutoCreationLogic.create()` in order to create the lazy accounts. 
+- The EVM module's `HederaEvmMessageCallProcessor` will be extended with a `executeLazyCreate()` method, implemented by the service's `HederaMessageCallProcessor`
 - Supported scenarios will include:
   - Top-level `EthereumTransaction` crypto transfers
     - `ContractCallTransitionLogic` will need to be updated to allow such transactions to pass, instead of failing with `INVALID_CONTRACT_ID`
-  - Nested EVM calls with value via `.call()`, `.send()`, `.transfer()` 
-    - Will require a new implementation of `HederaCallOperation` which will consider value transfers to non-existing addresses as a lazy creation attemt
+  - Nested EVM calls with value via `.call()` 
+    - Will require a new implementation of `HederaCallOperation` which will consider value transfers to non-existing addresses as a lazy creation attempt
+    - `.send()`, `.transfer()` can also be used for value transfers in smart contracts. However, they cap their `gasLimit` at 2300, which won't be sufficient for a lazy creation, and are considered bad practice, so we won't add any specific logic in order to support them.  
   - `TransferPrecompile` will also need to be altered to allow transfers to a non-existing address. All of the following precompile functions must be supported:
     - `cryptoTransferV1`
     - `cryptoTransferV2`
@@ -107,8 +112,6 @@ In this flow
     - `ERC721.transferFrom`
     - `IHederaTokenService.transfer`
     - `IHederaTokenService.transferFrom`
-- The EVM can plug into the pre-existing logic in `AutoCreationLogic.create()` in `HederaMessageCallProcessor.start()` in order to create the lazy accounts
-- The account creation fees must be charged from the available gas in the frame
 
 ### Lazy Account Fee Charging
 - All lazy account fees (`CryptoCreate` for creation and `CryptoUpdate` for finalization) are to be charged upon **creation**
@@ -121,7 +124,7 @@ In this flow
     - During ingestion/prechecks:
       - `PrechekVerifier` will check whether the payer key is of type `JHollowKey`
       - If so, scan through the sig map for a full-prefix `ECDSA` key signature from an `ECDSA` key that maps to the evm address from the `JHollowKey`
-        - If there is a match, replace the `JHollowKey` with that `JECDSASecpk2561Key` in the required keys list before payer signature verification
+        - If there is a match, replace the `JHollowKey` with the `JECDSASecpk2561Key` in the required keys list before the payer signature verification
         - If there is no match, do not accept the transactions
     - During handle:
       - After signature rationalization, `SigsAndPayerKeyScreen` will check whether the `payerReqSig` in the `RationalizedSigMeta` is `JHollowKey`
