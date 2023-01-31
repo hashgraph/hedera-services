@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
@@ -66,7 +68,6 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
@@ -103,6 +104,7 @@ class StaticEntityAccessTest {
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
     @Mock private TokenInfo tokenInfo;
+    @Mock private EvmTokenInfo evmTokenInfo;
     @Mock private TokenNftInfo tokenNftInfo;
     @Mock private List<CustomFee> customFees;
 
@@ -210,10 +212,10 @@ class StaticEntityAccessTest {
     }
 
     @Test
-    void infoForToken() {
-        given(stateView.infoForToken(tokenId)).willReturn(Optional.of(tokenInfo));
+    void evmInfoForToken() {
+        given(stateView.evmInfoForToken(tokenId)).willReturn(Optional.of(evmTokenInfo));
 
-        final var tokenInfo = subject.infoForToken(tokenId);
+        final var tokenInfo = subject.evmInfoForToken(tokenId);
         assertNotNull(tokenInfo.get());
     }
 

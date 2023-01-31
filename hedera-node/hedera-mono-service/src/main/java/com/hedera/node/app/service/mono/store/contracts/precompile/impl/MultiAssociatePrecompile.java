@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -55,8 +54,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final Provider<FeeCalculator> feeCalculator,
-            final StateView currentView) {
+            final Provider<FeeCalculator> feeCalculator) {
         super(
                 ledgers,
                 aliases,
@@ -65,8 +63,7 @@ public class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils,
-                feeCalculator,
-                currentView);
+                feeCalculator);
     }
 
     @Override

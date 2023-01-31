@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -75,6 +76,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,6 +101,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
     @Mock private GlobalDynamicProperties properties;
+    private FileNumbers fileNumbers = new MockFileNumbers();
 
     private StateChildrenSigMetadataLookup subject;
 
@@ -106,7 +109,7 @@ class StateChildrenSigMetadataLookupTest {
     void setUp() {
         subject =
                 new StateChildrenSigMetadataLookup(
-                        new MockFileNumbers(), stateChildren, tokenMetaTransform, properties);
+                        fileNumbers, stateChildren, tokenMetaTransform, properties);
     }
 
     @Test
@@ -291,8 +294,29 @@ class StateChildrenSigMetadataLookupTest {
 
         assertTrue(result.succeeded());
         assertTrue(linkedRefs.linkedAliases().isEmpty());
+        assertTrue(
+                Arrays.contains(linkedRefs.linkedNumbers(), fileNumbers.applicationProperties()));
         assertFalse(result.metadata().receiverSigRequired());
         assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+        assertArrayEquals(
+                evmAddressBytes.toByteArray(),
+                result.metadata().key().getHollowKey().getEvmAddress());
+    }
+
+    @Test
+    void recognizesHollowAccountWhenLazyCreationEnabledWithoutLinkedRefs() {
+        var evmAddressBytes = ByteString.copyFromUtf8("evmAddress");
+
+        given(stateChildren.accounts()).willReturn(accounts);
+        given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
+        given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+        given(account.getAlias()).willReturn(evmAddressBytes);
+        given(properties.isLazyCreationEnabled()).willReturn(true);
+
+        final var result = subject.accountSigningMetaFor(knownAccount, null);
+
+        assertTrue(result.succeeded());
+        assertFalse(result.metadata().receiverSigRequired());
         assertArrayEquals(
                 evmAddressBytes.toByteArray(),
                 result.metadata().key().getHollowKey().getEvmAddress());

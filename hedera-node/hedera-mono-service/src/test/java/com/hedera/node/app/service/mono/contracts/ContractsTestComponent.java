@@ -59,8 +59,8 @@ public interface ContractsTestComponent {
     EVM evmV_0_30();
 
     @Singleton
-    @V_0_32
-    EVM evmV_0_32();
+    @V_0_34
+    EVM evmV_0_34();
 
     @Component.Builder
     interface Builder {

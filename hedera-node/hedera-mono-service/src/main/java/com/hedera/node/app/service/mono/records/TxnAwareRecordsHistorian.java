@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -265,16 +265,22 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
             final Instant consensusNow,
             final ExpirableTxnRecord.Builder topLevel) {
         final var parentId = topLevel.getTxnId();
+        int nextNanoOffset = 1;
         for (int i = 0, n = childRecords.size(); i < n; i++) {
             final var inProgress = childRecords.get(i);
             final var child = inProgress.recordBuilder();
             if (child.shouldNotBeExternalized()) {
+                // Intentionally don't increment nextNanoOffset here
                 continue;
             }
             topLevel.excludeHbarChangesFrom(child);
 
+            // The child's transactionId is determined by the next nonce
             child.setTxnId(parentId.withNonce(nextNonce++));
-            final var childConsTime = nonNegativeNanosOffset(consensusNow, sigNum * (i + 1));
+            // But the consensus time is determined by the # of records already
+            // externalized (in either the preceding or following "direction")
+            final var childConsTime =
+                    nonNegativeNanosOffset(consensusNow, sigNum * nextNanoOffset++);
             child.setConsensusTime(RichInstant.fromJava(childConsTime));
             /* Mirror node team prefers we only set a parent consensus time for records that FOLLOW
              * the top-level transaction. This might change for future use cases. */

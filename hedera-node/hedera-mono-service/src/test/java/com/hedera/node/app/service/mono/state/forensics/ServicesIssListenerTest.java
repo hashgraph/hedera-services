@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.state.forensics;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.time.Instant;
@@ -48,6 +50,7 @@ class ServicesIssListenerTest {
     @Mock private IssEventInfo issEventInfo;
     @Mock private IssNotification issNotification;
     @Mock private Platform platform;
+    @Mock private AutoCloseableWrapper<SwirldState> wrapper;
 
     @LoggingTarget private LogCaptor logCaptor;
 
@@ -56,54 +59,68 @@ class ServicesIssListenerTest {
     @BeforeEach
     void setup() {
         subject = new ServicesIssListener(issEventInfo, platform);
-        givenNoticeMeta();
+    }
+
+    @Test
+    void doesntNotifyIfOtherNodeHasIss() {
+        given(issNotification.getIssType()).willReturn(IssNotification.IssType.OTHER_ISS);
+
+        subject.notify(issNotification);
+
+        assertTrue(logCaptor.warnLogs().isEmpty());
+        verify(issNotification, never()).getRound();
+        verify(issEventInfo, never()).decrementRoundsToLog();
     }
 
     @Test
     void logsFallbackInfo() {
+        givenNoticeMeta();
         // when:
         subject.notify(issNotification);
 
         // then:
-        final var desired =
+        var desired =
                 String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
         assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
     }
 
     @Test
     void onlyLogsIfConfiguredInfo() {
+        givenNoticeMeta();
+
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+        given(wrapper.get()).willReturn(state);
+        given(platform.getLatestImmutableState()).willReturn(wrapper);
 
         subject.notify(issNotification);
 
         // then:
-        final var desired =
-                String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
+        var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
         verify(issEventInfo).alert(consensusTime);
         verify(issEventInfo).decrementRoundsToLog();
         assertThat(logCaptor.errorLogs(), contains(desired));
         verify(state).logSummary();
+        verify(wrapper).close();
     }
 
     @Test
     void shouldDumpThisRoundIsFalse() {
+        givenNoticeMeta();
+
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
-        given(platform.getLatestImmutableState())
-                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+        given(wrapper.get()).willReturn(state);
+        given(platform.getLatestImmutableState()).willReturn(wrapper);
 
         // when:
         subject.notify(issNotification);
 
         // then:
-        final var desired =
-                String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
         verify(issEventInfo).alert(consensusTime);
         verify(issEventInfo, never()).decrementRoundsToLog();
         verify(state, never()).logSummary();
+        verify(wrapper).close();
     }
 
     private void givenNoticeMeta() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,14 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A {@link OpProvider} that delegates to a list of other providers, each with a given probability
+ * of being chosen. That probability is determined by a "bias" for each provider, which has no
+ * absolute meaning but is relative to the other biases.
+ *
+ * <p>For example, suppose we have three providers, A, B, and C, with biases 1, 2, and 3. Then the
+ * probability of choosing A is 1/6, B is 1/3, and C is 1/2.
+ */
 public class BiasedDelegatingProvider implements OpProvider {
     private static final Logger log = LogManager.getLogger(BiasedDelegatingProvider.class);
 
@@ -96,6 +104,13 @@ public class BiasedDelegatingProvider implements OpProvider {
     }
 
     private int randomSelection() {
+        // A little LC trick to choose from our list of "n" providers with the
+        // requested biases; we imagine a list of n+1 _cumulative_ biases (i.e.,
+        // where the i-th number in the list is the sum of all biases from
+        // providers 0 to i) and then randomly pick a number k in the range
+        // [0, totalBias). The insertion point of k in the list of biases (as
+        // returned by binarySearch) is the index of each provider with
+        // probability proportional to its bias. We leave the proof to the reader.
         int bias = r.nextInt(cumulativeBias.get(cumulativeBias.size() - 1));
         int selection = binarySearch(cumulativeBias, bias);
         if (selection < 0) {

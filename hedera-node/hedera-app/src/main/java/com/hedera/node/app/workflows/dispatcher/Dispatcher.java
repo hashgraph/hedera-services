@@ -76,7 +76,7 @@ public class Dispatcher {
 
         return switch (transactionBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler()
                     .preHandle(transactionBody, payer);
             case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
@@ -85,12 +85,13 @@ public class Dispatcher {
                     .preHandle(transactionBody, payer);
 
             case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler()
-                    .preHandle(transactionBody, payer);
-            case CONTRACTCALL -> handlers.contractCallHandler().preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case CONTRACTCALL -> handlers.contractCallHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case CONTRACTDELETEINSTANCE -> handlers.contractDeleteHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case ETHEREUMTRANSACTION -> handlers.etherumTransactionHandler()
                     .preHandle(transactionBody, payer);
 

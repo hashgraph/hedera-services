@@ -19,9 +19,11 @@ import static com.hedera.services.bdd.junit.TestBase.concurrentExecutionOf;
 
 import com.hedera.services.bdd.junit.utils.AccountClassifier;
 import com.hedera.services.bdd.suites.records.BalanceValidation;
+import com.hedera.services.stream.proto.RecordStreamItem;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * This validator "reconciles" the hbar balances of all accounts and contract between the record
@@ -53,7 +55,6 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
     }
 
     private void getExpectedBalanceFrom(final List<RecordWithSidecars> recordsWithSidecars) {
-
         for (final var recordWithSidecars : recordsWithSidecars) {
             final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
             for (final var item : items) {
@@ -70,5 +71,16 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
                                 });
             }
         }
+    }
+
+    public static Stream<RecordStreamItem> streamOfItemsFrom(
+            final List<RecordWithSidecars> recordsWithSidecars) {
+        return recordsWithSidecars.stream()
+                .flatMap(
+                        recordWithSidecars ->
+                                recordWithSidecars
+                                        .recordFile()
+                                        .getRecordStreamItemsList()
+                                        .stream());
     }
 }

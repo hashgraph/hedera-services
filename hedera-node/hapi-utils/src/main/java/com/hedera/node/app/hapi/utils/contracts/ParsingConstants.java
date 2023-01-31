@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ public final class ParsingConstants {
     public static final String INT_BOOL_PAIR = "(int,bool)";
     public static final String BYTES32 = "(bytes32)";
     public static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
-    public static final String ADDRESS_TRIO_RAW_TYPE = "(bytes32,bytes32,bytes32)";
     public static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
     public static final String ADDRESS_ADDRESS_UINT256_RAW_TYPE = "(bytes32,bytes32,uint256)";
     public static final String INT = "(int)";

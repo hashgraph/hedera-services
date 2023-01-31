@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
+import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils;
 import com.hedera.node.app.service.mono.context.properties.PropUtils;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaUtil;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
 import com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.node.app.service.mono.exceptions.ValidationUtils;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;

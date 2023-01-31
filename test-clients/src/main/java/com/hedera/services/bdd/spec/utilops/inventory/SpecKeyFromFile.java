@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.common.utility.CommonUtils;
@@ -107,7 +108,7 @@ public class SpecKeyFromFile extends UtilOp {
                     linkedId,
                     Optional.empty());
         } else if (f.getName().endsWith(".words")) {
-            var mnemonic = Files.readString(f.toPath());
+            final var mnemonic = KeyFactory.mnemonicFromFile(f.getAbsolutePath());
             createAndLinkFromMnemonic(spec, mnemonic, name, linkedId, null);
         } else {
             var hexed = Files.readString(f.toPath()).trim();

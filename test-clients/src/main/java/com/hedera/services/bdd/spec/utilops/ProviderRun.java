@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,12 @@ public class ProviderRun extends UtilOp {
         this.providerFn = providerFn;
         Stream.of(HederaFunctionality.class.getEnumConstants())
                 .forEach(type -> counts.put(type, new AtomicInteger()));
+    }
+
+    public ProviderRun lasting(final long duration, final TimeUnit unit) {
+        this.unitSupplier = () -> unit;
+        this.durationSupplier = () -> duration;
+        return this;
     }
 
     public ProviderRun lasting(LongSupplier durationSupplier, Supplier<TimeUnit> unitSupplier) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,12 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
@@ -66,6 +68,8 @@ class ConfigCallbacksTest {
     @Mock private FunctionalityThrottling functionalityThrottling;
     @Mock private MerkleNetworkContext networkCtx;
     @Mock private PropertySource properties;
+    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private FileNumbers fileNumbers;
 
     private final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
     private ConfigCallbacks subject;
@@ -84,7 +88,9 @@ class ConfigCallbacksTest {
                         () -> addressBook,
                         properties,
                         () -> networkCtx,
-                        () -> stakingInfos);
+                        () -> stakingInfos,
+                        sigImpactHistorian,
+                        fileNumbers);
     }
 
     @Test

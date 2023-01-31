@@ -107,38 +107,38 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
 
-      - name: Expand Shallow Clone for SonarQube
+      - name: Expand Shallow Clone for SonarQube and Spotless
         if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() }}
         run: |
           git fetch --unshallow --no-recurse-submodules
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@1df8dbefe2a8cbc99770194893dd902763bee34b # pin@v3
         with:
           distribution: ${{ inputs.java-distribution }}
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # pin@v3
         with:
           node-version: ${{ inputs.node-version }}
 
       - name: Compile
         id: gradle-build
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
       - name: Javadoc
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-javadoc && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -146,58 +146,64 @@ jobs:
 
       - name: Unit Testing
         id: gradle-test
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: check --scan
 
       - name: Publish Unit Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Unit Test Results
-          report_paths: "**/build/test-results/test/TEST-*.xml"
-          require_tests: "false"
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/test/TEST-*.xml"
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: bash compose-build.sh
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: createDockerImage
 
       - name: Integration Testing
         id: gradle-itest
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: itest --scan
 
       - name: Publish Integration Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: Integration Test Results
-          report_paths: "**/build/test-results/itest/TEST-*.xml"
-          require_tests: false
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/itest/TEST-*.xml"
 
       - name: E2E Testing
         id: gradle-eet
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: eet --scan
 
       - name: Publish E2E Test Report
-        uses: mikepenz/action-junit-report@v3
+        uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           check_name: E2E Test Results
-          report_paths: "**/build/test-results/eet/TEST-*.xml"
-          require_tests: false
+          check_run_disabled: true
+          json_thousands_separator: ','
+          junit_files: "**/build/test-results/eet/TEST-*.xml"
 
       - name: Jacoco Coverage Report
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
@@ -205,17 +211,17 @@ jobs:
 
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70 # pin@v3
 
       - name: Publish Test Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
           name: Test Reports
           path: "**/build/reports/tests/**"
 
       - name: Publish Test Network Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # pin@v3
         if: ${{ (inputs.enable-e2e-tests || inputs.enable-integration-test) && !cancelled() }}
         with:
           name: Test Network Logs
@@ -227,7 +233,7 @@ jobs:
         id: sonar-cloud
         env:
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
         run: |
           SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
           if [[ "${IS_PULL_REQUEST}" == true ]]; then
@@ -237,12 +243,12 @@ jobs:
           echo "options=${SONAR_OPTS}" >> "${GITHUB_OUTPUT}"
 
       - name: SonarCloud Scan
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         env:
           GITHUB_TOKEN: ${{ secrets.access-token }}
           SONAR_TOKEN: ${{ secrets.sonar-token }}
           SONAR_OPTS: ${{ steps.sonar-cloud.outputs.options }}
-        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        if: ${{ inputs.enable-sonar-analysis && steps.gradle-build.conclusion == 'success' && github.event.pull_request.head.repo.full_name == github.repository && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan
