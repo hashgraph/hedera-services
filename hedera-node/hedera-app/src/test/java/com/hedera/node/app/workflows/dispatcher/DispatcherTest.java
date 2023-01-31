@@ -450,7 +450,9 @@ class DispatcherTest {
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleDeleteHandler())
+                                                .preHandle(any(), any(), any(), any())),
 
                 // token
                 Arguments.of(
