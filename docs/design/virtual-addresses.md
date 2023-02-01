@@ -55,9 +55,8 @@ public interface HederaAccount {
 - Implement logic to rebuild the `evmAddress -> accountId` map from state e.g. similar to `AliasManager.rebuildAliasesMap` implementation
 - Update `AliasManager.rebuildAliasesMap` method to work only for EC/ED key bytes aliases 
 
-#### Introduce special system account
-- Create new system account for exposed keys/addresses from Ethereum tools and external chains that will be used to ensure that no such keys/addresses will be allowed 
-- The limitation for accounts to have a maximum limit of virtual addresses will not be applicable to this system account i.e. this account will have unbounded list of virtual addresses 
+#### Introduce special property file for not allowed addresses
+- Create new property file for exposed EVM addresses from Ethereum tools and external chains that will be used to ensure that no such addresses will be allowed
 
 #### State migration
 - Create new class in `com.hedera.node.app.service.mono.state.migration` that implements the [migration logic](https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-631.md#alias-to-virtual-account-migration) for the accounts and contracts
@@ -126,7 +125,7 @@ The development will be done in iterative phases that build on previous ones. Pr
     - Introduce the `evmAddress -> accountId` map
     - Update alias resolution logic to work with `alias -> accountId` map for public key aliases and with `evmAddress -> accountId` map for `evmAddress` aliases
     - Add support for `CryptoGetInfoQuery` with `evmAddress` to use the `evmAddress -> accountId` map
-  - Create new system account for exposed keys from Ethereum tools and external chains
+  - Create new property file for exposed EVM addresses from Ethereum tools and external chains
 - Phase 2
   - Protobuf changes
     - Add `virtual_address_override` to `ContractCall` and `ContractCreate` transactions
