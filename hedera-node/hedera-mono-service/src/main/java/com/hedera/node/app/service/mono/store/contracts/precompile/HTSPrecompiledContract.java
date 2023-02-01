@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -95,9 +95,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTo
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.TokenCreateReqs;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.ExplicitRedirectAwareDescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -542,17 +543,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             evmEncoder,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                        final var target = DescriptorUtils.getRedirectTarget(input);
+                        final var target =
+                                ExplicitRedirectAwareDescriptorUtils.getRedirectTarget(input);
                         final var isExplicitRedirectCall = target.massagedInput() != input;
                         if (isExplicitRedirectCall) {
                             input = target.massagedInput();
                         }
-                        final var tokenId = target.tokenId();
+                        final var tokenId =
+                                EntityIdUtils.tokenIdFromEvmAddress(
+                                        target.redirectTarget().token());
                         final var isFungibleToken =
+                                /* For implicit redirect call scenarios, at this point in the logic it has already been
+                                 * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
+                                 *
+                                 * Explicit redirect calls, however, verify the existence of the token in RedirectPrecompile.run(), so only
+                                 * call ledgers.typeOf() if the token exists.
+                                 *  */
                                 (!isExplicitRedirectCall || ledgers.tokens().exists(tokenId))
                                         && TokenType.FUNGIBLE_COMMON.equals(
                                                 ledgers.typeOf(tokenId));
-                        final var nestedFunctionSelector = target.descriptor();
+                        final var nestedFunctionSelector = target.redirectTarget().descriptor();
                         final var tokenPrecompile =
                                 switch (nestedFunctionSelector) {
                                     case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(

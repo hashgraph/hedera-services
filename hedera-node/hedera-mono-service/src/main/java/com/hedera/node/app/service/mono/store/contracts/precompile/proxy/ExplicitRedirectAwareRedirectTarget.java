@@ -15,7 +15,15 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.proxy;
 
-import com.hederahashgraph.api.proto.java.TokenID;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import org.apache.tuweni.bytes.Bytes;
 
-public record RedirectTarget(int descriptor, TokenID tokenId, Bytes massagedInput) {}
+/**
+ * А wrapper around the info of explicit and implicit token redirect calls.
+ *
+ * @param redirectTarget Contains info about the targeted function and token address.
+ * @param massagedInput Populated only for explicit redirect calls --- contains the input in the
+ *     implicit redirect form. See @code{ExplicitRedirectAwareDescriptorUtils} for more.
+ */
+public record ExplicitRedirectAwareRedirectTarget(
+        RedirectTarget redirectTarget, Bytes massagedInput) {}

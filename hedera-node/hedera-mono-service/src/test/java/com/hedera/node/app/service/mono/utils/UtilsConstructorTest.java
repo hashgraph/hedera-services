@@ -66,7 +66,7 @@ import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hedera.node.app.service.mono.stats.ServicesStatsConfig;
 import com.hedera.node.app.service.mono.stats.StatsModule;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.ExplicitRedirectAwareDescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.store.models.TopicConversion;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
@@ -107,7 +107,7 @@ class UtilsConstructorTest {
                             MapValueListUtils.class,
                             HFileMetaSerde.class,
                             IoUtils.class,
-                            DescriptorUtils.class,
+                            ExplicitRedirectAwareDescriptorUtils.class,
                             TokenMetaUtils.class,
                             MiscCryptoUtils.class,
                             NewRels.class,
