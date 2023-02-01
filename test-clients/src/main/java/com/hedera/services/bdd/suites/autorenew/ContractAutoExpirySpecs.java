@@ -109,7 +109,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
-                        contractCreate(contractToRenew, 63)
+                        contractCreate(contractToRenew, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -203,7 +203,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance((long) autoRenewAccountBalance),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, 63)
+                        contractCreate(contractToRenew, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -290,7 +290,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(renewAccountBalance),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, 63)
+                        contractCreate(contractToRenew, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
