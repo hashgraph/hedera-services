@@ -134,8 +134,8 @@ The development will be done in iterative phases that build on previous ones. Pr
   - Account migration
     - All ECDSA accounts with an alias get a single virtual address
     - All ECDSA accounts with `evmAddress` stored in alias path get a single virtual address 
-    - All ECDSA accounts which calculated addresses are not present in the map will get a single virtual address
     - All contracts with valid 20 byte addresses will get a single virtual address
+    - (Optional) All ECDSA accounts which calculated addresses are not present in the map will get a single virtual address
   - Accounts to utilize virtual addresses on creation
     - EOAs set virtual address for regular `CryptoCreate` with ECDSA key, auto-create with alias and lazy-crate with `evmAddress`
     - Contracts set virtual address for Smart contract `new()` (`CREATE` & `CREATE2`) and `EthereumTransaction CREATE` with empty `to` address
