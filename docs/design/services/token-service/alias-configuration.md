@@ -43,7 +43,7 @@ However, in other ledgers where accounts are `ECDSA` based (mostly EVM chains) i
 This is the rightmost 20 bytes of the 32-byte `Keccak-256` hash of the `ECDSA` public key of the account. This calculation is in the manner described in the Ethereum Yellow Paper.
 
 To support the use of this format as an alias the `Lazy Account (hollow account) Creation Flow` may be adopted.
-![Lazy Account Create Flow](images/lazy-account-create.png)
+![Lazy Account Create Flow](/docs/design/images/lazy-account-create.png)
 In this flow
 - An initial transaction may supply an accountId using the `<shard>.<realm>.<ethereumAccountAddress>`
 - The ledger should create the account using the given alias without the public key
@@ -89,7 +89,7 @@ In this flow
 
 
 ### Lazy Account Creation Through the EVM
-- Implement a new version of the EVM (see [the evm versioning design doc](services/smart-contract-service/evm-versioning.md)) that will allow transfers of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a `lazy account` creation attempt. 
+- Implement a new version of the EVM (see [the evm versioning design doc](/docs/design/services/smart-contract-service/evm-versioning.md)) that will allow transfers of value to non-existing addresses. In this way, instead of halting the execution frame with `INVALID_SOLIDITY_ADDRESS`, the transfer will be considered a `lazy account` creation attempt. 
 - The account creation fees must be charged from the available gas in the frame
   - Any EVM execution that cannot pay for a lazy account creation through the available gas will halt with `INSUFFICIENT_GAS` exceptional halt reason
 - The EVM can plug into the pre-existing logic in `AutoCreationLogic.create()` in order to create the lazy accounts. 
