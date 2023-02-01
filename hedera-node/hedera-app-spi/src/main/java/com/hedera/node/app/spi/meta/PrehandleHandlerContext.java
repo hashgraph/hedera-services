@@ -85,12 +85,12 @@ public class PrehandleHandlerContext {
     }
 
     /**
-     * Returns the list of required non-payer keys.
+     * Returns an immutable copy of the list of required non-payer keys.
      *
      * @return the {@link List} with the required non-payer keys
      */
     public List<HederaKey> getRequiredNonPayerKeys() {
-        return requiredNonPayerKeys;
+        return List.copyOf(requiredNonPayerKeys);
     }
 
     /**

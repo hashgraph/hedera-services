@@ -33,10 +33,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +133,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // 1. Parse the Transaction and check the syntax
             final var onsetResult = onset.parseAndCheck(ctx, txBytes);
             txBody = onsetResult.txBody();
+            payerID = txBody.getTransactionID().getAccountID();
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
@@ -163,24 +166,31 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private static TransactionMetadata createTransactionMetadata(
             @NonNull final Map<String, ReadableStates> usedStates,
             @NonNull final PrehandleHandlerContext context) {
-        final List<TransactionMetadata.ReadKeys> readKeys =
-                usedStates.entrySet().stream()
-                        .flatMap(
-                                entry -> {
-                                    final var statesKey = entry.getKey();
-                                    final var readableStates = entry.getValue();
-                                    return readableStates.stateKeys().stream()
-                                            .map(
-                                                    stateKey -> {
-                                                        final var readableKVState =
-                                                                readableStates.get(stateKey);
-                                                        return new TransactionMetadata.ReadKeys(
-                                                                statesKey,
-                                                                stateKey,
-                                                                readableKVState.readKeys());
-                                                    });
-                                })
-                        .toList();
+        final List<TransactionMetadata.ReadKeys> readKeys = extractAllReadKeys(usedStates);
         return new TransactionMetadata(context, readKeys);
+    }
+
+    private static List<TransactionMetadata.ReadKeys> extractAllReadKeys(
+            @NonNull final Map<String, ReadableStates> usedStates) {
+        return usedStates.entrySet().stream()
+                .flatMap(
+                        entry -> {
+                            final String statesKey = entry.getKey();
+                            final ReadableStates readableStates = entry.getValue();
+                            return extractReadKeysFromReadableStates(statesKey, readableStates);
+                        })
+                .toList();
+    }
+
+    private static Stream<TransactionMetadata.ReadKeys> extractReadKeysFromReadableStates(
+            @NonNull final String statesKey, @NonNull final ReadableStates readableStates) {
+        return readableStates.stateKeys().stream()
+                .map(
+                        stateKey -> {
+                            final Set<? extends Comparable<?>> readKeys =
+                                    readableStates.get(stateKey).readKeys();
+                            return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
+                        })
+                .filter(listEntry -> !listEntry.readKeys().isEmpty());
     }
 }

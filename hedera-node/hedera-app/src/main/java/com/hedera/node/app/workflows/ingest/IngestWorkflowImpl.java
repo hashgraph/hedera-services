@@ -105,6 +105,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final ByteBuffer requestBuffer,
             @NonNull final ByteBuffer responseBuffer,
             @NonNull final Function<ReadableStates, ReadableAccountStore> storeSupplier) {
+        requireNonNull(ctx);
+        requireNonNull(requestBuffer);
+        requireNonNull(responseBuffer);
+        requireNonNull(storeSupplier);
+
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;
 
