@@ -391,7 +391,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         ByteString.copyFromUtf8("As 'twere a spinning-top"))),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, 63)
+                        contractCreate(contractToRemove, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
