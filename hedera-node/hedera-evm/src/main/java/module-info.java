@@ -28,4 +28,8 @@ module com.hedera.node.app.service.evm {
     exports com.hedera.node.app.service.evm.utils;
     exports com.hedera.node.app.service.evm.store.contracts.precompile.codec;
     exports com.hedera.node.app.service.evm.store.contracts.precompile.impl;
+    exports com.hedera.node.app.service.evm.store.tokens;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
+    exports com.hedera.node.app.service.evm.exceptions;
 }

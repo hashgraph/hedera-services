@@ -34,17 +34,6 @@ plugins {
     id("me.champeau.includegit").version("0.1.5")
 }
 
-gitRepositories {
-    checkoutsDirectory.set(file(rootProject.projectDir.getAbsolutePath() + "/hedera-node/hapi/"))
-    include("hedera-protobufs") {
-        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
-        // choose tag or branch of HAPI you would like to test with
-        tag.set("main")
-        // do not load project from repo
-        autoInclude.set(false)
-    }
-}
-
 include(":hedera-node")
 include(":hedera-node:hedera-admin-service")
 include(":hedera-node:hedera-admin-service-impl")
@@ -64,7 +53,7 @@ include(":hedera-node:hedera-util-service")
 include(":hedera-node:hedera-util-service-impl")
 include(":hedera-node:hapi-utils")
 include(":hedera-node:hapi-fees")
-// include(":hedera-node:hapi")
+include(":hedera-node:hapi")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
@@ -80,6 +69,18 @@ gradleEnterprise {
     }
 }
 
+gitRepositories {
+    checkoutsDirectory.set(file(rootProject.projectDir.absolutePath + "/hedera-node/hapi/"))
+    include("hedera-protobufs") {
+        uri.set("https://github.com/hashgraph/hedera-protobufs.git")
+        // choose tag or branch of HAPI you would like to test with
+        // This version needs to match tha HAPI version below in versionCatalogs
+        tag.set("v0.34.0")
+        // do not load project from repo
+        autoInclude.set(false)
+    }
+}
+
 // Define the library catalogs available for projects to make use of
 dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
@@ -87,7 +88,11 @@ dependencyResolutionManagement {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the runtime
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
+            // The HAPI API version to use, this need to match the tag set on gitRepositories above
+            version("hapi-version", "0.34.0")
+
             // Definition of version numbers for all libraries
+            version("pbj-version", "0.3.0")
             version("besu-version", "22.10.1")
             version("besu-native-version", "0.6.1")
             version("bouncycastle-version", "1.70")
@@ -101,7 +106,6 @@ dependencyResolutionManagement {
             version("eddsa-version", "0.3.0")
             version("grpc-version", "1.50.2")
             version("guava-version", "31.1-jre")
-            version("hapi-version", "0.33.1-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
             version("jackson-version", "2.13.3")
@@ -112,12 +116,14 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.35.0-alpha.0")
+            version("swirlds-version", "0.35.0")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
             version("spotbugs-version", "4.7.3")
             version("helidon-grpc-version", "3.0.2")
+
+            plugin("pbj", "com.hedera.pbj.pbj-compiler").versionRef("pbj-version")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -147,6 +153,7 @@ dependencyResolutionManagement {
             )
 
             // Define the individual libraries
+            library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
             library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
             library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")

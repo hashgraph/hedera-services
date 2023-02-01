@@ -38,6 +38,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -126,6 +127,7 @@ class TokenUpdatePrecompileTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private final TokenUpdateWrapper updateWrapper =
             HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
@@ -171,7 +173,8 @@ class TokenUpdatePrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
 
         tokenUpdatePrecompile = Mockito.mockStatic(TokenUpdatePrecompile.class);
     }
