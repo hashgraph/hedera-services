@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Default implementation of {@link PreHandleWorkflow} */
+/** Implementation of {@link PreHandleWorkflow} */
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);

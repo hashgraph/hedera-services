@@ -189,9 +189,9 @@ class QueryDispatcherTest {
         final var query = Query.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchValidate(null, query))
+        assertThatThrownBy(() -> dispatcher.validate(null, query))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchValidate(state, null))
+        assertThatThrownBy(() -> dispatcher.validate(state, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -201,7 +201,7 @@ class QueryDispatcherTest {
         final var query = Query.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchValidate(state, query))
+        assertThatThrownBy(() -> dispatcher.validate(state, query))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -216,7 +216,7 @@ class QueryDispatcherTest {
         final var state = mock(HederaState.class);
 
         // when
-        dispatcher.dispatchValidate(state, query);
+        dispatcher.validate(state, query);
 
         // then
         verifyValidate.verify(handlers);
@@ -230,11 +230,11 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchFindResponse(null, query, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(null, query, header))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchFindResponse(state, null, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(state, null, header))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatchFindResponse(state, query, null))
+        assertThatThrownBy(() -> dispatcher.getResponse(state, query, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -245,7 +245,7 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.dispatchFindResponse(state, query, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(state, query, header))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -262,7 +262,7 @@ class QueryDispatcherTest {
         final var header = ResponseHeader.newBuilder().build();
 
         // when
-        dispatcher.dispatchFindResponse(state, query, header);
+        dispatcher.getResponse(state, query, header);
 
         // then
         verifyFindResponse.verify(handlers);

@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
- * handle-requests to the appropriate handler
+ * handle-transaction requests to the appropriate handler
  */
 public class TransactionDispatcher {
 

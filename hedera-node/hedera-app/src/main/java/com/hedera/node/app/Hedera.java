@@ -42,7 +42,7 @@ public final class Hedera {
         // Create the Ingest workflow. While we are in transition, some required facilities come
         // from `hedera-app`, and some from `mono-service`. Eventually we'll transition all
         // facilities to be from the app module.
-        // TODO Real values will be added to make this usable with #4714
+        // TODO Real values will be added to make this usable with #4825
         final var ingestWorkflow =
                 new IngestWorkflowImpl(
                         app.nodeInfo(),
@@ -56,6 +56,7 @@ public final class Hedera {
                         null);
 
         // Create the query workflow
+        // TODO Real values will be added to make this usable with #4828
         final var queryWorkflow =
                 new QueryWorkflowImpl(null, null, null, null, null, null, null, null);
 

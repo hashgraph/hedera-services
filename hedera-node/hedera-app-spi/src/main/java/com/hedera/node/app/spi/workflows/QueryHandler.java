@@ -36,7 +36,8 @@ public interface QueryHandler {
 
     /**
      * Creates an empty {@link Response} with a provided header. This is typically used, if an error
-     * occurred.
+     * occurred. The {@code header} contains a {@link
+     * com.hederahashgraph.api.proto.java.ResponseCodeEnum} with the error code.
      *
      * @param header the {@link ResponseHeader} that needs to be included
      * @return the created {@link Response}

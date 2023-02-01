@@ -24,7 +24,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Results of the workflow onset
+ * Results of the workflow onset.
+ *
+ * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
+ * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
+ * com.hederahashgraph.api.proto.java.CryptoTransfer}.
  *
  * @param txBody the deserialized {@link TransactionBody}
  * @param signatureMap the contained {@link SignatureMap}

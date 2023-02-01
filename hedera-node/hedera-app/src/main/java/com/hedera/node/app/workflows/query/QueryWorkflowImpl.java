@@ -57,7 +57,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Default implementation of {@link QueryWorkflow} */
+/** Implementation of {@link QueryWorkflow} */
 public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryWorkflowImpl.class);
@@ -186,7 +186,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 5. Check validity
-            dispatcher.dispatchValidate(state, query);
+            dispatcher.validate(state, query);
 
             // 6. Submit payment to platform
             if (paymentRequired) {
@@ -202,7 +202,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = handler.createEmptyResponse(header);
             } else {
                 final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.dispatchFindResponse(state, query, header);
+                response = dispatcher.getResponse(state, query, header);
             }
 
             opCounters.countAnswered(functionality);

@@ -41,7 +41,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
-/** Default implementation of {@link IngestWorkflow} */
+/** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
     private final NodeInfo nodeInfo;

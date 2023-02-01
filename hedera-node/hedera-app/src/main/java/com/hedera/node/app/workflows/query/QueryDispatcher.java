@@ -26,8 +26,8 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code QueryDispatcher} provides functionality to forward validate, and reply-requests to the
- * appropriate handler
+ * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to
+ * the appropriate handler
  */
 public class QueryDispatcher {
 
@@ -94,14 +94,13 @@ public class QueryDispatcher {
     }
 
     /**
-     * Dispatch a validate-request. It is forwarded to the correct handler, which takes care of the
-     * specific functionality
+     * Validates the query by dispatching the query to its specific handlers.
      *
      * @param state the {@link HederaState} of this request
      * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void dispatchValidate(@NonNull final HederaState state, @NonNull final Query query)
+    public void validate(@NonNull final HederaState state, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(state);
         requireNonNull(query);
@@ -154,8 +153,7 @@ public class QueryDispatcher {
     }
 
     /**
-     * Dispatch a {@code findResponse()}-request. The call is forwarded to the correct handler,
-     * which takes care of the specific functionality
+     * Gets the response for a given query by dispatching its respective handlers.
      *
      * @param state the {@link HederaState} that should be used for the request
      * @param query the actual {@link Query}
@@ -163,7 +161,7 @@ public class QueryDispatcher {
      *     successful
      * @return the {@link Response} with the requested answer
      */
-    public Response dispatchFindResponse(
+    public Response getResponse(
             @NonNull final HederaState state,
             @NonNull final Query query,
             @NonNull final ResponseHeader header) {
