@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.validOwner;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;

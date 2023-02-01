@@ -28,6 +28,8 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -37,6 +39,8 @@ import static java.util.Collections.unmodifiableMap;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
@@ -83,7 +87,6 @@ import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -122,6 +125,9 @@ import org.apache.tuweni.bytes.Bytes;
 public class StateView {
 
     private static final Logger log = LogManager.getLogger(StateView.class);
+
+    private static final String FAILURE_TOKEN_INFO =
+            "Unexpected failure getting info for token {}!";
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
     public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
@@ -188,6 +194,20 @@ public class StateView {
         return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
     }
 
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null) {
+                return Optional.empty();
+            }
+            return Optional.of(asEvmTokenInfo(token, networkInfo.ledgerId()));
+        } catch (Exception unexpected) {
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
+            return Optional.empty();
+        }
+    }
+
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
         try {
             final var tokens = stateChildren.tokens();
@@ -197,10 +217,7 @@ public class StateView {
             }
             return Optional.of(token.asTokenInfo(tokenId, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting info for token {}!",
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -336,10 +353,7 @@ public class StateView {
             }
             return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting info for token {}!",
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -485,7 +499,7 @@ public class StateView {
             if (token == null) {
                 return emptyList();
             }
-            return token.grpcFeeSchedule();
+            return evmCustomFees(token.grpcFeeSchedule());
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting custom fees for token {}!",

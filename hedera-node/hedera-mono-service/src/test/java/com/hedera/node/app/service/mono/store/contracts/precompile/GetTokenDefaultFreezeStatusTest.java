@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -78,6 +79,7 @@ class GetTokenDefaultFreezeStatusTest {
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Mock private AssetsLoader assetLoader;
     public static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT =
@@ -110,7 +112,8 @@ class GetTokenDefaultFreezeStatusTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         getTokenDefaultFreezeStatus = Mockito.mockStatic(GetTokenDefaultFreezeStatus.class);
     }
 

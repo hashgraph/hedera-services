@@ -52,10 +52,21 @@ public class FilteredReadableStates implements ReadableStates {
     public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!contains(stateKey)) {
-            throw new IllegalArgumentException("Could not find state " + stateKey);
+            throw new IllegalArgumentException("Could not find k/v state " + stateKey);
         }
 
         return delegate.get(stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        if (!contains(stateKey)) {
+            throw new IllegalArgumentException("Could not find singleton state " + stateKey);
+        }
+
+        return delegate.getSingleton(stateKey);
     }
 
     @Override
