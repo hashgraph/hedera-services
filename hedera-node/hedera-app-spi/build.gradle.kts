@@ -34,6 +34,7 @@ configurations.all {
 
 dependencies {
     implementation(libs.grpc.stub)
+    implementation(libs.swirlds.common)
     api(libs.hapi)
     api(libs.helidon.io.grpc)
     api(libs.jsr305.annotation)
