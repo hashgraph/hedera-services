@@ -131,7 +131,7 @@ The development will be done in iterative phases that build on previous ones. Pr
   - Protobuf changes
     - Add `virtual_address_override` to `ContractCall` and `ContractCreate` transactions
     - Add update to `CryptoUpdateTransactionBody.virtual_address_update`
-  - Support virtual address addition on `CryptoUpdate`
+  - Support virtual address addition to existing accounts on `CryptoUpdate` with signature verification logic and verification for `evmAddress` uniqueness
   - Account migration
     - All ECDSA accounts with an alias get a single virtual address
     - All ECDSA accounts with `evmAddress` stored in alias path get a single virtual address 
@@ -145,7 +145,8 @@ The development will be done in iterative phases that build on previous ones. Pr
   - Protobuf changes
     - Add disable to `CryptoUpdateTransactionBody.virtual_address_update`
   - Expand virtual address limit per account to 3
-  - Virtual address addition to existing accounts with signature verification logic and verification for `evmAddress` uniqueness
+  - Support multiple virtual address additions to existing accounts on `CryptoUpdate` with signature verification logic and verification for `evmAddress` uniqueness
+  - Support updating the default virtual address for existing accounts on `CryptoUpdate` with signature verification logic
   - Support `virtual_address_override` logic for `ContractCreate` and `ContractCall` transaction
 - Phase 4
   - Support virtual address disabling on `CryptoUpdate`
