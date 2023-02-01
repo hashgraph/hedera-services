@@ -44,6 +44,7 @@ This is the rightmost 20 bytes of the 32-byte `Keccak-256` hash of the `ECDSA` p
 
 To support the use of this format as an alias the `Lazy Account (hollow account) Creation Flow` may be adopted.
 ![Lazy Account Create Flow](/docs/design/images/lazy-account-create.png)
+
 In this flow
 - An initial transaction may supply an accountId using the `<shard>.<realm>.<ethereumAccountAddress>`
 - The ledger should create the account using the given alias without the public key
@@ -151,5 +152,5 @@ See the scenarios described in the [HIP-583 test plan](/docs/test-plans/hip-583.
 ### Notes
 
 - For the EVM address cases we should store the alias value in the state not only in the memory structure
-- It is ok for different accounts to have the same key
+- It is OK for different accounts to have the same key
 - For accounts with non-empty aliases if we have a key that is set, it should match the alias (for key aliases the values should be equal and for EVM aliases the key should be the ECDSA key from which the EVM address is derived)
