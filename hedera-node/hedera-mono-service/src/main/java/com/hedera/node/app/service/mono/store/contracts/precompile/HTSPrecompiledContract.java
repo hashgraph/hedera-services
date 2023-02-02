@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -95,7 +96,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTo
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.TokenCreateReqs;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.ExplicitRedirectAwareDescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
@@ -543,15 +543,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             evmEncoder,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                        final var target =
-                                ExplicitRedirectAwareDescriptorUtils.getRedirectTarget(input);
-                        final var isExplicitRedirectCall = target.massagedInput() != input;
+                        final var target = DescriptorUtils.getRedirectTarget(input);
+                        final var isExplicitRedirectCall = target.massagedInput() != null;
                         if (isExplicitRedirectCall) {
                             input = target.massagedInput();
                         }
-                        final var tokenId =
-                                EntityIdUtils.tokenIdFromEvmAddress(
-                                        target.redirectTarget().token());
+                        final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
                         final var isFungibleToken =
                                 /* For implicit redirect call scenarios, at this point in the logic it has already been
                                  * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
@@ -562,7 +559,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                 (!isExplicitRedirectCall || ledgers.tokens().exists(tokenId))
                                         && TokenType.FUNGIBLE_COMMON.equals(
                                                 ledgers.typeOf(tokenId));
-                        final var nestedFunctionSelector = target.redirectTarget().descriptor();
+                        final var nestedFunctionSelector = target.descriptor();
                         final var tokenPrecompile =
                                 switch (nestedFunctionSelector) {
                                     case AbiConstants.ABI_ID_ERC_NAME -> new NamePrecompile(

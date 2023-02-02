@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmRedirectForTokenPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,10 +67,12 @@ public class DescriptorUtils {
     }
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {
+        final var finalInput = massageInputIfNeeded(input);
         final var tokenBytes = input.slice(4, 20);
         final var tokenAddress = Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
         final var nestedInput = input.slice(24);
-        return new RedirectTarget(nestedInput.getInt(0), tokenAddress);
+        return new RedirectTarget(
+                nestedInput.getInt(0), tokenAddress, finalInput != input ? finalInput : null);
     }
 
     public static Address addressFromBytes(final byte[] addressBytes) {
@@ -78,5 +81,22 @@ public class DescriptorUtils {
             bytes = bytes.slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
         }
         return Address.wrap(bytes);
+    }
+
+    private static Bytes massageInputIfNeeded(final Bytes input) {
+        try {
+            // try decoding the input to see if redirectForToken() was called explicitly, using
+            // normal encoding
+            // if so, massage it to our expected "packed" redirect input
+            final var redirectForTokenWrapper =
+                    EvmRedirectForTokenPrecompile.decodeExplicitRedirectForToken(input);
+            return Bytes.concatenate(
+                    Bytes.ofUnsignedInt(ABI_ID_REDIRECT_FOR_TOKEN),
+                    addressFromBytes(redirectForTokenWrapper.token()),
+                    Bytes.of((redirectForTokenWrapper.data())));
+        } catch (Exception e) {
+            // exception from the decoder means the input is already in "packed" form
+            return input;
+        }
     }
 }
