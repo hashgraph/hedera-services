@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.test;
+package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicMetaAssertions;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
@@ -56,13 +56,12 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
-import com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PreHandleTokenCreateTest {
+class TokenCreateHandleParityTest {
     private AccountKeyLookup accountStore;
     private TokenCreateHandler subject;
 
