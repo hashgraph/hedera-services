@@ -140,9 +140,8 @@ public class TokenCreateHandler implements TransactionHandler {
             final SigTransactionMetadataBuilder meta,
             final AccountID collector,
             final boolean alwaysAdd) {
-
         if (alwaysAdd) {
-            meta.addNonPayerKey(collector);
+            meta.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {
             meta.addNonPayerKeyIfReceiverSigRequired(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         }

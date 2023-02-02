@@ -81,6 +81,16 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
+    TOKEN_CREATE_WITH_FIXED_FEE_INVALID_COLLECTOR {
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            final var collector = EntityId.fromNum(666666L);
+            return PlatformTxnAccessor.from(
+                    newSignedTokenCreate()
+                            .missingAdmin()
+                            .plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector, false))
+                            .get());
+        }
+    },
     TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
