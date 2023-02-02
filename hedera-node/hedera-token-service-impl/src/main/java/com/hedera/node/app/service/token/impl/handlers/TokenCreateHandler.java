@@ -58,22 +58,21 @@ public class TokenCreateHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup accountStore) {
         final var tokenCreateTxnBody = txBody.getTokenCreation();
-        final var customFees = tokenCreateTxnBody.getCustomFeesList();
-        final var treasuryId = tokenCreateTxnBody.getTreasury();
-        final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
-
-        meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-
+        if (tokenCreateTxnBody.hasTreasury()) {
+            final var treasuryId = tokenCreateTxnBody.getTreasury();
+            meta.addNonPayerKey(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        }
         if (tokenCreateTxnBody.hasAutoRenewAccount()) {
+            final var autoRenewalAccountId = tokenCreateTxnBody.getAutoRenewAccount();
             meta.addNonPayerKey(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
         }
         if (tokenCreateTxnBody.hasAdminKey()) {
             final var adminKey = asHederaKey(tokenCreateTxnBody.getAdminKey());
             adminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
-
+        final var customFees = tokenCreateTxnBody.getCustomFeesList();
         addCustomFeeCollectorKeys(meta, customFees);
         return meta.build();
     }
