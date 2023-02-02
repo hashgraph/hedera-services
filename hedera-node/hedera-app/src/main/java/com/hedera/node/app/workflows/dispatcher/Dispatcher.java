@@ -152,9 +152,12 @@ public class Dispatcher {
                             storeCache.getAccountStore(state),
                             storeCache.getScheduleStore(state));
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
-            case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer,
-                    storeCache.getAccountStore(state),
-                    storeCache.getTokenStore(state));
+            case TOKENUPDATE -> handlers.tokenUpdateHandler()
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case TOKENMINT -> handlers.tokenMintHandler()
                     .preHandle(
                             transactionBody,

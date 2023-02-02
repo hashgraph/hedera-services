@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -72,6 +66,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.junit.jupiter.api.Test;
 
 class CryptoTransferHandlerParityTest extends ParityTestBase {
     private final CryptoTransferHandler subject = new CryptoTransferHandler();

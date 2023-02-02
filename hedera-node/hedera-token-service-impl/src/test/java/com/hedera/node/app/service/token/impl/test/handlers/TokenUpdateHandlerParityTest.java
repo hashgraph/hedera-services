@@ -15,11 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_REPLACE_KT;
@@ -49,6 +44,10 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.junit.jupiter.api.Test;
 
 class TokenUpdateHandlerParityTest extends ParityTestBase {
     private final TokenUpdateHandler subject = new TokenUpdateHandler();
