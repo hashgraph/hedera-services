@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
@@ -109,6 +111,7 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private AccessorFactory accessorFactory;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private NetworkInfo networkInfo;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
             Bytes.fromHexString(
@@ -135,7 +138,7 @@ class TokenGetCustomFeesPrecompileTest {
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
                 .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
-                .thenReturn(HTSTestsUtil.tokenMerkleAddress);
+                .thenReturn(tokenMerkleAddress);
 
         subject =
                 new HTSPrecompiledContract(
@@ -150,7 +153,8 @@ class TokenGetCustomFeesPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
 
         tokenGetCustomFeesPrecompile = Mockito.mockStatic(TokenGetCustomFeesPrecompile.class);
     }
@@ -169,18 +173,18 @@ class TokenGetCustomFeesPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper<>(tokenMerkleId);
-        final var fractionalFee = getFractionalFee();
+        final var fractionalFee = customFees();
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
-                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
+                        tokenMerkleAddress);
         tokenGetCustomFeesPrecompile
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
         given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
-                .willReturn(Optional.of(List.of(fractionalFee)));
-        given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
+                .willReturn(Optional.of(fractionalFee));
+        given(evmEncoder.encodeTokenGetCustomFees(fractionalFee)).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -319,5 +323,25 @@ class TokenGetCustomFeesPrecompileTest {
                 .setFractionalFee(fractionalFee)
                 .setFeeCollectorAccountId(payer)
                 .build();
+    }
+
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee
+                fractionalFee =
+                        new com.hedera.node.app.service.evm.store.contracts.precompile.codec
+                                .FractionalFee(
+                                1L,
+                                2L,
+                                10_000L,
+                                400_000_000L,
+                                false,
+                                EntityIdUtils.asTypedEvmAddress(payer));
+
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFractionalFee(fractionalFee);
+
+        return List.of(customFee1);
     }
 }

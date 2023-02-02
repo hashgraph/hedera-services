@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -29,7 +29,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
@@ -64,13 +63,11 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
             TypeFactory.create("(bytes32,bytes32,bool)");
     private final TokenID tokenId;
     private final Address senderAddress;
-    private final StateView currentView;
     private SetApprovalForAllWrapper setApprovalForAllWrapper;
 
     public SetApprovalForAllPrecompile(
             final TokenID tokenId,
             final WorldLedgers ledgers,
-            final StateView currentView,
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
@@ -79,12 +76,10 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.tokenId = tokenId;
         this.senderAddress = senderAddress;
-        this.currentView = currentView;
     }
 
     public SetApprovalForAllPrecompile(
             final WorldLedgers ledgers,
-            final StateView currentView,
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
@@ -93,7 +88,6 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
         this(
                 null,
                 ledgers,
-                currentView,
                 sideEffects,
                 syntheticTxnFactory,
                 infrastructureFactory,
@@ -136,7 +130,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                         transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                         transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
                         payerAccount,
-                        currentView);
+                        accountStore,
+                        tokenStore);
         validateTrueOrRevert(status == OK, status);
 
         /* --- Execute the transaction and capture its results --- */

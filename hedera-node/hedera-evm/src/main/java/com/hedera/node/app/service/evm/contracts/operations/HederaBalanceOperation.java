@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ package com.hedera.node.app.service.evm.contracts.operations;
  *
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -52,7 +53,7 @@ import org.hyperledger.besu.evm.operation.BalanceOperation;
  */
 public class HederaBalanceOperation extends BalanceOperation {
 
-    private final BiPredicate<Address, MessageFrame> addressValidator;
+    private BiPredicate<Address, MessageFrame> addressValidator;
 
     public HederaBalanceOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
@@ -68,5 +69,15 @@ public class HederaBalanceOperation extends BalanceOperation {
                 () -> cost(true),
                 () -> super.execute(frame, evm),
                 addressValidator);
+    }
+
+    @VisibleForTesting
+    public BiPredicate<Address, MessageFrame> getAddressValidator() {
+        return addressValidator;
+    }
+
+    @VisibleForTesting
+    public void setAddressValidator(BiPredicate<Address, MessageFrame> addressValidator) {
+        this.addressValidator = addressValidator;
     }
 }

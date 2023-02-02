@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
@@ -141,7 +141,7 @@ class TransitionRunnerTest {
                 contains(
                         startsWith(
                                 "Avoidable failure while handling"
-                                    + " com.hedera.node.app.service.mono.exceptions.InvalidTransactionException:"
+                                    + " com.hedera.node.app.service.evm.exceptions.InvalidTransactionException:"
                                     + " Yikes!")));
         assertTrue(result);
     }

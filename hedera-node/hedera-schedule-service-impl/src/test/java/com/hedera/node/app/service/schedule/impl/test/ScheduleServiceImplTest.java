@@ -21,7 +21,7 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    @Mock private States states;
+    @Mock private ReadableStates states;
     @Mock private HederaAccountNumbers numbers;
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private AccountKeyLookup keyLookup;

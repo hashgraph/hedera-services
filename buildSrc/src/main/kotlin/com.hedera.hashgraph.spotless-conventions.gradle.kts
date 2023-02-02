@@ -66,6 +66,6 @@ spotless {
             # limitations under the License.
             ##
         """.trimIndent(), "(name)"
-        )
+        ).updateYearWithLatest(true)
     })
 }

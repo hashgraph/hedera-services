@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.contract;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
@@ -30,19 +30,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.files.TieredHederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -191,9 +192,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         // --- Do the business logic ---
         final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
-        if (!properties.areContractAutoAssociationsEnabled()) {
-            hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
-        }
         worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
         TransactionProcessingResult result;
         try {
@@ -319,6 +317,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
+        }
+        if (op.getMaxAutomaticTokenAssociations() > 0
+                && !properties.areContractAutoAssociationsEnabled()) {
+            return NOT_SUPPORTED;
         }
         if (properties.areTokenAssociationsLimited()
                 && op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.hapi.utils.keys;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.security.*;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
@@ -37,6 +38,9 @@ public final class Ed25519Utils {
     private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
     private static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
+
+    private static final String TEST_CLIENTS_PREFIX = "test-clients" + File.separator;
+    private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
     public static final EdDSANamedCurveSpec ED25519_PARAMS =
             EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
     private static final DrbgParameters.Instantiation DRBG_INSTANTIATION =
@@ -51,7 +55,8 @@ public final class Ed25519Utils {
     }
 
     public static EdDSAPrivateKey readKeyFrom(final File pem, final String passphrase) {
-        try (final var in = new FileInputStream(pem)) {
+        final var relocatedPem = relocatedIfNotPresentInWorkingDir(pem);
+        try (final var in = new FileInputStream(relocatedPem)) {
             final var decryptProvider =
                     new JceOpenSSLPKCS8DecryptorProviderBuilder()
                             .setProvider(BC_PROVIDER)
@@ -66,6 +71,15 @@ public final class Ed25519Utils {
         } catch (final IOException | OperatorCreationException | PKCSException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static Path relocatedIfNotPresentInWorkingDir(final Path p) {
+        return relocatedIfNotPresentInWorkingDir(p.toFile()).toPath();
+    }
+
+    public static File relocatedIfNotPresentInWorkingDir(final File f) {
+        return relocatedIfNotPresentWithCurrentPathPrefix(
+                f, RESOURCE_PATH_SEGMENT, TEST_CLIENTS_PREFIX);
     }
 
     public static void writeKeyTo(final byte[] seed, final String pemLoc, final String passphrase) {
@@ -102,6 +116,21 @@ public final class Ed25519Utils {
         final var publicKey =
                 new EdDSAPublicKey(new EdDSAPublicKeySpec(privateKey.getAbyte(), ED25519_PARAMS));
         return new KeyPair(publicKey, privateKey);
+    }
+
+    static File relocatedIfNotPresentWithCurrentPathPrefix(
+            final File f, final String firstSegmentToRelocate, final String newPathPrefix) {
+        if (!f.exists()) {
+            final var absPath = f.getAbsolutePath();
+            final var idx = absPath.indexOf(firstSegmentToRelocate);
+            if (idx == -1) {
+                return f;
+            }
+            final var testClientsPath = newPathPrefix + absPath.substring(idx);
+            return new File(testClientsPath);
+        } else {
+            return f;
+        }
     }
 
     private Ed25519Utils() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -97,9 +98,6 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
             var contractCustomizer = result.getLeft();
             if (contractCustomizer.isPresent()) {
                 final var customizer = contractCustomizer.get();
-                if (!properties.areContractAutoAssociationsEnabled()) {
-                    customizer.getChanges().remove(MAX_AUTOMATIC_ASSOCIATIONS);
-                }
                 final var validity = sanityCheckAutoAssociations(id, customizer);
                 if (validity != OK) {
                     txnCtx.setStatus(validity);
@@ -193,7 +191,10 @@ public class ContractUpdateTransitionLogic implements TransitionLogic {
                 return INVALID_STAKING_ID;
             }
         }
-
+        if (op.hasMaxAutomaticTokenAssociations()
+                && !properties.areContractAutoAssociationsEnabled()) {
+            return NOT_SUPPORTED;
+        }
         return OK;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -126,6 +127,7 @@ class UnfreezeTokenPrecompileTest {
             tokenRels;
 
     @Mock private AssetsLoader assetLoader;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnfreezeTokenPrecompile> unfreezeTokenPrecompile;
@@ -168,7 +170,8 @@ class UnfreezeTokenPrecompileTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         unfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
     }
 
