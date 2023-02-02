@@ -89,7 +89,7 @@ class SigTransactionMetadataTest {
 
     private TransactionBody createAccountTransaction() {
         final var transactionID =
-                new TransactionID.Builder()
+                TransactionID.newBuilder()
                         .accountID(PAYER)
                         .transactionValidStart(new Timestamp.Builder().seconds(123_456L).build())
                         .build();

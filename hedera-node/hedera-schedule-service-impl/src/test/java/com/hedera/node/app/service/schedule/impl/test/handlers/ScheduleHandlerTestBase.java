@@ -65,7 +65,7 @@ class ScheduleHandlerTestBase extends TestBase {
 
     protected TransactionBody scheduleTxnNotRecognized() {
         return TransactionBody.newBuilder()
-                .transactionID(new TransactionID.Builder().accountID(scheduler).build())
+                .transactionID(TransactionID.newBuilder().accountID(scheduler).build())
 //                .scheduleCreate(
 //                        ScheduleCreateTransactionBody.newBuilder()
 //                                .setScheduledTransactionBody(

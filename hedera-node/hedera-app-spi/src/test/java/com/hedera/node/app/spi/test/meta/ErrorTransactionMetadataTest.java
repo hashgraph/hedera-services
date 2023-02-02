@@ -67,7 +67,7 @@ class ErrorTransactionMetadataTest {
 
     private TransactionBody createAccountTransaction() {
         final var transactionID =
-                new TransactionID.Builder()
+                TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(3L).build())
                         .transactionValidStart(new Timestamp.Builder().build())
                         .build();

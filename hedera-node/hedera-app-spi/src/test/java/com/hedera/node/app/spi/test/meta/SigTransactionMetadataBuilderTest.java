@@ -503,7 +503,7 @@ class SigTransactionMetadataBuilderTest {
 
     private TransactionBody createAccountTransaction() {
         final var transactionID =
-                new TransactionID.Builder()
+                TransactionID.newBuilder()
                         .accountID(payer)
                         .transactionValidStart(consensusTimestamp)
                         .build();
