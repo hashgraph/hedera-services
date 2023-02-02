@@ -56,14 +56,13 @@ class InvalidTransactionMetadataTest {
     }
 
     private TransactionBody createScheduleTransaction() {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).build();
+        final var transactionID = TransactionID.newBuilder().accountID(payer);
         final var createTxnBody =
                 new ScheduleCreateTransactionBody.Builder()
                         .scheduledTransactionBody(
-                                new SchedulableTransactionBody.Builder()
+                                SchedulableTransactionBody.newBuilder()
                                         .memo("test")
-                                        .transactionFee(1_000_000L)
-                                        .build())
+                                        .transactionFee(1_000_000L))
                         .build();
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)

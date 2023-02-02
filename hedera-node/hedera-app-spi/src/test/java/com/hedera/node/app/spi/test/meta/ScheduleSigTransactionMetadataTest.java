@@ -116,7 +116,7 @@ class ScheduleSigTransactionMetadataTest {
         final var createTxnBody =
                 new ScheduleCreateTransactionBody.Builder()
                         .scheduledTransactionBody(
-                                new SchedulableTransactionBody.Builder()
+                                SchedulableTransactionBody.newBuilder()
                                         .memo("test")
                                         .transactionFee(1_000_000L)
                                         .build())

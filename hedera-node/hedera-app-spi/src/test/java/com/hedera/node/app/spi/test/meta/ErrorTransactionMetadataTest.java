@@ -69,8 +69,7 @@ class ErrorTransactionMetadataTest {
         final var transactionID =
                 TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(3L).build())
-                        .transactionValidStart(Timestamp.newBuilder().build())
-                        .build();
+                        .transactionValidStart(Timestamp.newBuilder().build());
         final var createTxnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .receiverSigRequired(true)
