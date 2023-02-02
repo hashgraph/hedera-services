@@ -450,7 +450,9 @@ class DispatcherTest {
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleDeleteHandler())
+                                                .preHandle(any(), any(), any(), any())),
 
                 // token
                 Arguments.of(
@@ -470,7 +472,9 @@ class DispatcherTest {
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.tokenMintHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.tokenMintHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
