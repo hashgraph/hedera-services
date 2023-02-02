@@ -91,8 +91,7 @@ class SigTransactionMetadataTest {
         final var transactionID =
                 TransactionID.newBuilder()
                         .accountID(PAYER)
-                        .transactionValidStart(Timestamp.newBuilder().seconds(123_456L).build())
-                        .build();
+                        .transactionValidStart(Timestamp.newBuilder().seconds(123_456L).build());
         final var createTxnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .key(A_COMPLEX_KEY)

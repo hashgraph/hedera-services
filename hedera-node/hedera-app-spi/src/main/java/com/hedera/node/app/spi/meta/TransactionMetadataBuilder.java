@@ -40,7 +40,7 @@ import java.util.Objects;
  */
 public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBuilder<T>> {
     private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().build();
-    private static final ContractID DEFAULT_CONTRACT_ID = new ContractID.Builder().build();
+    private static final ContractID DEFAULT_CONTRACT_ID = ContractID.newBuilder().build();
     protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
     protected HederaKey payerKey;
     protected ResponseCodeEnum status = OK;

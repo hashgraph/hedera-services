@@ -34,11 +34,11 @@ public class TestSchema extends Schema {
     }
 
     public TestSchema(int version) {
-        this(new SemanticVersion.Builder().major(version).build());
+        this(SemanticVersion.newBuilder().major(version).build());
     }
 
     public TestSchema(int major, int minor, int patch) {
-        this(new SemanticVersion.Builder().major(major).minor(minor).patch(patch).build());
+        this(SemanticVersion.newBuilder().major(major).minor(minor).patch(patch).build());
     }
 
     public TestSchema(SemanticVersion version, Runnable onMigrate) {

@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.Builder;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
@@ -41,7 +40,6 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,22 +52,16 @@ class SigTransactionMetadataBuilderTest {
     private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().build();
 
     private static final Key COMPLEX_KEY_FIRST =
-            new Key.Builder().ed25519(asBytes("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).build();
+            Key.newBuilder().ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).build();
     private static final Key COMPLEX_KEY_SECOND =
-            new Key.Builder().ed25519(asBytes("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")).build();
+            Key.newBuilder().ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")).build();
     public static final Key A_COMPLEX_KEY =
-            new Key.Builder()
-                    .thresholdKey(
-                            new ThresholdKey.Builder()
-                                    .threshold(2)
-                                    .keys(
-                                            new KeyList.Builder()
-                                                    .keys(
-                                                            List.of(
-                                                                    COMPLEX_KEY_FIRST,
-                                                                    COMPLEX_KEY_SECOND))
-                                                    .build())
-                                    .build())
+            Key.newBuilder()
+                    .thresholdKey(ThresholdKey.newBuilder()
+                            .threshold(2)
+                            .keys(KeyList.newBuilder().keys(
+                                List.of(COMPLEX_KEY_FIRST, COMPLEX_KEY_SECOND)))
+                            .build())
                     .build();
     private Timestamp consensusTimestamp = Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
@@ -77,7 +69,7 @@ class SigTransactionMetadataBuilderTest {
     private Long payerNum = 3L;
     @Mock private HederaKey payerKey;
     final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
-    final ContractID otherContractId = new ContractID.Builder().contractNum(123456L).build();
+    final ContractID otherContractId = ContractID.newBuilder().contractNum(123456L).build();
     @Mock private HederaKey otherKey;
     @Mock private AccountKeyLookup keyLookup;
     private SigTransactionMetadataBuilder subject;
@@ -394,7 +386,7 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer)
-                        .addNonPayerKey(new ContractID.Builder().contractNum(0L).build());
+                        .addNonPayerKey(ContractID.newBuilder().contractNum(0L).build());
 
         meta = subject.build();
         assertEquals(payerKey, meta.payerKey());
@@ -404,7 +396,7 @@ class SigTransactionMetadataBuilderTest {
 
     @Test
     void doesntFailForAliasedAccount() {
-        final var alias = AccountID.newBuilder().alias(asBytes("test")).build();
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
@@ -422,7 +414,7 @@ class SigTransactionMetadataBuilderTest {
 
     @Test
     void doesntFailForAliasedContract() {
-        final var alias = new ContractID.Builder().evmAddress(asBytes("test")).build();
+        final var alias = ContractID.newBuilder().evmAddress(Bytes.wrap("test")).build();
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
@@ -440,7 +432,7 @@ class SigTransactionMetadataBuilderTest {
 
     @Test
     void failsForInvalidAlias() {
-        final var alias = new Builder().alias(asBytes("test")).build();
+        final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(keyLookup.getKey(alias))
                 .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
@@ -505,8 +497,7 @@ class SigTransactionMetadataBuilderTest {
         final var transactionID =
                 TransactionID.newBuilder()
                         .accountID(payer)
-                        .transactionValidStart(consensusTimestamp)
-                        .build();
+                        .transactionValidStart(consensusTimestamp);
         final var createTxnBody =
                 CryptoCreateTransactionBody.newBuilder()
                         .key(key)
@@ -517,9 +508,5 @@ class SigTransactionMetadataBuilderTest {
                 .transactionID(transactionID)
                 .cryptoCreateAccount(createTxnBody)
                 .build();
-    }
-
-    private static Bytes asBytes(String s) {
-        return Bytes.wrap(s.getBytes(StandardCharsets.UTF_8));
     }
 }
