@@ -68,9 +68,9 @@ public class DescriptorUtils {
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {
         final var finalInput = massageInputIfNeeded(input);
-        final var tokenBytes = input.slice(4, 20);
+        final var tokenBytes = finalInput.slice(4, 20);
         final var tokenAddress = Address.wrap(Bytes.wrap(tokenBytes.toArrayUnsafe()));
-        final var nestedInput = input.slice(24);
+        final var nestedInput = finalInput.slice(24);
         return new RedirectTarget(
                 nestedInput.getInt(0), tokenAddress, finalInput != input ? finalInput : null);
     }
