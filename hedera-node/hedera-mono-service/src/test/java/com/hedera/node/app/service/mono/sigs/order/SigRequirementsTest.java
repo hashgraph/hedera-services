@@ -4699,7 +4699,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenRevokeKycWithMissingToken() throws Throwable {
+    void getsTokenRevokeKycWithInvalidToken() throws Throwable {
         // given:
         setupFor(REVOKE_WITH_INVALID_TOKEN);
 
