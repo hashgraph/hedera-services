@@ -44,9 +44,20 @@ public class FilteredWritableStates extends FilteredReadableStates implements Wr
     public <K extends Comparable<K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!contains(stateKey)) {
-            throw new IllegalArgumentException("Could not find state " + stateKey);
+            throw new IllegalArgumentException("Could not find k/v state " + stateKey);
         }
 
         return delegate.get(stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        if (!contains(stateKey)) {
+            throw new IllegalArgumentException("Could not find singleton state " + stateKey);
+        }
+
+        return delegate.getSingleton(stateKey);
     }
 }

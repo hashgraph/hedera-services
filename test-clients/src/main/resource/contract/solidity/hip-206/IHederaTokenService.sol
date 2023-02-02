@@ -155,8 +155,20 @@ interface IHederaTokenService {
 
     /// Additional post creation fungible and non fungible properties of a Hedera Token.
     struct TokenInfo {
-        /// The hedera token;
-        HederaToken hedera;
+        /// Basic properties of a Hedera Token
+        HederaToken token;
+
+        /// The number of tokens (fungible) or serials (non-fungible) of the token
+        int64 totalSupply;
+
+        /// Specifies whether the token is deleted or not
+        bool deleted;
+
+        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
+        bool defaultKycStatus;
+
+        /// Specifies whether the token is currently paused or not
+        bool pauseStatus;
 
         /// The fixed fees collected when transferring the token
         FixedFee[] fixedFees;
@@ -167,20 +179,8 @@ interface IHederaTokenService {
         /// The royalty fees collected when transferring the token
         RoyaltyFee[] royaltyFees;
 
-        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
-        bool defaultKycStatus;
-
-        /// Specifies whether the token is deleted or not
-        bool deleted;
-
         /// The ID of the network ledger
         string ledgerId;
-
-        /// Specifies whether the token is currently paused or not
-        bool pauseStatus;
-
-        /// The number of tokens (fungible) or serials (non-fungible) of the token
-        uint64 totalSupply;
     }
 
     /// Additional fungible properties of a Hedera Token.
