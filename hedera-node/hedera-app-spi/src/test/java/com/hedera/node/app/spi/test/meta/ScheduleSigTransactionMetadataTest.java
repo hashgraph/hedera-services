@@ -112,7 +112,7 @@ class ScheduleSigTransactionMetadataTest {
     }
 
     private TransactionBody createScheduleTransaction() {
-        final var transactionID = TransactionID.newBuilder().accountID(payer).build();
+        final var transactionID = TransactionID.newBuilder().accountID(payer);
         final var createTxnBody =
                 ScheduleCreateTransactionBody.newBuilder()
                         .scheduledTransactionBody(
