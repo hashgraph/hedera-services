@@ -51,10 +51,6 @@ import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
@@ -90,15 +86,11 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 @Singleton
 public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
-    private final EncodingFacade encoder;
-    private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -122,7 +114,6 @@ public class InfrastructureFactory {
     public InfrastructureFactory(
             final UsageLimits usageLimits,
             final EntityIdSource ids,
-            final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
@@ -139,8 +130,6 @@ public class InfrastructureFactory {
             final StateView view,
             final EntityCreator entityCreator) {
         this.ids = ids;
-        this.encoder = encoder;
-        this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -267,19 +256,6 @@ public class InfrastructureFactory {
                 txnCtx,
                 aliasManager,
                 feeDistribution);
-    }
-
-    public RedirectViewExecutor newRedirectExecutor(
-            final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
-    }
-
-    public ViewExecutor newViewExecutor(
-            final Bytes input,
-            final MessageFrame frame,
-            final ViewGasCalculator gasCalculator,
-            final StateView stateView) {
-        return new ViewExecutor(input, frame, encoder, evmEncoder, gasCalculator, stateView);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

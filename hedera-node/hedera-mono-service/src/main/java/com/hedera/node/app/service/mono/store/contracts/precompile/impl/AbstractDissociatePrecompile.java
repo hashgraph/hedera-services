@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
@@ -52,7 +51,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     protected Dissociation dissociateOp;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final Provider<FeeCalculator> feeCalculator;
-    protected final StateView currentView;
 
     protected AbstractDissociatePrecompile(
             final WorldLedgers ledgers,
@@ -62,8 +60,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final Provider<FeeCalculator> feeCalculator,
-            final StateView currentView) {
+            final Provider<FeeCalculator> feeCalculator) {
         this.ledgers = ledgers;
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
@@ -72,7 +69,6 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
         this.pricingUtils = pricingUtils;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.feeCalculator = feeCalculator;
-        this.currentView = currentView;
     }
 
     @Override

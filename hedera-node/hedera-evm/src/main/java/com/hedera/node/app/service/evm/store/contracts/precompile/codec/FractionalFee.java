@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 
 public class FractionalFee {
@@ -62,6 +63,49 @@ public class FractionalFee {
     }
 
     public Address getFeeCollector() {
-        return feeCollector;
+        return feeCollector != null ? feeCollector : Address.ZERO;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                numerator,
+                denominator,
+                getMinimumAmount,
+                getMaximumAmount,
+                netOfTransfers,
+                feeCollector);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || FractionalFee.class != o.getClass()) {
+            return false;
+        }
+        FractionalFee other = (FractionalFee) o;
+
+        return this.numerator == other.numerator
+                && this.denominator == other.denominator
+                && this.getMinimumAmount == other.getMinimumAmount
+                && this.getMaximumAmount == other.getMaximumAmount
+                && this.netOfTransfers == other.netOfTransfers;
+    }
+
+    @Override
+    public String toString() {
+        return "FractionalFee{"
+                + "numerator="
+                + numerator
+                + ", denominator="
+                + denominator
+                + ", getMinimumAmount="
+                + getMinimumAmount
+                + ", getMaximumAmount="
+                + getMaximumAmount
+                + ", netOfTransfers="
+                + netOfTransfers
+                + ", feeCollector="
+                + feeCollector
+                + '}';
     }
 }

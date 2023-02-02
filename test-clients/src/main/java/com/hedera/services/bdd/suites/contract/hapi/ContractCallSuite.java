@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,18 +91,24 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -154,6 +160,7 @@ public class ContractCallSuite extends HapiSuite {
     public static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
     public static final String TRANSFER_TO_CALLER = "transferToCaller";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
+    private static final String TEST_APPROVER = "TestApprover";
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
             "contracts.maxRefundPercentOfGasLimit";
     private static final String FAIL_INSUFFICIENT_GAS = "failInsufficientGas";
@@ -193,14 +200,17 @@ public class ContractCallSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                consTimeManagementWorksWithRevertedInternalCreations(),
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
+                associationAcknowledgedInApprovePrecompile(),
                 multipleDepositSuccess(),
                 payTestSelfDestructCall(),
                 multipleSelfDestructsAreSafe(),
                 smartContractInlineAssemblyCheck(),
                 ocToken(),
+                erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently(),
                 contractTransferToSigReqAccountWithKeySucceeds(),
                 minChargeIsTXGasUsedByContractCall(),
                 hscsEvm005TransferOfHBarsWorksBetweenContracts(),
@@ -837,6 +847,85 @@ public class ContractCallSuite extends HapiSuite {
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
+    /**
+     * This test characterizes a difference in behavior between the ERC721 {@code tokenURI()} and
+     * HTS {@code getNonFungibleTokenInfo()} methods. The HTS method will leave non-UTF-8 bytes
+     * as-is, while the ERC721 method will replace them with the Unicode replacement character.
+     *
+     * @return a spec characterizing this behavior
+     */
+    @SuppressWarnings("java:S5960")
+    private HapiSpec erc721TokenUriAndHtsNftInfoTreatNonUtf8BytesDifferently() {
+        final var contractAlternatives = "ErcAndHtsAlternatives";
+        final AtomicReference<Address> nftAddr = new AtomicReference<>();
+        final var viaErc721TokenURI = "erc721TokenURI";
+        final var viaHtsNftInfo = "viaHtsNftInfo";
+        // Valid UTF-8 bytes cannot include 0xff
+        final var hexedNonUtf8Meta = "ff";
+
+        return defaultHapiSpec("Erc721TokenUriAndHtsNftInfoSeeSameMetadata")
+                .given(
+                        uploadInitCode(contractAlternatives),
+                        contractCreate(contractAlternatives),
+                        tokenCreate("nft")
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .exposingAddressTo(nftAddr::set)
+                                .initialSupply(0)
+                                .supplyKey(DEFAULT_PAYER)
+                                .treasury(DEFAULT_PAYER),
+                        mintToken(
+                                "nft",
+                                List.of(ByteString.copyFrom(CommonUtils.unhex(hexedNonUtf8Meta)))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contractAlternatives,
+                                                        "canGetMetadataViaERC",
+                                                        nftAddr.get(),
+                                                        BigInteger.valueOf(1))
+                                                .via(viaErc721TokenURI)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contractAlternatives,
+                                                        "canGetMetadataViaHTS",
+                                                        nftAddr.get(),
+                                                        BigInteger.valueOf(1))
+                                                .via(viaHtsNftInfo)
+                                                .gas(1_000_000)))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getErcResult = getTxnRecord(viaErc721TokenURI);
+                                    final var getHtsResult = getTxnRecord(viaHtsNftInfo);
+                                    CustomSpecAssert.allRunFor(spec, getErcResult, getHtsResult);
+
+                                    ABIType<Tuple> decoder = TypeFactory.create("(bytes)");
+
+                                    final var htsResult =
+                                            getHtsResult
+                                                    .getResponseRecord()
+                                                    .getContractCallResult()
+                                                    .getContractCallResult();
+                                    final var htsMetadata = decoder.decode(htsResult.toByteArray());
+                                    // The HTS method leaves non-UTF-8 bytes as-is
+                                    Assertions.assertEquals(
+                                            hexedNonUtf8Meta, CommonUtils.hex(htsMetadata.get(0)));
+
+                                    final var ercResult =
+                                            getErcResult
+                                                    .getResponseRecord()
+                                                    .getContractCallResult()
+                                                    .getContractCallResult();
+                                    // But the ERC721 method returns the Unicode replacement
+                                    // character
+                                    final var ercMetadata = decoder.decode(ercResult.toByteArray());
+                                    Assertions.assertEquals(
+                                            "efbfbd", CommonUtils.hex(ercMetadata.get(0)));
+                                }));
+    }
+
     private HapiSpec imapUserExercise() {
         final var contract = "User";
         final var insert1To4 = "insert1To10";
@@ -1423,6 +1512,35 @@ public class ContractCallSuite extends HapiSuite {
                 .then(
                         contractDelete(PAY_RECEIVABLE_CONTRACT).transferAccount(BENEFICIARY),
                         getAccountBalance(BENEFICIARY).hasTinyBars(initBalance + DEPOSIT_AMOUNT));
+    }
+
+    HapiSpec associationAcknowledgedInApprovePrecompile() {
+        final var token = "TOKEN";
+        final var spender = "SPENDER";
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final AtomicReference<Address> spenderAddress = new AtomicReference<>();
+        return defaultHapiSpec("AssociationAcknowledgedInApprovePrecompile")
+                .given(
+                        cryptoCreate(spender)
+                                .balance(123 * ONE_HUNDRED_HBARS)
+                                .keyShape(SigControl.SECP256K1_ON)
+                                .exposingEvmAddressTo(spenderAddress::set),
+                        tokenCreate(token)
+                                .initialSupply(1000)
+                                .treasury(spender)
+                                .exposingAddressTo(tokenAddress::set))
+                .when(
+                        uploadInitCode(TEST_APPROVER),
+                        sourcing(
+                                () ->
+                                        contractCreate(
+                                                        TEST_APPROVER,
+                                                        tokenAddress.get(),
+                                                        spenderAddress.get())
+                                                .gas(5_000_000)
+                                                .payingWith(spender)
+                                                .hasKnownStatus(SUCCESS)))
+                .then();
     }
 
     HapiSpec payableSuccess() {
@@ -2736,6 +2854,37 @@ public class ContractCallSuite extends HapiSuite {
                                                         BigInteger.valueOf(200_000))
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)));
+    }
+
+    private HapiSpec consTimeManagementWorksWithRevertedInternalCreations() {
+        final var contract = "ConsTimeRepro";
+        final var failingCall = "FailingCall";
+        final AtomicReference<Timestamp> parentConsTime = new AtomicReference<>();
+        return defaultHapiSpec("ConsTimeManagementWorksWithRevertedInternalCreations")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when(
+                        contractCall(
+                                        contract,
+                                        "createChildThenFailToAssociate",
+                                        asHeadlongAddress(new byte[20]),
+                                        asHeadlongAddress(new byte[20]))
+                                .via(failingCall)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
+                .then(
+                        getTxnRecord(failingCall)
+                                .exposingTo(
+                                        failureRecord ->
+                                                parentConsTime.set(
+                                                        failureRecord.getConsensusTimestamp())),
+                        sourcing(
+                                () ->
+                                        childRecordsCheck(
+                                                failingCall,
+                                                CONTRACT_REVERT_EXECUTED,
+                                                recordWith()
+                                                        .status(INSUFFICIENT_GAS)
+                                                        .consensusTimeImpliedByNonce(
+                                                                parentConsTime.get(), 1))));
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {

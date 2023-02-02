@@ -13,12 +13,8 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt update -y;
-            apt install -y net-tools;
-            apt install -y apt-utils;
-            rm -f /usr/bin/python3;
-            ln -s /usr/bin/python3.7 /usr/bin/python3;
-            python3 -m pip -q install matplotlib;
+            apt update -y
+            apt install -y net-tools apt-utils python3.7 python3.7-venv
       - run:
           name: Authenticate gcloud cli
           command: |

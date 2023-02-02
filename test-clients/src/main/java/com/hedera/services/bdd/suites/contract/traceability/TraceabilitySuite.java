@@ -6292,7 +6292,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                 spec.registry()
                                                                                         .getContractId(
                                                                                                 contract))
-                                                                        .setGasUsed(587)
+                                                                        .setGasUsed(613)
                                                                         .setOutput(EMPTY)
                                                                         .build())))),
                         expectContractBytecodeSidecarFor(CREATE_TXN, contract, contract))
@@ -7293,7 +7293,7 @@ public class TraceabilitySuite extends HapiSuite {
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.32"),
+                                "v0.34"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),

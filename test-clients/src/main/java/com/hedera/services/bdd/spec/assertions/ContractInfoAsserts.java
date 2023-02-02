@@ -187,6 +187,15 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
         return this;
     }
 
+    public ContractInfoAsserts isNotDeleted() {
+        registerProvider(
+                (spec, o) ->
+                        assertFalse(
+                                object2ContractInfo(o).getDeleted(),
+                                "Should not have been deleted"));
+        return this;
+    }
+
     public ContractInfoAsserts memo(String expectedMemo) {
         registerProvider(
                 (spec, o) ->

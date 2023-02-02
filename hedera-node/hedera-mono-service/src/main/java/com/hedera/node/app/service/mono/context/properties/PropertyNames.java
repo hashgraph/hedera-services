@@ -298,4 +298,5 @@ public class PropertyNames {
             "stats.throttleUtils.gaugeUpdateIntervalMs";
     public static final String STATS_RUNNING_AVG_HALF_LIFE_SECS = "stats.runningAvgHalfLifeSecs";
     public static final String STATS_SPEEDOMETER_HALF_LIFE_SECS = "stats.speedometerHalfLifeSecs";
+    public static final String WORKFLOWS_ENABLED = "hedera.workflows.enabled";
 }

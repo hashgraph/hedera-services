@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -32,6 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -104,7 +106,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                 freezeUnfreezeFungibleWithNegativeCases(),
                 freezeUnfreezeNftsWithNegativeCases(),
                 isFrozenHappyPathWithLocalCall(),
-                noTokenIdReverts());
+                noTokenIdReverts(),
+                isFrozenHappyPathWithAliasLocalCall());
     }
 
     private HapiSpec noTokenIdReverts() {
@@ -481,6 +484,45 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                     })));
                                     allRunFor(spec, freezeCall, isFrozenLocalCall);
                                 }))
+                .then();
+    }
+
+    private HapiSpec isFrozenHappyPathWithAliasLocalCall() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<String> autoCreatedAccountId = new AtomicReference<>();
+        final String accountAlias = "accountAlias";
+
+        return defaultHapiSpec("isFrozenHappyPathWithAliasLocalCall")
+                .given(
+                        newKeyNamed(FREEZE_KEY),
+                        newKeyNamed(accountAlias).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, accountAlias, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getAliasedAccountInfo(accountAlias)
+                                .exposingContractAccountIdTo(autoCreatedAccountId::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .freezeKey(FREEZE_KEY)
+                                .initialSupply(1_000)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(FREEZE_CONTRACT),
+                        contractCreate(FREEZE_CONTRACT))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCallLocal(
+                                                        FREEZE_CONTRACT,
+                                                        IS_FROZEN_FUNC,
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                asAddress(vanillaTokenID.get())),
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                autoCreatedAccountId.get())))))
                 .then();
     }
 }

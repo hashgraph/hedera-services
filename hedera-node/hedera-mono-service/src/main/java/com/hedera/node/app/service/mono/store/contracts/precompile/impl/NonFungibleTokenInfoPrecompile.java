@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -61,17 +61,18 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var tokenInfo =
-                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmInfoForToken(tokenId, stateView.getNetworkInfo().ledgerId())
+                        .orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         final var nftID =
                 NftID.newBuilder().setTokenID(tokenId).setSerialNumber(serialNumber).build();
         final var nonFungibleTokenInfo =
-                ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId()).orElse(null);
+                ledgers.evmNftInfo(nftID, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(
                 nonFungibleTokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-        return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
+        return evmEncoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {

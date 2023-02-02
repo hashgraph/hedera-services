@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     private String aliasKeySource = null;
     private OptionalLong sendThreshold = OptionalLong.empty();
     private Optional<Key> updKey = Optional.empty();
+    private Optional<Key> protoKey = Optional.empty();
     private OptionalLong newExpiry = OptionalLong.empty();
     private OptionalLong newAutoRenewPeriod = OptionalLong.empty();
     private Optional<String> newProxy = Optional.empty();
@@ -120,6 +121,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
     public HapiCryptoUpdate key(String name) {
         updKeyName = Optional.of(name);
+        return this;
+    }
+
+    public HapiCryptoUpdate protoKey(Key key) {
+        protoKey = Optional.of(key);
         return this;
     }
 
@@ -207,6 +213,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                     } else {
                                         updKey.ifPresent(builder::setKey);
                                     }
+
+                                    protoKey.ifPresent(builder::setKey);
+
                                     newAutoRenewPeriod.ifPresent(
                                             p ->
                                                     builder.setAutoRenewPeriod(

@@ -24,46 +24,13 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
-import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
-import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.*;
+import com.hedera.node.app.service.file.impl.handlers.*;
 import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.*;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -273,7 +240,7 @@ class DispatcherTest {
                         (Consumer<Handlers>)
                                 h ->
                                         verify(h.consensusCreateTopicHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setConsensusUpdateTopic(
@@ -309,27 +276,35 @@ class DispatcherTest {
                                         ContractCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractCreateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCreateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractUpdateInstance(
                                         ContractUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractUpdateHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractUpdateHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractCallHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractCallHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractDeleteInstance(
                                         ContractDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.contractDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.contractDeleteHandler())
+                                                .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setEthereumTransaction(
@@ -475,7 +450,9 @@ class DispatcherTest {
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleDeleteHandler())
+                                                .preHandle(any(), any(), any(), any())),
 
                 // token
                 Arguments.of(
@@ -497,7 +474,9 @@ class DispatcherTest {
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.tokenMintHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.tokenMintHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
