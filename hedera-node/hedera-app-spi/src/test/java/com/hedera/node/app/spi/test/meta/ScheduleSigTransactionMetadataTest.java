@@ -118,8 +118,7 @@ class ScheduleSigTransactionMetadataTest {
                         .scheduledTransactionBody(
                                 SchedulableTransactionBody.newBuilder()
                                         .memo("test")
-                                        .transactionFee(1_000_000L)
-                                        .build())
+                                        .transactionFee(1_000_000L))
                         .payerAccountID(schedulePayer)
                         .build();
         return TransactionBody.newBuilder()
