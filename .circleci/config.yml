@@ -1054,6 +1054,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Reconnect-4N-2C:
+    triggers:
+      - schedule:
+          cron: "15 22 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1535,7 +1542,6 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout 03128-fsts-cli
             ./gradlew assemble --scan --parallel
 
       - run:
@@ -1613,10 +1619,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "jeromy-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "jeromy-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
