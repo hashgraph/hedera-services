@@ -69,7 +69,7 @@ class ErrorTransactionMetadataTest {
         final var transactionID =
                 TransactionID.newBuilder()
                         .accountID(AccountID.newBuilder().accountNum(3L).build())
-                        .transactionValidStart(new Timestamp.Builder().build())
+                        .transactionValidStart(Timestamp.newBuilder().build())
                         .build();
         final var createTxnBody =
                 CryptoCreateTransactionBody.newBuilder()

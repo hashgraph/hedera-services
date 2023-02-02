@@ -71,7 +71,7 @@ class SigTransactionMetadataBuilderTest {
                                                     .build())
                                     .build())
                     .build();
-    private Timestamp consensusTimestamp = new Timestamp.Builder().seconds(1_234_567L).build();
+    private Timestamp consensusTimestamp = Timestamp.newBuilder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
     private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
