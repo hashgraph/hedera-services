@@ -15,8 +15,30 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
-import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.*;
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.CUSTOM_PAYER_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_REPLACE_KT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_TREASURY_AS_PAYER;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_REPLACING_WITH_MISSING_TREASURY;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_FREEZE_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_KYC_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_NO_KEYS_AFFECTED;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_SUPPLY_KEYED_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_TREASURY_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -24,31 +46,12 @@ import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
-import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.test.utils.AdapterUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-class TokenUpdateHandlerParityTest {
-
-    private AccountKeyLookup keyLookup;
-    private ReadableTokenStore readableTokenStore;
-
+class TokenUpdateHandlerParityTest extends ParityTestBase {
     private final TokenUpdateHandler subject = new TokenUpdateHandler();
-
-    @BeforeEach
-    void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
-    }
 
     @Test
     void tokenUpdateWithoutAffectingKeys() {

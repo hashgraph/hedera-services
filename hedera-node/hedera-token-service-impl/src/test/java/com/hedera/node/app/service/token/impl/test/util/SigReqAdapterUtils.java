@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.util;
 
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
-
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -26,11 +23,22 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
+
+import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_IMMUTABLE;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_NO_SPECIAL_KEYS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_FREEZE;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_PAUSE;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_SUPPLY;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_WIPE;
 
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
