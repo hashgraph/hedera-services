@@ -39,7 +39,7 @@ import java.util.Objects;
  * <p>NOTE : This class is designed to be subclassed
  */
 public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBuilder<T>> {
-    private static final AccountID DEFAULT_ACCOUNT_ID = new AccountID.Builder().build();
+    private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().build();
     private static final ContractID DEFAULT_CONTRACT_ID = new ContractID.Builder().build();
     protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
     protected HederaKey payerKey;

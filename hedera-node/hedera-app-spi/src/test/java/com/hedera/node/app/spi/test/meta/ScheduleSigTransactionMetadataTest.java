@@ -38,11 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSigTransactionMetadataTest {
-    private static final TransactionBody DEFAULT_TX_BODY = new TransactionBody.Builder().build();
+    private static final TransactionBody DEFAULT_TX_BODY = TransactionBody.newBuilder().build();
     @Mock private AccountKeyLookup keyLookup;
     @Mock private HederaKey payerKey;
-    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
-    private AccountID schedulePayer = new AccountID.Builder().accountNum(4L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
+    private AccountID schedulePayer = AccountID.newBuilder().accountNum(4L).build();
 
     @Test
     void getsInnerMetadata() {
@@ -122,7 +122,7 @@ class ScheduleSigTransactionMetadataTest {
                                         .build())
                         .payerAccountID(schedulePayer)
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .scheduleCreate(createTxnBody)
                 .build();

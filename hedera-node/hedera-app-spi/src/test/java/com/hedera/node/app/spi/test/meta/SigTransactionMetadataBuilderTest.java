@@ -51,7 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataBuilderTest {
-    private static final AccountID DEFAULT_ACCOUNT_ID = new AccountID.Builder().build();
+    private static final AccountID DEFAULT_ACCOUNT_ID = AccountID.newBuilder().build();
 
     private static final Key COMPLEX_KEY_FIRST =
             new Key.Builder().ed25519(asBytes("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).build();
@@ -73,10 +73,10 @@ class SigTransactionMetadataBuilderTest {
                     .build();
     private Timestamp consensusTimestamp = new Timestamp.Builder().seconds(1_234_567L).build();
     private Key key = A_COMPLEX_KEY;
-    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
     private Long payerNum = 3L;
     @Mock private HederaKey payerKey;
-    final AccountID otherAccountId = new AccountID.Builder().accountNum(12345L).build();
+    final AccountID otherAccountId = AccountID.newBuilder().accountNum(12345L).build();
     final ContractID otherContractId = new ContractID.Builder().contractNum(123456L).build();
     @Mock private HederaKey otherKey;
     @Mock private AccountKeyLookup keyLookup;
@@ -378,7 +378,7 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer)
-                        .addNonPayerKey(new AccountID.Builder().accountNum(0L).build());
+                        .addNonPayerKey(AccountID.newBuilder().accountNum(0L).build());
 
         meta = subject.build();
         assertEquals(payerKey, meta.payerKey());
@@ -404,7 +404,7 @@ class SigTransactionMetadataBuilderTest {
 
     @Test
     void doesntFailForAliasedAccount() {
-        final var alias = new AccountID.Builder().alias(asBytes("test")).build();
+        final var alias = AccountID.newBuilder().alias(asBytes("test")).build();
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
         given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
@@ -508,12 +508,12 @@ class SigTransactionMetadataBuilderTest {
                         .transactionValidStart(consensusTimestamp)
                         .build();
         final var createTxnBody =
-                new CryptoCreateTransactionBody.Builder()
+                CryptoCreateTransactionBody.newBuilder()
                         .key(key)
                         .receiverSigRequired(true)
                         .memo("Create Account")
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .cryptoCreateAccount(createTxnBody)
                 .build();

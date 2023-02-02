@@ -15,16 +15,14 @@
  */
 package com.hedera.node.app.spi.fixtures.state;
 
+import com.hedera.node.app.spi.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
-public class TestBase {
-    public static final String CAPITALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final Set<String> WORDS;
-
+public class StateTestBase extends TestBase {
     protected static final String UNKNOWN_STATE_KEY = "BOGUS_STATE_KEY";
     protected static final String UNKNOWN_KEY = "BOGUS_KEY";
 
@@ -85,83 +83,4 @@ public class TestBase {
     protected static final String ESTONIA = "Estonia";
     protected static final String FRANCE = "France";
     protected static final String GHANA = "Ghana";
-
-    static {
-        final var words = new HashSet<String>();
-        try (final var input = TestBase.class.getResourceAsStream("wordlist.txt")) {
-            assert input != null : "Missing wordlist.txt";
-            final var reader = new BufferedReader(new InputStreamReader(input));
-            String word;
-            while ((word = reader.readLine()) != null) {
-                words.add(word);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load word list!", e);
-        }
-
-        WORDS = Collections.unmodifiableSet(words);
-    }
-
-    private static final Random RAND = new Random(7729311);
-    private final Random rand = new Random(9239992);
-
-    public Random random() {
-        return rand;
-    }
-
-    /**
-     * Generates some random bytes
-     *
-     * @param length The number of bytes to generate.
-     * @return Some random bytes.
-     */
-    public byte[] randomBytes(int length) {
-        final byte[] data = new byte[length];
-        for (int i = 0; i < length; i++) {
-            data[i] = (byte) rand.nextInt();
-        }
-        return data;
-    }
-
-    public Set<String> words() {
-        return WORDS;
-    }
-
-    public List<String> randomWords(final int n) {
-        final var randomWords = new ArrayList<>(WORDS);
-        Collections.shuffle(randomWords, rand);
-        return randomWords.subList(0, n);
-    }
-
-    /**
-     * Generate a pseudo-random string of capital letters of the given length.
-     *
-     * @param length The length of the string. Must be non-negative
-     * @return A random string of capital letters and of the requested length.
-     */
-    @NonNull
-    public static String randomString(final int length) {
-        return randomString(CAPITALS, length);
-    }
-
-    /**
-     * Given an alphabet of all possible characters, generate a pseudo-random string of the given
-     * length.
-     *
-     * @param alphabet The alphabet to use. Cannot be null or blank.
-     * @param length The length of the string. Must be non-negative
-     * @return A random string created by the given alphabet and of the requested length.
-     */
-    @NonNull
-    public static String randomString(@NonNull final String alphabet, final int length) {
-        assert !alphabet.isBlank();
-        assert length >= 0;
-
-        final var buf = new byte[length];
-        for (int i = 0; i < length; i++) {
-            buf[i] = (byte) alphabet.charAt(RAND.nextInt(alphabet.length()));
-        }
-
-        return new String(buf);
-    }
 }

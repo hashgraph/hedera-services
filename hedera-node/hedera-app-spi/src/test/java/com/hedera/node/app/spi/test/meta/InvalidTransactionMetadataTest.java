@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class InvalidTransactionMetadataTest {
     private InvalidTransactionMetadata subject;
-    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
 
     @Test
     void gettersWork() {
@@ -65,7 +65,7 @@ class InvalidTransactionMetadataTest {
                                         .transactionFee(1_000_000L)
                                         .build())
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .scheduleCreate(createTxnBody)
                 .build();

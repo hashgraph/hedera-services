@@ -68,15 +68,15 @@ class ErrorTransactionMetadataTest {
     private TransactionBody createAccountTransaction() {
         final var transactionID =
                 new TransactionID.Builder()
-                        .accountID(new AccountID.Builder().accountNum(3L).build())
+                        .accountID(AccountID.newBuilder().accountNum(3L).build())
                         .transactionValidStart(new Timestamp.Builder().build())
                         .build();
         final var createTxnBody =
-                new CryptoCreateTransactionBody.Builder()
+                CryptoCreateTransactionBody.newBuilder()
                         .receiverSigRequired(true)
                         .memo("Create Account")
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .cryptoCreateAccount(createTxnBody)
                 .build();

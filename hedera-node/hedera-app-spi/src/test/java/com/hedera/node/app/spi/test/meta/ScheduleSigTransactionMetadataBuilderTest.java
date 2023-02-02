@@ -45,8 +45,8 @@ class ScheduleSigTransactionMetadataBuilderTest {
     @Mock private AccountKeyLookup keyLookup;
     @Mock private HederaKey payerKey;
     @Mock private HederaKey schedulePayerKey;
-    private AccountID payer = new AccountID.Builder().accountNum(3L).build();
-    private AccountID schedulePayer = new AccountID.Builder().accountNum(4L).build();
+    private AccountID payer = AccountID.newBuilder().accountNum(3L).build();
+    private AccountID schedulePayer = AccountID.newBuilder().accountNum(4L).build();
     private ScheduleTransactionMetadata meta;
 
     @Test
@@ -210,7 +210,7 @@ class ScheduleSigTransactionMetadataBuilderTest {
                                         .build())
                         .payerAccountID(schedulePayer)
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .scheduleCreate(createTxnBody)
                 .build();

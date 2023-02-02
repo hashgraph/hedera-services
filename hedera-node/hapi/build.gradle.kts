@@ -20,6 +20,10 @@ plugins {
 
 description = "Hedera API"
 
+repositories {
+    mavenLocal()
+}
+
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
 }

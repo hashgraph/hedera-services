@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.spi.fixtures.state.TestBase;
+import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
@@ -56,7 +56,7 @@ import java.nio.file.Path;
  * #UNKNOWN_SERVICE} which is useful for tests where we are trying to look up a service that should
  * not exist.
  *
- * <p>Each service has a number of associated states, based on those defined in {@link TestBase}.
+ * <p>Each service has a number of associated states, based on those defined in {@link StateTestBase}.
  * The {@link #FIRST_SERVICE} has "fruit" and "animal" states, while the {@link #SECOND_SERVICE} has
  * space, steam, and country themed states. Most of these are simple String types for the key and
  * value, but the space themed state uses Long as the key type.
@@ -67,7 +67,7 @@ import java.nio.file.Path;
  * complexity, and also requires a storage directory, so rather than creating these for every test
  * even if they don't need it, I just use it for virtual map specific tests).
  */
-public class MerkleTestBase extends TestBase {
+public class MerkleTestBase extends StateTestBase {
     public static final String FIRST_SERVICE = "First-Service";
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";

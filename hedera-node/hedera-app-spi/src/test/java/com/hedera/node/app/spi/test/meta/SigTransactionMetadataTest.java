@@ -41,7 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataTest {
-    private static final AccountID PAYER = new AccountID.Builder().accountNum(3L).build();
+    private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
     @Mock private HederaKey payerKey;
     @Mock private HederaKey otherKey;
     @Mock AccountKeyLookup lookup;
@@ -94,12 +94,12 @@ class SigTransactionMetadataTest {
                         .transactionValidStart(new Timestamp.Builder().seconds(123_456L).build())
                         .build();
         final var createTxnBody =
-                new CryptoCreateTransactionBody.Builder()
+                CryptoCreateTransactionBody.newBuilder()
                         .key(A_COMPLEX_KEY)
                         .receiverSigRequired(true)
                         .memo("Create Account")
                         .build();
-        return new TransactionBody.Builder()
+        return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .cryptoCreateAccount(createTxnBody)
                 .build();

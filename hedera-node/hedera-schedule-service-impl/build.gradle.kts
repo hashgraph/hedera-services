@@ -36,5 +36,6 @@ dependencies {
     implementation(libs.swirlds.virtualmap)
     implementation(project(":hedera-node:hedera-mono-service"))
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
     testImplementation(testLibs.bundles.mockito)
 }

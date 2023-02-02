@@ -102,7 +102,7 @@ class SchemaTest extends StateTestBase {
     @DisplayName("`getVersion` returns the version")
     void version() {
         final var schema1 = new TestSchema(1);
-        assertThat(schema1.getVersion()).isEqualTo(new SemanticVersion.Builder().major(1).build());
+        assertThat(schema1.getVersion()).isEqualTo(SemanticVersion.newBuilder().major(1).build());
     }
 
     @Test
