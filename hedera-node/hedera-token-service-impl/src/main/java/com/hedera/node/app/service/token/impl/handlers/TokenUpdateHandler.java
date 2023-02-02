@@ -35,8 +35,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * SigRequirements:
  *
  * <ol>
- *   <li>When a missing account is used as a token treasury, fails with {@code INVALID_ACCOUNT_ID} *
- *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}. *
+ *   <li>When a missing account is used as a token treasury, fails with {@code INVALID_ACCOUNT_ID}
+ *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
  * </ol>
  *
  * * EET expectations may need to be updated accordingly
@@ -70,21 +70,20 @@ public class TokenUpdateHandler implements TransactionHandler {
                 new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
         final var tokenMeta = tokenStore.getTokenMeta(tokenId);
         if (tokenMeta.failed()) {
-            meta.status(tokenMeta.failureReason());
-        } else {
-            final var tokenMetadata = tokenMeta.metadata();
-            final var adminKey = tokenMetadata.adminKey();
-            adminKey.ifPresent(meta::addToReqNonPayerKeys);
-            if (op.hasAutoRenewAccount()) {
-                meta.addNonPayerKey(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
-            }
-            if (op.hasTreasury()) {
-                meta.addNonPayerKey(op.getTreasury());
-            }
-            if (op.hasAdminKey()) {
-                final var newAdminKey = asHederaKey(op.getAdminKey());
-                newAdminKey.ifPresent(meta::addToReqNonPayerKeys);
-            }
+            return meta.status(tokenMeta.failureReason()).build();
+        }
+        final var tokenMetadata = tokenMeta.metadata();
+        final var adminKey = tokenMetadata.adminKey();
+        adminKey.ifPresent(meta::addToReqNonPayerKeys);
+        if (op.hasAutoRenewAccount()) {
+            meta.addNonPayerKey(op.getAutoRenewAccount(), INVALID_AUTORENEW_ACCOUNT);
+        }
+        if (op.hasTreasury()) {
+            meta.addNonPayerKey(op.getTreasury());
+        }
+        if (op.hasAdminKey()) {
+            final var newAdminKey = asHederaKey(op.getAdminKey());
+            newAdminKey.ifPresent(meta::addToReqNonPayerKeys);
         }
         return meta.build();
     }
