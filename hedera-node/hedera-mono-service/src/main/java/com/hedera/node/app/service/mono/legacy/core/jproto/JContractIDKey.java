@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,20 @@ package com.hedera.node.app.service.mono.legacy.core.jproto;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 
-/** Maps to proto Key of type contractID. */
+/**
+ * Maps to proto Key of type contractID.
+ *
+ * <p>Just as a public-private key pair is used to control permissions for a Hedera entity (e.g., an
+ * account), a {@code contractID} key is <i>also</i> used to control permissions for an entity. The
+ * difference is that a {@code contractID} key requires a particular contract to be executing in
+ * order to count as having "signed".
+ *
+ * <p>For example, suppose {@code 0.0.X} is an account. Its key is {@code Key{contractID=0.0.C}}.
+ *
+ * <p>Then <b>if</b> we are executing a contract operation, and the EVM receiver address in the
+ * current frame is {@code 0.0.C}, then this EVM transaction can use system contracts to, for
+ * example, transfer all the hbar from account {@code 0.0.X}.
+ */
 public class JContractIDKey extends JKey {
     private final long shardNum;
     private final long realmNum;

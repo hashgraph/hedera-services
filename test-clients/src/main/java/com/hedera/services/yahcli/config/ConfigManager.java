@@ -107,12 +107,7 @@ public class ConfigManager {
             specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
             specConfig.put("default.payer.pemKeyPassphrase", finalPassphrase.get());
         } else if (keyFile.getAbsolutePath().endsWith("words")) {
-            try {
-                var mnemonic = Files.readString(keyFile.toPath()).trim();
-                specConfig.put("default.payer.mnemonic", mnemonic);
-            } catch (IOException e) {
-                fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
-            }
+            specConfig.put("default.payer.mnemonicFile", keyFile.getAbsolutePath());
         } else {
             try {
                 var key = Files.readString(keyFile.toPath()).trim();

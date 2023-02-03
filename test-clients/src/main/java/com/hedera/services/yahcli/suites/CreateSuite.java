@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,8 @@ public class CreateSuite extends HapiSuite {
     private final long initialBalance;
     private final int numBusyRetries;
 
+    private final boolean receiverSigRequired;
+
     private final String novelTarget;
 
     private final AtomicLong createdNo = new AtomicLong(0);
@@ -55,12 +57,14 @@ public class CreateSuite extends HapiSuite {
             final long initialBalance,
             final String memo,
             final String novelTarget,
-            final int numBusyRetries) {
+            final int numBusyRetries,
+            final boolean receiverSigRequired) {
         this.memo = memo;
         this.specConfig = specConfig;
         this.novelTarget = novelTarget;
         this.numBusyRetries = numBusyRetries;
         this.initialBalance = initialBalance;
+        this.receiverSigRequired = receiverSigRequired;
     }
 
     @Override
@@ -97,6 +101,7 @@ public class CreateSuite extends HapiSuite {
                                                         .blankMemo()
                                                         .entityMemo(memo)
                                                         .key(newKey)
+                                                        .receiverSigRequired(receiverSigRequired)
                                                         .hasPrecheckFrom(OK, BUSY)
                                                         .exposingCreatedIdTo(
                                                                 id ->

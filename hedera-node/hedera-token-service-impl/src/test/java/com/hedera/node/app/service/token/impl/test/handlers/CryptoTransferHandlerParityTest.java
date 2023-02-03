@@ -16,6 +16,47 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_MISSING_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
+import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.*;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.*;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
@@ -26,10 +67,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -38,18 +76,8 @@ import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CryptoTransferHandlerParityTest {
-    private AccountKeyLookup keyLookup;
-    private ReadableTokenStore readableTokenStore;
-
+class CryptoTransferHandlerParityTest extends ParityTestBase {
     private final CryptoTransferHandler subject = new CryptoTransferHandler();
-
-    @BeforeEach
-    void setUp() {
-        final var now = Instant.now();
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt(now);
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt(now);
-    }
 
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() {
@@ -147,7 +175,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -192,7 +220,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test
@@ -208,7 +236,8 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
+        assertMetaFailedWithReqPayerKeyAnd(
+                meta, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
@@ -223,7 +252,7 @@ class CryptoTransferHandlerParityTest {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ALIAS_IS_IMMUTABLE);
+        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
     }
 
     @Test

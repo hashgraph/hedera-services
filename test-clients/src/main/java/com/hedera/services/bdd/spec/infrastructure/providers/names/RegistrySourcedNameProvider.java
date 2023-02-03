@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.RegistryChangeContext;
 import com.hedera.services.bdd.spec.infrastructure.listeners.PresenceTrackingListener;
-import com.hedera.services.bdd.suites.regression.RegressionProviderFactory;
+import com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;

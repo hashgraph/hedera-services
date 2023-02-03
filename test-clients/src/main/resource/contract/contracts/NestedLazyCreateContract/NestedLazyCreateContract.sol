@@ -12,6 +12,13 @@ contract NestedLazyCreateContract is HederaTokenService {
         senderContract = new SenderContract();
     }
 
+    function createTooManyHollowAccounts(address[] memory _addresses) public payable {
+        uint size = _addresses.length;
+        for (uint i = 0; i < size; i++) {
+            _addresses[i].call{value: msg.value / size}("");
+        }
+    }
+
     function nestedLazyCreateThenSendMore(address payable _to) public payable  {
 
         senderContract.sendSome{value: msg.value / 2}(_to);

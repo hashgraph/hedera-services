@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.models.MockAccountAccessor;
+import com.hedera.node.app.service.evm.store.models.MockTokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,7 @@ class HederaEvmWorldStateTest {
     final long balance = 1_234L;
 
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
+    MockTokenAccessor tokenAccessor = new MockTokenAccessor();
 
     private HederaEvmWorldState subject;
 
@@ -58,7 +60,11 @@ class HederaEvmWorldStateTest {
 
         subject2 =
                 new HederaEvmWorldState(
-                        hederaEvmEntityAccess, evmProperties, abstractCodeCache, accountAccessor);
+                        hederaEvmEntityAccess,
+                        evmProperties,
+                        abstractCodeCache,
+                        accountAccessor,
+                        tokenAccessor);
     }
 
     @Test

@@ -34,7 +34,7 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -52,12 +52,12 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Mock protected JKey adminJKey;
     @Mock protected ScheduleVirtualValue schedule;
 
-    @Mock protected State schedulesById;
+    @Mock protected ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById;
     protected ReadableScheduleStore scheduleStore;
 
     @BeforeEach
     void setUp() {
-        given(states.get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        given(states.<Long, ScheduleVirtualValue>get("SCHEDULES_BY_ID")).willReturn(schedulesById);
         scheduleStore = new ReadableScheduleStore(states);
     }
 
@@ -79,7 +79,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void scheduleSignFailsIfScheduleMissing() {
         final var txn = scheduleSignTransaction();
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.empty());
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(null);
         final var meta = subject.preHandle(txn, scheduler, keyLookup, scheduleStore, dispatcher);
         assertEquals(scheduler, meta.payer());
         assertEquals(null, meta.payerKey());
@@ -120,7 +120,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                         .setScheduleCreate(ScheduleCreateTransactionBody.newBuilder().build())
                         .build();
 
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);
@@ -170,7 +170,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                         OK,
                         schedulerKey,
                         List.of());
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(scheduledTxn);

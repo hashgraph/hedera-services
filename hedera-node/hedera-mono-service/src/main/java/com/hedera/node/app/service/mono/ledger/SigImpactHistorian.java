@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,7 @@ public class SigImpactHistorian {
      * @param entityNum the changed entity
      */
     public void markEntityChanged(final long entityNum) {
-        requireNonNull(now, "Cannot mark an entity changed at null consensus time");
+        if (now == null) return;
         entityChangeTimes.put(entityNum, now);
         entityChangeExpiries.track(entityNum, expirySec());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -38,15 +39,27 @@ public class RandomAccount implements OpProvider {
 
     private int ceilingNum = DEFAULT_CEILING_NUM;
 
+    private final boolean fuzzIdentifiers;
     private final AtomicInteger opNo = new AtomicInteger();
     private final EntityNameProvider<Key> keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
-    private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_ACCOUNT_ID);
+    private final ResponseCodeEnum[] permissibleOutcomes =
+            standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY);
+    private final ResponseCodeEnum[] permissiblePrechecks =
+            standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY);
 
     public RandomAccount(
             EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
+        this(keys, accounts, false);
+    }
+
+    public RandomAccount(
+            EntityNameProvider<Key> keys,
+            RegistrySourcedNameProvider<AccountID> accounts,
+            final boolean fuzzIdentifiers) {
         this.keys = keys;
         this.accounts = accounts;
+        this.fuzzIdentifiers = fuzzIdentifiers;
     }
 
     public RandomAccount ceiling(int n) {
@@ -71,13 +84,15 @@ public class RandomAccount implements OpProvider {
         }
 
         int id = opNo.getAndIncrement();
-        HapiCryptoCreate op =
-                cryptoCreate(my("account" + id))
+        final var name = my("account" + id);
+        final var op =
+                cryptoCreate(name)
                         .key(key.get())
+                        .fuzzingIdentifiersIfEcdsaKey(fuzzIdentifiers)
                         .memo("randomlycreated" + id)
                         .balance(INITIAL_BALANCE)
                         .sendThreshold(SEND_THRESHOLD)
-                        .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
+                        .hasPrecheckFrom(permissiblePrechecks)
                         .hasKnownStatusFrom(permissibleOutcomes);
         return Optional.of(op);
     }

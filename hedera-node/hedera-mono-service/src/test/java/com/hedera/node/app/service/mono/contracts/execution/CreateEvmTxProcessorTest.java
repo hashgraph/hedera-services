@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,8 @@ class CreateEvmTxProcessorTest {
     @Test
     void assertSuccessfulExecution() {
         givenValidMock(350_000L, true);
+        givenAliasMock();
+
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -180,6 +182,8 @@ class CreateEvmTxProcessorTest {
     void assertSuccessExecutionChargesCorrectMinimumGas() {
         givenValidMock(350_000L, true);
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
+        givenAliasMock();
+
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -199,6 +203,8 @@ class CreateEvmTxProcessorTest {
         given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(5);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(INTRINSIC_GAS_COST);
+        givenAliasMock();
+
         var result =
                 createEvmTxProcessor.execute(
                         sender,
@@ -435,11 +441,18 @@ class CreateEvmTxProcessorTest {
 
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
         given(updater.getSbhRefund()).willReturn(0L);
+        given(updater.aliases()).willReturn(aliasManager);
 
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
         given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
         given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
         given(senderMutableAccount.getBalance()).willReturn(Wei.of(2000L));
+    }
+
+    private void givenAliasMock() {
+        given(updater.aliases()).willReturn(aliasManager);
+        given(aliasManager.resolveForEvm(receiver.getId().asEvmAddress()))
+                .willReturn(receiver.getId().asEvmAddress());
     }
 }
