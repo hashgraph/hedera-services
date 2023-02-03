@@ -169,7 +169,11 @@ public class Dispatcher {
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getTokenStore(state),
+                            storeCache.getAccountStore(state));
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
