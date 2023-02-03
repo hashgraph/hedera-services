@@ -37,11 +37,10 @@ public class TokenDeleteHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
+     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
