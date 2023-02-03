@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import org.junit.jupiter.api.Test;
 
-class TokenMintHandlerTest extends ParityTestBase {
+class TokenMintHandlerParityTest extends ParityTestBase {
     private final TokenMintHandler subject = new TokenMintHandler();
 
     @Test

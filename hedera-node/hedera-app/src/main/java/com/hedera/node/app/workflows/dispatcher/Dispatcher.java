@@ -183,7 +183,11 @@ public class Dispatcher {
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(transactionBody, payer);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(transactionBody, payer);
 
