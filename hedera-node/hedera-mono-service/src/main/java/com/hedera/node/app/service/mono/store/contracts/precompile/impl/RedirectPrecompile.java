@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmRedirectForTokenPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
@@ -37,7 +38,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * current ledgers, before delegating. This check is required, since all the ERC precompiles @code
  * {run()} methods execute with the assumption that the passed token exists.
  */
-public class RedirectPrecompile implements Precompile {
+public class RedirectPrecompile implements Precompile, EvmRedirectForTokenPrecompile {
 
     private final Precompile wrappedPrecompile;
     private final TokenID tokenID;
