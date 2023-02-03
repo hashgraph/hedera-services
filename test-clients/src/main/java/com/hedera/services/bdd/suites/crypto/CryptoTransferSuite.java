@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -224,12 +225,88 @@ public class CryptoTransferSuite extends HapiSuite {
                 vanillaTransferSucceeds(),
                 aliasKeysAreValidated(),
                 hapiTransferFromForNFTWithCustomFeesWithAllowance(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance());
+                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance(),
+                canUseAliasAndAccountCombinations());
     }
 
     @Override
     public boolean canRunConcurrent() {
         return true;
+    }
+
+    private HapiSpec canUseAliasAndAccountCombinations() {
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+        final AtomicReference<AccountID> partyId = new AtomicReference<>();
+        final AtomicReference<AccountID> counterId = new AtomicReference<>();
+        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+        final var collector = "collector";
+
+        return onlyDefaultHapiSpec("canUseAliasAndAccountCombinations")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(collector),
+                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
+                        tokenCreate(FUNGIBLE_TOKEN).treasury(PARTY).initialSupply(1_000_000),
+                        tokenCreate("FEE_DENOM").treasury(collector),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .initialSupply(0)
+                                .treasury(PARTY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(MULTI_KEY)
+                                .withCustom(royaltyFeeWithFallback(1,
+                                        2,
+                                        fixedHtsFeeInheritingRoyaltyCollector(
+                                                1, "FEE_DENOM"),
+                                        collector)),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var registry = spec.registry();
+                                    ftId.set(registry.getTokenID(FUNGIBLE_TOKEN));
+                                    nftId.set(registry.getTokenID(NON_FUNGIBLE_TOKEN));
+                                    partyId.set(registry.getAccountID(PARTY));
+                                    counterId.set(registry.getAccountID(COUNTERPARTY));
+                                    partyAlias.set(
+                                            ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                                    counterAlias.set(
+                                            ByteString.copyFrom(
+                                                    asSolidityAddress(counterId.get())));
+                                }))
+                .when(
+                        cryptoTransfer(
+                                (spec, b) ->
+                                        b.addTokenTransfers(
+                                                        TokenTransferList.newBuilder()
+                                                                .setToken(nftId.get())
+                                                                .addNftTransfers(
+                                                                        ocWith(
+                                                                                accountId(
+                                                                                        partyAlias
+                                                                                                .get()),
+                                                                                accountId(
+                                                                                        counterAlias
+                                                                                                .get()),
+                                                                                1L)))
+                                                .setTransfers(
+                                                        TransferList.newBuilder()
+                                                                .addAccountAmounts(
+                                                                        aaWith(
+                                                                                partyAlias.get(),
+                                                                                -2))
+                                                                .addAccountAmounts(
+                                                                        aaWith(
+                                                                                counterId.get(),
+                                                                                +2))))
+                                .signedBy(DEFAULT_PAYER, PARTY)
+                                .via(NFT_XFER)
+                )
+                .then(
+                        getTxnRecord(NFT_XFER).logged()
+                );
     }
 
     private HapiSpec aliasKeysAreValidated() {

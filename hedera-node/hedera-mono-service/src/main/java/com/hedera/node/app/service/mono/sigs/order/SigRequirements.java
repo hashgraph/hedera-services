@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MIS
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
@@ -1371,6 +1372,7 @@ public class SigRequirements {
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op) {
         for (final var adjust : op.getTransfers().getAccountAmountsList()) {
+            sigMetaLookup.aliasableAccountSigningMetaFor(adjust.getAccountID(), null);
             if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
                 return true;
             }
