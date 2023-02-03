@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
@@ -65,15 +64,14 @@ import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import java.util.Collection;
-import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class EndToEndTests extends E2ETestBase {
@@ -184,11 +182,11 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompile2() {
         return List.of(
                 new DynamicContainer[] {
-//                    extractSpecsFromSuite(CryptoTransferHTSSuite::new),
-//                    extractSpecsFromSuite(DelegatePrecompileSuite::new),
-//                    extractSpecsFromSuite(DissociatePrecompileSuite::new),
+                    //                    extractSpecsFromSuite(CryptoTransferHTSSuite::new),
+                    //                    extractSpecsFromSuite(DelegatePrecompileSuite::new),
+                    //                    extractSpecsFromSuite(DissociatePrecompileSuite::new),
                     //                    				extractSpecsFromSuite(DynamicGasCostSuite::new),
-//                    extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
+                    //                    extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });
     }
 

@@ -207,7 +207,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via(ACCOUNT_HAS_NO_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -221,7 +222,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via(NO_KEY_FREEZE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -234,7 +236,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .via(NO_KEY_UNFREEZE_TXN),
@@ -249,7 +252,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(ACCOUNT)
                                                         .hasToken(
@@ -268,7 +272,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(ACCOUNT)
                                                         .hasToken(
@@ -351,7 +356,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(ACCOUNT_HAS_NO_KEY_TXN)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -365,7 +371,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(ACCOUNT)
                                                         .hasToken(
@@ -383,7 +390,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
                                                                 FREEZE_CONTRACT,
@@ -395,7 +403,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
                                                         .logged()
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
@@ -462,7 +471,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                             HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())))
                                                     .logged()
-                                                    .payingWith(ACCOUNT)
+                                                    .signedBy(GENESIS, ACCOUNT)
+                                                    .alsoSigningWithFullPrefix(ACCOUNT)
                                                     .gas(GAS_TO_OFFER);
                                     final var isFrozenLocalCall =
                                             contractCallLocal(

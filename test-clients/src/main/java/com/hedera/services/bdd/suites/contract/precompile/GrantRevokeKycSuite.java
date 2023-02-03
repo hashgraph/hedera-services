@@ -383,7 +383,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("GrantKycTx")
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(SECOND_ACCOUNT)
@@ -411,7 +412,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("RevokeKycTx")
                                                         .gas(GAS_TO_OFFER),
                                                 contractCall(
@@ -425,7 +427,8 @@ public class GrantRevokeKycSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 secondAccountID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .via("IsKycTx")
                                                         .gas(GAS_TO_OFFER))))
                 .then(

@@ -191,4 +191,40 @@ public class ConcurrentSuites {
                     VersionInfoSpec::new,
                 };
     }
+
+    /*
+       All the EVM suites that should be executed with Ethereum calls to verify
+       Ethereum compatibility.
+    */
+    @SuppressWarnings("unchecked")
+    static Supplier<HapiSuite>[] ethereumSuites() {
+        return (Supplier<HapiSuite>[])
+                new Supplier[] {
+                    // contract.precompile
+                    SigningReqsSuite::new,
+                    ApproveAllowanceSuite::new,
+                    AssociatePrecompileSuite::new,
+                    ContractBurnHTSSuite::new,
+                    ContractHTSSuite::new,
+                    ContractKeysHTSSuite::new,
+                    ContractMintHTSSuite::new,
+                    CryptoTransferHTSSuite::new,
+                    DefaultTokenStatusSuite::new,
+                    DelegatePrecompileSuite::new,
+                    DeleteTokenPrecompileSuite::new,
+                    DissociatePrecompileSuite::new,
+                    CreatePrecompileSuite::new,
+                    ERCPrecompileSuite::new,
+                    FreezeUnfreezeTokenPrecompileSuite::new,
+                    GrantRevokeKycSuite::new,
+                    LazyCreateThroughPrecompileSuite::new,
+                    PauseUnpauseTokenAccountPrecompileSuite::new,
+                    PrngPrecompileSuite::new,
+                    TokenAndTypeCheckSuite::new,
+                    TokenExpiryInfoSuite::new,
+                    TokenInfoHTSSuite::new,
+                    TokenUpdatePrecompileSuite::new,
+                    WipeTokenAccountPrecompileSuite::new,
+                };
+    }
 }

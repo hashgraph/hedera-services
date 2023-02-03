@@ -114,7 +114,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(DELETE_TXN),
                                                 getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
@@ -131,7 +132,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(tokenAlreadyDeletedTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
@@ -185,7 +187,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(notAnAdminTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
@@ -197,7 +200,8 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                                         asHexedAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(GENESIS, ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
                 .then(
