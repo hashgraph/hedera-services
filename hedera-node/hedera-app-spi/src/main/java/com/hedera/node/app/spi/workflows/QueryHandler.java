@@ -46,7 +46,8 @@ public interface QueryHandler {
     Response createEmptyResponse(@NonNull ResponseHeader header);
 
     /**
-     * Returns {@code true}, if a query associated with this handler requires a payment
+     * Returns {@code true}, if the query associated with this handler is only requesting the cost
+     * of this query alone (i.e. the query won't be executed)
      *
      * @param responseType the {@link ResponseType} of a query, because payment can depend on the
      *     response type
