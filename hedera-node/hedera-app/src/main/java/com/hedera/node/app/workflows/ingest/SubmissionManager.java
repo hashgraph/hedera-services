@@ -15,17 +15,18 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
+import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
@@ -67,14 +68,14 @@ public class SubmissionManager {
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
      * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
      * @param parser the {@link Parser} that is used to eventually parse the {@link
-     *     TransactionBody#getUncheckedSubmit()}
+     *     TransactionBody#uncheckedSubmit()} ()}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
             @NonNull final TransactionBody txBody,
             @NonNull final ByteBuffer byteBuffer,
-            @NonNull final Parser<TransactionBody> parser)
+            @NonNull final Serdes<TransactionBody> parser)
             throws PreCheckException {
         requireNonNull(txBody);
         requireNonNull(byteBuffer);
@@ -84,14 +85,17 @@ public class SubmissionManager {
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
         // pre-checks.
         // This is used in tests to check the reaction to illegal input.
-        if (txBody.hasUncheckedSubmit()) {
+        final var optUncheckedSubmit = txBody.uncheckedSubmit();
+        if (optUncheckedSubmit.isPresent()) {
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
                 // we do not allow unchecked submits in PROD
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
             try {
+                final var uncheckedSubmit = optUncheckedSubmit.get();
+                final var txBytes = uncheckedSubmit.transactionBytes();
                 payload =
-                        parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
+                        parser.parse()parseFrom(txBytes)
                                 .toByteArray();
             } catch (InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);

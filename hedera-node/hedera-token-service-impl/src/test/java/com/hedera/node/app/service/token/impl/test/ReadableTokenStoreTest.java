@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl.test;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -35,8 +36,6 @@ import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,7 @@ class ReadableTokenStoreTest {
     @Mock private ReadableKVState<Long, MerkleToken> tokens;
     @Mock private ReadableStates states;
     private static final String TOKENS = "TOKENS";
-    private final TokenID tokenId = IdUtils.asToken("0.0.2000");
+    private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
     private final String symbol = "TestToken";
     private final String name = "TestTokenName";
     private final int decimals = 2;
@@ -107,7 +106,7 @@ class ReadableTokenStoreTest {
 
     @Test
     void getsMerkleTokenIfTokenIdPresent() {
-        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
+        given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -128,7 +127,7 @@ class ReadableTokenStoreTest {
 
     @Test
     void getsNullKeyIfMissingAccount() {
-        given(tokens.get(tokenId.getTokenNum())).willReturn(null);
+        given(tokens.get(tokenId.tokenNum())).willReturn(null);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -144,7 +143,7 @@ class ReadableTokenStoreTest {
                 List.of(
                         FcCustomFee.royaltyFee(
                                 1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
+        given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -159,7 +158,7 @@ class ReadableTokenStoreTest {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
         token.setFeeSchedule(
                 List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
+        given(tokens.get(tokenId.tokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 

@@ -15,25 +15,24 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}.
+ * HederaFunctionality#CRYPTO_UPDATE}.
  */
 public class CryptoUpdateHandler implements TransactionHandler {
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_UPDATE}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -49,8 +48,8 @@ public class CryptoUpdateHandler implements TransactionHandler {
             @NonNull final AccountID payer,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoSignatureWaivers waivers) {
-        final var op = txn.getCryptoUpdateAccount();
-        final var updateAccountId = op.getAccountIDToUpdate();
+        final var op = txn.cryptoUpdateAccount().orElseThrow();
+        final var updateAccountId = op.accountIDToUpdate();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
@@ -59,8 +58,8 @@ public class CryptoUpdateHandler implements TransactionHandler {
         if (targetAccountKeyMustSign) {
             meta.addNonPayerKey(updateAccountId);
         }
-        if (newAccountKeyMustSign && op.hasKey()) {
-            final var candidate = asHederaKey(op.getKey());
+        if (newAccountKeyMustSign) {
+            final var candidate = accountStore.asHederaKey(op.key());
             candidate.ifPresent(meta::addToReqNonPayerKeys);
         }
         return meta.build();

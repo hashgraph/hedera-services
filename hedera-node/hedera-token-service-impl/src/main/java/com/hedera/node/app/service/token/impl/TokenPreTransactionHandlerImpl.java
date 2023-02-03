@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
@@ -90,12 +90,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandleWipeTokenAccount(
             @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
-        final var op = txn.getTokenWipe();
+        final var op = txn.tokenWipe();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
-        if (op.hasToken()) {
-            final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+        if (op.isPresent()) {
+            final var tokenMeta = tokenStore.getTokenMeta(op.get().token());
             if (!tokenMeta.failed()) {
                 if (tokenMeta.metadata().wipeKey().isPresent()) {
                     meta.addToReqNonPayerKeys(tokenMeta.metadata().wipeKey().get());
@@ -173,12 +173,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandlePauseToken(
             @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
-        final var op = txn.getTokenPause();
+        final var op = txn.tokenPause();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
-        if (op.hasToken()) {
-            addPauseKey(op.getToken(), meta);
+        if (op.isPresent()) {
+            addPauseKey(op.get().token(), meta);
         } else {
             meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
         }
@@ -191,12 +191,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandleUnpauseToken(
             @NonNull final TransactionBody txn, @NonNull final AccountID payer) {
         Objects.requireNonNull(txn);
-        final var op = txn.getTokenUnpause();
+        final var op = txn.tokenUnpause();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
-        if (op.hasToken()) {
-            addPauseKey(op.getToken(), meta);
+        if (op.isPresent()) {
+            addPauseKey(op.get().token(), meta);
         } else {
             meta.status(ResponseCodeEnum.INVALID_TOKEN_ID);
         }

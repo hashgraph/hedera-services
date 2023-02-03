@@ -33,7 +33,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.hapi.node.base.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.AutoCloseableWrapper;

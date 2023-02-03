@@ -15,19 +15,18 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractDelete}.
+ * HederaFunctionality#CONTRACT_DELETE}.
  */
 public class ContractDeleteHandler implements TransactionHandler {
 
@@ -51,18 +50,18 @@ public class ContractDeleteHandler implements TransactionHandler {
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payer,
             @NonNull AccountKeyLookup keyLookup) {
-        final var op = txBody.getContractDeleteInstance();
+        final var op = txBody.contractDeleteInstance().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
 
-        meta.addNonPayerKey(op.getContractID());
+        meta.addNonPayerKey(op.contractID());
 
-        if (op.hasTransferAccountID()) {
-            meta.addNonPayerKeyIfReceiverSigRequired(
-                    op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-        } else if (op.hasTransferContractID()) {
-            meta.addNonPayerKeyIfReceiverSigRequired(op.getTransferContractID());
-        }
+//        if (op.transferAccountID().isPresent()) {
+//            meta.addNonPayerKeyIfReceiverSigRequired(
+//                    op.transferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+//        } else if (op.transferContractID()) {
+//            meta.addNonPayerKeyIfReceiverSigRequired(op.transferContractID());
+//        }
         return meta.build();
     }
 

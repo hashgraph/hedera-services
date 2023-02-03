@@ -15,24 +15,24 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
+ * HederaFunctionality#CRYPTO_DELETE}.
  */
 public class CryptoDeleteHandler implements TransactionHandler {
     /**
      * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
+     * HederaFunctionality#CRYPTO_DELETE} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
@@ -47,9 +47,9 @@ public class CryptoDeleteHandler implements TransactionHandler {
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final ReadableAccountStore accountStore) {
-        final var op = txn.getCryptoDelete();
-        final var deleteAccountId = op.getDeleteAccountID();
-        final var transferAccountId = op.getTransferAccountID();
+        final var op = txn.cryptoDelete().orElseThrow();
+        final var deleteAccountId = op.deleteAccountID();
+        final var transferAccountId = op.transferAccountID();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore)
                         .payerKeyFor(payer)

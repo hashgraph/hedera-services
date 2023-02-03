@@ -28,7 +28,6 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
-import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.Map;
 import org.mockito.Mockito;
 
@@ -51,11 +50,12 @@ public class AdapterUtils {
      * @return the well-known account store
      */
     public static AccountKeyLookup wellKnownKeyLookupAt() {
-        return new TestFixturesKeyLookup(
-                mockStates(
-                        Map.of(
-                                ALIASES_KEY, wellKnownAliasState(),
-                                ACCOUNTS_KEY, wellKnownAccountsState())));
+        return null;
+//        return new TestFixturesKeyLookup(
+//                mockStates(
+//                        Map.of(
+//                                ALIASES_KEY, wellKnownAliasState(),
+//                                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {

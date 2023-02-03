@@ -41,7 +41,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;

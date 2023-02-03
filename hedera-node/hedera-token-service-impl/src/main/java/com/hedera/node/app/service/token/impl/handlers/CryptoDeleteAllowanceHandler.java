@@ -15,25 +15,25 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance}.
+ * HederaFunctionality#CRYPTO_DELETE_ALLOWANCE}.
  */
 public class CryptoDeleteAllowanceHandler implements TransactionHandler {
 
     /**
      * Pre-handles a {@link
-     * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
+     * HederaFunctionality#CRYPTO_DELETE_ALLOWANCE} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
@@ -48,12 +48,12 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
             @NonNull final ReadableAccountStore accountStore) {
-        final var op = txn.getCryptoDeleteAllowance();
+        final var op = txn.cryptoDeleteAllowance().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
-        for (final var allowance : op.getNftAllowancesList()) {
-            meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
+        for (final var allowance : op.nftAllowances()) {
+            meta.addNonPayerKey(allowance.owner(), INVALID_ALLOWANCE_OWNER_ID);
         }
         return meta.build();
     }

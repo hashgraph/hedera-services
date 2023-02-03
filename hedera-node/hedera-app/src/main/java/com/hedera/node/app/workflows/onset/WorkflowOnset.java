@@ -15,24 +15,23 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.hapi.node.transaction.TransactionBody;
+\import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 
 /**

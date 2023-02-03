@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.SemanticVersionComparator;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
@@ -28,7 +29,6 @@ import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.node.app.state.merkle.singleton.StringLeaf;
 import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;

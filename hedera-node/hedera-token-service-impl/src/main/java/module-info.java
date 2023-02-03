@@ -9,6 +9,7 @@ module com.hedera.node.app.service.token.impl {
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;
+    requires com.hedera.pbj.runtime;
 
     provides com.hedera.node.app.service.token.TokenService with
             com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -20,12 +21,7 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.entity to
             com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.token.impl.util to
-            com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app.service.token.impl.test,
             com.hedera.node.app;
-
-    opens com.hedera.node.app.service.token.impl.util to
-            com.hedera.node.app.service.token.impl.test;
 }

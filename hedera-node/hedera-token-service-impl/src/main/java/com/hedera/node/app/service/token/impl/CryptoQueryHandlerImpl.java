@@ -17,15 +17,15 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.token.CryptoGetAccountBalanceQuery;
+import com.hedera.hapi.node.token.CryptoGetAccountRecordsQuery;
+import com.hedera.hapi.node.token.GetAccountDetailsQuery;
+import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
+import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
-import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;

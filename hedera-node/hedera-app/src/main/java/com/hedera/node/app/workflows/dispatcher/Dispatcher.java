@@ -17,14 +17,14 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -74,70 +74,70 @@ public class Dispatcher {
         requireNonNull(transactionBody);
         requireNonNull(payer);
 
-        return switch (transactionBody.getDataCase()) {
-            case CONSENSUSCREATETOPIC -> handlers.consensusCreateTopicHandler()
+        return switch (transactionBody.data().kind()) {
+            case CONSENSUS_CREATE_TOPIC -> handlers.consensusCreateTopicHandler()
                     .preHandle(transactionBody, payer);
-            case CONSENSUSUPDATETOPIC -> handlers.consensusUpdateTopicHandler()
+            case CONSENSUS_UPDATE_TOPIC -> handlers.consensusUpdateTopicHandler()
                     .preHandle(transactionBody, payer);
-            case CONSENSUSDELETETOPIC -> handlers.consensusDeleteTopicHandler()
+            case CONSENSUS_DELETE_TOPIC -> handlers.consensusDeleteTopicHandler()
                     .preHandle(transactionBody, payer);
-            case CONSENSUSSUBMITMESSAGE -> handlers.consensusSubmitMessageHandler()
-                    .preHandle(transactionBody, payer);
-
-            case CONTRACTCREATEINSTANCE -> handlers.contractCreateHandler()
-                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CONTRACTUPDATEINSTANCE -> handlers.contractUpdateHandler()
-                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CONTRACTCALL -> handlers.contractCallHandler()
-                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CONTRACTDELETEINSTANCE -> handlers.contractDeleteHandler()
-                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case ETHEREUMTRANSACTION -> handlers.etherumTransactionHandler()
+            case CONSENSUS_SUBMIT_MESSAGE -> handlers.consensusSubmitMessageHandler()
                     .preHandle(transactionBody, payer);
 
-            case CRYPTOCREATEACCOUNT -> handlers.cryptoCreateHandler()
+            case CONTRACT_CREATE_INSTANCE -> handlers.contractCreateHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CRYPTOUPDATEACCOUNT -> handlers.cryptoUpdateHandler()
+            case CONTRACT_UPDATE_INSTANCE -> handlers.contractUpdateHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case CONTRACT_CALL -> handlers.contractCallHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case ETHEREUM_TRANSACTION -> handlers.etherumTransactionHandler()
+                    .preHandle(transactionBody, payer);
+
+            case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
+            case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler()
                     .preHandle(
                             transactionBody,
                             payer,
                             storeCache.getAccountStore(state),
                             cryptoSignatureWaivers);
-            case CRYPTOTRANSFER -> handlers.cryptoTransferHandler()
+            case CRYPTO_TRANSFER -> handlers.cryptoTransferHandler()
                     .preHandle(
                             transactionBody,
                             payer,
                             storeCache.getAccountStore(state),
                             storeCache.getTokenStore(state));
-            case CRYPTODELETE -> handlers.cryptoDeleteHandler()
+            case CRYPTO_DELETE -> handlers.cryptoDeleteHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CRYPTOAPPROVEALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
+            case CRYPTO_APPROVE_ALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CRYPTODELETEALLOWANCE -> handlers.cryptoDeleteAllowanceHandler()
+            case CRYPTO_DELETE_ALLOWANCE -> handlers.cryptoDeleteAllowanceHandler()
                     .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
-            case CRYPTOADDLIVEHASH -> handlers.cryptoAddLiveHashHandler()
+            case CRYPTO_ADD_LIVE_HASH -> handlers.cryptoAddLiveHashHandler()
                     .preHandle(transactionBody, payer);
-            case CRYPTODELETELIVEHASH -> handlers.cryptoDeleteLiveHashHandler()
+            case CRYPTO_DELETE_LIVE_HASH -> handlers.cryptoDeleteLiveHashHandler()
                     .preHandle(transactionBody, payer);
 
-            case FILECREATE -> handlers.fileCreateHandler().preHandle(transactionBody, payer);
-            case FILEUPDATE -> handlers.fileUpdateHandler().preHandle(transactionBody, payer);
-            case FILEDELETE -> handlers.fileDeleteHandler().preHandle(transactionBody, payer);
-            case FILEAPPEND -> handlers.fileAppendHandler().preHandle(transactionBody, payer);
+            case FILE_CREATE -> handlers.fileCreateHandler().preHandle(transactionBody, payer);
+            case FILE_UPDATE -> handlers.fileUpdateHandler().preHandle(transactionBody, payer);
+            case FILE_DELETE -> handlers.fileDeleteHandler().preHandle(transactionBody, payer);
+            case FILE_APPEND -> handlers.fileAppendHandler().preHandle(transactionBody, payer);
 
             case FREEZE -> handlers.freezeHandler().preHandle(transactionBody, payer);
 
-            case UNCHECKEDSUBMIT -> handlers.uncheckedSubmitHandler()
+            case UNCHECKED_SUBMIT -> handlers.uncheckedSubmitHandler()
                     .preHandle(transactionBody, payer);
 
-            case SCHEDULECREATE -> handlers.scheduleCreateHandler()
+            case SCHEDULE_CREATE -> handlers.scheduleCreateHandler()
                     .preHandle(
                             transactionBody,
                             payer,
                             storeCache.getAccountStore(state),
                             (innerTxn, innerPayer) ->
                                     dispatchPreHandle(state, innerTxn, innerPayer));
-            case SCHEDULESIGN -> handlers.scheduleSignHandler()
+            case SCHEDULE_SIGN -> handlers.scheduleSignHandler()
                     .preHandle(
                             transactionBody,
                             payer,
@@ -145,26 +145,26 @@ public class Dispatcher {
                             storeCache.getScheduleStore(state),
                             (innerTxn, innerPayer) ->
                                     dispatchPreHandle(state, innerTxn, innerPayer));
-            case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
+            case SCHEDULE_DELETE -> handlers.scheduleDeleteHandler()
                     .preHandle(transactionBody, payer);
 
-            case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
-            case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer);
-            case TOKENMINT -> handlers.tokenMintHandler().preHandle(transactionBody, payer);
-            case TOKENBURN -> handlers.tokenBurnHandler().preHandle(transactionBody, payer);
-            case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(transactionBody, payer);
-            case TOKENWIPE -> handlers.tokenAccountWipeHandler().preHandle(transactionBody, payer);
-            case TOKENFREEZE -> handlers.tokenFreezeAccountHandler()
+            case TOKEN_CREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
+            case TOKEN_UPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer);
+            case TOKEN_MINT -> handlers.tokenMintHandler().preHandle(transactionBody, payer);
+            case TOKEN_BURN -> handlers.tokenBurnHandler().preHandle(transactionBody, payer);
+            case TOKEN_DELETION -> handlers.tokenDeleteHandler().preHandle(transactionBody, payer);
+            case TOKEN_WIPE -> handlers.tokenAccountWipeHandler().preHandle(transactionBody, payer);
+            case TOKEN_FREEZE -> handlers.tokenFreezeAccountHandler()
                     .preHandle(transactionBody, payer);
-            case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
+            case TOKEN_UNFREEZE -> handlers.tokenUnfreezeAccountHandler()
                     .preHandle(transactionBody, payer);
-            case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
+            case TOKEN_GRANT_KYC -> handlers.tokenGrantKycToAccountHandler()
                     .preHandle(transactionBody, payer);
-            case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
+            case TOKEN_REVOKE_KYC -> handlers.tokenRevokeKycFromAccountHandler()
                     .preHandle(transactionBody, payer);
-            case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
+            case TOKEN_ASSOCIATE -> handlers.tokenAssociateToAccountHandler()
                     .preHandle(transactionBody, payer);
-            case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
+            case TOKEN_DISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
                     .preHandle(transactionBody, payer);
@@ -173,23 +173,23 @@ public class Dispatcher {
 
             case UTIL_PRNG -> handlers.utilPrngHandler().preHandle(transactionBody, payer);
 
-            case SYSTEMDELETE -> switch (transactionBody.getSystemDelete().getIdCase()) {
-                case CONTRACTID -> handlers.contractSystemDeleteHandler()
+            case SYSTEM_DELETE -> switch (transactionBody.systemDelete().get().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemDeleteHandler()
                         .preHandle(transactionBody, payer);
-                case FILEID -> handlers.fileSystemDeleteHandler().preHandle(transactionBody, payer);
-                case ID_NOT_SET -> throw new IllegalArgumentException(
+                case FILE_ID -> handlers.fileSystemDeleteHandler().preHandle(transactionBody, payer);
+                case UNSET -> throw new IllegalArgumentException(
                         "SystemDelete without IdCase");
             };
-            case SYSTEMUNDELETE -> switch (transactionBody.getSystemUndelete().getIdCase()) {
-                case CONTRACTID -> handlers.contractSystemUndeleteHandler()
+            case SYSTEM_UNDELETE -> switch (transactionBody.systemUndelete().get().id().kind()) {
+                case CONTRACT_ID -> handlers.contractSystemUndeleteHandler()
                         .preHandle(transactionBody, payer);
-                case FILEID -> handlers.fileSystemUndeleteHandler()
+                case FILE_ID -> handlers.fileSystemUndeleteHandler()
                         .preHandle(transactionBody, payer);
-                case ID_NOT_SET -> throw new IllegalArgumentException(
+                case UNSET -> throw new IllegalArgumentException(
                         "SystemUndelete without IdCase");
             };
 
-            case NODE_STAKE_UPDATE, DATA_NOT_SET -> throw new UnsupportedOperationException(
+            case NODE_STAKE_UPDATE, UNSET -> throw new UnsupportedOperationException(
                     "Not implemented");
         };
     }

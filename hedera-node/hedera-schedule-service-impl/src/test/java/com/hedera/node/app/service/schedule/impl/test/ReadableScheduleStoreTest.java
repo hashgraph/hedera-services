@@ -26,7 +26,7 @@ import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

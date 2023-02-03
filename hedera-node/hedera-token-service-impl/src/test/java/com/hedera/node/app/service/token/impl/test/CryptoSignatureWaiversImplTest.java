@@ -17,13 +17,12 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ class CryptoSignatureWaiversImplTest {
 
     @Test
     void notImplementedStuffIsntImplemented() {
-        final var account = IdUtils.asAccount("0.0.3000");
+        final var account = AccountID.newBuilder().accountNum(3000).build();
         final var txn = cryptoUpdateTransaction(account, account);
         assertThrows(
                 NotImplementedException.class, () -> subject.isNewKeySignatureWaived(txn, account));
@@ -54,14 +53,14 @@ class CryptoSignatureWaiversImplTest {
 
     private TransactionBody cryptoUpdateTransaction(
             final AccountID payerId, final AccountID accountToUpdate) {
-        final var transactionID = TransactionID.newBuilder().setAccountID(payerId);
+        final var transactionID = TransactionID.newBuilder().accountID(payerId);
         final var updateTxnBody =
                 CryptoUpdateTransactionBody.newBuilder()
-                        .setAccountIDToUpdate(accountToUpdate)
+                        .accountIDToUpdate(accountToUpdate)
                         .build();
         return TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setCryptoUpdateAccount(updateTxnBody)
+                .transactionID(transactionID)
+                .cryptoUpdateAccount(updateTxnBody)
                 .build();
     }
 }

@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
@@ -115,7 +115,7 @@ public class ReadableTokenStore {
      * @return merkleToken leaf for the given tokenId
      */
     private Optional<MerkleToken> getTokenLeaf(final TokenID id) {
-        final var token = tokenState.get(id.getTokenNum());
+        final var token = tokenState.get(id.tokenNum());
         return Optional.ofNullable(token);
     }
 }

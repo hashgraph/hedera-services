@@ -15,26 +15,25 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}.
+ * HederaFunctionality#CRYPTO_CREATE}.
  */
 public class CryptoCreateHandler implements TransactionHandler {
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoCreate}
+     * Pre-handles a {@link HederaFunctionality#CRYPTO_CREATE}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
@@ -49,9 +48,9 @@ public class CryptoCreateHandler implements TransactionHandler {
             @NonNull final TransactionBody tx,
             @NonNull final AccountID payer,
             @NonNull final ReadableAccountStore accountStore) {
-        final var op = tx.getCryptoCreateAccount();
-        final var key = asHederaKey(op.getKey());
-        final var receiverSigReq = op.getReceiverSigRequired();
+        final var op = tx.cryptoCreateAccount().orElseThrow();
+        final var key = accountStore.asHederaKey(op.key());
+        final var receiverSigReq = op.receiverSigRequired();
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer, accountStore);
     }
 

@@ -3,7 +3,7 @@ package com.hedera.node.app.spi.fixtures;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.hashgraph.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.Bytes;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;

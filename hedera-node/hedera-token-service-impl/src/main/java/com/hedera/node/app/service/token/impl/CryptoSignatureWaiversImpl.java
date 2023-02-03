@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 

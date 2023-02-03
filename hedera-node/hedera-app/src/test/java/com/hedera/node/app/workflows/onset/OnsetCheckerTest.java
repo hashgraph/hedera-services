@@ -43,13 +43,13 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.hapi.node.base.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

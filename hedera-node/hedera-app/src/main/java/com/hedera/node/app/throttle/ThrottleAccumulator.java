@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.throttle;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

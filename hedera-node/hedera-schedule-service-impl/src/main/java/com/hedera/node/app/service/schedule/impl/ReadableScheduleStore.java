@@ -19,9 +19,9 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.hapi.node.base.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;

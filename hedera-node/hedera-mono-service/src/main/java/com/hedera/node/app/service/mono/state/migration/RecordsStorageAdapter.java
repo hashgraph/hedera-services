@@ -31,7 +31,7 @@ import java.util.function.BiConsumer;
  * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction and
  * are kept in state for 180 consensus seconds. They are called "payer" records because of the
  * {@code getAccountRecords} HAPI query, whose contract is to return the latest records in in state
- * whose fees were paid by a given {@link com.hederahashgraph.api.proto.java.AccountID}.
+ * whose fees were paid by a given {@link com.hedera.hapi.node.base.AccountID}.
  *
  * <p>Without the {@code getAccountRecords} query, we could store all records in a single huge
  * {@link FCQueue} in state. But with the query, that would entail an auxiliary data structure; so

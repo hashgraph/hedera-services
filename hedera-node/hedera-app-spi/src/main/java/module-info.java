@@ -1,6 +1,6 @@
 module com.hedera.node.app.spi {
     requires transitive com.hedera.node.hapi;
-    requires com.hedera.hashgraph.pbj.runtime;
+    requires com.hedera.pbj.runtime;
     requires static transitive com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;

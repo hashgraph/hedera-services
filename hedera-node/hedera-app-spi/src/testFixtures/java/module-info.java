@@ -3,5 +3,6 @@ module hedera.services.hedera.node.hedera.app.spi.testFixtures {
 
     requires com.hedera.node.app.spi;
     requires com.hedera.node.hapi;
+    requires com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
 }

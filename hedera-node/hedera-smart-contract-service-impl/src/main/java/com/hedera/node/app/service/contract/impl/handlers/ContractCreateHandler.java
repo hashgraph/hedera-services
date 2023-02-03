@@ -15,20 +15,18 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#ContractCreate}.
+ * HederaFunctionality#CONTRACT_CREATE}.
  */
 public class ContractCreateHandler implements TransactionHandler {
 
@@ -52,16 +50,16 @@ public class ContractCreateHandler implements TransactionHandler {
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payer,
             @NonNull final AccountKeyLookup keyLookup) {
-        final var op = txBody.getContractCreateInstance();
+        final var op = txBody.contractCreateInstance().orElseThrow();
         final var meta =
                 new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
-        final var adminKey = asHederaKey(op.getAdminKey());
-        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
-            meta.addToReqNonPayerKeys(adminKey.get());
-        }
-        if (op.hasAutoRenewAccountId()) {
-            meta.addNonPayerKey(op.getAutoRenewAccountId());
-        }
+//        final var adminKey = asHederaKey(op.adminKey());
+//        if (adminKey.isPresent() && !((JKey) adminKey.get()).hasContractID()) {
+//            meta.addToReqNonPayerKeys(adminKey.get());
+//        }
+//        if (op.autoRenewAccountId()) {
+//            meta.addNonPayerKey(op.autoRenewAccountId());
+//        }
         return meta.build();
     }
 

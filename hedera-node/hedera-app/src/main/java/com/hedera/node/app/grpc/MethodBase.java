@@ -16,10 +16,6 @@
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
@@ -51,13 +47,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(
-                    () ->
-                            new SessionContext(
-                                    Query.parser(),
-                                    Transaction.parser(),
-                                    SignedTransaction.parser(),
-                                    TransactionBody.parser()));
+            ThreadLocal.withInitial(SessionContext::new);
 
     /**
      * Per-thread shared ByteBuffer for responses. We store these in a thread local, because we do

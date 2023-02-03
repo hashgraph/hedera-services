@@ -16,7 +16,6 @@
 package grpc;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -29,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 

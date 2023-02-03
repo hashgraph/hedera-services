@@ -17,7 +17,7 @@ package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -125,7 +125,7 @@ public final class StateUtils {
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
         final var ver =
-                "v" + version.getMajor() + "." + version.getMinor() + "." + version.getPatch();
+                "v" + version.major() + "." + version.minor() + "." + version.patch();
         return hashString(serviceName + ":" + stateKey + ":" + ver + ":" + extra);
     }
 

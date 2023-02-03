@@ -15,15 +15,16 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
- * com.hederahashgraph.api.proto.java.HederaFunctionality#EthereumTransaction}.
+ * HederaFunctionality#ETHEREUM_TRANSACTION}.
  */
 public class EtherumTransactionHandler implements TransactionHandler {
 

@@ -17,10 +17,10 @@ package com.hedera.node.app.workflows.onset;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

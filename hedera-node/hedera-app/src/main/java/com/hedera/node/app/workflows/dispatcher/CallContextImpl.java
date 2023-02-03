@@ -17,11 +17,11 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.CallContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Default implementation of {@link CallContext} */
