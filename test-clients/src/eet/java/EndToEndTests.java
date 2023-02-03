@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
-import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
-import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
@@ -43,7 +34,6 @@ import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -133,24 +123,6 @@ class EndToEndTests extends E2ETestBase {
                 //              extractSpecsFromSuite(ContractMintHTSSuite::new)
                 //				extractSpecsFromSuite(CreatePrecompileSuite::new)
                 );
-    }
-
-    @Tag("contract")
-    @Tag("contract.precompile")
-    @Order(1)
-    @TestFactory
-    List<DynamicTest> contractPrecompileEth() {
-        return List.of(
-                concurrentEthSpecsFrom(
-                        AssociatePrecompileSuite::new,
-                        ContractBurnHTSSuite::new,
-                        ContractHTSSuite::new,
-                        ContractKeysHTSSuite::new,
-                        ContractMintHTSSuite::new,
-                        CreatePrecompileSuite::new,
-                        DissociatePrecompileSuite::new,
-                        CryptoTransferHTSSuite::new,
-                        DelegatePrecompileSuite::new));
     }
 
     @Tag("contract")

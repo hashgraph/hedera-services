@@ -1310,34 +1310,32 @@ public class EthereumSuite extends HapiSuite {
                                 .via("autoAccount"))
                 .when(
                         withOpContext(
-                                (spec, ignore) -> {
-                                    allRunFor(
-                                            spec,
-                                            ethereumCallWithFunctionAbi(
-                                                            true,
-                                                            FUNGIBLE_TOKEN,
-                                                            getABIFor(
-                                                                    com.hedera.services.bdd.suites
-                                                                            .contract.Utils
-                                                                            .FunctionType.FUNCTION,
-                                                                    "transfer",
-                                                                    "ERC20ABI"),
-                                                            asHeadlongAddress(
-                                                                    asHexedSolidityAddress(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            ACCOUNT))),
-                                                            BigInteger.valueOf(tokenTransferAmount))
-                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-                                                    .nonce(0)
-                                                    .gasPrice(50L)
-                                                    .via(transferTxn)
-                                                    .gasLimit(1_000_000)
-                                                    .maxFeePerGas(0)
-                                                    .type(EthTransactionType.EIP1559)
-                                                    .maxGasAllowance(ONE_HBAR * 5)
-                                                    .payingWith(ACCOUNT));
-                                }))
+                                (spec, ignore) ->
+                                        allRunFor(
+                                                spec,
+                                                ethereumCallWithFunctionAbi(
+                                                                true,
+                                                                FUNGIBLE_TOKEN,
+                                                                getABIFor(
+                                                                        Utils.FunctionType.FUNCTION,
+                                                                        "transfer",
+                                                                        "ERC20ABI"),
+                                                                asHeadlongAddress(
+                                                                        asHexedSolidityAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                BigInteger.valueOf(
+                                                                        tokenTransferAmount))
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .nonce(0)
+                                                        .gasPrice(50L)
+                                                        .via(transferTxn)
+                                                        .gasLimit(1_000_000)
+                                                        .maxFeePerGas(0)
+                                                        .type(EthTransactionType.EIP1559)
+                                                        .maxGasAllowance(ONE_HBAR * 5)
+                                                        .payingWith(ACCOUNT))))
                 .then(
                         withOpContext(
                                 (spec, ignore) ->
@@ -1464,7 +1462,6 @@ public class EthereumSuite extends HapiSuite {
     }
 
     private HapiSpec transferErc20TokenSenderAccount() {
-        final String ERC_20_CONTRACT = "ERC20Contract";
         final var RECIPIENT = "recipient";
         final var TXN = "txn";
         return defaultHapiSpec("ERC_20_TRANSFER_SENDER_ACCOUNT")
@@ -1479,8 +1476,8 @@ public class EthereumSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
+                        uploadInitCode(ERC20_CONTRACT),
+                        contractCreate(ERC20_CONTRACT),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(
                                         moving(2, FUNGIBLE_TOKEN)
@@ -1492,7 +1489,7 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 ethereumCall(
-                                                                ERC_20_CONTRACT,
+                                                                ERC20_CONTRACT,
                                                                 "delegateTransfer",
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
