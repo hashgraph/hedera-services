@@ -46,7 +46,10 @@ public class TokenUnfreezeFactory extends SignedTxnFactory<TokenUnfreezeFactory>
 
     @Override
     protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = TokenUnfreezeAccountTransactionBody.newBuilder().setToken(id);
+        var op = TokenUnfreezeAccountTransactionBody.newBuilder();
+        if (id != null) {
+            op.setToken(id);
+        }
         txn.setTokenUnfreeze(op);
     }
 }
