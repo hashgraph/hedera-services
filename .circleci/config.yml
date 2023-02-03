@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS 
             cd /swirlds-platform/regression
-            git checkout 03143-illegalformat
+            git checkout 03154-statslistvalidator
 
             ./gradlew assemble --scan --parallel
 
