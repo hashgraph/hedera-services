@@ -252,6 +252,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void getsAccountIdAsExpected() {
         // setup:
         subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.getAddress(selfId.getId())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
@@ -387,6 +389,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
@@ -454,6 +457,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
@@ -480,6 +484,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -658,6 +663,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
@@ -706,6 +712,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
@@ -759,6 +766,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
         // and:
         subject.setMetadata(metadata);
         subject.setDeserializedStateVersion(10);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.copy()).willReturn(addressBook);
         given(networkContext.copy()).willReturn(networkContext);
@@ -787,10 +796,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertDoesNotThrow(
                 () -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
-        tracked((ServicesState) ref.get().getSwirldState())
+        given(mockPlatform.getAddressBook()).willReturn(addressBook);
+        ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
+        final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
+        tracked(swirldState)
                 .init(
                         mockPlatform,
-                        createPretendBookFrom(mockPlatform, false),
+                        pretendAddressBook,
                         new DualStateImpl(),
                         RESTART,
                         forHapiAndHedera("0.30.0", "0.30.5"));
@@ -800,11 +812,13 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
         final var servicesState = tracked(new ServicesState());
+        final var platform = createMockPlatformWithCrypto();
+        final var addressBook = createPretendBookFrom(platform, true);
+        given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
                 StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-        final var platform = createMockPlatformWithCrypto();
         final var app = createApp(platform);
 
         APPS.save(platform.getSelfId().getId(), app);
@@ -812,7 +826,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 () ->
                         servicesState.init(
                                 platform,
-                                createPretendBookFrom(platform, true),
+                                addressBook,
                                 new DualStateImpl(),
                                 InitTrigger.GENESIS,
                                 null));

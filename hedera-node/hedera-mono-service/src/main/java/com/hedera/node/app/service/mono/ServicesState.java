@@ -265,6 +265,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             SwirldDualState dualState,
             final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
+        this.platform = platform;
         final var selfId = platform.getSelfId().getId();
 
         final ServicesApp app;
@@ -358,6 +359,9 @@ public class ServicesState extends PartialNaryMerkleInternal
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        // first store a reference to the platform
+        this.platform = platform;
+
         if (trigger == GENESIS) {
             genesisInit(platform, addressBook, dualState);
         } else {
@@ -577,7 +581,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
         setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
         setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
-//        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        //        setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
         setChild(
                 StateChildIndices.CONTRACT_STORAGE,
                 virtualMapFactory.newVirtualizedIterableStorage());
@@ -666,6 +670,11 @@ public class ServicesState extends PartialNaryMerkleInternal
     @VisibleForTesting
     void setMetadata(final StateMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    @VisibleForTesting
+    void setPlatform(final Platform platform) {
+        this.platform = platform;
     }
 
     @VisibleForTesting
