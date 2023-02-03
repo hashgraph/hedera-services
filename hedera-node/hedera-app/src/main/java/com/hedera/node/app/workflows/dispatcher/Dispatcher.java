@@ -129,26 +129,29 @@ public class Dispatcher {
                             handlerContext,
                             setupScheduleStore(statesTracker),
                             setupPreHandleDispatcher(statesTracker));
-            case SCHEDULEDELETE -> handlers.scheduleDeleteHandler().preHandle(handlerContext);
+            case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
+                    .preHandle(handlerContext, setupScheduleStore(statesTracker));
 
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(handlerContext);
             case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(handlerContext);
-            case TOKENMINT -> handlers.tokenMintHandler().preHandle(handlerContext);
+            case TOKENMINT -> handlers.tokenMintHandler()
+                    .preHandle(handlerContext, setupTokenStore(statesTracker));
             case TOKENBURN -> handlers.tokenBurnHandler().preHandle(handlerContext);
             case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(handlerContext);
             case TOKENWIPE -> handlers.tokenAccountWipeHandler().preHandle(handlerContext);
             case TOKENFREEZE -> handlers.tokenFreezeAccountHandler().preHandle(handlerContext);
-            case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler().preHandle(handlerContext);
+            case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
+                    .preHandle(handlerContext, setupTokenStore(statesTracker));
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
                     .preHandle(handlerContext);
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(handlerContext);
+                    .preHandle(handlerContext, setupTokenStore(statesTracker));
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
                     .preHandle(handlerContext);
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(handlerContext);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(handlerContext);
+                    .preHandle(handlerContext, setupTokenStore(statesTracker));
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(handlerContext);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(handlerContext);
 

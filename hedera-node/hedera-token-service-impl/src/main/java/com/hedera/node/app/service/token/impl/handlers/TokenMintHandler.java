@@ -17,10 +17,10 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,22 +30,32 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class TokenMintHandler implements TransactionHandler {
 
     /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenMint}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
      * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
+     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
+            @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getTokenMint();
+
+        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+
+        if (tokenMeta.failed()) {
+            context.status(tokenMeta.failureReason());
+            return;
+        }
+
+        tokenMeta.metadata().supplyKey().ifPresent(context::addToReqNonPayerKeys);
     }
 
     /**

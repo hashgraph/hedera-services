@@ -529,7 +529,8 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.scheduleDeleteHandler()).preHandle(meta)),
+                                        verify(handlers.scheduleDeleteHandler())
+                                                .preHandle(eq(meta), any())),
 
                 // token
                 Arguments.of(
@@ -552,7 +553,8 @@ class DispatcherTest {
                                 .build(),
                         (BiConsumer<Handlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.tokenMintHandler()).preHandle(meta)),
+                                        verify(handlers.tokenMintHandler())
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
@@ -591,7 +593,7 @@ class DispatcherTest {
                         (BiConsumer<Handlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenUnfreezeAccountHandler())
-                                                .preHandle(meta)),
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
@@ -608,7 +610,7 @@ class DispatcherTest {
                         (BiConsumer<Handlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenRevokeKycFromAccountHandler())
-                                                .preHandle(meta)),
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenAssociate(
@@ -635,7 +637,7 @@ class DispatcherTest {
                         (BiConsumer<Handlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenFeeScheduleUpdateHandler())
-                                                .preHandle(meta)),
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenPause(TokenPauseTransactionBody.getDefaultInstance())

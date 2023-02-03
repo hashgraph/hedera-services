@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -41,11 +42,21 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      *
      * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
+     * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
+            @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getTokenRevokeKyc();
+        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+
+        if (!tokenMeta.failed()) {
+            tokenMeta.metadata().kycKey().ifPresent(context::addToReqNonPayerKeys);
+        } else {
+            context.status(tokenMeta.failureReason());
+        }
     }
 
     /**

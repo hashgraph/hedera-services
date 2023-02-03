@@ -67,30 +67,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CryptoTransferHandlerParityTest {
-    private AccountKeyLookup keyLookup;
-    private ReadableTokenStore readableTokenStore;
-
+class CryptoTransferHandlerParityTest extends ParityTestBase {
     private final CryptoTransferHandler subject = new CryptoTransferHandler();
-
-    @BeforeEach
-    void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
-        readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
-    }
 
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() {
@@ -496,13 +481,5 @@ class CryptoTransferHandlerParityTest {
         assertEquals(expectedFailure, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(aNonPayerKey));
-    }
-
-    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return scenario.platformTxn().getTxn();
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
     }
 }

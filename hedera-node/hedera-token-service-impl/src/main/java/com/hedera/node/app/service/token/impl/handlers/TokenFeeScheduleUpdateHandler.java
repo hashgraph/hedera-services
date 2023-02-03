@@ -15,8 +15,10 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -41,11 +43,32 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      *
      * @param context the {@link PrehandleHandlerContext} which collects all information that will
      *     be passed to {@link #handle(TransactionMetadata)}
+     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
+            @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getTokenFeeScheduleUpdate();
+        final var tokenId = op.getTokenId();
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (tokenMeta.failed()) {
+            context.status(tokenMeta.failureReason());
+        } else {
+            final var tokenMetadata = tokenMeta.metadata();
+            final var feeScheduleKey = tokenMetadata.feeScheduleKey();
+            if (feeScheduleKey.isPresent()) {
+                context.addToReqNonPayerKeys(feeScheduleKey.get());
+                for (final var customFee : op.getCustomFeesList()) {
+                    final var collector = customFee.getFeeCollectorAccountId();
+                    context.addNonPayerKeyIfReceiverSigRequired(
+                            collector, INVALID_CUSTOM_FEE_COLLECTOR);
+                }
+            }
+            // we do not set a failure status if a fee schedule key is not present for the token,
+            // we choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY in the handle() method
+        }
     }
 
     /**
