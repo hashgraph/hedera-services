@@ -146,28 +146,49 @@ public class TransactionDispatcher {
                             (innerTxn, innerPayer) ->
                                     dispatchPreHandle(state, innerTxn, innerPayer));
             case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(transactionBody, payer);
-
-            case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getScheduleStore(state));
+            case TOKENCREATION -> handlers.tokenCreateHandler()
+                    .preHandle(transactionBody, payer, storeCache.getAccountStore(state));
             case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(transactionBody, payer);
-            case TOKENMINT -> handlers.tokenMintHandler().preHandle(transactionBody, payer);
+            case TOKENMINT -> handlers.tokenMintHandler()
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case TOKENBURN -> handlers.tokenBurnHandler().preHandle(transactionBody, payer);
             case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(transactionBody, payer);
             case TOKENWIPE -> handlers.tokenAccountWipeHandler().preHandle(transactionBody, payer);
             case TOKENFREEZE -> handlers.tokenFreezeAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getTokenStore(state),
+                            storeCache.getAccountStore(state));
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getTokenStore(state),
+                            storeCache.getAccountStore(state));
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(transactionBody, payer);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(transactionBody, payer);
+                    .preHandle(
+                            transactionBody,
+                            payer,
+                            storeCache.getAccountStore(state),
+                            storeCache.getTokenStore(state));
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(transactionBody, payer);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(transactionBody, payer);
 

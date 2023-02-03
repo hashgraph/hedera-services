@@ -510,7 +510,9 @@ class TransactionDispatcherTest {
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.scheduleDeleteHandler())
+                                                .preHandle(any(), any(), any(), any())),
 
                 // token
                 Arguments.of(
@@ -518,7 +520,7 @@ class TransactionDispatcherTest {
                                 .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.tokenCreateHandler()).preHandle(any(), any())),
+                                h -> verify(h.tokenCreateHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
@@ -530,7 +532,9 @@ class TransactionDispatcherTest {
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<TransactionHandlers>)
-                                h -> verify(h.tokenMintHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.tokenMintHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
@@ -564,7 +568,7 @@ class TransactionDispatcherTest {
                         (Consumer<TransactionHandlers>)
                                 h ->
                                         verify(h.tokenUnfreezeAccountHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
@@ -581,7 +585,7 @@ class TransactionDispatcherTest {
                         (Consumer<TransactionHandlers>)
                                 h ->
                                         verify(h.tokenRevokeKycFromAccountHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenAssociate(
@@ -608,7 +612,7 @@ class TransactionDispatcherTest {
                         (Consumer<TransactionHandlers>)
                                 h ->
                                         verify(h.tokenFeeScheduleUpdateHandler())
-                                                .preHandle(any(), any())),
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenPause(TokenPauseTransactionBody.getDefaultInstance())
