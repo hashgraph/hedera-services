@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS 
             cd /swirlds-platform/regression
-            git checkout 03154-statslistvalidator
+            git checkout 03162-log4j-to-slf4j
 
             ./gradlew assemble --scan --parallel
 
