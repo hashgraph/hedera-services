@@ -524,12 +524,20 @@ public class HapiSpecSetup {
         return asAccount("0.0.800");
     }
 
+    public AccountID feeCollectorAccount() {
+        return asAccount("0.0.802");
+    }
+
     public String nodeRewardAccountName() {
         return "NODE_REWARD";
     }
 
     public String stakingRewardAccountName() {
         return "STAKING_REWARD";
+    }
+
+    public String feeCollectorAccountName() {
+        return "FEE_COLLECTOR";
     }
 
     public FileID throttleDefinitionsId() {

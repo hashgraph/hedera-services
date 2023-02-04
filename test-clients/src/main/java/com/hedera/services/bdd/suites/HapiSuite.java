@@ -106,6 +106,9 @@ public abstract class HapiSuite {
             HapiSpecSetup.getDefaultInstance().stakingRewardAccountName();
     public static final String NODE_REWARD =
             HapiSpecSetup.getDefaultInstance().nodeRewardAccountName();
+    public static final String FEE_COLLECTOR =
+            HapiSpecSetup.getDefaultInstance().feeCollectorAccountName();
+
     public static final String GENESIS = HapiSpecSetup.getDefaultInstance().genesisAccountName();
     public static final String DEFAULT_PAYER =
             HapiSpecSetup.getDefaultInstance().defaultPayerName();

@@ -76,6 +76,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private boolean advertiseCreation = false;
     private boolean asCallableContract = false;
     private Optional<TokenType> tokenType = Optional.empty();
+    private Optional<SubType> tokenSubType = Optional.empty();
     private Optional<TokenSupplyType> supplyType = Optional.empty();
     private OptionalInt decimals = OptionalInt.empty();
     private OptionalLong expiry = OptionalLong.empty();
@@ -136,6 +137,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
     public HapiTokenCreate tokenType(final TokenType tokenType) {
         this.tokenType = Optional.of(tokenType);
+        return this;
+    }
+
+    public HapiTokenCreate tokenSubType(final SubType tokenSubType) {
+        this.tokenSubType = Optional.of(tokenSubType);
         return this;
     }
 

@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.de
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -82,12 +83,12 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiSpec[] {
-                    //                    renewsUsingContractFundsIfNoAutoRenewAccount(),
-                    //                    renewalFeeDistributedToStakingAccounts(),
-                    //                    renewsUsingAutoRenewAccountIfSet(),
-                    //                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
-                    //                    storageExpiryWorksAtTheExpectedInterval(),
-                    verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging()
+                    renewsUsingContractFundsIfNoAutoRenewAccount(),
+                    renewalFeeDistributedToStakingAccounts(),
+                    renewsUsingAutoRenewAccountIfSet(),
+                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
+                    verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging(),
+                    storageExpiryWorksAtTheExpectedInterval()
                 });
     }
 
@@ -366,21 +367,30 @@ public class ContractAutoExpirySpecs extends HapiSuite {
         final var minimalLifetime = 4;
         final var aFungibleToken = "aFT";
         final var bFungibleToken = "bFT";
+        final var cFungibleTokenWithCustomFees = "cFT";
         final var nonFungibleToken = "NFT";
         final var supplyKey = "multi";
         final var aFungibleAmount = 1_000_000L;
         final var bFungibleAmount = 666L;
+        final var cFungibleAmount = 1230L;
+        final var initBalance = ONE_HBAR;
 
         return defaultHapiSpec("StorageExpiryWorksAtTheExpectedInterval")
                 .given(
                         newKeyNamed(supplyKey),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).balance(initBalance),
+                        cryptoCreate(FEE_COLLECTOR).balance(initBalance),
                         tokenCreate(aFungibleToken)
                                 .initialSupply(aFungibleAmount)
                                 .treasury(TOKEN_TREASURY),
                         tokenCreate(bFungibleToken)
                                 .initialSupply(bFungibleAmount)
                                 .treasury(TOKEN_TREASURY),
+                        tokenCreate(cFungibleTokenWithCustomFees)
+                                .initialSupply(cFungibleAmount)
+                                .tokenSubType(TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES)
+                                .treasury(TOKEN_TREASURY)
+                                .withCustom(fixedHbarFee(100L, FEE_COLLECTOR)),
                         tokenCreate(nonFungibleToken)
                                 .initialSupply(0)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
@@ -401,14 +411,21 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime),
                         tokenAssociate(
                                 contractToRemove,
-                                List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
+                                List.of(
+                                        aFungibleToken,
+                                        bFungibleToken,
+                                        cFungibleTokenWithCustomFees,
+                                        nonFungibleToken)),
                         cryptoTransfer(
                                 moving(aFungibleAmount, aFungibleToken)
                                         .between(TOKEN_TREASURY, contractToRemove),
                                 moving(bFungibleAmount, bFungibleToken)
                                         .between(TOKEN_TREASURY, contractToRemove),
+                                moving(cFungibleAmount, cFungibleTokenWithCustomFees)
+                                        .between(TOKEN_TREASURY, contractToRemove),
                                 movingUnique(nonFungibleToken, 1L, 2L)
                                         .between(TOKEN_TREASURY, contractToRemove)),
+                        // TODO: would like to add a check that the token move was successful
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
@@ -424,10 +441,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(bFungibleToken, bFungibleAmount)
+                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount)
                                 .hasTokenBalance(nonFungibleToken, 0),
+
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
-                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
+                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY),
+                        // And the account was not charged for the transfer
+                        getAccountBalance(FEE_COLLECTOR).hasTinyBars(ONE_HBAR),
+                        getAccountBalance(TOKEN_TREASURY).hasTinyBars(ONE_HBAR));
     }
 
     private HapiSpec verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging() {

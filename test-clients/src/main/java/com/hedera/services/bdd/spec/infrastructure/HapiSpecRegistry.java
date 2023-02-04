@@ -96,6 +96,7 @@ public class HapiSpecRegistry {
         saveContractId(setup.invalidContractName(), setup.invalidContract());
         saveAccountId(setup.stakingRewardAccountName(), setup.stakingRewardAccount());
         saveAccountId(setup.nodeRewardAccountName(), setup.nodeRewardAccount());
+        saveAccountId(setup.feeCollectorAccountName(), setup.feeCollectorAccount());
 
         saveAccountId(setup.strongControlName(), setup.strongControlAccount());
         saveKey(setup.strongControlName(), asKeyList(genesisKey));
