@@ -258,11 +258,13 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(MULTI_KEY)
-                                .withCustom(royaltyFeeWithFallback(1,
-                                        2,
-                                        fixedHtsFeeInheritingRoyaltyCollector(
-                                                1, "FEE_DENOM"),
-                                        collector)),
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, "FEE_DENOM"),
+                                                collector)),
                         mintToken(
                                 NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("Please mind the vase."))),
                         withOpContext(
@@ -281,35 +283,34 @@ public class CryptoTransferSuite extends HapiSuite {
                                 }))
                 .when(
                         cryptoTransfer(
-                                (spec, b) ->
-                                        b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .setToken(nftId.get())
-                                                                .addNftTransfers(
-                                                                        ocWith(
-                                                                                accountId(
-                                                                                        partyAlias
-                                                                                                .get()),
-                                                                                accountId(
-                                                                                        counterAlias
-                                                                                                .get()),
-                                                                                1L)))
-                                                .setTransfers(
-                                                        TransferList.newBuilder()
-                                                                .addAccountAmounts(
-                                                                        aaWith(
-                                                                                partyId.get(),
-                                                                                +2))
-                                                                .addAccountAmounts(
-                                                                        aaWith(
-                                                                                otherAccountId.get(),
-                                                                                -2))))
+                                        (spec, b) ->
+                                                b.addTokenTransfers(
+                                                                TokenTransferList.newBuilder()
+                                                                        .setToken(nftId.get())
+                                                                        .addNftTransfers(
+                                                                                ocWith(
+                                                                                        accountId(
+                                                                                                partyAlias
+                                                                                                        .get()),
+                                                                                        accountId(
+                                                                                                counterAlias
+                                                                                                        .get()),
+                                                                                        1L)))
+                                                        .setTransfers(
+                                                                TransferList.newBuilder()
+                                                                        .addAccountAmounts(
+                                                                                aaWith(
+                                                                                        partyId
+                                                                                                .get(),
+                                                                                        +2))
+                                                                        .addAccountAmounts(
+                                                                                aaWith(
+                                                                                        otherAccountId
+                                                                                                .get(),
+                                                                                        -2))))
                                 .signedBy(DEFAULT_PAYER, PARTY, "otheraccount")
-                                .via(NFT_XFER)
-                )
-                .then(
-                        getTxnRecord(NFT_XFER).logged()
-                );
+                                .via(NFT_XFER))
+                .then(getTxnRecord(NFT_XFER).logged());
     }
 
     private HapiSpec aliasKeysAreValidated() {

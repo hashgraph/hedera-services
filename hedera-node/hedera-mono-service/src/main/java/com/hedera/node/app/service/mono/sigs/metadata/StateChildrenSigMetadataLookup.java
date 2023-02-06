@@ -16,20 +16,9 @@
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_FILE;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
-import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
-import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.*;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.*;
+import static com.hedera.node.app.service.mono.utils.EntityNum.*;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.FileNumbers;
@@ -45,14 +34,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
@@ -161,6 +144,14 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     }
 
     @Override
+    public EntityNum unaliasedAccount(AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
+        if (isAlias(idOrAlias)) {
+            return unaliased(idOrAlias, aliasManager);
+        }
+        return fromAccountId(idOrAlias);
+    }
+
+    @Override
     public SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
             final ScheduleID id, final @Nullable LinkedRefs linkedRefs) {
         if (linkedRefs != null) {
@@ -190,8 +181,8 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             final ContractID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
         final var id =
                 (linkedRefs == null)
-                        ? EntityIdUtils.unaliased(idOrAlias, aliasManager)
-                        : EntityIdUtils.unaliased(idOrAlias, aliasManager, linkedRefs::link);
+                        ? unaliased(idOrAlias, aliasManager)
+                        : unaliased(idOrAlias, aliasManager, linkedRefs::link);
         return (id == MISSING_NUM)
                 ? SafeLookupResult.failure(INVALID_CONTRACT)
                 : lookupContractByNumber(id, linkedRefs);

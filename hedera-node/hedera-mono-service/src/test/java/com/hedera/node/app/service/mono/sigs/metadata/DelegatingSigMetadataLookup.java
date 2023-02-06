@@ -163,4 +163,9 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
     public Instant sourceSignedAt() {
         return PRETEND_SIGNING_TIME;
     }
+
+    @Override
+    public EntityNum unaliasedAccount(AccountID idOrAlias, @Nullable LinkedRefs linkedRefs) {
+        return accountSigMetaLookup.unaliasedAccount(idOrAlias);
+    }
 }

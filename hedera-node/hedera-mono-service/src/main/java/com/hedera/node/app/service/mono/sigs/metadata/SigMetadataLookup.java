@@ -16,12 +16,8 @@
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TopicID;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
@@ -52,4 +48,6 @@ public interface SigMetadataLookup {
             AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
 
     Instant sourceSignedAt();
+
+    EntityNum unaliasedAccount(AccountID idOrAlias, @Nullable LinkedRefs linkedRefs);
 }

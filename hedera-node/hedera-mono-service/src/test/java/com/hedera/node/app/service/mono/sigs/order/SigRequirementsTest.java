@@ -385,6 +385,11 @@ public class SigRequirementsTest {
                         AccountID idOrAlias) {
                     return fn.apply(idOrAlias);
                 }
+
+                @Override
+                public EntityNum unaliasedAccount(AccountID idOrAlias) {
+                    throw new UnsupportedOperationException();
+                }
             };
         }
     }
