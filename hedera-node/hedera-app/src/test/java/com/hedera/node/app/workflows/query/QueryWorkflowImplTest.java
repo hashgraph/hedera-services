@@ -550,7 +550,7 @@ class QueryWorkflowImplTest {
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(NOT_SUPPORTED))
                 .when(checker)
-                .checkPermissions(FileGetInfo, payer);
+                .checkPermissions(payer, FileGetInfo);
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when

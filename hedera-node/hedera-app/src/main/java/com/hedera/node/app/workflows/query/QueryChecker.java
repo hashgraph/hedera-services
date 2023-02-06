@@ -16,11 +16,12 @@
 package com.hedera.node.app.workflows.query;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -42,7 +43,7 @@ public class QueryChecker {
     private final WorkflowOnset onset;
     private final HederaAccountNumbers accountNumbers;
     private final QueryFeeCheck queryFeeCheck;
-    private final HapiOpPermissions hapiOpPermissions;
+    private final Authorizer authorizer;
     private final CryptoTransferHandler cryptoTransferHandler;
 
     /**
@@ -52,7 +53,7 @@ public class QueryChecker {
      * @param accountNumbers the {@link HederaAccountNumbers} that contains a list of special
      *     accounts
      * @param queryFeeCheck the {@link QueryFeeCheck} that checks if fees can be paid
-     * @param hapiOpPermissions the {@link HapiOpPermissions} that checks permissions for a query
+     * @param authorizer the {@link Authorizer} that checks, if the caller is authorized
      * @param cryptoTransferHandler the {@link CryptoTransferHandler} that validates a contained
      *     {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -61,12 +62,12 @@ public class QueryChecker {
             @NonNull final WorkflowOnset onset,
             @NonNull final HederaAccountNumbers accountNumbers,
             @NonNull final QueryFeeCheck queryFeeCheck,
-            @NonNull final HapiOpPermissions hapiOpPermissions,
+            @NonNull final Authorizer authorizer,
             @NonNull final CryptoTransferHandler cryptoTransferHandler) {
         this.onset = requireNonNull(onset);
         this.accountNumbers = requireNonNull(accountNumbers);
         this.queryFeeCheck = requireNonNull(queryFeeCheck);
-        this.hapiOpPermissions = requireNonNull(hapiOpPermissions);
+        this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
     }
 
@@ -133,17 +134,19 @@ public class QueryChecker {
     /**
      * Checks the permission required for a query
      *
-     * @param functionality the {@link HederaFunctionality} of the query
      * @param payer the {@link AccountID} of the payer and whose permissions are checked
+     * @param functionality the {@link HederaFunctionality} of the query
      * @throws PreCheckException if permissions are not sufficient
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void checkPermissions(
-            @NonNull final HederaFunctionality functionality, @NonNull final AccountID payer)
+            @NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
             throws PreCheckException {
-        final var permissionStatus = hapiOpPermissions.permissibilityOf(functionality, payer);
-        if (permissionStatus != OK) {
-            throw new PreCheckException(permissionStatus);
+        requireNonNull(payer);
+        requireNonNull(functionality);
+
+        if (!authorizer.isAuthorized(payer, functionality)) {
+            throw new PreCheckException(NOT_SUPPORTED);
         }
     }
 }

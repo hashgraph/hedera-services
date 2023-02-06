@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.authorization.Authorizer;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -65,7 +65,7 @@ class QueryCheckerTest {
     @Mock(strictness = LENIENT)
     private QueryFeeCheck queryFeeCheck;
 
-    @Mock private HapiOpPermissions hapiOpPermissions;
+    @Mock private Authorizer authorizer;
     @Mock private CryptoTransferHandler cryptoTransferHandler;
 
     @Mock private Parser<Query> queryParser;
@@ -83,11 +83,7 @@ class QueryCheckerTest {
 
         checker =
                 new QueryChecker(
-                        onset,
-                        accountNumbers,
-                        queryFeeCheck,
-                        hapiOpPermissions,
-                        cryptoTransferHandler);
+                        onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -99,7 +95,7 @@ class QueryCheckerTest {
                                         null,
                                         accountNumbers,
                                         queryFeeCheck,
-                                        hapiOpPermissions,
+                                        authorizer,
                                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
@@ -108,7 +104,7 @@ class QueryCheckerTest {
                                         onset,
                                         null,
                                         queryFeeCheck,
-                                        hapiOpPermissions,
+                                        authorizer,
                                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
@@ -117,7 +113,7 @@ class QueryCheckerTest {
                                         onset,
                                         accountNumbers,
                                         null,
-                                        hapiOpPermissions,
+                                        authorizer,
                                         cryptoTransferHandler))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
@@ -132,11 +128,7 @@ class QueryCheckerTest {
         assertThatThrownBy(
                         () ->
                                 new QueryChecker(
-                                        onset,
-                                        accountNumbers,
-                                        queryFeeCheck,
-                                        hapiOpPermissions,
-                                        null))
+                                        onset, accountNumbers, queryFeeCheck, authorizer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -183,11 +175,7 @@ class QueryCheckerTest {
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
         final var checker =
                 new QueryChecker(
-                        onset,
-                        accountNumbers,
-                        queryFeeCheck,
-                        hapiOpPermissions,
-                        cryptoTransferHandler);
+                        onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -211,11 +199,7 @@ class QueryCheckerTest {
         when(onset.doParseAndCheck(ctx, transaction)).thenReturn(onsetResult);
         final var checker =
                 new QueryChecker(
-                        onset,
-                        accountNumbers,
-                        queryFeeCheck,
-                        hapiOpPermissions,
-                        cryptoTransferHandler);
+                        onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -242,11 +226,7 @@ class QueryCheckerTest {
                 .validate(txBody);
         final var checker =
                 new QueryChecker(
-                        onset,
-                        accountNumbers,
-                        queryFeeCheck,
-                        hapiOpPermissions,
-                        cryptoTransferHandler);
+                        onset, accountNumbers, queryFeeCheck, authorizer, cryptoTransferHandler);
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(ctx, transaction))
@@ -373,9 +353,9 @@ class QueryCheckerTest {
         final var payer = AccountID.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> checker.checkPermissions(null, payer))
+        assertThatThrownBy(() -> checker.checkPermissions(null, GetAccountDetails))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> checker.checkPermissions(GetAccountDetails, null))
+        assertThatThrownBy(() -> checker.checkPermissions(payer, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -383,21 +363,20 @@ class QueryCheckerTest {
     void testCheckPermissionSucceeds() {
         // given
         final var payer = AccountID.newBuilder().build();
-        when(hapiOpPermissions.permissibilityOf(GetAccountDetails, payer)).thenReturn(OK);
+        when(authorizer.isAuthorized(payer, GetAccountDetails)).thenReturn(true);
 
         // then
-        assertDoesNotThrow(() -> checker.checkPermissions(GetAccountDetails, payer));
+        assertDoesNotThrow(() -> checker.checkPermissions(payer, GetAccountDetails));
     }
 
     @Test
     void testCheckPermissionFails() {
         // given
         final var payer = AccountID.newBuilder().build();
-        when(hapiOpPermissions.permissibilityOf(GetAccountDetails, payer))
-                .thenReturn(NOT_SUPPORTED);
+        when(authorizer.isAuthorized(payer, GetAccountDetails)).thenReturn(false);
 
         // then
-        assertThatThrownBy(() -> checker.checkPermissions(GetAccountDetails, payer))
+        assertThatThrownBy(() -> checker.checkPermissions(payer, GetAccountDetails))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
     }

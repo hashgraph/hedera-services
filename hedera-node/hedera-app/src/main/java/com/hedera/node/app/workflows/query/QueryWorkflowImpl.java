@@ -173,7 +173,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var payer = txBody.getTransactionID().getAccountID();
 
                 // 3.ii Check permissions
-                checker.checkPermissions(functionality, payer);
+                checker.checkPermissions(payer, functionality);
 
                 // 3.iii Calculate costs
                 // TODO: Integrate fee-engine (calculate fee) (#4207)
