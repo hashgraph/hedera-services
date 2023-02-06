@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
 import com.hedera.test.utils.TestFixturesKeyLookup;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import org.mockito.Mockito;
 
@@ -79,5 +80,13 @@ public class AdapterUtils {
                                 FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
+    }
+
+    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
+        try {
+            return scenario.platformTxn().getTxn();
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }
