@@ -119,17 +119,17 @@ public class FileUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String CREATE_TXN = "create";
-    private static final String INSERT_ABI = "insert";
+    public static final String INSERT_ABI = "insert";
     private static final String INDIRECT_GET_ABI = "getIndirect";
     private static final String CHAIN_ID_GET_ABI = "getChainID";
     private static final String INVALID_ENTITY_ID = "1.2.3";
 
-    private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
+    public static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
     private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
     private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
-    private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
+    public static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
     private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     private static final long DEFAULT_CHAIN_ID =
@@ -145,8 +145,8 @@ public class FileUpdateSuite extends HapiSuite {
     private static final String DEFAULT_MAX_CONS_GAS =
             HapiSpecSetup.getDefaultNodeProps().get(CONS_MAX_GAS_PROP);
 
-    private static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
-    private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
+    public static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
+    public static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
     public static final String CIVILIAN = "civilian";
     public static final String TEST_TOPIC = "testTopic";
     public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE =
