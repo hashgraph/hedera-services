@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.INSERT_ABI;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -89,8 +90,107 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
                     storageExpiryWorksAtTheExpectedInterval(),
                     autoRenewWorksAsExpected(),
-                    autoRenewInGracePeriodIfEnoughBalance()
+                    autoRenewInGracePeriodIfEnoughBalance(),
+                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete()
                 });
+    }
+
+    private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
+        final var contract = "User";
+        final var contract2 = "User";
+        final var gasToOffer = 1_000_000;
+        final var minimalLifetime = 4;
+        final var initBalance = 100 * ONE_HBAR;
+        final var autoRenewAccount = "autoRenewAccount";
+        final var canonicalUsdFee = 0.026;
+
+        final var renewalFeeWithoutStorage = new AtomicLong();
+        final var renewalFeeWithStorage = new AtomicLong();
+
+        return defaultHapiSpec("storageRentChargedOnlyAfterInitialFreePeriodIsComplete")
+                .given(
+                        enableContractAutoRenewWith(minimalLifetime, 0),
+                        uploadInitCode(contract),
+                        cryptoCreate(autoRenewAccount).balance(initBalance),
+                        /* This contract has 0 key/value mappings at creation */
+                        contractCreate(contract)
+                                .autoRenewSecs(minimalLifetime)
+                                .autoRenewAccountId(autoRenewAccount),
+
+                        /* Now we update the per-contract limit to 10 mappings */
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(ADDRESS_BOOK_CONTROL)
+                                .overridingProps(
+                                        Map.of(
+                                                INDIVIDUAL_KV_LIMIT_PROP,
+                                                "10",
+                                                CONS_MAX_GAS_PROP,
+                                                "100_000_000",
+                                                STORAGE_PRICE_TIERS_PROP,
+                                                "0til20",
+                                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                                                "0",
+                                                STAKING_FEES_STAKING_REWARD_PERCENTAGE,
+                                                "0",
+                                                "contracts.freeStorageTierLimit",
+                                                "10")))
+                .when(
+                        /* The first call to insert adds 5 mappings */
+                        contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
+                        /* Each subsequent call to adds 3 mappings; so 8 total after this */
+                        contractCall(contract, INSERT_ABI, BigInteger.TWO, BigInteger.valueOf(4))
+                                .payingWith(GENESIS)
+                                .gas(gasToOffer),
+
+                        /* Confirm the storage size didn't change */
+                        getContractInfo(contract).has(contractWith().numKvPairs(8)).logged(),
+                        getAccountBalance(autoRenewAccount).hasTinyBars(initBalance).logged(),
+                        sleepFor(minimalLifetime * 1_000L + 500L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(2_000L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
+                                    allRunFor(spec, lookup);
+                                    renewalFeeWithoutStorage.set(
+                                            initBalance
+                                                    - lookup.getResponse()
+                                                            .getCryptogetAccountBalance()
+                                                            .getBalance());
+                                    opLog.info(
+                                            "Renewal fee without storage: {}",
+                                            renewalFeeWithoutStorage.get());
+                                }))
+                .then(
+                        fileUpdate(APP_PROPERTIES)
+                                .payingWith(ADDRESS_BOOK_CONTROL)
+                                .overridingProps(Map.of(STORAGE_PRICE_TIERS_PROP, "100til20")),
+                        sleepFor(minimalLifetime * 1_000L + 500L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(2_000L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
+                                    allRunFor(spec, lookup);
+                                    renewalFeeWithStorage.set(
+                                            initBalance
+                                                    - lookup.getResponse()
+                                                            .getCryptogetAccountBalance()
+                                                            .getBalance()
+                                                    - renewalFeeWithoutStorage.get());
+                                    opLog.info(
+                                            "Renewal fee with storage: {}",
+                                            renewalFeeWithStorage.get());
+                                    assertTrue(
+                                            renewalFeeWithStorage.get()
+                                                    > renewalFeeWithoutStorage.get());
+                                }));
     }
 
     private HapiSpec autoRenewWorksAsExpected() {
