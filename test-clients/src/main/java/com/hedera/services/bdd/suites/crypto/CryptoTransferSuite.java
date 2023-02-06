@@ -239,6 +239,7 @@ public class CryptoTransferSuite extends HapiSuite {
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<AccountID> counterId = new AtomicReference<>();
+        final AtomicReference<AccountID> otherAccountId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final var collector = "collector";
@@ -249,6 +250,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         cryptoCreate(collector),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         cryptoCreate(COUNTERPARTY).maxAutomaticTokenAssociations(2),
+                        cryptoCreate("otheraccount").maxAutomaticTokenAssociations(2),
                         tokenCreate(FUNGIBLE_TOKEN).treasury(PARTY).initialSupply(1_000_000),
                         tokenCreate("FEE_DENOM").treasury(collector),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -275,6 +277,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                     counterAlias.set(
                                             ByteString.copyFrom(
                                                     asSolidityAddress(counterId.get())));
+                                    otherAccountId.set(registry.getAccountID("otheraccount"));
                                 }))
                 .when(
                         cryptoTransfer(
@@ -295,13 +298,13 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         TransferList.newBuilder()
                                                                 .addAccountAmounts(
                                                                         aaWith(
-                                                                                partyAlias.get(),
-                                                                                -2))
+                                                                                partyId.get(),
+                                                                                +2))
                                                                 .addAccountAmounts(
                                                                         aaWith(
-                                                                                counterId.get(),
-                                                                                +2))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
+                                                                                otherAccountId.get(),
+                                                                                -2))))
+                                .signedBy(DEFAULT_PAYER, PARTY, "otheraccount")
                                 .via(NFT_XFER)
                 )
                 .then(
