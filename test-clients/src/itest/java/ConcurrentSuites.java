@@ -131,7 +131,6 @@ public class ConcurrentSuites {
                     CryptoUpdateSuite::new,
                     SelfDestructSuite::new,
                     // contract.hapi
-                    LogsSuite::new,
                     ContractCallLocalSuite::new,
                     ContractCallSuite::new,
                     ContractCreateSuite::new,
@@ -183,6 +182,7 @@ public class ConcurrentSuites {
                     TokenUpdatePrecompileSuite::new,
                     WipeTokenAccountPrecompileSuite::new,
                     // contract.records
+                    LogsSuite::new,
                     RecordsSuite::new,
                     // contract.ethereum
                     EthereumSuite::new,
@@ -225,6 +225,35 @@ public class ConcurrentSuites {
                     TokenInfoHTSSuite::new,
                     TokenUpdatePrecompileSuite::new,
                     WipeTokenAccountPrecompileSuite::new,
+                    // contract opcodes
+                    BalanceOperationSuite::new,
+                    CallCodeOperationSuite::new,
+                    CallOperationSuite::new,
+                    CreateOperationSuite::new,
+                    DelegateCallOperationSuite::new,
+                    ExtCodeCopyOperationSuite::new,
+                    ExtCodeHashOperationSuite::new,
+                    ExtCodeSizeOperationSuite::new,
+                    GlobalPropertiesSuite::new,
+                    SelfDestructSuite::new,
+                    SStoreSuite::new,
+                    StaticCallOperationSuite::new,
+                    // contract.hapi
+                    ContractCallLocalSuite::new,
+                    ContractCallSuite::new,
+                    ContractCreateSuite::new,
+                    ContractDeleteSuite::new,
+                    ContractGetBytecodeSuite::new,
+                    ContractGetInfoSuite::new,
+                    ContractMusicalChairsSuite::new,
+                    ContractUpdateSuite::new,
+                    // contracts.openZeppelin
+                    ERC20ContractInteractions::new,
+                    ERC721ContractInteractions::new,
+                    ERC1155ContractInteractions::new,
+                    //  contract.records
+                    RecordsSuite::new,
+                    LogsSuite::new,
                 };
     }
 }
