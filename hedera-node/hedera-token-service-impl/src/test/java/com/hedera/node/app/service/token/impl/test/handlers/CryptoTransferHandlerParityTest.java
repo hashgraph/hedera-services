@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -82,7 +81,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
@@ -95,7 +94,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -112,7 +111,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -126,7 +125,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
@@ -138,7 +137,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
@@ -151,7 +150,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -166,7 +165,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -181,7 +180,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
@@ -196,7 +195,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -211,7 +210,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -226,7 +225,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         // THEN
@@ -243,7 +242,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -258,7 +257,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
     }
@@ -270,7 +269,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
@@ -283,7 +282,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
@@ -296,7 +295,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
@@ -308,7 +307,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -323,7 +322,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -339,7 +338,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -354,7 +353,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -372,7 +371,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
@@ -384,7 +383,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -399,7 +398,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -414,7 +413,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -432,7 +431,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -449,7 +448,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         System.out.println(sanityRestored(meta.requiredNonPayerKeys()));
@@ -470,7 +469,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
@@ -485,7 +484,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -502,7 +501,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -518,7 +517,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_TOKEN_ID);
     }
@@ -530,7 +529,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
@@ -542,7 +541,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
@@ -554,7 +553,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
@@ -568,7 +567,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(meta.requiredNonPayerKeys().isEmpty());
@@ -581,7 +580,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
 
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());

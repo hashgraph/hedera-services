@@ -43,7 +43,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
 
         assertFalse(meta.failed());
@@ -61,7 +61,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
 
         assertTrue(meta.failed());
@@ -78,7 +78,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
                 subject.preHandle(
                         theTxn,
                         theTxn.getTransactionID().getAccountID(),
-                        keyLookup,
+                        readableAccountStore,
                         readableTokenStore);
 
         assertFalse(meta.failed());

@@ -20,6 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -48,7 +49,7 @@ public class CryptoTransferHandler implements TransactionHandler {
      *
      * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
+     * @param accountStore the {@link AccountKeyLookup} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
@@ -57,21 +58,22 @@ public class CryptoTransferHandler implements TransactionHandler {
     public TransactionMetadata preHandle(
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore) {
         final var op = Objects.requireNonNull(txn).getCryptoTransfer();
         final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         for (final var transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
             if (!tokenMeta.failed()) {
-                handleTokenTransfers(transfers.getTransfersList(), meta, keyLookup);
-                handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op, keyLookup);
+                handleTokenTransfers(transfers.getTransfersList(), meta, accountStore);
+                handleNftTransfers(
+                        transfers.getNftTransfersList(), meta, tokenMeta, op, accountStore);
             } else {
                 meta.status(tokenMeta.failureReason());
             }
         }
-        handleHbarTransfers(op, meta, keyLookup);
+        handleHbarTransfers(op, meta, accountStore);
         return meta.build();
     }
 
@@ -91,9 +93,9 @@ public class CryptoTransferHandler implements TransactionHandler {
     private void handleTokenTransfers(
             final List<AccountAmount> transfers,
             final SigTransactionMetadataBuilder meta,
-            final AccountKeyLookup keyLookup) {
+            final ReadableAccountStore accountStore) {
         for (AccountAmount accountAmount : transfers) {
-            final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());
+            final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
             if (!keyOrFailure.failed()) {
                 final var isUnapprovedDebit =
                         accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
@@ -121,9 +123,9 @@ public class CryptoTransferHandler implements TransactionHandler {
             final SigTransactionMetadataBuilder meta,
             final ReadableTokenStore.TokenMetaOrLookupFailureReason tokenMeta,
             final CryptoTransferTransactionBody op,
-            final AccountKeyLookup keyLookup) {
+            final ReadableAccountStore accountStore) {
         for (final var nftTransfer : nftTransfersList) {
-            final var senderKeyOrFailure = keyLookup.getKey(nftTransfer.getSenderAccountID());
+            final var senderKeyOrFailure = accountStore.getKey(nftTransfer.getSenderAccountID());
             if (!senderKeyOrFailure.failed()) {
                 if (!nftTransfer.getIsApproval()) {
                     meta.addNonPayerKey(nftTransfer.getSenderAccountID());
@@ -133,14 +135,15 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
 
             final var receiverKeyOrFailure =
-                    keyLookup.getKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID());
+                    accountStore.getKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID());
             if (!receiverKeyOrFailure.failed()) {
                 if (!receiverKeyOrFailure.equals(
                         KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED)) {
                     meta.addNonPayerKeyIfReceiverSigRequired(
                             nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                 } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
-                        && !receivesFungibleValue(nftTransfer.getSenderAccountID(), op)) {
+                        && !receivesFungibleValue(
+                                nftTransfer.getSenderAccountID(), op, accountStore)) {
                     // Fallback situation; but we still need to check if the treasury is
                     // the sender or receiver, since in neither case will the fallback
                     // fee actually be charged
@@ -193,15 +196,27 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     private boolean receivesFungibleValue(
-            final AccountID target, final CryptoTransferTransactionBody op) {
+            final AccountID target,
+            final CryptoTransferTransactionBody op,
+            final ReadableAccountStore accountStore) {
         for (var adjust : op.getTransfers().getAccountAmountsList()) {
-            if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+            final var unaliasedAccount = accountStore.getAccount(adjust.getAccountID());
+            final var unaliasedTarget = accountStore.getAccount(target);
+            if (unaliasedAccount.isPresent()
+                    && unaliasedTarget.isPresent()
+                    && adjust.getAmount() > 0
+                    && unaliasedAccount.equals(unaliasedTarget)) {
                 return true;
             }
         }
         for (var transfers : op.getTokenTransfersList()) {
             for (var adjust : transfers.getTransfersList()) {
-                if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+                final var unaliasedAccount = accountStore.getAccount(adjust.getAccountID());
+                final var unaliasedTarget = accountStore.getAccount(target);
+                if (unaliasedAccount.isPresent()
+                        && unaliasedTarget.isPresent()
+                        && adjust.getAmount() > 0
+                        && unaliasedAccount.equals(unaliasedTarget)) {
                     return true;
                 }
             }

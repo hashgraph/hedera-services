@@ -15,20 +15,20 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 
 public class ParityTestBase {
-    protected AccountKeyLookup keyLookup;
+    protected ReadableAccountStore readableAccountStore;
     protected ReadableTokenStore readableTokenStore;
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        readableAccountStore = AdapterUtils.wellKnownAccountStoreAt();
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
     }
 

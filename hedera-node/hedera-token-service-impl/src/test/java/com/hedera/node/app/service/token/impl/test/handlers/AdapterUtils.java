@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -51,6 +52,14 @@ public class AdapterUtils {
      */
     public static AccountKeyLookup wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(
+                mockStates(
+                        Map.of(
+                                ALIASES_KEY, wellKnownAliasState(),
+                                ACCOUNTS_KEY, wellKnownAccountsState())));
+    }
+
+    public static ReadableAccountStore wellKnownAccountStoreAt() {
+        return new ReadableAccountStore(
                 mockStates(
                         Map.of(
                                 ALIASES_KEY, wellKnownAliasState(),

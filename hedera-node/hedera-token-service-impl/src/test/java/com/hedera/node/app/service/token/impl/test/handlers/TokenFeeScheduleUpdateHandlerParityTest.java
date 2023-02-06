@@ -51,7 +51,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertTrue(meta.failed());
         assertEquals(INVALID_TOKEN_ID, meta.status());
@@ -64,7 +67,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         // may look odd, but is intentional --- we fail in the handle(), not in preHandle()
         assertFalse(meta.failed());
@@ -78,7 +84,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
@@ -94,7 +103,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
@@ -111,7 +123,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
@@ -128,7 +143,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
                 txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
@@ -146,7 +164,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
                         UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertFalse(meta.failed());
         assertEquals(OK, meta.status());
@@ -162,7 +183,10 @@ class TokenFeeScheduleUpdateHandlerParityTest extends ParityTestBase {
         final var txn = txnFrom(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
         final var meta =
                 subject.preHandle(
-                        txn, txn.getTransactionID().getAccountID(), keyLookup, readableTokenStore);
+                        txn,
+                        txn.getTransactionID().getAccountID(),
+                        readableAccountStore,
+                        readableTokenStore);
 
         assertTrue(meta.failed());
         assertEquals(INVALID_CUSTOM_FEE_COLLECTOR, meta.status());
