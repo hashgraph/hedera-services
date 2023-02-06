@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.sigs.metadata.lookups;
 
 import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 /**
@@ -27,4 +28,6 @@ public interface AccountSigMetaLookup {
     SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id);
 
     SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
+
+    EntityNum unaliasedAccount(AccountID idOrAlias);
 }

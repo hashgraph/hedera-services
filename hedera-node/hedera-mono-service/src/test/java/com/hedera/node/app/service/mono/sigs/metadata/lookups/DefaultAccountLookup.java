@@ -56,6 +56,15 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
         }
     }
 
+    @Override
+    public EntityNum unaliasedAccount(AccountID idOrAlias) {
+        if (isAlias(idOrAlias)) {
+            return aliasManager.lookupIdBy(idOrAlias.getAlias());
+        } else {
+            return fromAccountId(idOrAlias);
+        }
+    }
+
     private SafeLookupResult<AccountSigningMetadata> lookupByNumber(final EntityNum id) {
         var account = accounts.get().get(id);
         if (account == null) {
