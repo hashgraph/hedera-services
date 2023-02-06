@@ -86,7 +86,160 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     renewsUsingAutoRenewAccountIfSet(),
                     chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
                     storageExpiryWorksAtTheExpectedInterval(),
+                    autoRenewWorksAsExpected(),
+                    autoRenewInGracePeriodIfEnoughBalance(),
                 });
+    }
+
+    private HapiSpec autoRenewWorksAsExpected() {
+        final var initcode = "initcode";
+        final var contractToRenew = "InstantStorageHog";
+        final var minimalLifetime = 3;
+        final var creation = "creation";
+        final var autoRenewAccount = "autoRenewAccount";
+
+        return defaultHapiSpec("autoRenewWorksAsExpected")
+                .given(
+                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                        enableContractAutoRenewWith(minimalLifetime, minimalLifetime),
+                        uploadInitCode(contractToRenew),
+                        cryptoCreate(autoRenewAccount).balance(0L),
+                        getAccountBalance(autoRenewAccount).logged(),
+                        contractCreate(contractToRenew, new BigInteger("63"))
+                                .gas(2_000_000)
+                                .entityMemo("")
+                                .bytecode(initcode)
+                                .autoRenewSecs(minimalLifetime)
+                                .autoRenewAccountId(autoRenewAccount)
+                                .balance(0L)
+                                .via(creation),
+                        sleepFor(minimalLifetime * 1_000L + 500L))
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                .then(
+                        /*
+                         * Contract is expired and doesn't have enough to auto-renew.
+                         * But it is in grace period , so not deleted
+                         */
+                        getContractInfo(contractToRenew)
+                                .has(contractWith().isNotDeleted())
+                                .logged(),
+                        /*
+                         * Contract is expired and tries to auto-renew at this trigger,
+                         * but no balance. So does nothing.
+                         */
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(minimalLifetime * 1_000L + 500L),
+                        /*
+                         * Contract's grace period completed, for the next
+                         * trigger contract is deleted.
+                         */
+                        getContractInfo(contractToRenew)
+                                .has(contractWith().isNotDeleted())
+                                .logged(),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        getContractInfo(contractToRenew).has(contractWith().isDeleted()).logged(),
+                        overriding(
+                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+    }
+
+    private HapiSpec autoRenewInGracePeriodIfEnoughBalance() {
+        final var initcode = "initcode";
+        final var contractToRenew = "InstantStorageHog";
+        final var minimalLifetime = 3;
+        final var creation = "creation";
+        final var autoRenewAccount = "autoRenewAccount";
+        final var expectedExpiryPostRenew = new AtomicLong();
+        final var currentExpiry = new AtomicLong();
+
+        return defaultHapiSpec("autoRenewInGracePeriodIfEnoughBalance")
+                .given(
+                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                        enableContractAutoRenewWith(minimalLifetime, minimalLifetime),
+                        uploadInitCode(contractToRenew),
+                        cryptoCreate(autoRenewAccount).balance(0L),
+                        getAccountBalance(autoRenewAccount).logged(),
+                        contractCreate(contractToRenew, new BigInteger("63"))
+                                .gas(2_000_000)
+                                .entityMemo("")
+                                .bytecode(initcode)
+                                .autoRenewSecs(minimalLifetime)
+                                .autoRenewAccountId(autoRenewAccount)
+                                .balance(0L)
+                                .via(creation),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var lookup = getTxnRecord(creation);
+                                    allRunFor(spec, lookup);
+
+                                    final var record = lookup.getResponseRecord();
+                                    final var birth = record.getConsensusTimestamp().getSeconds();
+                                    currentExpiry.set(birth + minimalLifetime);
+                                    expectedExpiryPostRenew.set(
+                                            birth
+                                                    + minimalLifetime
+                                                    + minimalLifetime
+                                                    + minimalLifetime);
+                                    opLog.info(
+                                            "Expecting post-renewal expiry of {}, current expiry"
+                                                    + " {}",
+                                            expectedExpiryPostRenew.get(),
+                                            currentExpiry.get());
+                                    final var info =
+                                            getContractInfo(contractToRenew)
+                                                    .has(
+                                                            contractWith()
+                                                                    .isNotDeleted()
+                                                                    .approxExpiry(
+                                                                            currentExpiry.get(), 1))
+                                                    .logged();
+
+                                    allRunFor(spec, info);
+                                }),
+                        sleepFor(minimalLifetime * 1_000L + 500L))
+                .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                .then(
+                        /*
+                        * Contract is in grace period, and we are funding auto-renew account
+                        with insufficient balance. So the auto-renewal doesn't happen.
+                        */
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, autoRenewAccount, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        assertionsHold(
+                                (spec, opLog) -> {
+                                    final var lookup =
+                                            getContractInfo(contractToRenew)
+                                                    .has(
+                                                            contractWith()
+                                                                    .approxExpiry(
+                                                                            currentExpiry.get(), 1))
+                                                    .logged();
+
+                                    allRunFor(spec, lookup);
+                                }),
+                        /*
+                         * Funding for auto-renew account with enough balance. So when
+                         * contract successfully auto-renews on next trigger
+                         */
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, autoRenewAccount, 100 * ONE_HBAR)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        getAccountBalance(autoRenewAccount).logged(),
+                        sleepFor(minimalLifetime * 1_000L + 500L),
+                        assertionsHold(
+                                (spec, opLog) -> {
+                                    final var lookup =
+                                            getContractInfo(contractToRenew)
+                                                    .has(
+                                                            contractWith()
+                                                                    .approxExpiry(
+                                                                            expectedExpiryPostRenew
+                                                                                    .get(),
+                                                                            2))
+                                                    .logged();
+
+                                    allRunFor(spec, lookup);
+                                }),
+                        overriding(
+                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec renewalFeeDistributedToStakingAccounts() {
