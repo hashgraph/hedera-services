@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MIS
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
@@ -39,6 +41,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.interceptors.MockFileNumbers;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
@@ -101,6 +104,7 @@ class StateChildrenSigMetadataLookupTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
     @Mock private FCHashMap<ByteString, EntityNum> aliases;
     @Mock private GlobalDynamicProperties properties;
+    @Mock private AliasManager aliasManager;
     private FileNumbers fileNumbers = new MockFileNumbers();
 
     private StateChildrenSigMetadataLookup subject;
@@ -127,6 +131,39 @@ class StateChildrenSigMetadataLookupTest {
         final var result = subject.scheduleSigningMetaFor(unknownSchedule, null);
 
         assertEquals(MISSING_SCHEDULE, result.failureIfAny());
+    }
+
+    @Test
+    void echoesUnaliasedAccountId() {
+        final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
+
+        assertEquals(EntityNum.fromLong(1234), subject.unaliasedAccount(literalId, null));
+        assertEquals(
+                EntityNum.MISSING_NUM,
+                subject.unaliasedAccount(AccountID.getDefaultInstance(), null));
+    }
+
+    @Test
+    void useAliasDirectlyIfMirror() {
+        final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
+        final var num = Longs.fromByteArray(java.util.Arrays.copyOfRange(mockAddr, 12, 20));
+        final var expectedId = EntityNum.fromLong(num);
+        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+
+        assertEquals(expectedId, subject.unaliasedAccount(input, null));
+    }
+
+    @Test
+    void returnsResolvedAccountIdIfNonMirror() {
+        final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
+        final var extantNum = EntityNum.fromLong(1_234_567L);
+        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        given(stateChildren.aliases()).willReturn(aliases);
+        given(aliases.getOrDefault(ByteString.copyFrom(mockAddr), MISSING_NUM))
+                .willReturn(extantNum);
+
+        final var unaliasedId = subject.unaliasedAccount(input, null);
+        assertEquals(extantNum, unaliasedId);
     }
 
     @Test
