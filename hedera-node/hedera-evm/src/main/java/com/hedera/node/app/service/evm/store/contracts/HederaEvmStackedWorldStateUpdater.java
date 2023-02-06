@@ -49,18 +49,10 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     public Account get(final Address address) {
-        // TODO resolve for evm
         if (isTokenRedirect(address)) {
             return new HederaEvmWorldStateTokenAccount(address);
         }
         return super.get(address);
-
-        //        final var accountBalance = Wei.of(hederaEvmEntityAccess.getBalance(address));
-        //        final var account = new UpdatedHederaEvmAccount<>(address);
-        //        account.setBalance(accountBalance);
-        //        account.setEvmEntityAccess(hederaEvmEntityAccess);
-        //
-        //        return account;
     }
 
     @Override
