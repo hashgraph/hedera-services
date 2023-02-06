@@ -29,7 +29,7 @@ abstract class RandomOperationSignedByHollowAccount implements OpProvider {
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
-    public RandomOperationSignedByHollowAccount(
+    protected RandomOperationSignedByHollowAccount(
             HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
         this.registry = registry;
         this.accounts = accounts;

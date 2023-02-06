@@ -46,6 +46,10 @@ public class AccountCompletionFuzzingFactory {
     public static final String VANILLA_TOKEN = "TokenD";
     public static final String TOKEN_TREASURY = "treasury";
 
+    private AccountCompletionFuzzingFactory() {
+        throw new IllegalStateException("Static factory class");
+    }
+
     public static HapiSpecOperation[] accountsCreation() {
         return new HapiSpecOperation[] {
             cryptoCreate(LAZY_CREATE_SPONSOR)
