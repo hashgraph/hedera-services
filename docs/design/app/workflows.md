@@ -54,13 +54,13 @@ If the workflow terminates early (either because the parsing step (1.) fails or 
 
 ### Query Workflow
 
-The query workflow is by far the most complex workflow.
+The query workflow is quite complex.
 Unlike transaction processing, it is not split into several phases, but covers the whole query from receiving the request until sending the response.
 Also, a query typically contains a `CryptoTransfer` to cover the costs.
 
 ![Diagram of query worflow](images/Query%20Workflow.svg)
 
-When a query arrives at the HAPI-endpoint,  the byte-buffer that contains the query is sent to the query workflow.
+When a query arrives at the HAPI-endpoint, the byte-buffer that contains the query is sent to the query workflow.
 The gRPC-server is responsible for `Thread`-management.
 The query-workflow is single-threaded, but multiple calls can run in parallel.
 
@@ -70,11 +70,14 @@ The query workflow consists of the following steps:
 2. **Check query throttles.** Throttling must be observed and checked as early as possible.
 3. If a payment is required:
    1. **Validate the CryptoTransfer.** The contained `CryptoTransfer` is validated.
-   2. **Check account balances.** The accounts of all payers are checked.
-4. **Check permissions.** It is checked, if the requester is actually allowed to do the query.
-5. **Check validity.** The query is checked semantically.
-6. **Submit payment to platform.** If a payment is required, the contained `CryptoTransfer` is submitted to the platform.
-7. **Find response.** If the result of the query is expected (and not only the costs), the actual query is performed.
+   2. **Check permissions.** It is checked, if the requester is actually allowed to do the query.
+   3. **Calculate costs.** The costs of the query are calculated.
+   4. **Check account balances.** The accounts of all payers are checked.
+4. **Check validity.** The query is checked semantically.
+5. **Submit payment to platform.** If a payment is required, the contained `CryptoTransfer` is submitted to the platform.
+6. The last step depends on what was requested
+   1. **Find response.** If the result of the query is expected (and not only the costs), the actual query is performed.
+   2. **Estimate costs.** If only the costs are requested, they are estimated. (Requests for costs are free, therefore the costs have not been calculated in step 3.)
 
 Depending on what was requested, either the result of the query or the expected costs are returned to the caller.
 If at anytime an error occurs, a response with the error code is returned.
