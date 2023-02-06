@@ -88,7 +88,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     renewsUsingAutoRenewAccountIfSet(),
                     chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
                     verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging(),
-                    storageExpiryWorksAtTheExpectedInterval()
+                    storageExpiryWorksAtTheExpectedInterval(),
+                    verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging()
                 });
     }
 
