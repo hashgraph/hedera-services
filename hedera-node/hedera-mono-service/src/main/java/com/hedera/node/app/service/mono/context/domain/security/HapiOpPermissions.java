@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.context.domain.security.Permissio
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,10 +39,10 @@ public class HapiOpPermissions {
     static final String UNPARSEABLE_RANGE_TPL =
             "Ignoring entry for supported op %s---cannot interpret range '%s'!";
 
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
 
     @Inject
-    public HapiOpPermissions(AccountNumbers accountNums) {
+    public HapiOpPermissions(final HederaAccountNumbers accountNums) {
         this.accountNums = accountNums;
     }
 

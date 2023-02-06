@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
@@ -99,7 +99,8 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
      * @param contractCreation if this is a contract creation transaction
      * @param isStatic Whether the execution is static
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
-     *     address
+     *     address; NOTE that in some cases (e.g. a top-level lazy create as per HIP-583), this
+     *     value will equal @param receiver and *will not* be a mirror address
      * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
      */
     protected TransactionProcessingResult execute(
@@ -221,7 +222,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     sbhRefund,
                     gasPrice,
                     initialFrame.getOutputData(),
-                    mirrorReceiver,
+                    ((HederaWorldState.Updater) updater).aliases().resolveForEvm(mirrorReceiver),
                     stateChanges,
                     hederaTracer.getActions());
         } else {

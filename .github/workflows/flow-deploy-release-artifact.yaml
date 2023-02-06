@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2023 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ jobs:
 
   prepare-tag-release:
     name: Release / Tag / Prepare
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
       version: ${{ steps.tag.outputs.version }}
@@ -147,7 +147,7 @@ jobs:
 
   prepare-mc-release:
     name: Release / MC / Prepare
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     needs:
       - prepare-tag-release
       - release-adhoc
@@ -211,7 +211,7 @@ jobs:
 
   dispatch-mc-release:
     name: Release / MC / Dispatch
-    runs-on: [ self-hosted, Linux, services, standard, ephemeral ]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     needs:
       - prepare-mc-release
       - release-adhoc
@@ -220,7 +220,7 @@ jobs:
     if: ${{ (needs.release-tag.result == 'success' || needs.release-branch.result == 'success' || needs.release-adhoc.result == 'success') && needs.prepare-mc-release.result == 'success' && always() }}
     steps:
       - name: Repository Dispatch
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # pin@v2
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           repository: hashgraph/hedera-internal-workflows

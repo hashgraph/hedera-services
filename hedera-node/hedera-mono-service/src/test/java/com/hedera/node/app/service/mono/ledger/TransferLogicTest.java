@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
@@ -62,6 +60,8 @@ import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -83,7 +83,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TransferLogicTest {
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
-    private AccountNumbers accountNums = new MockAccountNumbers();
+    private HederaAccountNumbers accountNums = new MockAccountNumbers();
     private final long initialBalance = 1_000_000L;
     private final long initialAllowance = 100L;
     private final AccountID revokedSpender = AccountID.newBuilder().setAccountNum(12346L).build();

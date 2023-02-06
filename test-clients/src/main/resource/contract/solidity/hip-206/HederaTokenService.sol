@@ -386,16 +386,6 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
-    /// Operation to unpause token
-    /// @param token The token address to be unpaused
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function unpauseToken(address token) external returns (int responseCode)
-    {
-        (bool success, bytes memory result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.unPauseToken.selector, token));
-        (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
-    }
-
     /// Operation to wipe fungible tokens from account
     /// @param token The token address
     /// @param account The account address to revoke kyc
@@ -455,5 +445,18 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.updateTokenExpiryInfo.selector, token, expiryInfo));
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// @param token the token's address
+    /// @param data the input data for the original ERC function call
+    function redirectForToken(address token, bytes memory data) internal
+    returns (int responseCode, bytes memory result) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(
+                IHederaTokenService.redirectForToken.selector,
+                token,
+                data)
+        );
+        return success ? ( HederaResponseCodes.SUCCESS, result) : (HederaResponseCodes.UNKNOWN, result);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,19 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
                             .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
                             .nonPayerKts(TOKEN_FREEZE_KT)
                             .get());
+        }
+    },
+    UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze().get());
+        }
+    },
+    UNFREEZE_WITH_INVALID_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    newSignedTokenUnfreeze().unfreezing(MISSING_TOKEN).get());
         }
     },
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.context.primitives;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
@@ -59,6 +60,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.files.HFileMeta;
@@ -72,7 +78,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
@@ -108,6 +113,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -133,6 +139,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -572,6 +579,49 @@ class StateViewTest {
     }
 
     @Test
+    void getsEvmTokenInfo() {
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+        given(tokens.get(tokenNum)).willReturn(token);
+        final var miscKey = MISC_ACCOUNT_KT.asKey();
+
+        final var info = subject.evmInfoForToken(tokenId).get();
+
+        assertTrue(info.isDeleted());
+        assertEquals(Paused.getNumber() == 1, info.isPaused());
+        assertEquals(token.memo(), info.getMemo());
+        assertEquals(token.symbol(), info.getSymbol());
+        assertEquals(token.name(), info.getName());
+        assertEquals(
+                token.treasury().toGrpcAccountId(),
+                EntityIdUtils.accountIdFromEvmAddress(info.getTreasury()));
+        assertEquals(token.totalSupply(), info.getTotalSupply());
+        assertEquals(token.decimals(), info.getDecimals());
+        assertEquals(autoRenew, EntityIdUtils.accountIdFromEvmAddress(info.getAutoRenewAccount()));
+        info.setAutoRenewAccount(null);
+        assertEquals(Address.ZERO, info.getAutoRenewAccount());
+        assertEquals(autoRenewPeriod, info.getAutoRenewPeriod());
+        assertEquals(expiry, info.getExpiry());
+        assertEquals(TokenFreezeStatus.Frozen.getNumber() == 1, info.getDefaultFreezeStatus());
+        assertEquals(TokenKycStatus.Granted.getNumber() == 1, info.getDefaultKycStatus());
+    }
+
+    @Test
+    void recognizesMissingTokenEvm() {
+        final var info = subject.evmInfoForToken(missingTokenId);
+
+        assertTrue(info.isEmpty());
+    }
+
+    @Test
+    void evmInfoForTokenFailsGracefully() {
+        given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
+
+        final var info = subject.evmInfoForToken(tokenId);
+
+        assertTrue(info.isEmpty());
+    }
+
+    @Test
     void getsContractInfo() throws Exception {
         final var target = EntityNum.fromContractId(cid);
         given(contracts.get(EntityNum.fromContractId(cid))).willReturn(contract);
@@ -848,6 +898,53 @@ class StateViewTest {
     }
 
     @Test
+    void infoForHollowAccount() {
+        final var pretendAddress = "0000ffffffffff0000dd".getBytes();
+        given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+        tokenAccount.setAccountKey(EMPTY_KEY);
+        tokenAccount.setAlias(ByteString.copyFrom(pretendAddress));
+        final var expectedAddress = CommonUtils.hex(pretendAddress);
+
+        mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        final var expectedResponse =
+                CryptoGetInfoResponse.AccountInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                        .setAccountID(tokenAccountId)
+                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                        .setDeleted(tokenAccount.isDeleted())
+                        .setMemo(tokenAccount.getMemo())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setBalance(tokenAccount.getBalance())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                        .setContractAccountID(expectedAddress)
+                        .setOwnedNfts(tokenAccount.getNftsOwned())
+                        .setMaxAutomaticTokenAssociations(
+                                tokenAccount.getMaxAutomaticAssociations())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setStakedAccountId(
+                                                AccountID.newBuilder().setAccountNum(10).build())
+                                        .setDeclineReward(true)
+                                        .build())
+                        .build();
+
+        final var actualResponse =
+                subject.infoForAccount(
+                        tokenAccountId, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+        mockedStatic.close();
+
+        assertEquals(expectedResponse, actualResponse.get());
+    }
+
+    @Test
     void accountDetails() {
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
@@ -912,6 +1009,50 @@ class StateViewTest {
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
                         .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                        .setOwnedNfts(tokenAccount.getNftsOwned())
+                        .setMaxAutomaticTokenAssociations(
+                                tokenAccount.getMaxAutomaticAssociations())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setDeclineReward(true)
+                                        .setStakedAccountId(
+                                                AccountID.newBuilder().setAccountNum(10L).build())
+                                        .build())
+                        .build();
+
+        final var actualResponse =
+                subject.infoForAccount(
+                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+        mockedStatic.close();
+        assertEquals(expectedResponse, actualResponse.get());
+    }
+
+    @Test
+    void infoForAccountWithEVMAddressAlias() {
+        final var pretendAddress = "0000ffffffffff0000dd".getBytes();
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+        given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+        mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(pretendAddress));
+        final var expectedResponse =
+                CryptoGetInfoResponse.AccountInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                        .setAccountID(tokenAccountId)
+                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                        .setDeleted(tokenAccount.isDeleted())
+                        .setMemo(tokenAccount.getMemo())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setBalance(tokenAccount.getBalance())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                        .setContractAccountID(CommonUtils.hex(pretendAddress))
                         .setOwnedNfts(tokenAccount.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(
                                 tokenAccount.getMaxAutomaticAssociations())
@@ -1272,7 +1413,8 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
+        assertEquals(customFees(), subject.infoForTokenCustomFees(tokenId));
+        System.out.println();
     }
 
     @Test
@@ -1320,10 +1462,56 @@ class StateViewTest {
     private final CustomFee customFractionalFee =
             builder.withFractionalFee(
                     fractional(15L, 100L).setMinimumAmount(10L).setMaximumAmount(50L));
+    private final CustomFee customRoyaltyFee =
+            builder.withRoyaltyFee(
+                    com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+                            .setExchangeValueFraction(
+                                    Fraction.newBuilder().setNumerator(15).setDenominator(100)));
     private final List<CustomFee> grpcCustomFees =
             List.of(
                     customFixedFeeInHbar,
                     customFixedFeeInHts,
                     customFixedFeeSameToken,
-                    customFractionalFee);
+                    customFractionalFee,
+                    customRoyaltyFee);
+
+    private List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee>
+            customFees() {
+        FixedFee fixedFeeInHbar =
+                new FixedFee(
+                        100, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeInHts =
+                new FixedFee(
+                        100,
+                        EntityIdUtils.asTypedEvmAddress(tokenId),
+                        false,
+                        false,
+                        EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FixedFee fixedFeeSameToken =
+                new FixedFee(
+                        50, null, true, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+        FractionalFee fractionalFee =
+                new FractionalFee(
+                        15, 100, 10, 50, false, EntityIdUtils.asTypedEvmAddress(payerAccountId));
+
+        RoyaltyFee royaltyFee = new RoyaltyFee(15, 100, 0, Address.ZERO, true, Address.ZERO);
+
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee1 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee1.setFixedFee(fixedFeeInHbar);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee2 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee2.setFixedFee(fixedFeeInHts);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee3 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee3.setFixedFee(fixedFeeSameToken);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee4 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee4.setFractionalFee(fractionalFee);
+        com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee customFee5 =
+                new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+        customFee5.setRoyaltyFee(royaltyFee);
+
+        return List.of(customFee1, customFee2, customFee3, customFee4, customFee5);
+    }
 }

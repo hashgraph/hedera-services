@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,24 @@ import static com.hedera.node.app.service.mono.store.schedule.ScheduleStore.MISS
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
+import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.evmCustomFees;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isRecoveredEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
@@ -80,7 +87,6 @@ import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -102,6 +108,7 @@ import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
@@ -118,6 +125,9 @@ import org.apache.tuweni.bytes.Bytes;
 public class StateView {
 
     private static final Logger log = LogManager.getLogger(StateView.class);
+
+    private static final String FAILURE_TOKEN_INFO =
+            "Unexpected failure getting info for token {}!";
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
     public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
@@ -184,6 +194,20 @@ public class StateView {
         return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
     }
 
+    public Optional<EvmTokenInfo> evmInfoForToken(final TokenID tokenId) {
+        try {
+            final var tokens = stateChildren.tokens();
+            final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+            if (token == null) {
+                return Optional.empty();
+            }
+            return Optional.of(asEvmTokenInfo(token, networkInfo.ledgerId()));
+        } catch (Exception unexpected) {
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
+            return Optional.empty();
+        }
+    }
+
     public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
         try {
             final var tokens = stateChildren.tokens();
@@ -193,10 +217,7 @@ public class StateView {
             }
             return Optional.of(token.asTokenInfo(tokenId, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting info for token {}!",
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -332,10 +353,7 @@ public class StateView {
             }
             return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
         } catch (Exception unexpected) {
-            log.warn(
-                    "Unexpected failure getting info for token {}!",
-                    readableId(tokenId),
-                    unexpected);
+            log.warn(FAILURE_TOKEN_INFO, readableId(tokenId), unexpected);
             return Optional.empty();
         }
     }
@@ -404,7 +422,6 @@ public class StateView {
                         .setLedgerId(networkInfo.ledgerId())
                         .setKey(asKeyUnchecked(account.getAccountKey()))
                         .setAccountID(accountID)
-                        .setAlias(account.getAlias())
                         .setReceiverSigRequired(account.isReceiverSigRequired())
                         .setDeleted(account.isDeleted())
                         .setMemo(account.getMemo())
@@ -413,13 +430,17 @@ public class StateView {
                         .setBalance(account.getBalance())
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
                         .setContractAccountID(
-                                getContractAccountId(account.getAccountKey(), accountID))
+                                getContractAccountId(
+                                        account.getAccountKey(), accountID, account.getAlias()))
                         .setOwnedNfts(account.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                         .setEthereumNonce(account.getEthereumNonce());
         Optional.ofNullable(account.getProxy())
                 .map(EntityId::toGrpcAccountId)
                 .ifPresent(info::setProxyAccountID);
+        if (account.getAlias().size() != EVM_ADDRESS_SIZE) {
+            info.setAlias(account.getAlias());
+        }
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
         if (!tokenRels.isEmpty()) {
             info.addAllTokenRelationships(tokenRels);
@@ -429,10 +450,14 @@ public class StateView {
         return Optional.of(info.build());
     }
 
-    private String getContractAccountId(final JKey key, final AccountID accountID) {
+    private String getContractAccountId(
+            final JKey key, final AccountID accountID, final ByteString alias) {
+        if (alias.size() == EVM_ADDRESS_SIZE) {
+            return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
+        }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
-        if (evmAddress != null) {
+        if (isRecoveredEvmAddress(evmAddress)) {
             return Bytes.wrap(evmAddress).toUnprefixedHexString();
         } else {
             return asHexedEvmAddress(accountID);
@@ -474,7 +499,7 @@ public class StateView {
             if (token == null) {
                 return emptyList();
             }
-            return token.grpcFeeSchedule();
+            return evmCustomFees(token.grpcFeeSchedule());
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting custom fees for token {}!",

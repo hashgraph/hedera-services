@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,13 @@
  */
 package com.hedera.node.app.service.mono.context;
 
-import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
@@ -64,6 +69,20 @@ class SideEffectsTrackerTest {
 
         subject.reset();
         assertFalse(subject.hasTrackedNewTokenId());
+    }
+
+    @Test
+    void tracksAndResetsHollowAccountUpdateExpected() {
+        final var updatedHollowAccount =
+                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
+        subject.trackHollowAccountUpdate(updatedHollowAccount);
+
+        assertTrue(subject.hasTrackedHollowAccountUpdate());
+        assertEquals(updatedHollowAccount, subject.getTrackedHollowAccountId());
+
+        subject.reset();
+        assertFalse(subject.hasTrackedHollowAccountUpdate());
+        assertNull(subject.getTrackedHollowAccountId());
     }
 
     @Test

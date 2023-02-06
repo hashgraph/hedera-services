@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,21 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,31 +54,38 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                                     SignedTransaction.parser(),
                                     TransactionBody.parser()));
 
-    private final ExecutorService exe;
-    private final ServicesAccessor servicesAccessor;
     private final WorkflowOnset onset;
-    private final PreHandleContext context;
-    private HederaState lastUsedState;
-    private PreHandleDispatcherImpl dispatcher;
+    private final Dispatcher dispatcher;
+    private final Function<Supplier<?>, CompletableFuture<?>> runner;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param servicesAccessor the {@link ServicesAccessor} with references to all {@link
-     *     com.hedera.node.app.spi.Service}-implementations
+     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@code
+     *     preHandle()}-methods
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
-            @NonNull final ServicesAccessor servicesAccessor,
-            @NonNull final PreHandleContext context,
+            @NonNull final Dispatcher dispatcher,
             @NonNull final WorkflowOnset onset) {
-        this.exe = requireNonNull(exe);
-        this.servicesAccessor = requireNonNull(servicesAccessor);
-        this.context = requireNonNull(context);
+        requireNonNull(exe);
+
+        this.dispatcher = requireNonNull(dispatcher);
         this.onset = requireNonNull(onset);
+        this.runner = supplier -> CompletableFuture.supplyAsync(supplier, exe);
+    }
+
+    // Used only for testing
+    PreHandleWorkflowImpl(
+            @NonNull final Dispatcher dispatcher,
+            @NonNull final WorkflowOnset onset,
+            @NonNull final Function<Supplier<?>, CompletableFuture<?>> runner) {
+        this.dispatcher = requireNonNull(dispatcher);
+        this.onset = requireNonNull(onset);
+        this.runner = requireNonNull(runner);
     }
 
     @Override
@@ -84,30 +93,28 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         requireNonNull(state);
         requireNonNull(event);
 
-        // If the latest immutable state has changed, we need to adjust the dispatcher and the
-        // query-handler.
-        if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcherImpl(state, servicesAccessor, context);
-            lastUsedState = state;
-        }
-
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
         // platform transaction. The HandleTransactionWorkflow will pull this future back
         // out and use it to block until the pre handle work is done, if needed.
+        final ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
         final var itr = event.transactionIterator();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
-            final var future = exe.submit(() -> preHandle(dispatcher, platformTx));
+            final var future = runner.apply(() -> preHandle(state, platformTx));
             platformTx.setMetadata(future);
+            futures.add(future);
         }
+
+        // wait until all transactions were processed before returning
+        final CompletableFuture<?>[] array = futures.toArray(new CompletableFuture<?>[0]);
+        CompletableFuture.allOf(array).join();
     }
 
     private TransactionMetadata preHandle(
-            final PreHandleDispatcherImpl dispatcher,
+            final HederaState state,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
-        AccountID payer = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -118,8 +125,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            payer = txBody.getTransactionID().getAccountID();
-            final var metadata = dispatcher.dispatch(txBody, payer);
+            final AccountID payerID = txBody.getTransactionID().getAccountID();
+            final var metadata = dispatcher.dispatchPreHandle(state, txBody, payerID);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented

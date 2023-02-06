@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /** An implementation of the {@link TokenService} interface. */
-public class TokenServiceImpl implements TokenService {
-    @NonNull
-    @Override
-    public TokenPreTransactionHandler createPreTransactionHandler(
-            @NonNull final States states, @NonNull final PreHandleContext ctx) {
-        Objects.requireNonNull(states);
-        Objects.requireNonNull(ctx);
-        final var accountStore = new AccountStore(states);
-        final var tokenStore = new TokenStore(states);
-        return new TokenPreTransactionHandlerImpl(accountStore, tokenStore, ctx);
-    }
-}
+public class TokenServiceImpl implements TokenService {}

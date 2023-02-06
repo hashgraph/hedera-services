@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,16 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.MetadataMapFactory;
 import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -63,10 +66,13 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     private final Map<FileID, HFileMeta> metaMap;
     private final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
 
+    private final GlobalDynamicProperties properties;
+
     public StateChildrenSigMetadataLookup(
             final FileNumbers fileNumbers,
             final StateChildren stateChildren,
-            final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform) {
+            final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform,
+            final GlobalDynamicProperties properties) {
         this.fileNumbers = fileNumbers;
         this.stateChildren = stateChildren;
         this.tokenMetaTransform = tokenMetaTransform;
@@ -74,6 +80,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 
         final var blobStore = new FcBlobsBytesStore(stateChildren::storage);
         this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);
+        this.properties = properties;
     }
 
     @Override
@@ -219,8 +226,25 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             return SafeLookupResult.failure(MISSING_ACCOUNT);
         } else {
             final var key = account.getAccountKey();
-            if (key == null || key.isEmpty()) {
-                return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+            if (key.isEmpty()) {
+                if (linkedRefs != null) {
+                    linkedRefs.link(fileNumbers.applicationProperties());
+                }
+
+                if (!properties.isLazyCreationEnabled()) {
+                    return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+                }
+
+                final var accountAlias = account.getAlias();
+                if (accountAlias.isEmpty()) {
+                    return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+                } else {
+                    return new SafeLookupResult<>(
+                            new AccountSigningMetadata(
+                                    new JHollowKey(
+                                            ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
+                                    account.isReceiverSigRequired()));
+                }
             }
             return new SafeLookupResult<>(
                     new AccountSigningMetadata(

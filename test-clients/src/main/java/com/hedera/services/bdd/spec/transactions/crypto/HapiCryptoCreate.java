@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
@@ -31,8 +32,10 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -85,6 +88,9 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
     private Optional<ByteString> alias = Optional.empty();
+    private Optional<ByteString> evmAddress = Optional.empty();
+    private Consumer<Address> addressObserver;
+    private boolean fuzzingIdentifiers = false;
 
     @Override
     public HederaFunctionality type() {
@@ -96,8 +102,18 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return name.equals(account) ? key : spec.registry().getKey(name);
     }
 
+    public HapiCryptoCreate fuzzingIdentifiersIfEcdsaKey(final boolean flag) {
+        fuzzingIdentifiers = flag;
+        return this;
+    }
+
     public HapiCryptoCreate exposingCreatedIdTo(final Consumer<AccountID> newAccountIdObserver) {
         this.newAccountIdObserver = Optional.of(newAccountIdObserver);
+        return this;
+    }
+
+    public HapiCryptoCreate exposingEvmAddressTo(final Consumer<Address> addressObserver) {
+        this.addressObserver = addressObserver;
         return this;
     }
 
@@ -210,6 +226,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
+    public HapiCryptoCreate evmAddress(final ByteString evmAddress) {
+        this.evmAddress = Optional.of(evmAddress);
+        return this;
+    }
+
     @Override
     protected HapiCryptoCreate self() {
         return this;
@@ -249,11 +270,17 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (alias.isPresent()) {
-                                        b.setAlias(alias.get());
-                                        keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                    if (fuzzingIdentifiers && key.hasECDSASecp256K1()) {
+                                        InitialAccountIdentifiers.fuzzedFrom(key).customize(b);
                                     } else {
-                                        b.setKey(key);
+                                        if (alias.isPresent() || evmAddress.isPresent()) {
+                                            keyName.ifPresent(
+                                                    s -> b.setKey(spec.registry().getKey(s)));
+                                            alias.ifPresent(b::setAlias);
+                                            evmAddress.ifPresent(b::setEvmAddress);
+                                        } else {
+                                            b.setKey(key);
+                                        }
                                     }
                                     if (unknownFieldLocation == UnknownFieldLocation.OP_BODY) {
                                         b.setUnknownFields(nonEmptyUnknownFields());
@@ -313,6 +340,18 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         newAccountIdObserver.ifPresent(obs -> obs.accept(createdAccountId));
         newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
+        Optional.ofNullable(addressObserver)
+                .ifPresent(
+                        obs ->
+                                evmAddress.ifPresentOrElse(
+                                        address ->
+                                                obs.accept(
+                                                        HapiParserUtil.asHeadlongAddress(
+                                                                address.toByteArray())),
+                                        () ->
+                                                obs.accept(
+                                                        HapiParserUtil.evmAddressFromSecp256k1Key(
+                                                                key))));
 
         if (advertiseCreation) {
             final String banner =

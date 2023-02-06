@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -39,11 +39,11 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -154,9 +154,9 @@ class CallEvmTxProcessorTest {
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            mcpVersion = EVM_VERSION_0_32;
+                            mcpVersion = EVM_VERSION_0_34;
                             return new MessageCallProcessor(
                                     evm30, new PrecompileContractRegistry());
                         });
@@ -169,9 +169,9 @@ class CallEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_32;
+                            ccpVersion = EVM_VERSION_0_34;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -195,12 +195,32 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress())
                 .willReturn(new Id(0, 0, 1010).asEvmAddress());
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(updater.aliases()).willReturn(aliasManager);
 
         givenSenderWithBalance(350_000L);
         var result =
                 callEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
         assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
+
+    @Test
+    void nonExistingReceiverSetsNewMirrorAddressInResultOnSuccessfulCreation() {
+        givenValidMock();
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+        final var evmAddress = Address.fromHexString("0xFEFE");
+        given(aliasManager.resolveForEvm(evmAddress))
+                .willReturn(evmAddress)
+                .willReturn(receiverAddress);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.execute(
+                        sender, evmAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiverAddress, result.getRecipient().get());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
     }
 
@@ -230,6 +250,62 @@ class CallEvmTxProcessorTest {
                         55_555L);
         assertTrue(result.isSuccessful());
         assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+    }
+
+    @Test
+    void assertSuccessExecutionV032EthLazyCreate() {
+        givenValidMockEth();
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(false);
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.executeEth(
+                        sender,
+                        receiverAddress,
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        BigInteger.valueOf(10_000L),
+                        relayer,
+                        55_555L);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache, never()).getIfPresent(receiverAddress);
+    }
+
+    @Test
+    void assertSuccessExecutionV032() {
+        givenValidMockEth();
+        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_34);
+        given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(aliasManager.isMirror(receiverAddress)).willReturn(true);
+        var evmAccount = mock(EvmAccount.class);
+        given(updater.getOrCreateSenderAccount(any())).willReturn(evmAccount);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+
+        givenSenderWithBalance(350_000L);
+        var result =
+                callEvmTxProcessor.executeEth(
+                        sender,
+                        receiverAddress,
+                        33_333L,
+                        1234L,
+                        Bytes.EMPTY,
+                        consensusTime,
+                        BigInteger.valueOf(10_000L),
+                        relayer,
+                        55_555L);
+        assertTrue(result.isSuccessful());
+        assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
+        verify(codeCache).getIfPresent(receiverAddress);
     }
 
     @Test
@@ -570,7 +646,8 @@ class CallEvmTxProcessorTest {
     @Test
     @SuppressWarnings("unchecked")
     void assertResourceExhaustionChargesBothSenderAndRelayerWithoutRefunds() {
-        givenValidMockEth();
+        final var evmAccount = givenValidMockWithoutGetOrCreateEth();
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
         final var mockAccounts =
                 (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
@@ -646,7 +723,7 @@ class CallEvmTxProcessorTest {
                 Map.of(
                         EVM_VERSION_0_30,
                         () -> messageCallProcessor,
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> messageCallProcessor);
         Map<String, Provider<ContractCreationProcessor>> ccps =
                 Map.of(
@@ -657,9 +734,9 @@ class CallEvmTxProcessorTest {
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         },
-                        EVM_VERSION_0_32,
+                        EVM_VERSION_0_34,
                         () -> {
-                            ccpVersion = EVM_VERSION_0_32;
+                            ccpVersion = EVM_VERSION_0_34;
                             return new ContractCreationProcessor(
                                     gasCalculator, evm30, true, List.of(), 1);
                         });
@@ -1238,6 +1315,7 @@ class CallEvmTxProcessorTest {
     private void givenValidMock() {
         final var evmAccount = givenValidMockWithoutGetOrCreate(0L);
         given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.aliases()).willReturn(aliasManager);
     }
 
     private EvmAccount givenValidMockWithoutGetOrCreate(final long intrinsicGasCost) {
@@ -1276,6 +1354,7 @@ class CallEvmTxProcessorTest {
     private void givenValidMockEth() {
         final var evmAccount = givenValidMockWithoutGetOrCreateEth();
         given(updater.getOrCreate(any())).willReturn(evmAccount);
+        given(updater.aliases()).willReturn(aliasManager);
     }
 
     private EvmAccount givenValidMockWithoutGetOrCreateEth() {
@@ -1287,8 +1366,6 @@ class CallEvmTxProcessorTest {
         var evmAccount = mock(EvmAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-
-        given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
@@ -1319,7 +1396,13 @@ class CallEvmTxProcessorTest {
 
     @Test
     void testEvmVersionLoading() {
-        given(globalDynamicProperties.evmVersion()).willReturn(EVM_VERSION_0_32, "vDoesn'tExist");
+        given(globalDynamicProperties.evmVersion())
+                .willReturn(
+                        EVM_VERSION_0_30,
+                        EVM_VERSION_0_30,
+                        EVM_VERSION_0_34,
+                        EVM_VERSION_0_34,
+                        "vDoesn'tExist");
         given(globalDynamicProperties.dynamicEvmVersion()).willReturn(false, false, true, true);
 
         givenValidMock();
@@ -1343,8 +1426,8 @@ class CallEvmTxProcessorTest {
         // version changes, dynamic set
         callEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
-        assertEquals(EVM_VERSION_0_32, mcpVersion);
-        assertEquals(EVM_VERSION_0_32, ccpVersion);
+        assertEquals(EVM_VERSION_0_34, mcpVersion);
+        assertEquals(EVM_VERSION_0_34, ccpVersion);
 
         // bad version
         assertThrows(

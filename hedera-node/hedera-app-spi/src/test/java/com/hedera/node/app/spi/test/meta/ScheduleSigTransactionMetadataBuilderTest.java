@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ class ScheduleSigTransactionMetadataBuilderTest {
         assertThrows(NullPointerException.class, () -> subject.txnBody(null));
         assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
         assertThrows(NullPointerException.class, () -> subject.status(null));
-        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey(null));
+        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey((AccountID) null));
         assertThrows(
                 NullPointerException.class,
                 () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));

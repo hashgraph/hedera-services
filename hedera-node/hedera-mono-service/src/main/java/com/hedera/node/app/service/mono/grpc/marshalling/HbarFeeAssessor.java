@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 import static com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils.adjustForAssessedHbar;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
@@ -37,14 +37,14 @@ public class HbarFeeAssessor {
             final Id payer,
             final FcCustomFee hbarFee,
             final BalanceChangeManager changeManager,
-            final List<FcAssessedCustomFee> accumulator) {
+            final List<AssessedCustomFeeWrapper> accumulator) {
         final var collector = hbarFee.getFeeCollectorAsId();
         final var fixedSpec = hbarFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
         adjustForAssessedHbar(payer, collector, amount, changeManager);
-        final var effPayerAccountNums = new long[] {payer.num()};
+        final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed =
-                new FcAssessedCustomFee(collector.asEntityId(), amount, effPayerAccountNums);
+                new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);
         accumulator.add(assessed);
         return OK;
     }

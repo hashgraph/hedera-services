@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,11 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.common.InsufficientBalanceException;
-import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.node.app.workflows.common.SubmissionManager;
+import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,9 +47,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final NodeInfo nodeInfo;
     private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+    private final StoreCache storeCache;
     private final WorkflowOnset onset;
     private final IngestChecker checker;
-    private final CryptoService cryptoService;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final HapiOpCounters opCounters;
@@ -61,6 +60,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param nodeInfo the {@link NodeInfo} of the current node
      * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
+     * @param storeCache the {@link StoreCache} that caches stores for all active states
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
      * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
@@ -72,18 +72,18 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
+            @NonNull final StoreCache storeCache,
             @NonNull final WorkflowOnset onset,
             @NonNull final IngestChecker checker,
-            @NonNull final CryptoService cryptoService,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final HapiOpCounters opCounters) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
+        this.storeCache = requireNonNull(storeCache);
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
-        this.cryptoService = requireNonNull(cryptoService);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
         this.opCounters = requireNonNull(opCounters);
@@ -111,6 +111,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 1. Parse the TransactionBody and check the syntax
                 final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
+                if (onsetResult.errorCode() != OK) {
+                    throw new PreCheckException(onsetResult.errorCode());
+                }
+
                 final var txBody = onsetResult.txBody();
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();
@@ -127,11 +131,10 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 // 4. Get payer account
                 final AccountID payerID = txBody.getTransactionID().getAccountID();
-                final var cryptoStates = state.createReadableStates(cryptoService.getServiceName());
-                final var cryptoQueryHandler = cryptoService.createQueryHandler(cryptoStates);
+                final var accountStore = storeCache.getAccountStore(state);
                 final var payer =
-                        cryptoQueryHandler
-                                .getAccountById(payerID)
+                        accountStore
+                                .getAccount(payerID)
                                 .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature

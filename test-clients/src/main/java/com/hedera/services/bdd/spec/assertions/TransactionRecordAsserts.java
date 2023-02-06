@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,26 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                                         spec.registry().getTxnId(expectedTxn),
                                         txnId,
                                         "Wrong txnId!");
+                            } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts consensusTimeImpliedByNonce(
+            final Timestamp parentTime, final int nonce) {
+        this.<Timestamp>registerTypedProvider(
+                "consensusTimestamp",
+                spec ->
+                        actualTime -> {
+                            try {
+                                final var expectedTime =
+                                        parentTime.toBuilder()
+                                                .setNanos(parentTime.getNanos() + nonce)
+                                                .build();
+                                Assertions.assertEquals(expectedTime, actualTime);
                             } catch (Throwable t) {
                                 return List.of(t);
                             }
@@ -181,6 +201,22 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
                                 Assertions.assertEquals(
                                         expected, receipt.getContractID(), "Bad targeted contract");
                             } catch (Throwable t) {
+                                return List.of(t);
+                            }
+                            return EMPTY_LIST;
+                        });
+        return this;
+    }
+
+    public TransactionRecordAsserts targetedContractId(final ContractID id) {
+        this.<TransactionReceipt>registerTypedProvider(
+                "receipt",
+                spec ->
+                        receipt -> {
+                            try {
+                                Assertions.assertEquals(
+                                        id, receipt.getContractID(), "Bad targeted contract");
+                            } catch (Exception t) {
                                 return List.of(t);
                             }
                             return EMPTY_LIST;
@@ -312,6 +348,16 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts memo(String text) {
         registerTypedProvider("memo", shouldBe(text));
+        return this;
+    }
+
+    public TransactionRecordAsserts hasNoAlias() {
+        registerTypedProvider("alias", shouldBe(ByteString.EMPTY));
+        return this;
+    }
+
+    public TransactionRecordAsserts evmAddress(ByteString evmAddress) {
+        registerTypedProvider("evmAddress", shouldBe(evmAddress));
         return this;
     }
 

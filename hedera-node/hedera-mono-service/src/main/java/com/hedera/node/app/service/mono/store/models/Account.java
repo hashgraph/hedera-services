@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.models;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
@@ -27,9 +27,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
@@ -47,6 +48,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
@@ -58,7 +61,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * the Hedera Token Service. The memo field, for example, is not yet present.
  */
 public class Account extends HederaEvmAccount {
-    private final Id id;
+    private Id id;
 
     private long expiry;
     private long balance;
@@ -82,6 +85,11 @@ public class Account extends HederaEvmAccount {
     public Account(Id id) {
         super(id.asEvmAddress());
         this.id = id;
+    }
+
+    public Account(final ByteString alias) {
+        super(Address.fromHexString(Hex.toHexString(alias.toByteArray())));
+        this.alias = alias;
     }
 
     public void setExpiry(long expiry) {

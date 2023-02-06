@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,16 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
+    MockTokenAccessor tokenAccessor = new MockTokenAccessor();
+    MockEntityAccess entityAccess = new MockEntityAccess();
     HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor);
+            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess, tokenAccessor);
 
     @Test
     void accountTests() {
         assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
-        assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
+        assertEquals(
+                Wei.of(100L), hederaEvmStackedWorldStateUpdater.getAccount(address).getBalance());
         assertEquals(
                 Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
         hederaEvmStackedWorldStateUpdater.commit();
@@ -60,6 +63,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void updaterTest() {
+        assertEquals(tokenAccessor, hederaEvmStackedWorldStateUpdater.tokenAccessor());
         assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
         assertEquals(
                 hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());

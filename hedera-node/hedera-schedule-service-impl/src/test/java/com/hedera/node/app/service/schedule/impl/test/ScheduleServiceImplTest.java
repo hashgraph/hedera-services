@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,13 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    @Mock private States states;
+    @Mock private ReadableStates states;
     @Mock private HederaAccountNumbers numbers;
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private AccountKeyLookup keyLookup;
@@ -52,28 +49,8 @@ class ScheduleServiceImplTest {
         Assertions.assertEquals(
                 ScheduleServiceImpl.class,
                 service.getClass(),
-                "We must always receive an instance of type StandardScheduleService");
+                "We must always receive an instance of type "
+                        + ScheduleServiceImpl.class.getName());
         Assertions.assertEquals("ScheduleService", service.getServiceName());
-    }
-
-    @Test
-    void createsNewInstance() {
-        final ScheduleServiceImpl service = new ScheduleServiceImpl();
-        final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx);
-        final var serviceImpl1 = service.createPreTransactionHandler(states, preHandleCtx);
-        assertNotEquals(serviceImpl1, serviceImpl);
-        assertTrue(serviceImpl1 instanceof SchedulePreTransactionHandlerImpl);
-    }
-
-    @Test
-    void throwsNPEIfArgsAreNull() {
-        final ScheduleServiceImpl service = new ScheduleServiceImpl();
-        assertThrows(
-                NullPointerException.class,
-                () -> service.createPreTransactionHandler(null, preHandleCtx));
-        assertThrows(
-                NullPointerException.class,
-                () -> service.createPreTransactionHandler(states, null));
-        assertDoesNotThrow(() -> service.createPreTransactionHandler(states, preHandleCtx));
     }
 }

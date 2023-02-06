@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,12 @@ public class ConfigManager {
         return specConfig;
     }
 
+    public boolean isAllowListEmptyOrContainsAccount(long account) {
+        return targetNet.getAllowedReceiverAccountIds() == null
+                || targetNet.getAllowedReceiverAccountIds().isEmpty()
+                || targetNet.getAllowedReceiverAccountIds().contains(account);
+    }
+
     private void addPayerConfig(Map<String, String> specConfig, String payerId) {
         specConfig.put("default.payer", payerId);
         var optKeyFile = ConfigUtils.keyFileFor(keysLoc(), "account" + defaultPayer);
@@ -101,12 +107,7 @@ public class ConfigManager {
             specConfig.put("default.payer.pemKeyLoc", keyFile.getPath());
             specConfig.put("default.payer.pemKeyPassphrase", finalPassphrase.get());
         } else if (keyFile.getAbsolutePath().endsWith("words")) {
-            try {
-                var mnemonic = Files.readString(keyFile.toPath()).trim();
-                specConfig.put("default.payer.mnemonic", mnemonic);
-            } catch (IOException e) {
-                fail(String.format("Mnemonic file %s is inaccessible!", keyFile.getPath()));
-            }
+            specConfig.put("default.payer.mnemonicFile", keyFile.getAbsolutePath());
         } else {
             try {
                 var key = Files.readString(keyFile.toPath()).trim();

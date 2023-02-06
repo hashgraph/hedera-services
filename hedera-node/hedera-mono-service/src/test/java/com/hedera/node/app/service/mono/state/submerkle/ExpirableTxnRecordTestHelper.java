@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,8 @@ public class ExpirableTxnRecordTestHelper {
                         .setAssessedCustomFees(fcAssessedFees)
                         .setNewTokenAssociations(newTokenAssociations)
                         .setAlias(record.getAlias())
-                        .setEthereumHash(record.getEthereumHash().toByteArray());
+                        .setEthereumHash(record.getEthereumHash().toByteArray())
+                        .setEvmAddress(record.getEvmAddress().toByteArray());
         if (!record.getPrngBytes().isEmpty()) {
             builder.setPseudoRandomBytes(record.getPrngBytes().toByteArray());
         }

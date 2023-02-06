@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
@@ -167,6 +168,15 @@ class PlatformSigOpsTest {
 
         assertEquals(1, result.getPlatformSigs().size());
         assertTrue(result.hasFailed());
+    }
+
+    @Test
+    void ignoresJHollowKeys() {
+        final var result =
+                createCryptoSigsFrom(List.of(new JHollowKey(new byte[20])), sigBytes, sigFactory);
+
+        assertFalse(result.hasFailed());
+        assertTrue(result.getPlatformSigs().isEmpty());
     }
 
     @Test

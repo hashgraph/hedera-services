@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,14 +80,16 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
@@ -102,7 +104,6 @@ import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -222,6 +223,7 @@ class ERC20PrecompilesTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
     @Mock private Account account;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -262,7 +264,8 @@ class ERC20PrecompilesTest {
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
-                        infrastructureFactory);
+                        infrastructureFactory,
+                        evmHTSPrecompiledContract);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
@@ -282,6 +285,9 @@ class ERC20PrecompilesTest {
                 .thenReturn(recipientAddress);
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray()))
+                .thenReturn(token);
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr))
                 .thenReturn(token);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -991,7 +997,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1072,7 +1079,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1160,7 +1168,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile

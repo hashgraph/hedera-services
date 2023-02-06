@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -623,6 +623,16 @@ class AbstractLedgerWorldUpdaterTest {
                         worldState, staticLedgersWith(aliases, null), customizer);
 
         assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
+    }
+
+    @Test
+    void tracksLazyCreateAccountAsExpected() {
+        subject.trackLazilyCreatedAccount(Address.ALTBN128_MUL);
+
+        final var lazyAccount = subject.updatedAccounts.get(Address.ALTBN128_MUL);
+        assertNotNull(lazyAccount);
+        assertEquals(Wei.ZERO, lazyAccount.getBalance());
+        assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
     }
 
     private void setupLedgers() {

@@ -155,8 +155,20 @@ interface IHederaTokenService {
 
     /// Additional post creation fungible and non fungible properties of a Hedera Token.
     struct TokenInfo {
-        /// The hedera token;
-        HederaToken hedera;
+        /// Basic properties of a Hedera Token
+        HederaToken token;
+
+        /// The number of tokens (fungible) or serials (non-fungible) of the token
+        int64 totalSupply;
+
+        /// Specifies whether the token is deleted or not
+        bool deleted;
+
+        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
+        bool defaultKycStatus;
+
+        /// Specifies whether the token is currently paused or not
+        bool pauseStatus;
 
         /// The fixed fees collected when transferring the token
         FixedFee[] fixedFees;
@@ -167,20 +179,8 @@ interface IHederaTokenService {
         /// The royalty fees collected when transferring the token
         RoyaltyFee[] royaltyFees;
 
-        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
-        bool defaultKycStatus;
-
-        /// Specifies whether the token is deleted or not
-        bool deleted;
-
         /// The ID of the network ledger
         string ledgerId;
-
-        /// Specifies whether the token is currently paused or not
-        bool pauseStatus;
-
-        /// The number of tokens (fungible) or serials (non-fungible) of the token
-        uint64 totalSupply;
     }
 
     /// Additional fungible properties of a Hedera Token.
@@ -613,14 +613,6 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode, bool defaultKycStatus);
 
-    /// Query token expiry info
-    /// @param token The token address to check
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return expiry Expiry info for `token`
-    function getTokenExpiryInfo(address token)
-        external
-        returns (int64 responseCode, Expiry memory expiry);
-
     /// Query fungible token info
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -766,4 +758,9 @@ interface IHederaTokenService {
     function getTokenType(address token)
         external returns
         (int64 responseCode, int32 tokenType);
+
+    /// Initiates a Redirect For Token
+    /// @param token the token's address
+    /// @param data The function selector from the ERC20 interface + the bytes input for the function called
+    function redirectForToken(address token, bytes memory data) external returns (int responseCode, bytes memory result);
 }

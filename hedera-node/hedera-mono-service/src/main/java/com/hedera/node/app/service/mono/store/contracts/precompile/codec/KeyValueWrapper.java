@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -163,7 +163,8 @@ public final class KeyValueWrapper {
             case DELEGATABLE_CONTRACT_ID -> Key.newBuilder()
                     .setDelegatableContractId(delegatableContractID)
                     .build();
-            default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
+            default -> throw new InvalidTransactionException(
+                    "INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         };
     }
 }

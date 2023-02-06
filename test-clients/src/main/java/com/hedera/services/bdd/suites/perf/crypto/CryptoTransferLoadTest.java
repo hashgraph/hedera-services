@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,6 +107,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                 .withRecharging()
                                 .key(GENESIS)
                                 .rechargeWindow(3)
+                                .stakedNodeId(settings.getNodeToStake())
                                 .logging()
                                 .hasRetryPrecheckFrom(
                                         BUSY,
@@ -114,6 +115,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                         PLATFORM_TRANSACTION_NOT_CREATED),
                         cryptoCreate("receiver")
                                 .payingWith(GENESIS)
+                                .stakedNodeId(settings.getNodeToStake())
                                 .hasRetryPrecheckFrom(
                                         BUSY,
                                         DUPLICATE_TRANSACTION,

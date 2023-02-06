@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.mono.context.properties.StaticProperti
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
@@ -32,6 +31,7 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -51,7 +51,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
     private static final int ZERO_BALANCE = 0;
 
-    private final AccountNumbers accountNums;
+    private final HederaAccountNumbers accountNums;
     private final PropertySource properties;
     private final Supplier<JEd25519Key> genesisKeySource;
     private final TreasuryCloner treasuryCloner;
@@ -62,7 +62,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
     @Inject
     public BackedSystemAccountsCreator(
-            final AccountNumbers accountNums,
+            final HederaAccountNumbers accountNums,
             final @CompositeProps PropertySource properties,
             final Supplier<JEd25519Key> genesisKeySource,
             final Supplier<HederaAccount> accountSupplier,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
@@ -24,10 +25,10 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -77,8 +78,6 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -191,7 +190,7 @@ class AutoCreationLogicTest {
                         DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
-        Assertions.assertTrue(subject.getTokenAliasMap().isEmpty());
+        assertTrue(subject.getTokenAliasMap().isEmpty());
     }
 
     @Test
@@ -199,6 +198,7 @@ class AutoCreationLogicTest {
             throws InvalidProtocolBufferException, DecoderException {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         final var key = Key.parseFrom(ecdsaKeyBytes);
+        final var pretendAddress = keyAliasToEVMAddress(ecKeyAlias);
         final var evmAddress =
                 ByteString.copyFrom(
                         EthSigsUtils.recoverAddressFromPubKey(
@@ -206,8 +206,6 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
-        final var pretendAddress = Address.BLS12_G2MUL.toArray();
-        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -422,6 +420,7 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var cryptoCreateAccount =
                 TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
+        given(mockCryptoCreate.getAlias()).willReturn(edKeyAlias);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
                 .willReturn(cryptoCreateAccount);
 
@@ -549,7 +548,8 @@ class AutoCreationLogicTest {
         assertFalse(subject.reclaimPendingAliases());
     }
 
-    private void givenCollaborators(ExpirableTxnRecord.Builder mockBuilder, String memo) {
+    private void givenCollaborators(
+            final ExpirableTxnRecord.Builder mockBuilder, final String memo) {
         given(txnCtx.consensusTime()).willReturn(consensusNow);
         given(ids.newAccountId(any())).willReturn(created);
         given(feeCalculator.computeFee(any(), eq(EMPTY_KEY), eq(currentView), eq(consensusNow)))
@@ -559,7 +559,7 @@ class AutoCreationLogicTest {
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
     }
 
-    private BalanceChange wellKnownChange(ByteString alias) {
+    private BalanceChange wellKnownChange(final ByteString alias) {
         return BalanceChange.changingHbar(
                 AccountAmount.newBuilder()
                         .setAmount(initialTransfer)
@@ -568,7 +568,7 @@ class AutoCreationLogicTest {
                 payer);
     }
 
-    private BalanceChange wellKnownTokenChange(ByteString alias) {
+    private BalanceChange wellKnownTokenChange(final ByteString alias) {
         return BalanceChange.changingFtUnits(
                 Id.fromGrpcToken(token),
                 token,
@@ -579,7 +579,7 @@ class AutoCreationLogicTest {
                 payer);
     }
 
-    private BalanceChange wellKnownNftChange(ByteString alias) {
+    private BalanceChange wellKnownNftChange(final ByteString alias) {
         return BalanceChange.changingNftOwnership(
                 Id.fromGrpcToken(token),
                 token,

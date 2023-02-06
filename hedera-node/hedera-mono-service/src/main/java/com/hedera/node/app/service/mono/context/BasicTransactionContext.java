@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.charging.NarratedCharging;
@@ -268,6 +269,11 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public void setCreated(final AccountID id) {
         receiptConfig = receipt -> receipt.setAccountId(EntityId.fromGrpcAccountId(id));
+    }
+
+    @Override
+    public void setEvmAddress(ByteString evmAddress) {
+        recordConfig = expirableRecord -> expirableRecord.setEvmAddress(evmAddress.toByteArray());
     }
 
     @Override

@@ -23,6 +23,7 @@ plugins {
 
 extraJavaModuleInfo {
     failOnMissingModuleInfo.set(true)
+
     automaticModule("com.hedera.hashgraph:protobuf-java", "com.hedera.hashgraph.protobuf.java.api")
 
     automaticModule("com.goterl:lazysodium-java", "lazysodium.java")
@@ -30,13 +31,12 @@ extraJavaModuleInfo {
 
     automaticModule("io.grpc:grpc-api", "io.grpc.api")
     automaticModule("io.grpc:grpc-core", "io.grpc.core")
-    automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-netty", "grpc.netty")
     automaticModule("io.grpc:grpc-context", "io.grpc.context")
     automaticModule("io.grpc:grpc-stub", "grpc.stub")
     automaticModule("io.grpc:grpc-protobuf", "grpc.protobuf")
     automaticModule("io.grpc:grpc-services", "grpc.services")
-    automaticModule("io.grpc:grpc-protobuf-lite", "io.grpc.protobuf.lite")
-    automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
     automaticModule("io.grpc:grpc-testing", "io.grpc.testing")
 
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
@@ -99,7 +99,6 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:bls12-381", "org.hyperledger.besu.bls12.for381")
     automaticModule("org.hyperledger.besu:secp256r1", "org.hyperledger.besu.secp256r1")
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
-    automaticModule("com.google.truth.extensions:truth-java8-extension", "com.google.truth.extensions.java8")
     automaticModule("org.apache.commons:commons-math3", "org.apache.commons.math3")
 
     automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
@@ -113,7 +112,6 @@ extraJavaModuleInfo {
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
     automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")
-    automaticModule("com.google.truth:truth", "truth")
     automaticModule("hamcrest-core-1.3.jar", "hamcrest.core")
     automaticModule("org.awaitility:awaitility", "awaitility")
     automaticModule("org.testcontainers:testcontainers", "org.testcontainers")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,23 +29,18 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-evm"))
     annotationProcessor(libs.dagger.compiler)
 
-    implementation(libs.helidon.io.grpc)
-    implementation(libs.bundles.di)
-    implementation(libs.hapi)
-    implementation(libs.bundles.logging)
-    implementation(libs.protobuf.java)
+    api(project(":hedera-node:hedera-evm"))
+
     implementation(libs.jackson)
-    implementation(libs.swirlds.common)
     implementation(libs.bundles.bouncycastle)
+    implementation(libs.bundles.logging)
     implementation(libs.headlong)
-    implementation(libs.besu.secp256k1)
     implementation(libs.commons.codec)
     implementation(libs.jna)
-    compileOnly(libs.spotbugs.annotations)
+    implementation(libs.javax.inject)
+    implementation(libs.dagger.api)
 
     testImplementation(testLibs.bundles.testing)
-    itestImplementation(libs.hapi)
 }

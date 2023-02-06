@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -349,12 +349,12 @@ public class SpanMapManager {
         var customFeeTokenTransfers = 0;
         var customFeeHbarTransfers = 0;
         final Set<EntityId> involvedTokens = new HashSet<>();
-        for (final var assessedFee : impliedTransfers.getAssessedCustomFees()) {
-            if (assessedFee.isForHbar()) {
+        for (final var assessedFeeWrapper : impliedTransfers.getAssessedCustomFeeWrappers()) {
+            if (assessedFeeWrapper.isForHbar()) {
                 customFeeHbarTransfers++;
             } else {
                 customFeeTokenTransfers++;
-                involvedTokens.add(assessedFee.token());
+                involvedTokens.add(assessedFeeWrapper.token());
             }
         }
         xferMeta.setCustomFeeHbarTransfers(customFeeHbarTransfers);

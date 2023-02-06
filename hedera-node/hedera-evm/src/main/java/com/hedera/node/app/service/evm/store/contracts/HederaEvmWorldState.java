@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -32,6 +33,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
     private final AbstractCodeCache abstractCodeCache;
 
     private AccountAccessor accountAccessor;
+    private TokenAccessor tokenAccessor;
 
     public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
@@ -46,9 +48,11 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
             final AbstractCodeCache abstractCodeCache,
-            final AccountAccessor accountAccessor) {
+            final AccountAccessor accountAccessor,
+            final TokenAccessor tokenAccessor) {
         this(hederaEvmEntityAccess, evmProperties, abstractCodeCache);
         this.accountAccessor = accountAccessor;
+        this.tokenAccessor = tokenAccessor;
     }
 
     public Account get(final Address address) {
@@ -84,14 +88,17 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(accountAccessor);
+        return new Updater(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
     }
 
     public static class Updater extends HederaEvmStackedWorldStateUpdater
             implements HederaEvmWorldUpdater {
 
-        protected Updater(AccountAccessor accountAccessor) {
-            super(accountAccessor);
+        protected Updater(
+                final AccountAccessor accountAccessor,
+                final HederaEvmEntityAccess hederaEvmEntityAccess,
+                final TokenAccessor tokenAccessor) {
+            super(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
         }
 
         @Override
@@ -101,7 +108,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
         @Override
         public WorldUpdater updater() {
-            return new HederaEvmStackedWorldStateUpdater(accountAccessor);
+            return new HederaEvmStackedWorldStateUpdater(
+                    accountAccessor, hederaEvmEntityAccess, tokenAccessor);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BOOL;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
@@ -37,10 +37,9 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
@@ -88,7 +87,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     private final boolean isFungible;
     private final EncodingFacade encoder;
     private final Address senderAddress;
-    private final StateView currentView;
     private ApproveWrapper approveOp;
     @Nullable private EntityId operatorId;
     @Nullable private EntityId ownerId;
@@ -98,7 +96,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final boolean isFungible,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final StateView currentView,
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
@@ -109,14 +106,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         this.isFungible = isFungible;
         this.encoder = encoder;
         this.senderAddress = senderAddress;
-        this.currentView = currentView;
     }
 
     public ApprovePrecompile(
             final boolean isFungible,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-            final StateView currentView,
             final SideEffectsTracker sideEffects,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
@@ -127,7 +122,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                 isFungible,
                 ledgers,
                 encoder,
-                currentView,
                 sideEffects,
                 syntheticTxnFactory,
                 infrastructureFactory,
@@ -201,7 +195,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final var revocationWrapper = revocationOp.getNftAllowancesList();
             final var status =
                     deleteAllowanceChecks.deleteAllowancesValidation(
-                            revocationWrapper, payerAccount, currentView);
+                            revocationWrapper, payerAccount, accountStore, tokenStore);
             validateTrueOrRevert(status == OK, status);
             deleteAllowanceLogic.deleteAllowance(revocationWrapper, grpcOperatorId);
         } else {
@@ -211,7 +205,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                             transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                             transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
                             payerAccount,
-                            currentView);
+                            accountStore,
+                            tokenStore);
             validateTrueOrRevert(status == OK, status);
             final var approveAllowanceLogic =
                     infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore);

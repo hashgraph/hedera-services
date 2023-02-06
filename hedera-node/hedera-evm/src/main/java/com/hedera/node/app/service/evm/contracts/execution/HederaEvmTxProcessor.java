@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public abstract class HederaEvmTxProcessor {
         tracer.init(initialFrame);
 
         if (dynamicProperties.dynamicEvmVersion()) {
-            String evmVersion = dynamicProperties.evmVersion();
+            final String evmVersion = dynamicProperties.evmVersion();
             messageCallProcessor = mcps.get(evmVersion).get();
             contractCreationProcessor = ccps.get(evmVersion).get();
         }
@@ -212,7 +212,7 @@ public abstract class HederaEvmTxProcessor {
         return gasUsedByTransaction;
     }
 
-    protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
+    protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
         return livePricesSource.currentGasPrice(
                 consensusTime,
                 isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());

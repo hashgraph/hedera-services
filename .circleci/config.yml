@@ -13,12 +13,8 @@ commands:
       - run:
           name: Install necessary tools
           command: |
-            apt update -y;
-            apt install -y net-tools;
-            apt install -y apt-utils;
-            rm -f /usr/bin/python3;
-            ln -s /usr/bin/python3.7 /usr/bin/python3;
-            python3 -m pip -q install matplotlib;
+            apt update -y
+            apt install -y net-tools apt-utils python3.7 python3.7-venv
       - run:
           name: Authenticate gcloud cli
           command: |
@@ -239,7 +235,7 @@ commands:
           command: |
             set -x;
             cd /swirlds-platform/regression
-            gsutil -m rsync -r -d "<< parameters.src >>" "<< parameters.dest >>"
+            gsutil -m rsync -r "<< parameters.src >>" "<< parameters.dest >>"
 
   ######################################################################################################################
   # Command Name:                     gcp_import_credentials
@@ -541,16 +537,16 @@ commands:
               JRS_BRANCH="${CIRCLE_BRANCH}"
             fi
 
-            JRS_OPTIONS=""
+            JRS_OPTIONS="-po"
             SLACK_SUMMARY="<< parameters.slack_summary_channel >>"
             SLACK_RESULTS="<< parameters.slack_results_channel >>"
 
             if [[ -n "${SLACK_SUMMARY}" ]]; then
-              JRS_OPTIONS="${JRS_OPTIONS} -Djrs.circleci.slack.summary=${SLACK_SUMMARY}"
+              JRS_OPTIONS="${JRS_OPTIONS} -sc ${SLACK_SUMMARY}"
             fi
 
             if [[ -n "${SLACK_RESULTS}" ]]; then
-              JRS_OPTIONS="${JRS_OPTIONS} -Djrs.circleci.slack.results=${SLACK_RESULTS}"
+              JRS_OPTIONS="${JRS_OPTIONS} -rc ${SLACK_RESULTS}"
             fi
 
             CI_PARAMETERS=""
@@ -571,19 +567,18 @@ commands:
               if [[ -z "${JAVA_OPTS}" ]]; then
                 JAVA_OPTS="-Xmx4g"
               fi
+            
+              JRS_OPTIONS="${JRS_OPTIONS} -u ${JRS_USER}"
+              JRS_OPTIONS="${JRS_OPTIONS} -b ${JRS_BRANCH}"
+              JRS_OPTIONS="${JRS_OPTIONS} -sl ${JRS_SSH_USER_NAME}"
+              JRS_OPTIONS="${JRS_OPTIONS} -sk /tmp/jrs-ssh-keyfile"
 
               java ${JAVA_OPTS} \
-              -Djrs.circleci=true \
-              -Djrs.circleci.user="${JRS_USER}" \
-              -Djrs.circleci.branch="${JRS_BRANCH}" \
-              -Djrs.circleci.ssh.login="${JRS_SSH_USER_NAME}" \
-              -Djrs.circleci.ssh.keyfile="/tmp/jrs-ssh-keyfile" \
-              ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-fsts-enhanced.xml  \
               -Dspring.output.ansi.enabled=ALWAYS \
               -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
               -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
-              --slack-api-token="${SLACK_API_TOKEN}"
+              --slack-api-token="${SLACK_API_TOKEN}" ${JRS_OPTIONS}
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 package com.hedera.services.yahcli.suites;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class SendSuite extends HapiSuite {
     private final String memo;
     private final String beneficiary;
     @Nullable private final String denomination;
+    private final boolean schedule;
     private final long unitsToSend;
 
     public SendSuite(
@@ -41,12 +44,14 @@ public class SendSuite extends HapiSuite {
             final String beneficiary,
             final long unitsToSend,
             final String memo,
-            @Nullable final String denomination) {
+            @Nullable final String denomination,
+            final boolean schedule) {
         this.memo = memo;
         this.specConfig = specConfig;
         this.beneficiary = Utils.extractAccount(beneficiary);
         this.unitsToSend = unitsToSend;
         this.denomination = denomination;
+        this.schedule = schedule;
     }
 
     @Override
@@ -55,22 +60,31 @@ public class SendSuite extends HapiSuite {
     }
 
     private HapiSpec doSend() {
-        return HapiSpec.customHapiSpec("DoSend")
-                .withProperties(specConfig)
-                .given()
-                .when()
-                .then(
-                        denomination == null
-                                ? cryptoTransfer(
+        var transfer =
+                denomination == null
+                        ? (HapiTxnOp<?>)
+                                cryptoTransfer(
                                                 tinyBarsFromTo(
                                                         DEFAULT_PAYER, beneficiary, unitsToSend))
                                         .memo(memo)
                                         .signedBy(DEFAULT_PAYER)
-                                : cryptoTransfer(
+                        : (HapiTxnOp<?>)
+                                cryptoTransfer(
                                                 moving(unitsToSend, denomination)
                                                         .between(DEFAULT_PAYER, beneficiary))
                                         .memo(memo)
-                                        .signedBy(DEFAULT_PAYER));
+                                        .signedBy(DEFAULT_PAYER);
+
+        // flag that transferred as parameter to schedule a transaction or to execute right away
+        if (schedule) {
+            transfer = scheduleCreate("original", transfer).logged();
+        }
+
+        return HapiSpec.customHapiSpec("DoSend")
+                .withProperties(specConfig)
+                .given()
+                .when()
+                .then(transfer);
     }
 
     @Override

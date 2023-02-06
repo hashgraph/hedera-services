@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.hedera.services.bdd.suites.utils.validation;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -38,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -151,7 +154,6 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -189,8 +191,8 @@ import org.yaml.snakeyaml.representer.Representer;
 public class ValidationScenarios extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
     private static final String DEFAULT_CONFIG_LOC = "config.yml";
-    private static final long TINYBARS_PER_HBAR = 100_000_000L;
-    private static final long FEE_TO_OFFER = 50 * ONE_HBAR;
+    public static final long TINYBARS_PER_HBAR = 100_000_000L;
+    public static final long FEE_TO_OFFER_IN_HBAR = 100;
 
     enum Scenario {
         CRYPTO,
@@ -326,7 +328,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given()
                     .when()
@@ -584,7 +586,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given()
                     .when()
@@ -682,7 +684,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -736,7 +738,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             LongStream.of(payers)
@@ -799,7 +801,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -898,7 +900,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given()
                     .when()
@@ -942,7 +944,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given()
                     .when()
@@ -980,7 +982,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given()
                     .when()
@@ -1020,7 +1022,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1059,7 +1061,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1229,7 +1231,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1397,9 +1399,7 @@ public class ValidationScenarios extends HapiSuite {
             var contract = scenarios.getContract();
 
             Object[] donationArgs =
-                    new Object[] {
-                        Integer.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!"
-                    };
+                    new Object[] {Long.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!"};
 
             return customHapiSpec("ContractScenario")
                     .withProperties(
@@ -1408,7 +1408,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1465,21 +1465,22 @@ public class ValidationScenarios extends HapiSuite {
             return new HapiSpecOperation[0];
         }
 
+        final var suffix = "Novel";
         KeyShape complex = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
         return new HapiSpecOperation[] {
             newKeyNamed("firstNovelKey").shape(complex),
             newKeyNamed("secondNovelKey"),
-            contractCreate(NOVEL_CONTRACT_NAME)
+            contractCustomCreate(NOVEL_CONTRACT_NAME, suffix)
                     .payingWith(SCENARIO_PAYER_NAME)
                     .setNodeFrom(ValidationScenarios::nextNode)
                     .adminKey("firstNovelKey")
                     .balance(1)
                     .bytecode(() -> idLiteral(contract.getPersistent().getBytecode())),
-            contractUpdate(NOVEL_CONTRACT_NAME)
+            contractUpdate(NOVEL_CONTRACT_NAME + suffix)
                     .payingWith(SCENARIO_PAYER_NAME)
                     .setNodeFrom(ValidationScenarios::nextNode)
                     .newKey("secondNovelKey"),
-            contractDelete(NOVEL_CONTRACT_NAME)
+            contractDelete(NOVEL_CONTRACT_NAME + suffix)
                     .payingWith(SCENARIO_PAYER_NAME)
                     .setNodeFrom(ValidationScenarios::nextNode)
                     .transferAccount(PERSISTENT_CONTRACT_NAME),
@@ -1487,7 +1488,8 @@ public class ValidationScenarios extends HapiSuite {
                     (spec, opLog) ->
                             novelContractUsed.set(
                                     HapiPropertySource.asAccountString(
-                                            spec.registry().getAccountID(NOVEL_CONTRACT_NAME))))
+                                            spec.registry()
+                                                    .getAccountID(NOVEL_CONTRACT_NAME + suffix))))
         };
     }
 
@@ -1529,15 +1531,20 @@ public class ValidationScenarios extends HapiSuite {
                                         .isNonEmpty();
                         allRunFor(spec, bytecodeCheck);
 
-                        Object[] expected = new Object[] {BigInteger.valueOf(luckyNo)};
+                        Object[] expected = new Object[] {Long.valueOf(luckyNo)};
+                        spec.registry()
+                                .saveContractId(PERSISTENT_CONTRACT_NAME, asContract(literal));
+                        spec.registry().saveAccountId(PERSISTENT_CONTRACT_NAME, asAccount(literal));
                         var luckyNoCheck =
-                                contractCallLocal(literal, "pick")
+                                contractCallLocal(PERSISTENT_CONTRACT_NAME, "pick")
                                         .setNodeFrom(ValidationScenarios::nextNode)
                                         .has(
                                                 resultWith()
                                                         .resultThruAbi(
                                                                 getABIFor(
-                                                                        FUNCTION, "pick", literal),
+                                                                        FUNCTION,
+                                                                        "pick",
+                                                                        PERSISTENT_CONTRACT_NAME),
                                                                 isLiteralResult(expected)));
                         allRunFor(spec, luckyNoCheck);
 
@@ -1564,6 +1571,7 @@ public class ValidationScenarios extends HapiSuite {
                         var fout = Files.newOutputStream(Paths.get(pathToContract(fileName)));
                         fout.write(bytecode);
                         fout.close();
+                        sourceUpdate.accept(fileName);
                         fileName = fileName.replace(".bin", ".sol");
                         var sol =
                                 new String(
@@ -1575,7 +1583,6 @@ public class ValidationScenarios extends HapiSuite {
                                 Files.newBufferedWriter(Paths.get(pathToContract(fileName)));
                         sourceOut.write(sol);
                         sourceOut.close();
-                        sourceUpdate.accept(fileName);
 
                         var bytecodeName = name + "Bytecode";
                         var bytecodeCreate =
@@ -1593,7 +1600,7 @@ public class ValidationScenarios extends HapiSuite {
                         allRunFor(spec, create);
 
                         Integer numberToUse = (luckyNo == null) ? DEFAULT_LUCKY_NUMBER : luckyNo;
-                        Object[] args = new Object[] {Integer.valueOf(numberToUse)};
+                        Object[] args = new Object[] {Long.valueOf(numberToUse)};
                         var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, "believeIn", args);
                         allRunFor(spec, setLucky);
 
@@ -1634,7 +1641,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -1686,7 +1693,7 @@ public class ValidationScenarios extends HapiSuite {
                                     "default.payer", primaryPayer(),
                                     "default.node", defaultNode(),
                                     "fees.useFixedOffer", "true",
-                                    "fees.fixedOffer", "" + FEE_TO_OFFER,
+                                    "fees.fixedOffer", "" + feeToOffer(),
                                     "default.payer.key", payerKeySeed()))
                     .given(
                             keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
@@ -2029,6 +2036,14 @@ public class ValidationScenarios extends HapiSuite {
         return String.format("0.0.%d", targetNetwork().getDefaultNode());
     }
 
+    private static String feeToOffer() {
+        return "" + (targetNetwork().getDefaultFeeInHbars() * TINYBARS_PER_HBAR);
+    }
+
+    private static long nodePaymentToOffer() {
+        return targetNetwork().getDefaultNodePaymentInTinybars();
+    }
+
     private static String primaryPayer() {
         return String.format("0.0.%d", targetNetwork().getBootstrap());
     }
@@ -2061,7 +2076,7 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     private static ContractID contractId(long num) {
-        return HapiPropertySource.asContract(String.format("0.0.%d", num));
+        return asContract(String.format("0.0.%d", num));
     }
 
     private static String idLiteral(long num) {

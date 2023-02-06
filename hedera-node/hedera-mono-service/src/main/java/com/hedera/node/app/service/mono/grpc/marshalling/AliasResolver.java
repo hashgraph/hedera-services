@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProto
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -33,6 +35,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,6 +72,15 @@ public class AliasResolver {
         resolvedOp.addAllTokenTransfers(resolvedTokenAdjusts);
 
         return resolvedOp.build();
+    }
+
+    public void perceiveEthTxn(final EthTxData ethTxDataMeta, final AliasManager aliasManager) {
+        if (aliasManager
+                        .lookupIdBy(ByteStringUtils.wrapUnsafely(ethTxDataMeta.to()))
+                        .equals(MISSING_NUM)
+                && ethTxDataMeta.value().compareTo(BigInteger.ZERO) > 0) {
+            perceivedLazyCreations++;
+        }
     }
 
     public Map<ByteString, EntityNum> resolutions() {

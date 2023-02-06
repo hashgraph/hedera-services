@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
@@ -37,7 +37,7 @@ public class HtsFeeAssessor {
             CustomFeeMeta chargingTokenMeta,
             FcCustomFee htsFee,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator) {
         final var collector = htsFee.getFeeCollectorAsId();
         final var fixedSpec = htsFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
@@ -50,9 +50,9 @@ public class HtsFeeAssessor {
                 amount,
                 changeManager);
 
-        final var effPayerAccountNums = new long[] {payer.num()};
+        final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed =
-                new FcAssessedCustomFee(
+                new AssessedCustomFeeWrapper(
                         htsFee.getFeeCollector(),
                         fixedSpec.getTokenDenomination(),
                         amount,

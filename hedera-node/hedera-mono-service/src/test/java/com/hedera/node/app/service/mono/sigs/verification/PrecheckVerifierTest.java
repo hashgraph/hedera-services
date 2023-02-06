@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
 import static com.hedera.test.factories.sigs.SyncVerifiers.NEVER_VALID;
 import static java.util.Collections.EMPTY_LIST;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,24 +28,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JHollowKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -203,6 +215,61 @@ class PrecheckVerifierTest {
         // then:
         assertEquals(expectedSigs, actualSigsVerified.get());
         assertTrue(hasPrechekSigs);
+    }
+
+    @Test
+    void replacesPayerHollowKeyWithMatchingFullPrefixECDSASig() throws Exception {
+        // setup:
+        var signedTransaction =
+                SignedTransaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
+        var ecdsaCompressedBytes =
+                ((ECPublicKeyParameters) KeyFactory.ecdsaKpGenerator.generateKeyPair().getPublic())
+                        .getQ()
+                        .getEncoded(true);
+        var ecdsaDecompressedBytes = MiscCryptoUtils.decompressSecp256k1(ecdsaCompressedBytes);
+        var ecdsaHash = Hash.hash(Bytes.of(ecdsaDecompressedBytes)).toArrayUnsafe();
+        List<JKey> reqKeys =
+                Arrays.asList(
+                        new JHollowKey(
+                                Arrays.copyOfRange(
+                                        ecdsaHash, ecdsaHash.length - 20, ecdsaHash.length)));
+
+        given(
+                        precheckKeyReqs.getRequiredKeys(
+                                TransactionBody.parseFrom(signedTransaction.getBodyBytes())))
+                .willReturn(reqKeys);
+
+        var sigMap =
+                SignatureMap.newBuilder()
+                        .addSigPair(
+                                SignaturePair.newBuilder()
+                                        .setPubKeyPrefix(
+                                                ByteString.copyFromUtf8(
+                                                        "012345678901234567890123456789012"))
+                                        .setECDSASecp256K1(ByteString.copyFromUtf8("EC sig")))
+                        .addSigPair(
+                                SignaturePair.newBuilder()
+                                        .setPubKeyPrefix(
+                                                ByteString.copyFromUtf8(
+                                                        "01234567890123456789012345678901"))
+                                        .setEd25519(ByteString.copyFromUtf8("ED sig")))
+                        .addSigPair(
+                                SignaturePair.newBuilder()
+                                        .setPubKeyPrefix(ByteString.copyFrom(ecdsaCompressedBytes))
+                                        .setECDSASecp256K1(
+                                                ByteString.copyFromUtf8("matching EC sig")))
+                        .build();
+
+        given(mockAccessor.getPkToSigsFn()).willReturn(new PojoSigMapPubKeyToSigBytes(sigMap));
+        givenImpliedSubject(ALWAYS_VALID);
+
+        // when:
+        boolean hasPrecheckSigs = subject.hasNecessarySignatures(mockAccessor);
+
+        // then:
+        assertTrue(hasPrecheckSigs);
+        assertTrue(reqKeys.get(0).hasECDSAsecp256k1Key());
+        assertArrayEquals(reqKeys.get(0).getECDSASecp256k1Key(), ecdsaCompressedBytes);
     }
 
     private void givenImpliedSubject(SyncVerifier syncVerifier) {

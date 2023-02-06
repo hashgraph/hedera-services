@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
     private ReferenceType referenceType;
+    private ByteString literalAlias;
 
     public HapiGetAccountInfo(String account) {
         this(account, ReferenceType.REGISTRY_NAME);
@@ -84,6 +85,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         } else {
             account = reference;
         }
+    }
+
+    public HapiGetAccountInfo(ByteString evmAlias, ReferenceType evmAddress) {
+        this.referenceType = evmAddress;
+        this.literalAlias = evmAlias;
     }
 
     @Override
@@ -315,6 +321,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
                     AccountID.newBuilder()
                             .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
                             .build();
+        } else if (referenceType == ReferenceType.LITERAL_ACCOUNT_ALIAS) {
+            target = AccountID.newBuilder().setAlias(literalAlias).build();
         } else {
             target = TxnUtils.asId(account, spec);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
 
         final var defaultFreezeStatus =
                 ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
-        return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
+        return evmEncoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(

@@ -10,3 +10,5 @@ showInternalStats,                             1
 state.saveStatePeriod,                         300
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+state.mainClassNameOverride,                   com.hedera.services.ServicesMain
+maxEventQueueForCons,                          1000

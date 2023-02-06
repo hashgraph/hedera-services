@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ dependencies {
     implementation(libs.bundles.logging)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
-    implementation(libs.hapi)
     implementation(libs.helidon.io.grpc)
     implementation(libs.headlong)
     implementation(
@@ -72,13 +71,12 @@ dependencies {
     implementation(libs.commons.io)
     implementation(libs.commons.collections4)
     implementation(libs.eclipse.collections)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
-    testImplementation(testLibs.google.truth)
     testCompileOnly(libs.spotbugs.annotations)
 
+    testFixturesApi(project(":hedera-node:hedera-app-spi"))
     testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)
@@ -93,6 +91,7 @@ dependencies {
 
 val apt = configurations.create("apt")
 dependencies {
+    implementation(project(":hedera-node:hedera-app-spi"))
     testImplementation("org.jetbrains:annotations:20.1.0")
     @Suppress("UnstableApiUsage")
     apt(libs.dagger.compiler)
@@ -104,22 +103,6 @@ tasks.withType<JavaCompile> {
 
 val jmhDaggerSources = file("build/generated/sources/annotationProcessor/java/jmh")
 java.sourceSets["jmh"].java.srcDir(jmhDaggerSources)
-
-// Add all the libs dependencies into the jar manifest!
-tasks.jar {
-    doFirst {
-        tasks.jar.configure {
-            manifest {
-                attributes(
-                    "Main-Class" to "com.hedera.node.app.service.mono.ServicesMain",
-                    "Class-Path" to configurations.getByName("runtimeClasspath")
-                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
-
-                )
-            }
-        }
-    }
-}
 
 // Replace variables in semantic-version.properties with build variables
 tasks.processResources {
@@ -133,62 +116,5 @@ tasks.processResources {
                 line
             }
         }
-    }
-}
-
-// Copy dependencies into `data/lib`
-val copyLib = tasks.register<Copy>("copyLib") {
-    from(project.configurations.getByName("runtimeClasspath"))
-    into(project(":hedera-node").file("data/lib"))
-}
-
-// Copy built jar into `data/apps` and rename HederaNode.jar
-val copyApp = tasks.register<Copy>("copyApp") {
-    from(tasks.jar)
-    into(project(":hedera-node").file("data/apps"))
-    rename { "HederaNode.jar" }
-    shouldRunAfter(tasks.getByName("copyLib"))
-}
-
-tasks.assemble {
-    dependsOn(copyLib)
-    dependsOn(copyApp)
-}
-
-// Create the "run" task for running a Hedera consensus node
-tasks.register<JavaExec>("run") {
-    group = "application"
-    dependsOn(tasks.assemble)
-    workingDir = project(":hedera-node").projectDir
-    jvmArgs = listOf("-cp", "data/lib/*")
-    mainClass.set("com.swirlds.platform.Browser")
-}
-
-val cleanRun = tasks.register("cleanRun") {
-    val prj = project(":hedera-node")
-    prj.delete(File(prj.projectDir, "database"))
-    prj.delete(File(prj.projectDir, "output"))
-    prj.delete(File(prj.projectDir, "settingsUsed.txt"))
-    prj.delete(File(prj.projectDir, "swirlds.jar"))
-    prj.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
-        ?.forEach { file ->
-            prj.delete(file)
-        }
-
-    val dataDir = File(prj.projectDir, "data")
-    prj.delete(File(dataDir, "accountBalances"))
-    prj.delete(File(dataDir, "apps"))
-    prj.delete(File(dataDir, "lib"))
-    prj.delete(File(dataDir, "recordstreams"))
-    prj.delete(File(dataDir, "saved"))
-}
-
-tasks.clean {
-    dependsOn(cleanRun)
-}
-
-tasks.register("showHapiVersion") {
-    doLast {
-        println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
     }
 }

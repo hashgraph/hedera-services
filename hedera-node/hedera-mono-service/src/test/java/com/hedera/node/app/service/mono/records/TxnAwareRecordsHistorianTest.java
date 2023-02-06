@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,17 +188,33 @@ class TxnAwareRecordsHistorianTest {
 
     @Test
     void ignoresUnsuccessfulChildRecordIfNotExternalizedOnFailure() {
+        final var mockFollowingRecord = mock(ExpirableTxnRecord.class);
         final var mockTopLevelRecord = mock(ExpirableTxnRecord.class);
         given(mockTopLevelRecord.getEnumStatus()).willReturn(SUCCESS);
+        final var expFollowId = txnIdA.toBuilder().setNonce(1).build();
+        final var correctFollowingChildConsTime = RichInstant.fromJava(topLevelNow.plusNanos(1));
+        final var placeholderFollowingChildNows = nows + 7;
+        given(mockFollowingRecord.getConsensusSecond()).willReturn(placeholderFollowingChildNows);
 
         final var topLevelRecord = mock(ExpirableTxnRecord.Builder.class);
         given(topLevelRecord.getTxnId()).willReturn(TxnId.fromGrpc(txnIdA));
         final var followingBuilder = mock(ExpirableTxnRecord.Builder.class);
         given(consensusTimeTracker.isAllowableFollowingOffset(1)).willReturn(true);
+        final var followingAfterBuilder = mock(ExpirableTxnRecord.Builder.class);
+        given(consensusTimeTracker.isAllowableFollowingOffset(2)).willReturn(true);
+        given(followingAfterBuilder.build()).willReturn(mockFollowingRecord);
 
         givenTopLevelContext();
         given(topLevelRecord.setNumChildRecords(anyShort())).willReturn(topLevelRecord);
         given(topLevelRecord.build()).willReturn(mockTopLevelRecord);
+
+        given(
+                        creator.saveExpiringRecord(
+                                effPayer,
+                                mockFollowingRecord,
+                                placeholderFollowingChildNows,
+                                submittingMember))
+                .willReturn(mockFollowingRecord);
 
         given(txnCtx.recordSoFar()).willReturn(topLevelRecord);
         given(txnCtx.sidecars()).willReturn(List.of(TransactionSidecarRecord.newBuilder()));
@@ -212,13 +228,25 @@ class TxnAwareRecordsHistorianTest {
                 followSynthBody,
                 followingBuilder,
                 List.of(TransactionSidecarRecord.newBuilder()));
+
+        final var followAfterSynthBody = aBuilderWith("FOLLOW_AFTER");
+        given(followingAfterBuilder.getTxnId()).willReturn(TxnId.fromGrpc(expFollowId));
+        given(mockFollowingRecord.getTxnId()).willReturn(TxnId.fromGrpc(expFollowId));
+        assertEquals(topLevelNow.plusNanos(2), subject.nextFollowingChildConsensusTime());
+        subject.trackFollowingChildRecord(
+                1,
+                followAfterSynthBody,
+                followingAfterBuilder,
+                List.of(TransactionSidecarRecord.newBuilder()));
+
         given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
         given(txnCtx.accessor()).willReturn(accessor);
 
         subject.saveExpirableTransactionRecords();
         final var followingRsos = subject.getFollowingChildRecords();
-        assertTrue(followingRsos.isEmpty());
-        verify(consensusTimeTracker).setActualFollowingRecordsCount(0L);
+        assertEquals(1, followingRsos.size());
+        verify(consensusTimeTracker).setActualFollowingRecordsCount(1L);
+        verify(followingAfterBuilder).setConsensusTime(correctFollowingChildConsTime);
     }
 
     @Test

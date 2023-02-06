@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -23,7 +22,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * crypto-service, token-service etc.,
  */
 public interface Service {
-
     /**
      * Returns the name of the service. This name must be unique for each service deployed on the
      * application.
@@ -32,31 +30,4 @@ public interface Service {
      */
     @NonNull
     String getServiceName();
-
-    /**
-     * Creates and returns a new {@link PreTransactionHandler}
-     *
-     * @return A new {@link PreTransactionHandler}
-     */
-    @NonNull
-    PreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
-     * Creates and returns a new {@link TransactionHandler}
-     *
-     * @return A new {@link TransactionHandler}
-     */
-    default @NonNull TransactionHandler createTransactionHandler(@NonNull States states) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Creates and returns a new {@link QueryHandler}
-     *
-     * @return A new {@link QueryHandler}
-     */
-    default @NonNull QueryHandler createQueryHandler(@NonNull States states) {
-        throw new UnsupportedOperationException();
-    }
 }

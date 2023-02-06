@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import static org.mockito.BDDMockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
@@ -49,8 +48,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +58,7 @@ class ExpirableTxnRecordTest {
     private static final short numChildRecords = 2;
 
     private static final byte[] pretendHash = "not-really-a-hash".getBytes();
-
+    private static final byte[] pretendEvmAddress = "not-really-an-evm-address".getBytes();
     private static final byte[] pseudoRandomBytes = TxnUtils.randomUtf8Bytes(48);
 
     private static final TokenID nft = IdUtils.asToken("0.0.2");
@@ -71,16 +68,12 @@ class ExpirableTxnRecordTest {
     private static final AccountID beneficiary = IdUtils.asAccount("0.0.6");
     private static final AccountID magician = IdUtils.asAccount("0.0.7");
     private static final AccountID spender = IdUtils.asAccount("0.0.8");
-    private static final AccountID owner = IdUtils.asAccount("0.0.9");
-    private static final EntityNum spenderNum = EntityNum.fromAccountId(spender);
-    private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
     private static final List<TokenAssociation> newRelationships =
             List.of(new FcTokenAssociation(10, 11).toGrpc());
 
     private static final EntityId feeCollector = new EntityId(1, 2, 8);
     private static final EntityId token = new EntityId(1, 2, 9);
     private static final long units = 123L;
-    private static final long initialAllowance = 100L;
 
     private static final AccountAmount reward1 =
             AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100L).build();
@@ -120,32 +113,6 @@ class ExpirableTxnRecordTest {
     private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
     private static final FcAssessedCustomFee balanceChange =
             new FcAssessedCustomFee(feeCollector, token, units, new long[] {234L});
-    private static final FcTokenAllowanceId fungibleAllowanceId =
-            FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenA), spenderNum);
-    private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances =
-            new TreeMap<>() {
-                {
-                    put(
-                            ownerNum,
-                            new TreeMap<>() {
-                                {
-                                    put(spenderNum, initialAllowance);
-                                }
-                            });
-                }
-            };
-    private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances =
-            new TreeMap<>() {
-                {
-                    put(
-                            ownerNum,
-                            new TreeMap<>() {
-                                {
-                                    put(fungibleAllowanceId, initialAllowance);
-                                }
-                            });
-                }
-            };
 
     private ExpirableTxnRecord subject;
 
@@ -177,6 +144,7 @@ class ExpirableTxnRecordTest {
                 .setEthereumHash(ByteString.copyFrom(pretendHash))
                 .setPrngBytes(ByteStringUtils.wrapUnsafely(pseudoRandomBytes))
                 .setPrngNumber(10)
+                .setEvmAddress(ByteString.copyFrom(pretendEvmAddress))
                 .build();
     }
 
@@ -479,6 +447,16 @@ class ExpirableTxnRecordTest {
     }
 
     @Test
+    void equalsDetectsDiffEvmAddress() {
+        final var a = new ExpirableTxnRecord();
+        final var b =
+                ExpirableTxnRecord.newBuilder()
+                        .setAlias(ByteString.copyFrom(pretendEvmAddress))
+                        .build();
+        assertNotEquals(a, b);
+    }
+
+    @Test
     void objectContractWorks() {
         final var two = TxnUtils.recordOne();
         final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
@@ -509,6 +487,7 @@ class ExpirableTxnRecordTest {
                     + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
                     + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
                     + " pseudoRandomNumber=10, pseudoRandomBytes=,"
+                    + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
                     + " parentConsensusTime=1970-01-15T06:56:07.000000890Z,"
                     + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
                     + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
@@ -544,6 +523,7 @@ class ExpirableTxnRecordTest {
                     + " +100, 0.0.8 <- +1000]}, scheduleRef=EntityId{shard=5, realm=6, num=7},"
                     + " alias=test, ethereumHash=6e6f742d7265616c6c792d612d68617368,"
                     + " pseudoRandomNumber=10, pseudoRandomBytes=,"
+                    + " evmAddress=6e6f742d7265616c6c792d616e2d65766d2d61646472657373,"
                     + " tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <-"
                     + " +1, 0.0.7 <- +1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1,"
                     + " 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2(NftAdjustments{readable=[1 0.0.5"

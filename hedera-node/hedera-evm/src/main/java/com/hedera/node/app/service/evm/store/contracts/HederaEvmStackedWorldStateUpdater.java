@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,47 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
 
 public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpdater {
 
-    public HederaEvmStackedWorldStateUpdater(AccountAccessor accountAccessor) {
+    protected final HederaEvmEntityAccess hederaEvmEntityAccess;
+    protected final TokenAccessor tokenAccessor;
+
+    public HederaEvmStackedWorldStateUpdater(
+            final AccountAccessor accountAccessor,
+            final HederaEvmEntityAccess hederaEvmEntityAccess,
+            final TokenAccessor tokenAccessor) {
         super(accountAccessor);
+        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+        this.tokenAccessor = tokenAccessor;
+    }
+
+    public TokenAccessor tokenAccessor() {
+        return tokenAccessor;
+    }
+
+    @Override
+    public Account get(Address address) {
+        if (!address.equals(accountAccessor.canonicalAddress(address))) {
+            return null;
+        }
+
+        final var accountBalance = Wei.of(hederaEvmEntityAccess.getBalance(address));
+        final var account = new UpdatedHederaEvmAccount(address);
+        account.setBalance(accountBalance);
+        account.setEvmEntityAccess(hederaEvmEntityAccess);
+
+        return account;
+    }
+
+    @Override
+    public EvmAccount getAccount(Address address) {
+        return (EvmAccount) get(address);
     }
 }

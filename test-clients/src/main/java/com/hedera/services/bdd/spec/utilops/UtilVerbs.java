@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -105,6 +106,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
@@ -465,6 +467,11 @@ public class UtilVerbs {
     /* Stream validation. */
     public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
         return new RecordStreamVerification(baseDir);
+    }
+
+    public static HapiSpecOperation assertEventuallyPasses(
+            final RecordStreamValidator validator, final Duration timeout) {
+        return new RecordAssertions(timeout, validator);
     }
 
     public static RecordFileChecker verifyRecordFile(
@@ -1420,6 +1427,11 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
     }
 
+    public static Tuple accountAmountAlias(
+            final byte[] alias, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
 
@@ -1435,6 +1447,18 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
+    }
+
+    public static Tuple nftTransferToAlias(
+            final AccountID sender,
+            final byte[] alias,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(alias),
+                serialNumber,
+                isApproval);
     }
 
     public static Tuple nftTransfer(

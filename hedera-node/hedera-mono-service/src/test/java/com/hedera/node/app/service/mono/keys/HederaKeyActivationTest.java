@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -299,5 +299,22 @@ class HederaKeyActivationTest {
     void validSigIsValid() {
         assertEquals(
                 VerificationStatus.VALID, HederaKeyActivationTest.VALID_SIG.getSignatureStatus());
+    }
+
+    @Test
+    void checksEqualityForEd25519Bytes() {
+        final var ed25519Bytes = "01234567890123456789012345678901".getBytes();
+        final var sigBytes = "sig".getBytes();
+
+        assertFalse(HederaKeyActivation.keysMatch(ed25519Bytes, sigBytes));
+    }
+
+    @Test
+    void checksEqualityForUncompressedSecp256k1Bytes() {
+        final var secp256k1Bytes =
+                "0123456789012345678901234567890123456789012345678901234567890123".getBytes();
+        final var sigBytes = "sig".getBytes();
+
+        assertFalse(HederaKeyActivation.keysMatch(secp256k1Bytes, sigBytes));
     }
 }

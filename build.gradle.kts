@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,4 +21,54 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    }
+}
+
+var removeTempDockerFilesTask = tasks.register<Delete>("removeTempDockerFiles") {
+    description = "Deletes all temp docker files that are copied in the root folder to create the docker image"
+    group = "docker"
+
+    delete(".env", ".dockerignore", "Dockerfile")
+}
+
+tasks.clean {
+    dependsOn(removeTempDockerFilesTask)
+}
+
+var updateDockerEnvTask = tasks.register<Exec>("updateDockerEnv") {
+    description = "Creates the .env file in the docker folder that contains environment variables for docker"
+    group = "docker"
+
+    workingDir("./docker")
+    commandLine("./update-env.sh", project.version)
+}
+
+tasks.register<Exec>("createDockerImage") {
+    description = "Creates the docker image of the services based on the current version"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask)
+    workingDir("./docker")
+    commandLine("./docker-build.sh", project.version)
+    finalizedBy(removeTempDockerFilesTask)
+}
+
+tasks.register<Exec>("startDockerContainers") {
+    description = "Starts docker containers of the services based on the current version"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask)
+    workingDir("./docker")
+    commandLine("docker-compose", "up")
+}
+
+tasks.register<Exec>("stopDockerContainers") {
+    description = "Stops running docker containers of the services"
+    group = "docker"
+
+    dependsOn(updateDockerEnvTask)
+    workingDir("./docker")
+    commandLine("docker-compose", "stop")
 }

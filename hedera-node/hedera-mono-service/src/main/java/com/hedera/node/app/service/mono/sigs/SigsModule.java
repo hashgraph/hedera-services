@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.sigs;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
@@ -70,10 +71,11 @@ public interface SigsModule {
     static SigRequirements provideWorkingStateSigReqs(
             final FileNumbers fileNumbers,
             final SignatureWaivers signatureWaivers,
-            final MutableStateChildren workingState) {
+            final MutableStateChildren workingState,
+            final GlobalDynamicProperties properties) {
         final var sigMetaLookup =
                 new StateChildrenSigMetadataLookup(
-                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
+                        fileNumbers, workingState, TokenMetaUtils::signingMetaFrom, properties);
         return new SigRequirements(sigMetaLookup, signatureWaivers);
     }
 

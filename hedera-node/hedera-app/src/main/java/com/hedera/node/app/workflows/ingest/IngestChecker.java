@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.workflows.common.InsufficientBalanceException;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -64,16 +64,14 @@ public class IngestChecker {
         requireNonNull(txBody);
         requireNonNull(functionality);
 
-        var txnId = txBody.getTransactionID();
         if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
+        var txnId = txBody.getTransactionID();
         if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
-
-        // TODO: Implement pre-check once the new handler design has been implemented
     }
 
     /**

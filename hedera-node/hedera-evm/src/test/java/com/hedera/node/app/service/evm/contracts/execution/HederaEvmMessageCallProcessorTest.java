@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,22 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -67,12 +71,15 @@ class HederaEvmMessageCallProcessorTest {
     private static final long GAS_ONE_K = 1_000L;
     private static final long GAS_ONE_M = 1_000_000L;
     HederaEvmMessageCallProcessor subject;
+    HederaEvmMessageCallProcessor subject2;
     @Mock private EVM evm;
     @Mock private PrecompileContractRegistry precompiles;
     @Mock private MessageFrame frame;
     @Mock private DefaultHederaTracer hederaEvmOperationTracer;
     @Mock private WorldUpdater worldUpdater;
     @Mock private PrecompiledContract nonHtsPrecompile;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock private HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater;
     @Mock private AbstractLedgerEvmWorldUpdater updater;
 
     @BeforeEach
@@ -82,6 +89,12 @@ class HederaEvmMessageCallProcessorTest {
                         evm,
                         precompiles,
                         Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
+
+        subject2 =
+                new HederaEvmMessageCallProcessor(
+                        evm,
+                        precompiles,
+                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract));
     }
 
     @Test
@@ -100,6 +113,21 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
         verify(frame).getState();
+    }
+
+    @Test
+    void callsEvmPrecompile() {
+        given(frame.getRemainingGas()).willReturn(1337L);
+        given(frame.getInputData()).willReturn(Bytes.of(1));
+        given(frame.getContractAddress()).willReturn(HEDERA_PRECOMPILE_ADDRESS);
+        given(frame.getWorldUpdater()).willReturn(hederaEvmStackedWorldStateUpdater);
+        given(evmHTSPrecompiledContract.getName()).willReturn("EvmHTS");
+        given(evmHTSPrecompiledContract.computeCosted(any(), any(), any(), any()))
+                .willReturn(Pair.of(1L, Bytes.EMPTY));
+
+        subject2.start(frame, hederaEvmOperationTracer);
+
+        verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
     }
 
     @Test
@@ -129,12 +157,12 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
 
         subject.start(frame, hederaEvmOperationTracer);
 
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
-        assertEquals(123, receiver.getBalance().getAsBigInteger().longValue());
     }
 
     @Test
@@ -196,7 +224,7 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame).decrementRemainingGas(GAS_ONE_K);
         verify(nonHtsPrecompile).computePrecompile(Bytes.EMPTY, frame);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE_M, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
@@ -212,7 +240,7 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(frame).setState(EXCEPTIONAL_HALT);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
@@ -227,7 +255,40 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
+    }
+
+    @Test
+    void executesLazyCreate() {
+        given(frame.getSenderAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(null);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+    }
+
+    @Test
+    void executesLazyCreateFailed() {
+        given(frame.getRecipientAddress()).willReturn(RECIPIENT_ADDRESS);
+        given(frame.getValue()).willReturn(Wei.of(1000L));
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(false);
+        given(updater.get(RECIPIENT_ADDRESS))
+                .willAnswer(
+                        invocation -> {
+                            given(frame.getState()).willReturn(EXCEPTIONAL_HALT);
+                            return null;
+                        });
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(frame).getState();
+        verify(frame, never()).getSenderAddress();
     }
 }

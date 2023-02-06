@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.*;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -54,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddressArray;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -66,10 +66,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -110,6 +112,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompil
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
+import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
@@ -123,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -176,6 +180,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
     public static final String CREATE_TX_REC = "createTXRec";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
+    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY =
+            "contracts.allowAutoAssociations";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -205,7 +211,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled());
+                lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled(),
+                evmLazyCreateViaSolidityCall(),
+                evmLazyCreateViaSolidityCallTooManyCreatesFails(),
+                rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled());
     }
 
     HapiSpec payerCannotOverSendValue() {
@@ -245,9 +254,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         uploadInitCode(TOKEN_CREATE_CONTRACT),
@@ -312,9 +321,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         final String someARAccount = "someARAccount";
         return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
                         cryptoCreate(feeCollector).keyShape(ED25519_ON).balance(ONE_HUNDRED_HBARS),
@@ -383,9 +392,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -465,9 +474,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
         return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(treasuryAndFeeCollectorKey),
@@ -588,9 +597,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var arEd25519Key = "arEd25519Key";
         final var initialAutoRenewAccount = "initialAutoRenewAccount";
         return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
-                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED)
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(arEd25519Key).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(initialAutoRenewAccount).key(arEd25519Key),
@@ -705,7 +714,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
@@ -717,7 +726,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
+                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "true"));
     }
 
     private HapiSpec transferToCaller() {
@@ -1056,9 +1065,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
                 .given(
                         overridingThree(
-                                "entities.limitTokenAssociations", "true",
-                                "tokens.maxPerAccount", "" + 1,
-                                "contracts.allowAutoAssociations", "true"))
+                                "entities.limitTokenAssociations",
+                                "true",
+                                "tokens.maxPerAccount",
+                                "" + 1,
+                                CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY,
+                                "true"))
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
@@ -1310,7 +1322,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var DELEGATE_KEY = "contractKey";
         final var NOT_SUPPORTED_TXN = "notSupportedTxn";
         final var TOTAL_SUPPLY = 1_000;
-        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
+        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY;
 
         return propertyPreservingHapiSpec("lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled")
                 .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
@@ -1377,6 +1389,172 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     recordWith().status(NOT_SUPPORTED)));
                                 }))
                 .then();
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityCall() {
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
+        final var ECDSA_KEY = "ECDSAKey";
+        final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
+        final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
+        final var lazyCreationProperty = "lazyCreation.enabled";
+        final var contractsEvmVersionProperty = "contracts.evm.version";
+        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
+        final var REVERTING_TXN = "revertingTxn";
+        final var depositAmount = 1000;
+        final var payTxn = "payTxn";
+
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCall")
+                .preserving(
+                        lazyCreationProperty,
+                        contractsEvmVersionProperty,
+                        contractsEvmVersionDynamicProperty)
+                .given(
+                        overridingThree(
+                                lazyCreationProperty,
+                                "true",
+                                contractsEvmVersionProperty,
+                                "v0.34",
+                                contractsEvmVersionDynamicProperty,
+                                "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var mirrorTxn = "mirrorTxn";
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            callLazyCreateFunction,
+                                                            mirrorAddrWith(1_234_567_890L))
+                                                    .sending(depositAmount)
+                                                    .via(mirrorTxn)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    mirrorTxn, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            revertingCallLazyCreateFunction,
+                                                            asHeadlongAddress(addressBytes))
+                                                    .sending(depositAmount)
+                                                    .via(REVERTING_TXN)
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .gas(6_000_000),
+                                            emptyChildRecordsCheck(
+                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            callLazyCreateFunction,
+                                                            asHeadlongAddress(addressBytes))
+                                                    .via(payTxn)
+                                                    .sending(depositAmount)
+                                                    .gas(6_000_000));
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var getTxnRecord =
+                                            getTxnRecord(payTxn).andAllChildRecords().logged();
+                                    allRunFor(spec, getTxnRecord);
+                                    final var lazyAccountId =
+                                            getTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    final var name = "lazy";
+                                    spec.registry().saveAccountId(name, lazyAccountId);
+                                    allRunFor(
+                                            spec,
+                                            getAccountBalance(name).hasTinyBars(depositAmount));
+                                }));
+    }
+
+    private HapiSpec evmLazyCreateViaSolidityCallTooManyCreatesFails() {
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
+        final var ECDSA_KEY = "ECDSAKey";
+        final var ECDSA_KEY2 = "ECDSAKey2";
+        final var createTooManyHollowAccounts = "createTooManyHollowAccounts";
+        final var lazyCreationProperty = "lazyCreation.enabled";
+        final var contractsEvmVersionProperty = "contracts.evm.version";
+        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
+        final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
+        final var depositAmount = 1000;
+        return propertyPreservingHapiSpec("evmLazyCreateViaSolidityCallTooManyCreatesFails")
+                .preserving(
+                        lazyCreationProperty,
+                        maxPrecedingRecords,
+                        contractsEvmVersionDynamicProperty,
+                        contractsEvmVersionDynamicProperty)
+                .given(
+                        overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
+                        overridingTwo(
+                                contractsEvmVersionProperty,
+                                "v0.34",
+                                contractsEvmVersionDynamicProperty,
+                                "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                        uploadInitCode(LAZY_CREATE_CONTRACT),
+                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var ecdsaKey2 = spec.registry().getKey(ECDSA_KEY2);
+                                    final var tmp2 = ecdsaKey2.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes2 = recoverAddressFromPubKey(tmp2);
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            LAZY_CREATE_CONTRACT,
+                                                            createTooManyHollowAccounts,
+                                                            (Object)
+                                                                    asHeadlongAddressArray(
+                                                                            addressBytes,
+                                                                            addressBytes2))
+                                                    .sending(depositAmount)
+                                                    .via(TRANSFER_TXN)
+                                                    .gas(6_000_000)
+                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                            getAliasedAccountInfo(ecdsaKey.toByteString())
+                                                    .logged()
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                                            getAliasedAccountInfo(ecdsaKey2.toByteString())
+                                                    .logged()
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+                                }))
+                .then(
+                        emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED),
+                        resetToDefault(
+                                lazyCreationProperty,
+                                contractsEvmVersionProperty,
+                                maxPrecedingRecords));
+    }
+
+    private HapiSpec rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
+        return propertyPreservingHapiSpec("rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled")
+                .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
+                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "false"))
+                .when(uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .then(
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .maxAutomaticTokenAssociations(5)
+                                .hasPrecheck(NOT_SUPPORTED),
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
+                        contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .newMaxAutomaticAssociations(5)
+                                .hasPrecheck(NOT_SUPPORTED),
+                        contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
     }
 
     @Override

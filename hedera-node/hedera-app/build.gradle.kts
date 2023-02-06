@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-node:hedera-app-spi"))
     implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
@@ -42,10 +42,8 @@ dependencies {
     implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
-
+    implementation(project(":hedera-node:hedera-evm"))
     implementation(libs.bundles.swirlds)
-    compileOnly(libs.spotbugs.annotations)
-    implementation(libs.hapi)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
 
@@ -57,6 +55,84 @@ dependencies {
     itestCompileOnly(libs.spotbugs.annotations)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
+}
+
+tasks.withType<Test> {
+    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+}
+
+// Add all the libs dependencies into the jar manifest!
+tasks.jar {
+    doFirst {
+        tasks.jar.configure {
+            manifest {
+                attributes(
+                    "Main-Class" to "com.hedera.node.app.ServicesMain",
+                    "Class-Path" to configurations.getByName("runtimeClasspath")
+                        .joinToString(separator = " ") { "../../data/lib/" + it.name }
+
+                )
+            }
+        }
+    }
+}
+
+// Copy dependencies into `data/lib`
+val copyLib = tasks.register<Copy>("copyLib") {
+    from(project.configurations.getByName("runtimeClasspath"))
+    into(project(":hedera-node").file("data/lib"))
+}
+
+// Copy built jar into `data/apps` and rename HederaNode.jar
+val copyApp = tasks.register<Copy>("copyApp") {
+    from(tasks.jar)
+    into(project(":hedera-node").file("data/apps"))
+    rename { "HederaNode.jar" }
+    shouldRunAfter(tasks.getByName("copyLib"))
+}
+
+tasks.assemble {
+    dependsOn(copyLib)
+    dependsOn(copyApp)
+}
+
+// Create the "run" task for running a Hedera consensus node
+tasks.register<JavaExec>("run") {
+    group = "application"
+    dependsOn(tasks.assemble)
+    workingDir = project(":hedera-node").projectDir
+    jvmArgs = listOf("-cp", "data/lib/*")
+    mainClass.set("com.swirlds.platform.Browser")
+}
+
+val cleanRun = tasks.register("cleanRun") {
+    val prj = project(":hedera-node")
+    prj.delete(File(prj.projectDir, "database"))
+    prj.delete(File(prj.projectDir, "output"))
+    prj.delete(File(prj.projectDir, "settingsUsed.txt"))
+    prj.delete(File(prj.projectDir, "swirlds.jar"))
+    prj.projectDir.list { _, fileName -> fileName.startsWith("MainNetStats") }
+        ?.forEach { file ->
+            prj.delete(file)
+        }
+
+    val dataDir = File(prj.projectDir, "data")
+    prj.delete(File(dataDir, "accountBalances"))
+    prj.delete(File(dataDir, "apps"))
+    prj.delete(File(dataDir, "lib"))
+    prj.delete(File(dataDir, "recordstreams"))
+    prj.delete(File(dataDir, "saved"))
+}
+
+tasks.clean {
+    dependsOn(cleanRun)
+}
+
+tasks.register("showHapiVersion") {
+    doLast {
+        println(versionCatalogs.named("libs").findVersion("hapi-version").get().requiredVersion)
+    }
 }

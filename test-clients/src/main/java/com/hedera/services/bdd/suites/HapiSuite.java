@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.math.BigInteger;
@@ -38,7 +39,9 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSuite {
-
+    // The first 0 refers to the shard of the target network.
+    // The second 0 refers to the realm.
+    public static final String DEFAULT_SHARD_REALM = "0.0.";
     public static final String TRUE_VALUE = "true";
     public static final String FALSE_VALUE = "false";
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
@@ -58,6 +61,10 @@ public abstract class HapiSuite {
     public static final Key EMPTY_KEY =
             Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
+    public static final Key STANDIN_CONTRACT_ID_KEY =
+            Key.newBuilder()
+                    .setContractID(ContractID.newBuilder().setContractNum(0).build())
+                    .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
@@ -75,7 +82,8 @@ public abstract class HapiSuite {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
+    public static final String CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED =
+            "cryptoCreateWithAliasAndEvmAddress.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";

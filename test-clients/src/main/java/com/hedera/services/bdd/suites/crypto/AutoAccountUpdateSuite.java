@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,13 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -43,12 +38,18 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Note that we cannot test the behavior of the network when the auto-created account expires,
+ * because all auto-created accounts are set to an expiration of three months. There is also no way
+ * to decrease the expiration time of any entity, so we cannot test the behavior of the network when
+ * the auto-created account is about to expire.
+ */
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     public static final long INITIAL_BALANCE = 1000L;
 
     private static final String PAYER = "payer";
-    private static final String ALIAS = "testAlias";
+    public static final String ALIAS = "testAlias";
     private static final String TRANSFER_TXN = "transferTxn";
     public static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_TXN_3 = "transferTxn3";
@@ -64,11 +65,13 @@ public class AutoAccountUpdateSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        // NOTE: accountCreatedAfterAliasAccountExpiresAndDelete cannot be run in CI
         return List.of(
-                updateKeyOnAutoCreatedAccount(),
-                accountCreatedAfterAliasAccountExpires(),
-                modifySigRequiredAfterAutoAccountCreation());
+                updateKeyOnAutoCreatedAccount(), modifySigRequiredAfterAutoAccountCreation());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
@@ -122,53 +125,6 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
                                                         (2 * ONE_HUNDRED_HBARS), 0, 0)));
-    }
-
-    private HapiSpec accountCreatedAfterAliasAccountExpires() {
-        final var briefAutoRenew = 3L;
-        return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
-                .given(
-                        newKeyNamed(ALIAS),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(
-                                        propsForAccountAutoRenewOnWith(
-                                                briefAutoRenew, 20 * briefAutoRenew)),
-                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when(
-                        /* auto account is created */
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                                .expectedBalanceWithChargedUsd(
-                                                        (ONE_HUNDRED_HBARS), 0, 0)))
-                .then(
-                        /* update auto renew period */
-                        cryptoUpdateAliased(ALIAS)
-                                .autoRenewPeriod(briefAutoRenew)
-                                .signedBy(ALIAS, PAYER, DEFAULT_PAYER),
-                        sleepFor(2 * briefAutoRenew * 1_000L + 500L),
-                        getAutoCreatedAccountBalance(ALIAS),
-
-                        /* account is expired but not deleted and validate the transfer succeeds*/
-                        cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
-                                .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0),
-                        getAliasedAccountInfo(ALIAS)
-                                .has(
-                                        accountWith()
-                                                .expectedBalanceWithChargedUsd(
-                                                        (2 * ONE_HUNDRED_HBARS), 0, 0)),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     private HapiSpec updateKeyOnAutoCreatedAccount() {

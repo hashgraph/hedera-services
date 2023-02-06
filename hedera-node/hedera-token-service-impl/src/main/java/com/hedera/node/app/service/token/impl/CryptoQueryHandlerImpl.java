@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -36,10 +36,10 @@ public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
     /**
      * Constructor of {@code CryptoQueryHandlerImpl}
      *
-     * @param states the {@link States} object
+     * @param states the {@link ReadableStates} object
      * @throws NullPointerException if {@code states} is {@code null}
      */
-    public CryptoQueryHandlerImpl(@NonNull final States states) {
+    public CryptoQueryHandlerImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
     }
 

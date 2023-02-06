@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.mocks.MockDynamicProperties.mockPropertiesWith;
 
-import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
+import com.hedera.node.app.service.mono.context.properties.*;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
@@ -39,7 +35,6 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
-import com.hedera.node.app.service.mono.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.mocks.MockAccountTracking;
 import com.hedera.node.app.service.mono.mocks.MockEntityCreator;
 import com.hedera.node.app.service.mono.mocks.MockProps;
@@ -58,6 +53,8 @@ import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
@@ -128,10 +125,12 @@ public interface StakingActivityModule {
         return () -> networkCtx;
     }
 
-    @Binds
+    @Provides
     @Singleton
     @MockProps
-    AccountNumbers bindAccountNumbers(MockAccountNumbers accountNumbers);
+    static HederaAccountNumbers bindAccountNumbers() {
+        return new MockAccountNumbers();
+    }
 
     @Binds
     @Singleton
@@ -161,7 +160,7 @@ public interface StakingActivityModule {
             final StakeChangeManager stakeChangeManager,
             final StakePeriodManager stakePeriodManager,
             final StakeInfoManager stakeInfoManager,
-            final @MockProps AccountNumbers accountNumbers,
+            final @MockProps HederaAccountNumbers accountNumbers,
             final TransactionContext txnCtx,
             final AccountUsageTracking usageTracking) {
         final Supplier<HederaAccount> accountSupplier =

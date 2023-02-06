@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
@@ -117,7 +117,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
@@ -135,7 +135,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO;
@@ -237,7 +237,7 @@ import static com.hedera.test.factories.scenarios.TokenFeeScheduleUpdateScenario
 import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_FOR_TOKEN_WITHOUT_KYC;
-import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_MISSING_TOKEN;
+import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.REVOKE_WITH_INVALID_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenKycRevokeScenarios.VALID_REVOKE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenMintScenarios.MINT_WITH_SUPPLY_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenPauseScenarios.VALID_PAUSE_WITH_EXTANT_TOKEN;
@@ -311,9 +311,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -335,7 +333,10 @@ import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -348,7 +349,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
-class SigRequirementsTest {
+public class SigRequirementsTest {
     private static class TopicAdapter {
         public static TopicSigMetaLookup throwingUoe() {
             return id -> {
@@ -436,7 +437,7 @@ class SigRequirementsTest {
     private HederaFs hfs;
     private TokenStore tokenStore;
     private AliasManager aliasManager;
-    private FileNumbers fileNumbers = new MockFileNumbers();
+    private HederaFileNumbers fileNumbers = new MockFileNumbers();
     private ScheduleStore scheduleStore;
     private TransactionBody txn;
     private SigRequirements subject;
@@ -695,7 +696,7 @@ class SigRequirementsTest {
 
     @Test
     void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransfer() throws Throwable {
-        setupFor(TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+        setupFor(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
 
         final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
 
@@ -705,7 +706,7 @@ class SigRequirementsTest {
     @Test
     void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransferWithCustomPayer()
             throws Throwable {
-        setupFor(TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+        setupFor(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
 
         final var nonPayerSummary =
                 subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
@@ -715,7 +716,7 @@ class SigRequirementsTest {
 
     @Test
     void doesntAddOwnerSigWhenAllowanceGrantedToPayerForNFTTransfer() throws Throwable {
-        setupFor(NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+        setupFor(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
 
         final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
 
@@ -964,10 +965,12 @@ class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+                contains(
+                        FIRST_TOKEN_SENDER_KT.asKey(),
+                        NO_RECEIVER_SIG_KT.asKey(),
+                        FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -982,10 +985,12 @@ class SigRequirementsTest {
                 subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
-        assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+                contains(
+                        FIRST_TOKEN_SENDER_KT.asKey(),
+                        NO_RECEIVER_SIG_KT.asKey(),
+                        FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1153,8 +1158,9 @@ class SigRequirementsTest {
         setupFor(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
 
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
+        final var keys = summary.getOrderedKeys();
 
-        assertThat(summary.getOrderedKeys(), iterableWithSize(1));
+        assertThat(keys, iterableWithSize(1));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
@@ -1244,7 +1250,7 @@ class SigRequirementsTest {
 
     @Test
     void allowsNftTransferToMissingReceiver() throws Throwable {
-        setupFor(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO);
+        setupFor(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO);
 
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
@@ -4693,9 +4699,9 @@ class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenRevokeKycWithMissingToken() throws Throwable {
+    void getsTokenRevokeKycWithInvalidToken() throws Throwable {
         // given:
-        setupFor(REVOKE_WITH_MISSING_TOKEN);
+        setupFor(REVOKE_WITH_INVALID_TOKEN);
 
         // when:
         var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -6467,12 +6473,12 @@ class SigRequirementsTest {
                 id -> null);
     }
 
-    static List<Key> sanityRestored(List<JKey> jKeys) {
+    public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
                 .map(
                         jKey -> {
                             try {
-                                return JKey.mapJKey(jKey);
+                                return JKey.mapJKey((JKey) jKey);
                             } catch (Exception ignore) {
                             }
                             throw new AssertionError("All keys should be mappable!");

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - SPI"
@@ -33,11 +34,14 @@ configurations.all {
 
 dependencies {
     implementation(libs.grpc.stub)
+    implementation(libs.swirlds.common)
     api(libs.hapi)
-    implementation(libs.helidon.io.grpc)
-    implementation(libs.jsr305.annotation)
-    compileOnly(libs.spotbugs.annotations)
+    api(libs.helidon.io.grpc)
+    api(libs.jsr305.annotation)
+    compileOnlyApi(libs.spotbugs.annotations)
 
-    testImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
+
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,10 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Process object that encapsulates a balance change, either ℏ or token unit .
@@ -209,10 +211,19 @@ public class BalanceChange {
         if (isAlias(accountId)) {
             accountId = createdId.toGrpcAccountId();
             account = Id.fromGrpcAccount(accountId);
-            alias = ByteString.EMPTY;
         } else if (hasNonEmptyCounterPartyAlias()) {
             counterPartyAccountId = createdId.toGrpcAccountId();
-            counterPartyAlias = ByteString.EMPTY;
+        }
+    }
+
+    @Nullable
+    public Pair<ByteString, AccountID> getAliasToNewId() {
+        if (accountId != null && !alias.isEmpty()) {
+            return Pair.of(alias, accountId);
+        } else if (counterPartyAccountId != null && counterPartyAlias != null) {
+            return Pair.of(counterPartyAlias, counterPartyAccountId);
+        } else {
+            return null;
         }
     }
 

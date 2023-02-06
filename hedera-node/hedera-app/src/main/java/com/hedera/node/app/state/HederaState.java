@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,35 @@
  */
 package com.hedera.node.app.state;
 
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableStates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-// Placeholder until the state-implementation is added
+/**
+ * The full state used by Hedera. The primary implementation is based on a merkle tree, and the data
+ * structures provided by the hashgraph platform. But most of our code doesn't need to know that
+ * detail, and are happy with just the API provided by this interface.
+ */
 public interface HederaState {
+    /**
+     * Creates a {@link ReadableStates} for the given named service. If such a service doesn't
+     * exist, an empty {@link ReadableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link ReadableKVState} instances belonging to the service.
+     */
+    @NonNull
+    ReadableStates createReadableStates(@NonNull String serviceName);
 
-    String CONSENSUS_SERVICE = "ConsensusService";
-    String CONTRACT_SERVICE = "ContractService";
-    String CRYPTO_SERVICE = "CryptoService";
-    String FILE_SERVICE = "FileService";
-    String FREEZE_SERVICE = "FreezeService";
-    String NETWORK_SERVICE = "NetworkService";
-    String SCHEDULE_SERVICE = "ScheduleService";
-    String TOKEN_SERVICE = "TokenService";
-    String UTIL_SERVICE = "UtilService";
-
-    States createReadableStates(String serviceName);
+    /**
+     * Creates a {@link WritableStates} for the given named service. If such a service doesn't
+     * exist, an empty {@link WritableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link WritableKVState} instance belonging to the service.
+     */
+    @NonNull
+    WritableStates createWritableStates(@NonNull String serviceName);
 }

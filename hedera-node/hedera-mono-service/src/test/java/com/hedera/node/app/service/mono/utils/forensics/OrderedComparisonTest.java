@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
@@ -135,6 +136,10 @@ class OrderedComparisonTest {
     void canInvestigateWithCorrelatedSidecars() throws IOException {
         final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
+        final var firstEntryRepr = entries.get(0).toString();
+        assertTrue(
+                firstEntryRepr.startsWith(
+                        "RecordStreamEntry{consensusTime=2022-12-05T14:23:46.192841556Z"));
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
         visitWithSidecars(

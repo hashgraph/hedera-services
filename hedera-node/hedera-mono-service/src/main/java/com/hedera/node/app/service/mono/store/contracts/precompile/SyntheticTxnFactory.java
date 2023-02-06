@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -529,6 +529,15 @@ public class SyntheticTxnFactory {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setEvmAddress(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    public TransactionBody.Builder updateHollowAccount(final EntityNum accountNum, final Key key) {
+        final var grpcId = accountNum.toGrpcAccountId();
+        final var op =
+                CryptoUpdateTransactionBody.newBuilder().setAccountIDToUpdate(grpcId).setKey(key);
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
+                .setCryptoUpdateAccount(op);
     }
 
     private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {

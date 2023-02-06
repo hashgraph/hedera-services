@@ -109,7 +109,7 @@ under the `startupAccounts.path` key).
 
 As you run operations against the local network, each node will periodically save its state using
 a combination of PostgreSQL tables under _compose-network/pgdata/_ and state files under, for example,
-_compose-network/node0/saved/com.hedera.node.app.service.mono.ServicesMain/0/hedera/_.
+_compose-network/node0/saved/com.hedera.node.app.ServicesMain/0/hedera/_.
 
 To stop the network, use `Ctrl+C` (or `docker-compose stop` if running with detached containers).
 
@@ -155,4 +155,4 @@ all of which would be desirable for a production use case. The image also
 serves the gRPC API only on port 50211, without TLS.
 
 We suggest using the image only in enviroments such as the Docker Compose
-network defined by the [docker-compose.yml](../docker-compose.yml) in this repository.
+network defined by the [docker-compose.yml](../docker/docker-compose.yml) in this repository.

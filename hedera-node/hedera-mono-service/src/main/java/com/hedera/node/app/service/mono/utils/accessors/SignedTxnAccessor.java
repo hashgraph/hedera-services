@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -204,7 +204,11 @@ public class SignedTxnAccessor implements TxnAccessor {
     @Override
     public void countImplicitCreationsWith(final AliasManager aliasManager) {
         final var resolver = new AliasResolver();
-        resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+        if (txn.hasEthereumTransaction()) {
+            resolver.perceiveEthTxn(getSpanMapAccessor().getEthTxDataMeta(this), aliasManager);
+        } else {
+            resolver.resolve(txn.getCryptoTransfer(), aliasManager);
+        }
         numImplicitCreations =
                 resolver.perceivedAutoCreations() + resolver.perceivedLazyCreations();
     }

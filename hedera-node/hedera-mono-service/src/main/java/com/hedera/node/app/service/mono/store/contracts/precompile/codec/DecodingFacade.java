@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,11 +193,12 @@ public class DecodingFacade {
     }
 
     public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
-        final var address =
-                Address.wrap(
-                        Bytes.wrap(addressBytes)
-                                .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+        final var address = Address.wrap(getSlicedAddressBytes(addressBytes));
         return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
+    }
+
+    public static Bytes getSlicedAddressBytes(byte[] addressBytes) {
+        return Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
     }
 
     public static List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(

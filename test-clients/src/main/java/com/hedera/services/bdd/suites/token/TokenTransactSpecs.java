@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createDefaultContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownFungibleToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createWellKnownNonFungibleToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -44,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wellKnownTokenEntities;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
@@ -55,7 +58,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.roy
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.VALID_ALIAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -82,9 +89,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.OptionalLong;
@@ -184,7 +191,7 @@ public class TokenTransactSpecs extends HapiSuite {
                     fractionalNetOfTransfersCaseStudy(),
                     royaltyAndFractionalTogetherCaseStudy(),
                     respondsCorrectlyWhenNonFungibleTokenWithRoyaltyUsedInTransferList(),
-                    // HIP-573 charging case studies---all will fail at this time!
+                    // HIP-573 charging case studies
                     collectorIsChargedFixedFeeUnlessExempt(),
                     collectorIsChargedFractionalFeeUnlessExempt(),
                     collectorIsChargedNetOfTransferFractionalFeeUnlessExempt(),
@@ -197,8 +204,124 @@ public class TokenTransactSpecs extends HapiSuite {
                     newSlotsCanBeOpenedViaDissociate(),
                     autoAssociationWithKycTokenHasNoSideEffectsOrHistory(),
                     autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory(),
-                    autoAssociationWorksForContracts()
+                    autoAssociationWorksForContracts(),
+                    // Interactions between HIP-18 and HIP-542
+                    customFeesHaveExpectedAutoCreateInteractions(),
                 });
+    }
+
+    private HapiSpec customFeesHaveExpectedAutoCreateInteractions() {
+        final var nftWithRoyaltyNoFallback = "nftWithRoyaltyNoFallback";
+        final var nftWithRoyaltyPlusHtsFallback = "nftWithRoyaltyPlusFallback";
+        final var nftWithRoyaltyPlusHbarFallback = "nftWithRoyaltyPlusHbarFallback";
+        final var ftWithNetOfTransfersFractional = "ftWithNetOfTransfersFractional";
+        final var ftWithNonNetOfTransfersFractional = "ftWithNonNetOfTransfersFractional";
+        final var finalReceiverKey = "finalReceiverKey";
+        final var otherCollector = "otherCollector";
+        final var finalTxn = "finalTxn";
+
+        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions")
+                .given(
+                        wellKnownTokenEntities(),
+                        cryptoCreate(otherCollector),
+                        cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),
+                        inParallel(
+                                createWellKnownFungibleToken(
+                                        ftWithNetOfTransfersFractional,
+                                        creation ->
+                                                creation.withCustom(
+                                                        fractionalFeeNetOfTransfers(
+                                                                1L,
+                                                                100L,
+                                                                1L,
+                                                                OptionalLong.of(5L),
+                                                                TOKEN_TREASURY))),
+                                createWellKnownFungibleToken(
+                                        ftWithNonNetOfTransfersFractional,
+                                        creation ->
+                                                creation.withCustom(
+                                                        fractionalFee(
+                                                                1L,
+                                                                100L,
+                                                                1L,
+                                                                OptionalLong.of(5L),
+                                                                TOKEN_TREASURY))),
+                                createWellKnownNonFungibleToken(
+                                        nftWithRoyaltyNoFallback,
+                                        1,
+                                        creation ->
+                                                creation.withCustom(
+                                                        royaltyFeeNoFallback(
+                                                                1L, 100L, TOKEN_TREASURY))),
+                                createWellKnownNonFungibleToken(
+                                        nftWithRoyaltyPlusHbarFallback,
+                                        1,
+                                        creation ->
+                                                creation.withCustom(
+                                                        royaltyFeeWithFallback(
+                                                                1L,
+                                                                100L,
+                                                                fixedHbarFeeInheritingRoyaltyCollector(
+                                                                        ONE_HBAR),
+                                                                TOKEN_TREASURY)))),
+                        tokenAssociate(otherCollector, ftWithNonNetOfTransfersFractional),
+                        createWellKnownNonFungibleToken(
+                                nftWithRoyaltyPlusHtsFallback,
+                                1,
+                                creation ->
+                                        creation.withCustom(
+                                                royaltyFeeWithFallback(
+                                                        1L,
+                                                        100L,
+                                                        fixedHtsFeeInheritingRoyaltyCollector(
+                                                                666,
+                                                                ftWithNonNetOfTransfersFractional),
+                                                        otherCollector))))
+                .when(
+                        inParallel(
+                                autoCreateWithFungible(ftWithNetOfTransfersFractional),
+                                autoCreateWithFungible(ftWithNonNetOfTransfersFractional),
+                                autoCreateWithNonFungible(nftWithRoyaltyNoFallback, SUCCESS),
+                                autoCreateWithNonFungible(
+                                        nftWithRoyaltyPlusHbarFallback,
+                                        INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)))
+                .then(
+                        newKeyNamed(finalReceiverKey),
+                        cryptoTransfer(
+                                moving(100_000, ftWithNonNetOfTransfersFractional)
+                                        .between(TOKEN_TREASURY, CIVILIAN),
+                                movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
+                                        .between(TOKEN_TREASURY, CIVILIAN)),
+                        cryptoTransfer(
+                                        moving(10_000, ftWithNonNetOfTransfersFractional)
+                                                .between(CIVILIAN, finalReceiverKey),
+                                        movingUnique(nftWithRoyaltyPlusHtsFallback, 1L)
+                                                .between(CIVILIAN, finalReceiverKey))
+                                .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)
+                                .via(finalTxn));
+    }
+
+    private HapiSpecOperation autoCreateWithFungible(final String token) {
+        final var keyName = VALID_ALIAS + "-" + token;
+        final var txn = "autoCreationVia" + token;
+        return blockingOrder(
+                newKeyNamed(keyName),
+                cryptoTransfer(moving(100_000, token).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(moving(10_000, token).between(CIVILIAN, keyName)).via(txn),
+                getTxnRecord(txn).assertingKnownEffectivePayers());
+    }
+
+    private HapiSpecOperation autoCreateWithNonFungible(
+            final String token, final ResponseCodeEnum expectedStatus) {
+        final var keyName = VALID_ALIAS + "-" + token;
+        final var txn = "autoCreationVia" + token;
+        return blockingOrder(
+                newKeyNamed(keyName),
+                cryptoTransfer(movingUnique(token, 1L).between(TOKEN_TREASURY, CIVILIAN)),
+                cryptoTransfer(movingUnique(token, 1L).between(CIVILIAN, keyName))
+                        .via(txn)
+                        .hasKnownStatus(expectedStatus),
+                getTxnRecord(txn).assertingKnownEffectivePayers());
     }
 
     public HapiSpec autoAssociationWithFrozenByDefaultTokenHasNoSideEffectsOrHistory() {
@@ -1731,7 +1854,7 @@ public class TokenTransactSpecs extends HapiSuite {
                                         copyFromUtf8("aaa"))))
                 .when(
                         cryptoTransfer(
-                                        TokenMovement.movingUnique(nonfungible, 1L, 2L, 3L)
+                                        movingUnique(nonfungible, 1L, 2L, 3L)
                                                 .between(TOKEN_TREASURY, CIVILIAN))
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY, CIVILIAN)
                                 .fee(ONE_HBAR))

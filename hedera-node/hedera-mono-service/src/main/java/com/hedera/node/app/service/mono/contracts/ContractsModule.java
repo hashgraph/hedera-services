@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.contracts;
 
-import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
 import static com.hedera.node.app.service.mono.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
@@ -47,6 +46,7 @@ import com.hedera.node.app.service.mono.store.contracts.MutableEntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -73,14 +73,14 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-@Module(includes = {StoresModule.class, ContractsV_0_30Module.class, ContractsV_0_32Module.class})
+@Module(includes = {StoresModule.class, ContractsV_0_30Module.class, ContractsV_0_34Module.class})
 public interface ContractsModule {
 
     @Qualifier
     @interface V_0_30 {}
 
     @Qualifier
-    @interface V_0_32 {}
+    @interface V_0_34 {}
 
     @Binds
     @Singleton
@@ -184,21 +184,23 @@ public interface ContractsModule {
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(EVM_VERSION_0_32)
-    static MessageCallProcessor provideV_0_32MessageCallProcessor(
-            final @V_0_32 EVM evm,
-            final @V_0_32 PrecompileContractRegistry precompiles,
-            final Map<String, PrecompiledContract> hederaPrecompileList) {
-        return new HederaMessageCallProcessor(evm, precompiles, hederaPrecompileList);
+    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
+    static MessageCallProcessor provideV_0_34MessageCallProcessor(
+            final @V_0_34 EVM evm,
+            final @V_0_34 PrecompileContractRegistry precompiles,
+            final Map<String, PrecompiledContract> hederaPrecompileList,
+            final InfrastructureFactory infrastructureFactory) {
+        return new HederaMessageCallProcessor(
+                evm, precompiles, hederaPrecompileList, infrastructureFactory);
     }
 
     @Provides
     @Singleton
     @IntoMap
-    @StringKey(EVM_VERSION_0_32)
-    static ContractCreationProcessor provideV_0_32ContractCreateProcessor(
+    @StringKey(ContractsV_0_34Module.EVM_VERSION_0_34)
+    static ContractCreationProcessor provideV_0_34ContractCreateProcessor(
             final GasCalculator gasCalculator,
-            final @V_0_32 EVM evm,
+            final @V_0_34 EVM evm,
             Set<ContractValidationRule> validationRules) {
         return new ContractCreationProcessor(
                 gasCalculator, evm, true, List.copyOf(validationRules), 1);

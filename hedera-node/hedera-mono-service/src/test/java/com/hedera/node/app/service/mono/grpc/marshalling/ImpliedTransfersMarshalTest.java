@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -285,7 +285,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -316,7 +316,7 @@ class ImpliedTransfersMarshalTest {
         // then:
         assertEquals(expectedChanges, result.getAllBalanceChanges());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test
@@ -359,7 +359,7 @@ class ImpliedTransfersMarshalTest {
         assertEquals(aliasA.toByteString(), result.getAllBalanceChanges().get(0).alias());
         assertEquals(aliasB.toByteString(), result.getAllBalanceChanges().get(1).alias());
         assertEquals(result.getMeta(), expectedMeta);
-        assertTrue(result.getAssessedCustomFees().isEmpty());
+        assertTrue(result.getUnaliasedAssessedCustomFees().isEmpty());
     }
 
     @Test

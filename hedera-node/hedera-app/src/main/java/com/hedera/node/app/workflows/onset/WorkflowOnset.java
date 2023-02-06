@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -121,18 +121,20 @@ public class WorkflowOnset {
         // 3. Parse and validate TransactionBody
         final TransactionBody txBody =
                 parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
-        checker.checkTransactionBody(txBody);
+        var errorCode = checker.checkTransactionBody(txBody);
 
         // 4. Get HederaFunctionality
-        final HederaFunctionality functionality;
+        var functionality = HederaFunctionality.UNRECOGNIZED;
         try {
             functionality = MiscUtils.functionOf(txBody);
         } catch (UnknownHederaFunctionality e) {
-            throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            if (errorCode == ResponseCodeEnum.OK) {
+                errorCode = INVALID_TRANSACTION_BODY;
+            }
         }
 
         // 4. return TransactionBody
-        return new OnsetResult(txBody, signatureMap, functionality);
+        return new OnsetResult(txBody, errorCode, signatureMap, functionality);
     }
 
     @FunctionalInterface
