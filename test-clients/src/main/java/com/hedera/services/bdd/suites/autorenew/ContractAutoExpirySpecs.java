@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -51,6 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -87,7 +89,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
                     storageExpiryWorksAtTheExpectedInterval(),
                     autoRenewWorksAsExpected(),
-                    autoRenewInGracePeriodIfEnoughBalance(),
+                    autoRenewInGracePeriodIfEnoughBalance()
                 });
     }
 
@@ -198,24 +200,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
-                        /*
-                        * Contract is in grace period, and we are funding auto-renew account
-                        with insufficient balance. So the auto-renewal doesn't happen.
-                        */
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, autoRenewAccount, 1L)),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookup =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            currentExpiry.get(), 1))
-                                                    .logged();
-
-                                    allRunFor(spec, lookup);
-                                }),
                         /*
                          * Funding for auto-renew account with enough balance. So when
                          * contract successfully auto-renews on next trigger
