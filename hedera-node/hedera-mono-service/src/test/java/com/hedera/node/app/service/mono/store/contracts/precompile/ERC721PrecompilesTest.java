@@ -272,6 +272,9 @@ class ERC721PrecompilesTest {
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray()))
                 .thenReturn(token);
         entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr))
+                .thenReturn(token);
+        entityIdUtils
                 .when(
                         () ->
                                 EntityIdUtils.contractIdFromEvmAddress(
@@ -587,7 +590,8 @@ class ERC721PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -643,6 +647,8 @@ class ERC721PrecompilesTest {
                 .willReturn(cryptoApproveAllowanceTransactionBody);
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(infrastructureFactory.newTokenStore(any(), any(), any(), any(), any()))
+                .willReturn(tokenStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -653,7 +659,8 @@ class ERC721PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
         given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
         given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
@@ -726,7 +733,8 @@ class ERC721PrecompilesTest {
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
+        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any(), any()))
+                .willReturn(OK);
 
         approvePrecompile
                 .when(
@@ -796,10 +804,13 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+        given(infrastructureFactory.newTokenStore(any(), any(), any(), any(), any()))
+                .willReturn(tokenStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
+        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any(), any()))
+                .willReturn(OK);
 
         approvePrecompile
                 .when(
@@ -929,7 +940,7 @@ class ERC721PrecompilesTest {
                                         any(),
                                         any()))
                 .thenReturn(APPROVE_WRAPPER_0);
-        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any()))
+        given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any(), any()))
                 .willReturn(INVALID_ALLOWANCE_OWNER_ID);
 
         // when:
@@ -986,7 +997,8 @@ class ERC721PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(FAIL_INVALID);
 
         approvePrecompile
@@ -1064,7 +1076,8 @@ class ERC721PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         setApprovalForAllPrecompile
@@ -1147,7 +1160,8 @@ class ERC721PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         setApprovalForAllPrecompile

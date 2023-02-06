@@ -72,7 +72,7 @@ class ScheduleSigTransactionMetadataBuilderTest {
         assertThrows(NullPointerException.class, () -> subject.txnBody(null));
         assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
         assertThrows(NullPointerException.class, () -> subject.status(null));
-        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey(null));
+        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey((AccountID) null));
         assertThrows(
                 NullPointerException.class,
                 () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));

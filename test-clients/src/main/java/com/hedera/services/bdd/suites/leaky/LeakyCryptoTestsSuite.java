@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAl
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -103,10 +105,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -119,6 +123,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -164,7 +169,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
                 hollowAccountCompletionWithEthereumTransaction(),
                 hollowAccountCreationChargesExpectedFees(),
-                lazyCreateViaEthereumCryptoTransfer());
+                lazyCreateViaEthereumCryptoTransfer(),
+                hollowAccountCompletionWithSimultaniousPropertiesUpdate());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -1026,7 +1032,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.32"),
+                                "v0.34"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -1106,25 +1112,32 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     allRunFor(spec, lazyAccountInfoCheck);
+                                    final var id =
+                                            ContractID.newBuilder()
+                                                    .setContractNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getAccountNum())
+                                                    .setShardNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getShardNum())
+                                                    .setRealmNum(
+                                                            lazyAccountIdReference
+                                                                    .get()
+                                                                    .getRealmNum())
+                                                    .build();
                                     final var payTxn =
                                             getTxnRecord(lazyCreateTxn)
                                                     .hasPriority(
                                                             recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getAccountNum())
-                                                                                    .setShardNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getShardNum())
-                                                                                    .setRealmNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getRealmNum())
-                                                                                    .build()))
+                                                                    .targetedContractId(id)
+                                                                    .contractCallResult(
+                                                                            ContractFnResultAsserts
+                                                                                    .resultWith()
+                                                                                    .contract(
+                                                                                            asContractString(
+                                                                                                    id))))
                                                     .andAllChildRecords()
                                                     .logged();
                                     final var childRecordsCheck =
@@ -1136,6 +1149,78 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             .memo(LAZY_MEMO)
                                                             .alias(ByteString.EMPTY));
                                     allRunFor(spec, payTxn, childRecordsCheck);
+                                }));
+    }
+
+    private HapiSpec hollowAccountCompletionWithSimultaniousPropertiesUpdate() {
+        return propertyPreservingHapiSpec("hollowAccountCompletionWithSimultaniousPropertiesUpdate")
+                .preserving(LAZY_CREATION_ENABLED)
+                .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    evmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var op2 =
+                                            fileUpdate(APP_PROPERTIES)
+                                                    .payingWith(ADDRESS_BOOK_CONTROL)
+                                                    .overridingProps(
+                                                            Map.of(
+                                                                    LAZY_CREATION_ENABLED,
+                                                                    "" + FALSE))
+                                                    .deferStatusResolution();
+
+                                    final var op3 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    CRYPTO_TRANSFER_RECEIVER,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasPrecheck(OK)
+                                                    .hasKnownStatus(INVALID_PAYER_SIGNATURE)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    allRunFor(spec, op2, op3);
                                 }));
     }
 

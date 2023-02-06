@@ -30,6 +30,7 @@ import java.util.Objects;
  * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
  * class
  */
+/*@ThreadSafe*/
 final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
     // NOTE: This needs to come from config, but because of the thread local, has to be
     //       static. See Issue #4294

@@ -286,6 +286,9 @@ class ERC20PrecompilesTest {
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray()))
                 .thenReturn(token);
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr))
+                .thenReturn(token);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
@@ -994,7 +997,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1075,7 +1079,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile
@@ -1163,7 +1168,8 @@ class ERC20PrecompilesTest {
                                 tokenAllowances,
                                 nftAllowances,
                                 account,
-                                stateView))
+                                accountStore,
+                                tokenStore))
                 .willReturn(OK);
 
         approvePrecompile

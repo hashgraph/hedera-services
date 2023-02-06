@@ -17,8 +17,8 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,14 +35,14 @@ import java.util.Optional;
  */
 public class ReadableScheduleStore {
     /** The underlying data storage class that holds the token data. */
-    private final State<Long, ScheduleVirtualValue> schedulesById;
+    private final ReadableKVState<Long, ScheduleVirtualValue> schedulesById;
 
     /**
      * Create a new {@link ReadableScheduleStore} instance.
      *
      * @param states The state to use.
      */
-    public ReadableScheduleStore(@NonNull final States states) {
+    public ReadableScheduleStore(@NonNull final ReadableStates states) {
         Objects.requireNonNull(states);
         this.schedulesById = states.get("SCHEDULES_BY_ID");
     }
@@ -56,14 +56,15 @@ public class ReadableScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.getScheduleNum());
-        return schedule.map(
-                value ->
-                        new ScheduleMetadata(
-                                value.adminKey(),
-                                value.ordinaryViewOfScheduledTxn(),
-                                value.hasExplicitPayer()
-                                        ? Optional.of(value.payer().toGrpcAccountId())
-                                        : Optional.empty()));
+        return Optional.ofNullable(schedule)
+                .map(
+                        s ->
+                                new ScheduleMetadata(
+                                        schedule.adminKey(),
+                                        schedule.ordinaryViewOfScheduledTxn(),
+                                        schedule.hasExplicitPayer()
+                                                ? Optional.of(schedule.payer().toGrpcAccountId())
+                                                : Optional.empty()));
     }
 
     /**

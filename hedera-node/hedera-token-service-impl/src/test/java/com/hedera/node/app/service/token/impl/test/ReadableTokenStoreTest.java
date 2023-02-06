@@ -28,17 +28,16 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,8 +46,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenStoreTest {
-    @Mock private InMemoryStateImpl tokens;
-    @Mock private States states;
+    @Mock private ReadableKVState<Long, MerkleToken> tokens;
+    @Mock private ReadableStates states;
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = IdUtils.asToken("0.0.2000");
     private final String symbol = "TestToken";
@@ -86,7 +85,7 @@ class ReadableTokenStoreTest {
     }
 
     private void initializeToken() {
-        given(states.get(TOKENS)).willReturn(tokens);
+        given(states.<Long, MerkleToken>get(TOKENS)).willReturn(tokens);
         token.setTotalSupply(100L);
         token.setAdminKey(adminKey);
         token.setFreezeKey(freezeKey);
@@ -108,7 +107,7 @@ class ReadableTokenStoreTest {
 
     @Test
     void getsMerkleTokenIfTokenIdPresent() {
-        given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.of(token));
+        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -129,7 +128,7 @@ class ReadableTokenStoreTest {
 
     @Test
     void getsNullKeyIfMissingAccount() {
-        given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.empty());
+        given(tokens.get(tokenId.getTokenNum())).willReturn(null);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -145,7 +144,7 @@ class ReadableTokenStoreTest {
                 List.of(
                         FcCustomFee.royaltyFee(
                                 1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.of(token));
+        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 
@@ -160,7 +159,7 @@ class ReadableTokenStoreTest {
         token.setTokenType(NON_FUNGIBLE_UNIQUE);
         token.setFeeSchedule(
                 List.of(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
-        given(tokens.get(tokenId.getTokenNum())).willReturn(Optional.of(token));
+        given(tokens.get(tokenId.getTokenNum())).willReturn(token);
 
         final var result = subject.getTokenMeta(tokenId);
 

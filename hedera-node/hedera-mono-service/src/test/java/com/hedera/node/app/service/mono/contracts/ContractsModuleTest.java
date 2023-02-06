@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -46,10 +47,12 @@ import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
@@ -93,8 +96,12 @@ class ContractsModuleTest {
     @Mock MessageCallProcessor messageCallProcessor;
     @Mock ContractCreationProcessor contractCreationProcessor;
     @Mock AutoCreationLogic autoCreationLogic;
+    @Mock private BiPredicate<Address, MessageFrame> addressValidator;
 
     ContractsTestComponent subject;
+
+    private final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+    private final Address ethAddressInstance = Address.fromHexString(ethAddress);
 
     @BeforeEach
     void createComponent() {
@@ -138,7 +145,7 @@ class ContractsModuleTest {
 
     @Test
     void logOperationsAreProvided() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             Bytes testCode = Bytes.fromHexString("0xA0A1A2A3A4");
             Code legacyCode = CodeFactory.createCode(testCode, Hash.hash(testCode), 0, false);
             final var log0 = evm.operationAtOffset(legacyCode, 0);
@@ -157,7 +164,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOverwritesDifficulty() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -183,7 +190,7 @@ class ContractsModuleTest {
 
     @Test
     void largePrngSeedTrimsAsExpected() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -214,7 +221,7 @@ class ContractsModuleTest {
 
     @Test
     void prngSeedOutOfGas() {
-        var evm = subject.evmV_0_32();
+        var evm = subject.evmV_0_34();
         var prngOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x44), Hash.ZERO, 0, false), 0);
@@ -256,7 +263,7 @@ class ContractsModuleTest {
     @Test
     void chainId() {
         Bytes32 chainIdBytes = Bytes32.fromHexStringLenient("0x12345678");
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
                     evm.operationAtOffset(
                             CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
@@ -278,7 +285,7 @@ class ContractsModuleTest {
 
     @Test
     void chainIdOutOfGas() {
-        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_32())) {
+        for (var evm : List.of(subject.evmV_0_30(), subject.evmV_0_34())) {
             var chainIdOperation =
                     evm.operationAtOffset(
                             CodeFactory.createCode(Bytes.of(0x46), Hash.ZERO, 0, false), 0);
@@ -305,14 +312,19 @@ class ContractsModuleTest {
 
     @Test
     void balanceGoodAddress() {
-        var evm = subject.evmV_0_32();
+
+        var evm = subject.evmV_0_34();
         var balanceOperation =
                 evm.operationAtOffset(
                         CodeFactory.createCode(Bytes.of(0x31), Hash.ZERO, 0, false), 0);
-        given(messageFrame.getRemainingGas()).willReturn(3000L);
-        given(messageFrame.popStackItem())
-                .willReturn(Bytes.fromHexString("0xdeadc0dedeadc0dedeadc0dedeadc0de"));
+        ((HederaBalanceOperation) balanceOperation).setAddressValidator(addressValidator);
+
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(messageFrame.popStackItem()).willReturn(ethAddressInstance);
+        given(messageFrame.getStackItem(0)).willReturn(ethAddressInstance);
+        given(messageFrame.getRemainingGas()).willReturn(100000L);
+
+        given(addressValidator.test(any(), any())).willReturn(true);
         given(worldUpdater.get(any())).willReturn(null);
 
         final var bytesCaptor = ArgumentCaptor.forClass(Bytes.class);

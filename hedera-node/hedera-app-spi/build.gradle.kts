@@ -15,6 +15,7 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - SPI"
@@ -33,6 +34,7 @@ configurations.all {
 
 dependencies {
     implementation(libs.grpc.stub)
+    implementation(libs.swirlds.common)
     api(libs.hapi)
     api(libs.helidon.io.grpc)
     api(libs.jsr305.annotation)
@@ -40,4 +42,6 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
+
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

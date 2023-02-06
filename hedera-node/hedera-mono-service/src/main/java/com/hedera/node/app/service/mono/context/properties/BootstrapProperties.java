@@ -208,7 +208,8 @@ public final class BootstrapProperties implements PropertySource {
                     LEDGER_ID,
                     STAKING_PERIOD_MINS,
                     STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
-                    STAKING_STARTUP_HELPER_RECOMPUTE);
+                    STAKING_STARTUP_HELPER_RECOMPUTE,
+                    WORKFLOWS_ENABLED);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS =
             Set.of(
@@ -573,5 +574,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_ALLOWANCES_IS_ENABLED, AS_BOOLEAN),
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
-                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN));
+                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
+                    entry(WORKFLOWS_ENABLED, AS_BOOLEAN));
 }

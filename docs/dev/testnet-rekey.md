@@ -121,7 +121,7 @@ stop Services and archive the state with the new treasury key,
 
 ```
 $ tar -cvf rekeyed-testnet-round65464591.tar.gz \
-> hedera-node/data/saved/com.hedera.node.app.service.mono.ServicesMain/0/123/65464591
+> hedera-node/data/saved/com.hedera.node.app.ServicesMain/0/123/65464591
 ```
 
 (Here 65464591 was the round of state saved by the `Freeze`.)

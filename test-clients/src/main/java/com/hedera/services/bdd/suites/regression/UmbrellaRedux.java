@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
+import static com.hedera.services.bdd.suites.regression.factories.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;

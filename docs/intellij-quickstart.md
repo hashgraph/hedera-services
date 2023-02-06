@@ -2,7 +2,7 @@
 
 ## JVM
 
-OpenJDK12 is strongly recommended. You can [download it from IntelliJ](https://www.jetbrains.com/help/idea/sdk.html)
+OpenJDK17 is strongly recommended. You can [download it from IntelliJ](https://www.jetbrains.com/help/idea/sdk.html)
 if you don't have it already.
 
 ## Preliminaries
@@ -10,7 +10,7 @@ if you don't have it already.
 Clone this repository:
 
 ```
-git clone git@github.com:hashgraph/hedera-services.git
+git clone https://github.com/hashgraph/hedera-services.git
 ```
 
 From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just cloned.
@@ -36,7 +36,7 @@ This will both,
 
 ## Starting a local single-node network
 
-Now browse to `com.hedera.node.app.service.mono.ServicesMain`. Its
+Now browse to `com.hedera.node.app.ServicesMain`. Its
 `main` method starts a single node network of Hedera Service by
 calling `com.swirlds.platform.Browser#main`, which is the
 entrypoint to bootstrap the Platform app named by the
@@ -47,7 +47,13 @@ Run `ServicesMain#main` with an IntelliJ configuration whose working
 directory is the _hedera-node/_ directory of your clone of this repo:
 
 <p>
-    <img src="./assets/node-configuration.png" height="300" width="450" />
+    <img src="./assets/node-config.png" height="518" width="800" />
+</p>
+
+You can also run from Gradle below:
+
+<p>
+    <img src="./assets/gradle-run.png" height="214" width="415" />
 </p>
 
 You will see a single black pane appear, similar to:
