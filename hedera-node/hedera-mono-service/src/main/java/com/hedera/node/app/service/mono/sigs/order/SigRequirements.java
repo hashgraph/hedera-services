@@ -1374,7 +1374,7 @@ public class SigRequirements {
             final var unaliasedAccountNum =
                     sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
             final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
-            if (adjust.getAmount() > 0 && unaliasedAccountNum == unaliasedTargetNum) {
+            if (adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum)) {
                 return true;
             }
         }
@@ -1383,7 +1383,7 @@ public class SigRequirements {
                 final var unaliasedAccountNum =
                         sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
                 final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
-                if (adjust.getAmount() > 0 && unaliasedAccountNum == unaliasedTargetNum) {
+                if (adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum)) {
                     return true;
                 }
             }
