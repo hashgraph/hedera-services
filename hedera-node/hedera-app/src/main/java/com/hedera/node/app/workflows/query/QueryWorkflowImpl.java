@@ -172,35 +172,38 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 txBody = checker.validateCryptoTransfer(session, allegedPayment);
                 final var payer = txBody.getTransactionID().getAccountID();
 
-                // 3.ii Check account balances
+                // 3.ii Check permissions
+                checker.checkPermissions(functionality, payer);
+
+                // 3.iii Calculate costs
                 // TODO: Integrate fee-engine (calculate fee) (#4207)
                 fee = 0L;
-                checker.validateAccountBalances(payer, txBody, fee);
 
-                // 3.iii Check permission of payer
-                checker.checkPermissions(functionality, payer);
+                // 3.iv Check account balances
+                checker.validateAccountBalances(payer, txBody, fee);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(functionality)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
             }
 
-            // 5. Check validity
+            // 4. Check validity
             dispatcher.validate(state, query);
 
-            // 6. Submit payment to platform
+            // 5. Submit payment to platform
             if (paymentRequired) {
                 submissionManager.submit(
                         txBody, allegedPayment.toByteArray(), session.txBodyParser());
             }
 
-            // 7. Find response
             if (handler.needsAnswerOnlyCost(responseType)) {
+                // 6.i Estimate costs
                 // TODO: Integrate fee-engine (estimate fee) (#4207)
                 fee = 0L;
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
+                // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = dispatcher.getResponse(state, query, header);
             }
