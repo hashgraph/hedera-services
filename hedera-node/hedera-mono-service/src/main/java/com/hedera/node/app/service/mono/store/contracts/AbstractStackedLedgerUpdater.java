@@ -43,7 +43,7 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
     /** {@inheritDoc} */
     @Override
-    protected UpdateTrackingLedgerAccount<A> getForMutation(final Address address) {
+    public UpdateTrackingLedgerAccount<A> getForMutation(final Address address) {
         final var wrapped = wrappedWorldView();
         final var wrappedMutable = wrapped.updatedAccounts.get(address);
         if (wrappedMutable != null) {

@@ -18,14 +18,21 @@ package com.hedera.node.app.service.evm.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import java.util.Collections;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,43 +42,47 @@ class HederaEvmStackedWorldStateUpdaterTest {
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
     MockTokenAccessor tokenAccessor = new MockTokenAccessor();
     MockEntityAccess entityAccess = new MockEntityAccess();
-    HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess, tokenAccessor);
+    @Mock private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
+    @Mock private EvmProperties properties;
+    private HederaEvmStackedWorldStateUpdater subject;
+    private final UpdatedHederaEvmAccount<Account> updatedHederaEvmAccount =
+            new UpdatedHederaEvmAccount<>(address);
+
+    @BeforeEach
+    void setUp() {
+        subject =
+                new HederaEvmStackedWorldStateUpdater(
+                        updater, accountAccessor, entityAccess, tokenAccessor, properties);
+    }
 
     @Test
     void accountTests() {
-        assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
-        assertEquals(
-                Wei.of(100L), hederaEvmStackedWorldStateUpdater.getAccount(address).getBalance());
-        assertEquals(
-                Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
-        hederaEvmStackedWorldStateUpdater.commit();
-        assertEquals(
-                Collections.emptyList(),
-                hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
+        given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
+        updatedHederaEvmAccount.setBalance(Wei.of(100));
+        assertNull(subject.createAccount(address, 1, Wei.ONE));
+        assertEquals(Wei.of(100L), subject.getAccount(address).getBalance());
+        assertEquals(Collections.emptyList(), subject.getTouchedAccounts());
+        subject.commit();
+        assertEquals(Collections.emptyList(), subject.getDeletedAccountAddresses());
     }
 
     @Test
     void getAccount() {
-        final UpdatedHederaEvmAccount updatedHederaEvmAccount =
-                new UpdatedHederaEvmAccount(address);
-
+        given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
         assertEquals(
-                updatedHederaEvmAccount.getAddress(),
-                hederaEvmStackedWorldStateUpdater.get(address).getAddress());
+                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
     }
 
     @Test
     void updaterTest() {
-        assertEquals(tokenAccessor, hederaEvmStackedWorldStateUpdater.tokenAccessor());
-        assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
-        assertEquals(
-                hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
+        assertEquals(tokenAccessor, subject.tokenAccessor());
+        assertEquals(Optional.empty(), subject.parentUpdater());
+        assertEquals(subject, subject.updater());
     }
 
     @Test
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
-        assertFalse(hederaEvmStackedWorldStateUpdater.isTokenAddress(someAddress));
+        assertFalse(subject.isTokenAddress(someAddress));
     }
 }
