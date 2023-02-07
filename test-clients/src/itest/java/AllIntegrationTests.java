@@ -17,6 +17,8 @@ import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -71,6 +73,7 @@ class AllIntegrationTests extends IntegrationTestBase {
         return List.of(
                 recordStreamValidation(
                         "build/network/itest/records/node_0",
-                        new BalanceReconciliationValidator()));
+                        new BalanceReconciliationValidator(),
+                        new ExpiryRecordsValidator()));
     }
 }
