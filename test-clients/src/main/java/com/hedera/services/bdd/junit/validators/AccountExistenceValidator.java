@@ -23,13 +23,10 @@ import com.hedera.services.stream.proto.RecordStreamItem;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 /** A simple validator that asserts an account was created at a given consensus timestamp. */
 public class AccountExistenceValidator implements RecordStreamValidator {
-    static final Logger log = LogManager.getLogger(AccountExistenceValidator.class);
     private final String name;
     private final Instant consensusTimestamp;
 

@@ -106,9 +106,13 @@ import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
+import com.hedera.services.bdd.spec.utilops.streams.EventualAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
+import com.hedera.services.bdd.spec.utilops.streams.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -472,6 +476,25 @@ public class UtilVerbs {
     public static HapiSpecOperation assertEventuallyPasses(
             final RecordStreamValidator validator, final Duration timeout) {
         return new RecordAssertions(timeout, validator);
+    }
+
+    public static EventualAssertion streamIncludes(
+            final Function<HapiSpec, RecordStreamAssertion> assertion) {
+        return new EventualRecordStreamAssertion(assertion);
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(
+            final String name) {
+        return recordedCryptoCreate(name, assertion -> {});
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(
+            final String name, final Consumer<CryptoCreateAssertion> config) {
+        return spec -> {
+            final var assertion = new CryptoCreateAssertion(spec, name);
+            config.accept(assertion);
+            return assertion;
+        };
     }
 
     public static RecordFileChecker verifyRecordFile(

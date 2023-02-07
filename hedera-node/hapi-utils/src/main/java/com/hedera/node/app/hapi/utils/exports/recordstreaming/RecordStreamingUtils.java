@@ -150,7 +150,7 @@ public class RecordStreamingUtils {
                 RecordStreamingUtils::compareSidecarFiles);
     }
 
-    private static boolean isRecordFile(final String file) {
+    public static boolean isRecordFile(final String file) {
         return isRelevant(file) && !file.contains(SIDECAR_ONLY_TOKEN);
     }
 

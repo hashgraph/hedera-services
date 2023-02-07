@@ -57,14 +57,7 @@ public class RecordAssertions extends UtilOp {
         final var deadline = Instant.now().plus(timeout);
         Throwable lastFailure;
         do {
-            Thread.sleep(DEFAULT_INTER_CHECK_DELAY.toMillis());
-            // Should trigger a new record to be written if we have crossed a 2-second boundary
-            final var triggerOp =
-                    cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
-                            .deferStatusResolution()
-                            .noLogging();
-            allRunFor(spec, triggerOp);
-            Thread.sleep(DEFAULT_RECORD_CLOSE_DELAY.toMillis());
+            triggerAndCloseAtLeastOneFile(spec);
             lastFailure = firstFailureIfAny(locToUse);
             if (lastFailure == null) {
                 // No failure, so we're done!
@@ -72,6 +65,19 @@ public class RecordAssertions extends UtilOp {
             }
         } while (Instant.now().isBefore(deadline));
         throw Objects.requireNonNull(lastFailure);
+    }
+
+    public static void triggerAndCloseAtLeastOneFile(final HapiSpec spec)
+            throws InterruptedException {
+        Thread.sleep(DEFAULT_INTER_CHECK_DELAY.toMillis());
+        // Should trigger a new record to be written if we have crossed a 2-second boundary
+        final var triggerOp =
+                cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
+                        .deferStatusResolution()
+                        .hasAnyStatusAtAll()
+                        .noLogging();
+        allRunFor(spec, triggerOp);
+        Thread.sleep(DEFAULT_RECORD_CLOSE_DELAY.toMillis());
     }
 
     @Nullable

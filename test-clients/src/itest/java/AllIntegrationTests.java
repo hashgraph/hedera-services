@@ -41,6 +41,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @SuppressWarnings("java:S2699")
 class AllIntegrationTests extends IntegrationTestBase {
+    private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
+
     @Tag("integration")
     @Order(1)
     @TestFactory
@@ -70,7 +72,6 @@ class AllIntegrationTests extends IntegrationTestBase {
     List<DynamicTest> recordStreamValidation() {
         return List.of(
                 recordStreamValidation(
-                        "build/network/itest/records/node_0",
-                        new BalanceReconciliationValidator()));
+                        TEST_CONTAINER_NODE0_STREAMS, new BalanceReconciliationValidator()));
     }
 }

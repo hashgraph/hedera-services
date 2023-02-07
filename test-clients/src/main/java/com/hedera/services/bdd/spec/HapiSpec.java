@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
@@ -44,6 +45,8 @@ import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.spec.utilops.streams.EventualRecordStreamAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -408,7 +411,14 @@ public class HapiSpec implements Runnable {
             ops = new ArrayList<>(ops);
             ops.add(0, remembering(preservedProperties, propertiesToPreserve));
         }
+        @Nullable List<EventualRecordStreamAssertion> assertions = null;
         for (HapiSpecOperation op : ops) {
+            if (op instanceof EventualRecordStreamAssertion recordStreamAssertion) {
+                if (assertions == null) {
+                    assertions = new ArrayList<>();
+                }
+                assertions.add(recordStreamAssertion);
+            }
             Optional<Throwable> error = op.execFor(this);
             Failure asyncFailure = null;
             if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
@@ -438,6 +448,13 @@ public class HapiSpec implements Runnable {
                         failure = new Failure(t, restoration.toString());
                     });
         }
+        if (status == PASSED) {
+            final var maybeRecordStreamError = checkRecordStream(assertions);
+            if (maybeRecordStreamError.isPresent()) {
+                status = FAILED;
+                failure = maybeRecordStreamError.get();
+            }
+        }
 
         tearDown();
         log.info("{}final status: {}!", logPrefix(), status);
@@ -446,6 +463,44 @@ public class HapiSpec implements Runnable {
                 && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
             entities.updateCreatedEntityManifests();
         }
+    }
+
+    private Optional<Failure> checkRecordStream(
+            @Nullable final List<EventualRecordStreamAssertion> assertions) {
+        if (assertions == null) {
+            return Optional.empty();
+        }
+        log.info("Checking record stream for {} assertions", assertions.size());
+        Optional<Failure> answer = Optional.empty();
+        // Keep submitting transactions to close record files (in almost every case, just
+        // one file will need to be closed, since it's very rare to have a long-running spec)
+        final var backgroundTraffic =
+                THREAD_POOL.submit(
+                        () -> {
+                            while (true) {
+                                try {
+                                    RecordAssertions.triggerAndCloseAtLeastOneFile(this);
+                                } catch (final InterruptedException ignore) {
+                                    Thread.currentThread().interrupt();
+                                    return;
+                                }
+                            }
+                        });
+        for (final var assertion : assertions) {
+            log.info("Checking record stream for {}", assertion);
+            try {
+                // Each blocks until the assertion passes or times out
+                assertion.assertHasPassed();
+            } catch (final Throwable t) {
+                log.warn("{}{} failed", logPrefix(), assertion, t);
+                answer = Optional.of(new Failure(t, assertion.toString()));
+                break;
+            }
+        }
+
+        backgroundTraffic.cancel(true);
+        RECORD_STREAM_ACCESS.stopMonitorIfNoSubscribers();
+        return answer;
     }
 
     private void startFinalizingOps() {

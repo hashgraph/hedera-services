@@ -20,6 +20,8 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseRecordFileConsensusTime;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.parseSidecarFileConsensusTimeAndSequenceNo;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readMaybeCompressedRecordStreamFile;
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.TEST_CLIENTS_PREFIX;
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentWithCurrentPathPrefix;
 
 import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -29,9 +31,73 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.apache.commons.io.monitor.FileAlterationMonitor;
+import org.apache.commons.io.monitor.FileAlterationObserver;
 
-public class RecordStreamAccess {
+/**
+ * A singleton that provides near real-time access to the record stream files for all concurrently
+ * executing {@link com.hedera.services.bdd.spec.HapiSpec}'s.
+ */
+public enum RecordStreamAccess {
+    RECORD_STREAM_ACCESS;
+
+    private static final int MONITOR_INTERVAL_MS = 250;
+
+    /**
+     * A map of record stream file locations to the listeners that are watching them. (In general we
+     * only validate records from the single node0, but this could change?)
+     */
+    private final Map<String, ValidatingListener> validatingListeners = new ConcurrentHashMap<>();
+
+    /** A bit of infrastructure that runs the polling loop for all the listeners. */
+    private final FileAlterationMonitor monitor = new FileAlterationMonitor(MONITOR_INTERVAL_MS);
+
+    /**
+     * Stops the polling loop for record stream access if there are no listeners for any location.
+     */
+    public synchronized void stopMonitorIfNoSubscribers() {
+        // Count the number of subscribers (could derive from more than one concurrent HapiSpec)
+        final var numSubscribers =
+                validatingListeners.values().stream()
+                        .mapToInt(ValidatingListener::numListeners)
+                        .sum();
+        if (numSubscribers == 0) {
+            try {
+                // Will throw ISE if already stopped, ignore that
+                monitor.stop();
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
+    /**
+     * If the given location is not already being watched, starts a new listener for it and returns
+     * the listener.
+     *
+     * @param loc the record stream file location to watch
+     * @return the listener for the given location
+     * @throws Exception if there is an error starting the listener
+     */
+    public synchronized ValidatingListener getValidatingListener(final String loc)
+            throws Exception {
+        if (!validatingListeners.containsKey(loc)) {
+            // In most cases should let us run HapiSpec#main() from both the root and test-clients/
+            // directories
+            var fAtLoc =
+                    relocatedIfNotPresentWithCurrentPathPrefix(
+                            new File(loc), "..", TEST_CLIENTS_PREFIX);
+            if (!fAtLoc.exists()) {
+                throw new IllegalArgumentException(
+                        "No such record stream file location: " + fAtLoc.getAbsolutePath());
+            }
+            validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
+        }
+        return validatingListeners.get(loc);
+    }
+
     /**
      * Reads the record and sidecar stream files from a given directory.
      *
@@ -40,8 +106,12 @@ public class RecordStreamAccess {
      * @return the list of record and sidecar files
      * @throws IOException if there is an error reading the files
      */
-    public List<RecordWithSidecars> readStreamFilesFrom(
-            final String loc, final String relativeSidecarLoc) throws IOException {
+    public List<RecordWithSidecars> readStreamFilesFrom(String loc, final String relativeSidecarLoc)
+            throws IOException {
+        final var fAtLoc =
+                relocatedIfNotPresentWithCurrentPathPrefix(
+                        new File(loc), "..", TEST_CLIENTS_PREFIX);
+        loc = fAtLoc.getAbsolutePath();
         final var recordFiles = orderedRecordFilesFrom(loc);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
         final List<String> sidecarFiles;
@@ -73,7 +143,7 @@ public class RecordStreamAccess {
                 .toList();
     }
 
-    private RecordStreamFile ensurePresentRecordFile(final String f) {
+    static RecordStreamFile ensurePresentRecordFile(final String f) {
         try {
             final var contents = readMaybeCompressedRecordStreamFile(f);
             if (contents.getRight().isEmpty()) {
@@ -91,5 +161,18 @@ public class RecordStreamAccess {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read record stream file " + f, e);
         }
+    }
+
+    private ValidatingListener newValidatingListener(final String loc) throws Exception {
+        final var observer = new FileAlterationObserver(loc);
+        final var listener = new ValidatingListener();
+        observer.addListener(listener);
+        monitor.addObserver(observer);
+        try {
+            // Will throw ISE if already started, ignore that
+            monitor.start();
+        } catch (IllegalStateException ignore) {
+        }
+        return listener;
     }
 }
