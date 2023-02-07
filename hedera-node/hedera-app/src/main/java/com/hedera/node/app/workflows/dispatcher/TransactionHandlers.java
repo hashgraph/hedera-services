@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -63,77 +61,56 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandl
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** A factory that creates all handlers and bundles them in a {@link TransactionHandlers} */
-public final class HandlersFactory {
-
-    private HandlersFactory() {}
-
-    /**
-     * This method creates all handlers with the provided arguments and bundles them in a {@link
-     * TransactionHandlers} record.
-     *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
-     * @return the created handlers
-     */
-    public static TransactionHandlers createHandlers(
-            @NonNull final HederaAccountNumbers hederaAccountNumbers,
-            @NonNull final HederaFileNumbers hederaFileNumbers) {
-        requireNonNull(hederaAccountNumbers);
-        requireNonNull(hederaFileNumbers);
-
-        // TODO - provide DI, c.f. https://github.com/hashgraph/hedera-services/issues/4317
-        return new TransactionHandlers(
-                new ConsensusCreateTopicHandler(),
-                new ConsensusUpdateTopicHandler(),
-                new ConsensusDeleteTopicHandler(),
-                new ConsensusSubmitMessageHandler(),
-                new ContractCreateHandler(),
-                new ContractUpdateHandler(),
-                new ContractCallHandler(),
-                new ContractDeleteHandler(),
-                new ContractSystemDeleteHandler(),
-                new ContractSystemUndeleteHandler(),
-                new EtherumTransactionHandler(),
-                new CryptoCreateHandler(),
-                new CryptoUpdateHandler(),
-                new CryptoTransferHandler(),
-                new CryptoDeleteHandler(),
-                new CryptoApproveAllowanceHandler(),
-                new CryptoDeleteAllowanceHandler(),
-                new CryptoAddLiveHashHandler(),
-                new CryptoDeleteLiveHashHandler(),
-                new FileCreateHandler(),
-                new FileUpdateHandler(),
-                new FileDeleteHandler(),
-                new FileAppendHandler(),
-                new FileSystemDeleteHandler(),
-                new FileSystemUndeleteHandler(),
-                new FreezeHandler(),
-                new NetworkUncheckedSubmitHandler(),
-                new ScheduleCreateHandler(),
-                new ScheduleSignHandler(),
-                new ScheduleDeleteHandler(),
-                new TokenCreateHandler(),
-                new TokenUpdateHandler(),
-                new TokenMintHandler(),
-                new TokenBurnHandler(),
-                new TokenDeleteHandler(),
-                new TokenAccountWipeHandler(),
-                new TokenFreezeAccountHandler(),
-                new TokenUnfreezeAccountHandler(),
-                new TokenGrantKycToAccountHandler(),
-                new TokenRevokeKycFromAccountHandler(),
-                new TokenAssociateToAccountHandler(),
-                new TokenDissociateFromAccountHandler(),
-                new TokenFeeScheduleUpdateHandler(),
-                new TokenPauseHandler(),
-                new TokenUnpauseHandler(),
-                new UtilPrngHandler());
-    }
-}
+/**
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.TransactionHandler}s that are
+ * available in the app
+ */
+public record TransactionHandlers(
+        @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
+        @NonNull ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
+        @NonNull ConsensusDeleteTopicHandler consensusDeleteTopicHandler,
+        @NonNull ConsensusSubmitMessageHandler consensusSubmitMessageHandler,
+        @NonNull ContractCreateHandler contractCreateHandler,
+        @NonNull ContractUpdateHandler contractUpdateHandler,
+        @NonNull ContractCallHandler contractCallHandler,
+        @NonNull ContractDeleteHandler contractDeleteHandler,
+        @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
+        @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
+        @NonNull EtherumTransactionHandler etherumTransactionHandler,
+        @NonNull CryptoCreateHandler cryptoCreateHandler,
+        @NonNull CryptoUpdateHandler cryptoUpdateHandler,
+        @NonNull CryptoTransferHandler cryptoTransferHandler,
+        @NonNull CryptoDeleteHandler cryptoDeleteHandler,
+        @NonNull CryptoApproveAllowanceHandler cryptoApproveAllowanceHandler,
+        @NonNull CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler,
+        @NonNull CryptoAddLiveHashHandler cryptoAddLiveHashHandler,
+        @NonNull CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler,
+        @NonNull FileCreateHandler fileCreateHandler,
+        @NonNull FileUpdateHandler fileUpdateHandler,
+        @NonNull FileDeleteHandler fileDeleteHandler,
+        @NonNull FileAppendHandler fileAppendHandler,
+        @NonNull FileSystemDeleteHandler fileSystemDeleteHandler,
+        @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
+        @NonNull FreezeHandler freezeHandler,
+        @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
+        @NonNull ScheduleCreateHandler scheduleCreateHandler,
+        @NonNull ScheduleSignHandler scheduleSignHandler,
+        @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
+        @NonNull TokenCreateHandler tokenCreateHandler,
+        @NonNull TokenUpdateHandler tokenUpdateHandler,
+        @NonNull TokenMintHandler tokenMintHandler,
+        @NonNull TokenBurnHandler tokenBurnHandler,
+        @NonNull TokenDeleteHandler tokenDeleteHandler,
+        @NonNull TokenAccountWipeHandler tokenAccountWipeHandler,
+        @NonNull TokenFreezeAccountHandler tokenFreezeAccountHandler,
+        @NonNull TokenUnfreezeAccountHandler tokenUnfreezeAccountHandler,
+        @NonNull TokenGrantKycToAccountHandler tokenGrantKycToAccountHandler,
+        @NonNull TokenRevokeKycFromAccountHandler tokenRevokeKycFromAccountHandler,
+        @NonNull TokenAssociateToAccountHandler tokenAssociateToAccountHandler,
+        @NonNull TokenDissociateFromAccountHandler tokenDissociateFromAccountHandler,
+        @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
+        @NonNull TokenPauseHandler tokenPauseHandler,
+        @NonNull TokenUnpauseHandler tokenUnpauseHandler,
+        @NonNull UtilPrngHandler utilPrngHandler) {}
