@@ -225,35 +225,25 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     // --- SwirldState ---
     @Override
-    public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
-        throwIfImmutable();
-        final var app = metadata.app();
-        app.dualStateAccessor().setDualState(dualState);
-        app.logic().incorporateConsensus(round);
-    }
-
-    @Override
-    public void preHandle(final Event event) {
-        metadata.app().eventExpansion().expandAllSigs(event, this);
-    }
-
     public void init(
             final Platform platform,
-            final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
             final SoftwareVersion deserializedVersion) {
+        // first store a reference to the platform
+        this.platform = platform;
+
         if (trigger == GENESIS) {
-            genesisInit(platform, addressBook, dualState);
+            genesisInit(platform, dualState);
         } else {
             if (deserializedVersion == null) {
                 throw new IllegalStateException(
                         "No software version for deserialized state version "
                                 + deserializedStateVersion);
             }
-            // Note this returns the app in case we need to do something with it  after making
+            // Note this returns the app in case we need to do something with it after making
             // final changes to state (e.g. after migrating something from memory to disk)
-            deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
+            deserializedInit(platform, dualState, trigger, deserializedVersion);
             final var isUpgrade =
                     SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
             if (isUpgrade) {
@@ -278,9 +268,21 @@ public class ServicesState extends PartialNaryMerkleInternal
         }
     }
 
+    @Override
+    public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
+        throwIfImmutable();
+        final var app = metadata.app();
+        app.dualStateAccessor().setDualState(dualState);
+        app.logic().incorporateConsensus(round);
+    }
+
+    @Override
+    public void preHandle(final Event event) {
+        metadata.app().eventExpansion().expandAllSigs(event, this);
+    }
+
     private ServicesApp deserializedInit(
             final Platform platform,
-            final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
             @NonNull final SoftwareVersion deserializedVersion) {
@@ -298,7 +300,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     private void genesisInit(
             final Platform platform,
-            final AddressBook addressBook,
             final SwirldDualState dualState) {
         log.info(
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
@@ -312,7 +313,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_STORE_RELS_ON_DISK);
         enabledVirtualNft =
                 bootstrapProps.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE);
-        createGenesisChildren(addressBook, seqStart, bootstrapProps);
+        createGenesisChildren(platform.getAddressBook(), seqStart, bootstrapProps);
 
         internalInit(platform, bootstrapProps, dualState, GENESIS, null);
         networkCtx().markPostUpgradeScanStatus();
