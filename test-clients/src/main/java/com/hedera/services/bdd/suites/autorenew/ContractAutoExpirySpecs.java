@@ -676,7 +676,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY)
                         // TODO: re-enable after expiry throttling is fixed
                         // getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2)
-                );
+                        );
     }
 
     @Override
