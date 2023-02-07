@@ -16,12 +16,14 @@
 package com.hedera.node.app.service.evm.store.contracts;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -35,8 +37,10 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     protected final W world;
     protected final AccountAccessor accountAccessor;
-    private Map<Address, UpdatedHederaEvmAccount<A>> updatedEvmAccounts = new HashMap<>();
+    protected Map<Address, UpdateTrackingAccount<A>> updatedAccounts = new HashMap<>();
     private HederaEvmEntityAccess hederaEvmEntityAccess;
+
+    protected Set<Address> deletedAccounts = new HashSet<>();
 
     protected AbstractLedgerEvmWorldUpdater(final W world, final AccountAccessor accountAccessor) {
         this.world = world;
@@ -77,12 +81,12 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     @Override
     public Collection<? extends Account> getTouchedAccounts() {
-        return Collections.emptyList();
+        return new ArrayList<>(updatedAccounts.values());
     }
 
     @Override
     public Collection<Address> getDeletedAccountAddresses() {
-        return Collections.emptyList();
+        return new ArrayList<>(deletedAccounts);
     }
 
     @Override
@@ -114,7 +118,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         if (!address.equals(accountAccessor.canonicalAddress(address))) {
             return null;
         }
-        final var extantMutable = this.updatedEvmAccounts.get(address);
+        final var extantMutable = this.updatedAccounts.get(address);
         if (extantMutable != null) {
             return extantMutable;
         }
@@ -124,7 +128,7 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
 
     @Override
     public EvmAccount getAccount(Address address) {
-        final var extantMutable = this.updatedEvmAccounts.get(address);
+        final var extantMutable = this.updatedAccounts.get(address);
         if (extantMutable != null) {
             return new WrappedEvmAccount(extantMutable);
         }
@@ -133,13 +137,20 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         if (origin == null) {
             return null;
         }
-        final var newMutable = new UpdatedHederaEvmAccount<>(origin);
+        // TODO provide default UpdatedAccountTracker impl for the balance setting
+        final var newMutable = new UpdateTrackingAccount<>(origin, null);
         return new WrappedEvmAccount(track(newMutable));
     }
 
-    private UpdatedHederaEvmAccount<A> track(final UpdatedHederaEvmAccount<A> account) {
+    public Map<Address, UpdateTrackingAccount<A>> getUpdatedAccounts() {
+        return updatedAccounts;
+    }
+
+    // TODO public ContractAliases aliases()
+
+    private UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
         account.setEvmEntityAccess(hederaEvmEntityAccess);
-        updatedEvmAccounts.put(account.getAddress(), account);
+        updatedAccounts.put(account.getAddress(), account);
         return account;
     }
 }

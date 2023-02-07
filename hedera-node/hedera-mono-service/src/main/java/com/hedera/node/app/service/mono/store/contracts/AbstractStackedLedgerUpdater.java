@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.store.UpdatedAccountTrackerImpl;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -34,7 +36,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  */
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerWorldUpdater<
-                AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
+                AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     protected AbstractStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world, final WorldLedgers trackingLedgers) {
@@ -43,19 +45,20 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
     /** {@inheritDoc} */
     @Override
-    public UpdateTrackingLedgerAccount<A> getForMutation(final Address address) {
+    public UpdateTrackingAccount<A> getForMutation(final Address address) {
         final var wrapped = wrappedWorldView();
-        final var wrappedMutable = wrapped.updatedAccounts.get(address);
+        final var wrappedMutable = wrapped.getUpdatedAccounts().get(address);
         if (wrappedMutable != null) {
             return wrappedMutable;
         }
-        if (wrapped.deletedAccounts.contains(address)) {
+        if (wrapped.getDeletedAccounts().contains(address)) {
             return null;
         }
         final A account = wrapped.getForMutation(address);
         return account == null
                 ? null
-                : new UpdateTrackingLedgerAccount<>(account, trackingAccounts());
+                : new UpdateTrackingAccount<>(
+                        account, new UpdatedAccountTrackerImpl(trackingAccounts()));
     }
 
     /** {@inheritDoc} */
@@ -67,8 +70,8 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
          * to re-create the very same account that was deleted by its parent updater. But since every Hedera
          * account gets a unique 0.0.X id---and corresponding unique mirror 0x0...0X address---that is not
          * possible here. So we needn't remove our updated accounts from our parent's deleted accounts. */
-        getDeletedAccounts().forEach(wrapped.updatedAccounts::remove);
-        wrapped.deletedAccounts.addAll(getDeletedAccounts());
+        getDeletedAccounts().forEach(wrapped.getUpdatedAccounts()::remove);
+        wrapped.getDeletedAccounts().addAll(getDeletedAccounts());
 
         final var ledgers = trackingLedgers();
         /* We need to commit the ledgers first to make sure that any accounts we created exist in the parent,
@@ -80,10 +83,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
          * reverting this frame; and then the target address would not even exist.) */
         ledgers.aliases().filterPendingChanges(updatedAccounts::containsKey);
         ledgers.commit();
-        for (final var updatedAccount : getUpdatedAccounts()) {
+        for (final var updatedAccount : getUpdatedAccountsCollection()) {
             /* First check if there is already a mutable tracker for this account in our parent updater;
              * if there is, we commit by propagating the changes from our tracker into that tracker. */
-            var mutable = wrapped.updatedAccounts.get(updatedAccount.getAddress());
+            var mutable = wrapped.getUpdatedAccounts().get(updatedAccount.getAddress());
             if (mutable == null) {
                 /* If the parent updater didn't have a mutable tracker, we must give it one. Unless
                  * we created this account (meaning our mutable tracker has no wrapped account), the
@@ -93,13 +96,15 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
                 if (mutable == null) {
                     /* We created this account, so create a new tracker for our parent. */
                     mutable =
-                            new UpdateTrackingLedgerAccount<>(
-                                    updatedAccount.getAddress(), wrapped.trackingAccounts());
+                            new UpdateTrackingAccount<>(
+                                    updatedAccount.getAddress(),
+                                    new UpdatedAccountTrackerImpl(wrapped.trackingAccounts()));
                 } else {
                     /* This tracker is reusable, just update its tracking accounts to our parent's. */
-                    mutable.updateTrackingAccounts(wrapped.trackingAccounts());
+                    final var tracker = (UpdatedAccountTrackerImpl) mutable.getAccountTracker();
+                    tracker.updateTrackingAccounts(wrapped.trackingAccounts());
                 }
-                wrapped.updatedAccounts.put(mutable.getAddress(), mutable);
+                wrapped.getUpdatedAccounts().put(mutable.getAddress(), mutable);
             }
             mutable.setNonce(updatedAccount.getNonce());
 

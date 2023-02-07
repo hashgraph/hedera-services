@@ -45,8 +45,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
     @Mock private EvmProperties properties;
     private HederaEvmStackedWorldStateUpdater subject;
-    private final UpdatedHederaEvmAccount<Account> updatedHederaEvmAccount =
-            new UpdatedHederaEvmAccount<>(address);
+    // TODO null
+    private final UpdateTrackingAccount<Account> updatedHederaEvmAccount =
+            new UpdateTrackingAccount<>(address, null);
 
     @BeforeEach
     void setUp() {

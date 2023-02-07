@@ -45,6 +45,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFro
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -210,7 +211,7 @@ public class HederaStackedWorldStateUpdater
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
             final var newMutable =
-                    new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
+                    new UpdateTrackingAccount<>(proxyAccount, trackingAccounts());
             return new WrappedEvmAccount(newMutable);
         }
         return super.getAccount(address);

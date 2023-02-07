@@ -40,6 +40,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
@@ -655,7 +656,7 @@ class HederaWorldStateTest {
         final var slot = 1L;
         final var oldSlotValue = 4L;
         final var newSlotValue = 255L;
-        final var updatedAccount = mock(UpdateTrackingLedgerAccount.class);
+        final var updatedAccount = mock(UpdateTrackingAccount.class);
         given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
         given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot)))
                 .willReturn(UInt256.valueOf(oldSlotValue));

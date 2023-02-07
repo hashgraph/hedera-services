@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts;
+package com.hedera.node.app.service.evm.store.models;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 
 import com.google.common.base.Preconditions;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
-import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hedera.node.app.service.evm.store.UpdatedAccountTracker;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -36,40 +33,50 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount<A> {
-    private final AccountID accountId;
-
-    private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
-
+public class UpdateTrackingAccount<A extends Account> implements MutableAccount, EvmAccount {
+    private final Address address;
+    private Hash addressHash;
+    private long nonce;
+    private Wei balance;
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
     private boolean storageWasCleared = false;
+    private final UpdatedAccountTracker trackingAccounts;
+    private final NavigableMap<UInt256, UInt256> updatedStorage;
 
-    public UpdateTrackingLedgerAccount(
-            final Address address,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
-        super(address);
+    @Nullable protected final A account;
+    @Nullable protected Bytes updatedCode;
+    @Nullable private Hash updatedCodeHash;
+
+    public UpdateTrackingAccount(
+            final Address address, @Nullable final UpdatedAccountTracker trackingAccounts) {
         Preconditions.checkNotNull(address);
-        this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+        this.address = address;
+        addressHash = Hash.hash(address);
+        account = null;
+        balance = Wei.ZERO;
+        nonce = 0L;
+        updatedCode = Bytes.EMPTY;
+        updatedStorage = new TreeMap<>();
         this.trackingAccounts = trackingAccounts;
     }
 
     @SuppressWarnings("unchecked")
-    public UpdateTrackingLedgerAccount(
-            final A account,
-            @Nullable
-                    final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
-                            trackingAccounts) {
-        super(account);
+    public UpdateTrackingAccount(
+            final A account, @Nullable final UpdatedAccountTracker trackingAccounts) {
         Preconditions.checkNotNull(account);
-        this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
+        this.account = account;
+        address = account.getAddress();
         this.addressHash =
-                account instanceof UpdateTrackingLedgerAccount
-                        ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
+                account instanceof UpdateTrackingAccount
+                        ? ((UpdateTrackingAccount<A>) account).addressHash
                         : Hash.hash(account.getAddress());
         this.trackingAccounts = trackingAccounts;
+        balance = account.getBalance();
+        nonce = account.getNonce();
+        updatedStorage = new TreeMap<>();
     }
 
     /**
@@ -95,16 +102,52 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
         return account != null && account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
     }
 
+    /**
+     * A map of the storage entries that were modified.
+     *
+     * @return a map containing all entries that have been modified. This <b>may</b> contain entries
+     *     with a value of 0 to signify deletion.
+     */
+    @Override
+    public Map<UInt256, UInt256> getUpdatedStorage() {
+        return updatedStorage;
+    }
+
+    @Override
+    public Address getAddress() {
+        return address;
+    }
+
+    @Override
+    public Hash getAddressHash() {
+        return addressHash;
+    }
+
+    @Override
+    public long getNonce() {
+        return nonce;
+    }
+
+    @Override
+    public void setNonce(final long nonce) {
+        this.nonce = nonce;
+    }
+
+    @Override
+    public Wei getBalance() {
+        return balance;
+    }
+
     @Override
     public void setBalance(final Wei value) {
-        super.setBalance(value);
+        balance = value;
         if (trackingAccounts != null) {
-            trackingAccounts.set(accountId, BALANCE, value.toLong());
+            trackingAccounts.setBalance(address, value.toLong());
         }
     }
 
     public void setBalanceFromPropertyChangeObserver(final Wei value) {
-        super.setBalance(value);
+        balance = value;
     }
 
     @Override
@@ -119,7 +162,12 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
             /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
             return account.getCodeHash();
         } else {
-            return super.getCodeHash();
+            /* This optimization is actually important to avoid DOS attacks that would otherwise force
+             * frequent re-hashing of the updated code. */
+            if (updatedCodeHash == null) {
+                updatedCodeHash = Hash.hash(updatedCode);
+            }
+            return updatedCodeHash;
         }
     }
 
@@ -127,6 +175,12 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     public boolean hasCode() {
         /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
         return updatedCode == null ? account.hasCode() : !updatedCode.isEmpty();
+    }
+
+    @Override
+    public void setCode(Bytes code) {
+        this.updatedCode = code;
+        this.updatedCodeHash = null;
     }
 
     @Override
@@ -138,7 +192,21 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
         if (storageWasCleared) {
             return UInt256.ZERO;
         }
+        if (hederaEvmEntityAccess != null) {
+            return evmFlow(key);
+        }
+
         return account == null ? UInt256.ZERO : account.getStorageValue(key);
+    }
+
+    private UInt256 evmFlow(UInt256 key) {
+        final var value =
+                UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
+        if (value == null) {
+            return UInt256.ZERO;
+        }
+        setStorageValue(key, value);
+        return value;
     }
 
     @Override
@@ -154,6 +222,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
     public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
             final Bytes32 startKeyHash, final int limit) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setStorageValue(final UInt256 key, final UInt256 value) {
+        updatedStorage.put(key, value);
     }
 
     @Override
@@ -174,9 +247,9 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
         }
         return String.format(
                 "%s -> {nonce:%s, balance:%s, code:%s, storage:%s }",
-                super.getAddress(),
-                super.getNonce(),
-                super.getBalance(),
+                address,
+                nonce,
+                balance,
                 updatedCode == null ? "[not updated]" : updatedCode,
                 storage);
     }
@@ -186,12 +259,11 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
         return this;
     }
 
-    public AccountID getAccountId() {
-        return accountId;
+    public void setEvmEntityAccess(HederaEvmEntityAccess hederaEvmEntityAccess) {
+        this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }
 
-    public void updateTrackingAccounts(
-            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts) {
-        this.trackingAccounts = trackingAccounts;
+    public UpdatedAccountTracker getAccountTracker() {
+        return trackingAccounts;
     }
 }

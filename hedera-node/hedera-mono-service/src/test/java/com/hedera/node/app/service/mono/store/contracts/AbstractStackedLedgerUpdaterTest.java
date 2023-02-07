@@ -28,6 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -97,7 +98,7 @@ class AbstractStackedLedgerUpdaterTest {
     void getForMutationReturnsTrackingAccountIfPresentInParent() {
         wrapped.createAccount(aAddress, aNonce, Wei.of(aBalance));
 
-        assertSame(subject.getForMutation(aAddress), wrapped.updatedAccounts.get(aAddress));
+        assertSame(subject.getForMutation(aAddress), wrapped.getUpdatedAccounts().get(aAddress));
     }
 
     @Test
@@ -151,10 +152,10 @@ class AbstractStackedLedgerUpdaterTest {
     @Test
     @SuppressWarnings("unchecked")
     void doesntAdjustBalanceOfProxyTokenAccountWrapper() {
-        final var proxyAccountWrapper = mock(UpdateTrackingLedgerAccount.class);
+        final var proxyAccountWrapper = mock(UpdateTrackingAccount.class);
         given(proxyAccountWrapper.wrappedAccountIsTokenProxy()).willReturn(true);
         given(proxyAccountWrapper.getAddress()).willReturn(aAddress);
-        subject.updatedAccounts.put(aAddress, proxyAccountWrapper);
+        subject.getUpdatedAccounts().put(aAddress, proxyAccountWrapper);
 
         assertDoesNotThrow(subject::commit);
 
