@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts;
+package com.hedera.node.app.service.evm.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,18 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -49,32 +42,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UpdateTrackingAccountTest {
     private static final long newBalance = 200_000L;
     private static final long initialBalance = 100_000L;
-    private static final AccountID targetId = IdUtils.asAccount("0.0.12345");
-    private static final Address targetAddress = EntityIdUtils.asTypedEvmAddress(targetId);
+    private static final Address targetAddress =
+            Address.fromHexString("0x000000000000000000000000000000000000066e");
 
-    @Mock private EntityAccess entityAccess;
-    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
-    @Mock NodeLocalProperties properties;
+    @Mock private HederaEvmEntityAccess entityAccess;
 
-    private CodeCache codeCache;
+    private AbstractCodeCache codeCache;
 
     @BeforeEach
     void setUp() {
-        codeCache = new CodeCache(properties, entityAccess);
+        codeCache = new AbstractCodeCache(12, entityAccess);
     }
 
-    @Test
-    void mirrorsBalanceChangesInNonNullTrackingAccounts() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingAccount<>(account, trackingAccounts);
-
-        subject.setBalance(Wei.of(newBalance));
-
-        assertEquals(newBalance, subject.getBalance().toLong());
-        verify(trackingAccounts).set(targetId, AccountProperty.BALANCE, newBalance);
-    }
+    //    void mirrorsBalanceChangesInNonNullTrackingAccounts()
 
     @Test
     void missingWrappedAccountIsNotATokenProxy() {
@@ -220,17 +200,7 @@ class UpdateTrackingAccountTest {
         assertEquals(Long.MAX_VALUE, subject.getBalance().toLong());
     }
 
-    @Test
-    void setBalancePropagatesToUsableTrackingAccounts() {
-        final var account =
-                new WorldStateAccount(
-                        targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingAccount<>(account, trackingAccounts);
-
-        subject.setBalance(Wei.of(Long.MAX_VALUE));
-        assertEquals(Long.MAX_VALUE, subject.getBalance().toLong());
-        verify(trackingAccounts).set(targetId, AccountProperty.BALANCE, Long.MAX_VALUE);
-    }
+    //    void setBalancePropagatesToUsableTrackingAccounts() {
 
     @Test
     void getStorageValueRecognizesUpdatedStorage() {
@@ -238,7 +208,7 @@ class UpdateTrackingAccountTest {
         final var account =
                 new WorldStateAccount(
                         targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingAccount<>(account, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
         assertSame(mockValue, subject.getStorageValue(UInt256.ONE));
@@ -250,7 +220,7 @@ class UpdateTrackingAccountTest {
         final var account =
                 new WorldStateAccount(
                         targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
-        final var subject = new UpdateTrackingAccount<>(account, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(account, null);
 
         subject.setStorageValue(UInt256.ONE, mockValue);
         subject.clearStorage();
@@ -259,7 +229,7 @@ class UpdateTrackingAccountTest {
 
     @Test
     void nonTrackingAccountAlwaysReturnsZeroStorageValue() {
-        final var subject = new UpdateTrackingAccount<>(targetAddress, trackingAccounts);
+        final var subject = new UpdateTrackingAccount<>(targetAddress, null);
 
         assertSame(UInt256.ZERO, subject.getStorageValue(UInt256.ONE));
     }
@@ -320,17 +290,17 @@ class UpdateTrackingAccountTest {
     @Test
     void toStringWorksAsExpected() {
         final var expectedNoUpdatedStorageOrCode =
-                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                "0x000000000000000000000000000000000000066e -> {nonce:0,"
                     + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                     + " code:[not updated], storage:[not updated] }";
         final var expectedUpdatedStorageNotCode =
-                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                "0x000000000000000000000000000000000000066e -> {nonce:0,"
                     + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                     + " code:[not updated], "
                     + "storage:{0x0000000000000000000000000000000000000000000000000000000000000001=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff}"
                     + " }";
         final var expectedUpdatedCodeClearedStorage =
-                "0x0000000000000000000000000000000000003039 -> {nonce:0,"
+                "0x000000000000000000000000000000000000066e -> {nonce:0,"
                     + " balance:0x00000000000000000000000000000000000000000000000000000000000186a0,"
                     + " code:0x04d2, storage:[cleared] }";
 

@@ -18,10 +18,10 @@ package com.hedera.node.app.service.evm.store.models;
 import static org.apache.tuweni.units.bigints.UInt256.MIN_VALUE;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+// TODO delete
 class UpdatedHederaEvmAccountTest {
     private final Address newAddress =
             Address.fromHexString("0x000000000000000000000000000000000000066e");
@@ -113,7 +114,9 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void storageEntriesFrom() {
-        assertEquals(Collections.emptyNavigableMap(), subject.storageEntriesFrom(Bytes32.ZERO, 0));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.storageEntriesFrom(Bytes32.ZERO, 0));
     }
 
     @Test

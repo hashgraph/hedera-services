@@ -199,6 +199,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         return account == null ? UInt256.ZERO : account.getStorageValue(key);
     }
 
+    // TODO rename
     private UInt256 evmFlow(UInt256 key) {
         final var value =
                 UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));

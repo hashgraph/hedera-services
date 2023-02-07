@@ -118,8 +118,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
         final var curAccounts = trackingAccounts();
         final var newMutable =
-                new UpdateTrackingAccount<A>(
-                        address, new UpdatedAccountTrackerImpl(curAccounts));
+                new UpdateTrackingAccount<A>(address, new UpdatedAccountTrackerImpl(curAccounts));
         if (trackingLedgers.areMutable()) {
             final var newAccountId = accountIdFromEvmAddress(newMutable.getAddress());
             curAccounts.create(newAccountId);

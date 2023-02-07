@@ -408,7 +408,9 @@ class AbstractLedgerWorldUpdaterTest {
 
         /* Verify we can commit the change */
         assertDoesNotThrow(() -> wrappedLedgers.commit());
-        assertTrue(subject.getUpdatedAccounts().containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+        assertTrue(
+                subject.getUpdatedAccounts()
+                        .containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
@@ -432,7 +434,9 @@ class AbstractLedgerWorldUpdaterTest {
 
         /* Verify we can commit the change */
         assertDoesNotThrow(() -> wrappedLedgers.commit());
-        assertTrue(subject.getUpdatedAccounts().containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
+        assertTrue(
+                subject.getUpdatedAccounts()
+                        .containsKey(EntityIdUtils.asTypedEvmAddress(aAccount)));
     }
 
     @Test
@@ -482,9 +486,11 @@ class AbstractLedgerWorldUpdaterTest {
         assertEquals(bHbarBalance - 2, ledgers.accounts().get(bAccount, BALANCE));
         /* And consistently in the updatedAccounts map */
         assertTrue(subject.getUpdatedAccounts().containsKey(aAddress));
-        assertEquals(aHbarBalance + 2, subject.getUpdatedAccounts().get(aAddress).getBalance().toLong());
+        assertEquals(
+                aHbarBalance + 2, subject.getUpdatedAccounts().get(aAddress).getBalance().toLong());
         assertTrue(subject.getUpdatedAccounts().containsKey(bAddress));
-        assertEquals(bHbarBalance - 2, subject.getUpdatedAccounts().get(bAddress).getBalance().toLong());
+        assertEquals(
+                bHbarBalance - 2, subject.getUpdatedAccounts().get(bAddress).getBalance().toLong());
     }
 
     @Test
