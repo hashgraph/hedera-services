@@ -272,6 +272,9 @@ class ERC721PrecompilesTest {
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr.toArray()))
                 .thenReturn(token);
         entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(nonFungibleTokenAddr))
+                .thenReturn(token);
+        entityIdUtils
                 .when(
                         () ->
                                 EntityIdUtils.contractIdFromEvmAddress(

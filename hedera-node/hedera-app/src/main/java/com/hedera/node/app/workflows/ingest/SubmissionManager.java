@@ -65,7 +65,7 @@ public class SubmissionManager {
      * Submit a transaction to the {@link Platform}
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
-     * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
+     * @param byteArray the {@link ByteBuffer} of the data that should be submitted
      * @param parser the {@link Parser} that is used to eventually parse the {@link
      *     TransactionBody#getUncheckedSubmit()}
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -73,17 +73,17 @@ public class SubmissionManager {
      */
     public void submit(
             @NonNull final TransactionBody txBody,
-            @NonNull final ByteBuffer byteBuffer,
+            @NonNull final byte[] byteArray,
             @NonNull final Parser<TransactionBody> parser)
             throws PreCheckException {
         requireNonNull(txBody);
-        requireNonNull(byteBuffer);
+        requireNonNull(byteArray);
         requireNonNull(parser);
 
-        final byte[] payload;
+        byte[] payload = byteArray;
+
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
-        // pre-checks.
-        // This is used in tests to check the reaction to illegal input.
+        // pre-checks.This is used in tests to check the reaction to illegal input.
         if (txBody.hasUncheckedSubmit()) {
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
                 // we do not allow unchecked submits in PROD
@@ -97,11 +97,6 @@ public class SubmissionManager {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
-        } else if (byteBuffer.hasArray()) {
-            payload = byteBuffer.array();
-        } else {
-            payload = new byte[byteBuffer.limit()];
-            byteBuffer.get(payload);
         }
 
         final var success = platform.createTransaction(payload);

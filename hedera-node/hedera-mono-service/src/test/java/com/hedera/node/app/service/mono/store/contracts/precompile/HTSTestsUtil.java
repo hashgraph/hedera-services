@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
@@ -164,6 +165,7 @@ public class HTSTestsUtil {
     public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
     public static final PauseWrapper nonFungiblePause = new PauseWrapper(nonFungible);
     public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
+    public static final BalanceOfWrapper balanceOfWrapper = new BalanceOfWrapper(account);
     public static final UnpauseWrapper nonFungibleUnpause = new UnpauseWrapper(nonFungible);
     public static final WipeWrapper fungibleWipe =
             WipeWrapper.forFungible(fungible, account, AMOUNT);

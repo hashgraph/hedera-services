@@ -185,11 +185,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeTo(
-                out::writeByte,
-                out::writeInt,
-                out::writeLong,
-                data -> out.write(data, 0, data.length));
+        serializeTo(out::writeByte, out::writeInt, out::writeLong, out::write);
     }
 
     @Override
@@ -213,20 +209,27 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         return immutable;
     }
 
-    private void serializeTo(
+    public int serializeTo(
             final CheckedConsumer<Byte> writeByteFn,
             final CheckedConsumer<Integer> writeIntFn,
             final CheckedConsumer<Long> writeLongFn,
             final CheckedConsumer<byte[]> writeBytesFn)
             throws IOException {
+        int bytesWritten = 0;
         writeByteFn.accept(flags);
+        bytesWritten += 1;
         for (final var v : ints) {
             writeIntFn.accept(v);
         }
+        bytesWritten += Integer.BYTES * ints.length;
         for (final var v : longs) {
             writeLongFn.accept(v);
         }
-        writeBytes(serializedVariablePart(), writeIntFn, writeBytesFn);
+        bytesWritten += Long.BYTES * longs.length;
+        final byte[] variablePart = serializedVariablePart();
+        writeBytes(variablePart, writeIntFn, writeBytesFn);
+        bytesWritten += Integer.BYTES + variablePart.length; // size + data
+        return bytesWritten;
     }
 
     private void deserializeFrom(

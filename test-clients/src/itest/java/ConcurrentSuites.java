@@ -62,6 +62,7 @@ import com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPreco
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.RedirectPrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.SigningReqsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
@@ -177,6 +178,7 @@ public class ConcurrentSuites {
                     MixedHTSPrecompileTestsSuite::new,
                     PauseUnpauseTokenAccountPrecompileSuite::new,
                     PrngPrecompileSuite::new,
+                    RedirectPrecompileSuite::new,
                     TokenAndTypeCheckSuite::new,
                     TokenExpiryInfoSuite::new,
                     TokenInfoHTSSuite::new,
