@@ -372,7 +372,8 @@ public final class BootstrapProperties implements PropertySource {
                     STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS,
                     STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS,
                     STATS_RUNNING_AVG_HALF_LIFE_SECS,
-                    STATS_SPEEDOMETER_HALF_LIFE_SECS);
+                    STATS_SPEEDOMETER_HALF_LIFE_SECS,
+                    VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
 
     public static final Set<String> BOOTSTRAP_PROP_NAMES =
             unmodifiableSet(
@@ -575,5 +576,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
                     entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
-                    entry(WORKFLOWS_ENABLED, AS_BOOLEAN));
+                    entry(WORKFLOWS_ENABLED, AS_BOOLEAN),
+                    entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN));
 }
