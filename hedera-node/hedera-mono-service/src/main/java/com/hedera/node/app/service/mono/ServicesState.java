@@ -298,9 +298,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         return internalInit(platform, bootstrapProps, dualState, trigger, deserializedVersion);
     }
 
-    private void genesisInit(
-            final Platform platform,
-            final SwirldDualState dualState) {
+    private void genesisInit(final Platform platform, final SwirldDualState dualState) {
         log.info(
                 "Init called on Services node {} WITHOUT Merkle saved state", platform.getSelfId());
 
