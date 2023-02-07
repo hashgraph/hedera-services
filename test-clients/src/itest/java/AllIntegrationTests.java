@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
+import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -72,7 +71,7 @@ class AllIntegrationTests extends IntegrationTestBase {
     List<DynamicTest> recordStreamValidation() {
         return List.of(
                 recordStreamValidation(
-                        "build/network/itest/records/node_0",
+                        "hedera-node/data/recordstreams/record0.0.3",
                         new BalanceReconciliationValidator(),
                         new ExpiryRecordsValidator()));
     }
