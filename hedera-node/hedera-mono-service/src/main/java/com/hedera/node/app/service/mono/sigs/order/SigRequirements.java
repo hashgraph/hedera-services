@@ -1371,24 +1371,24 @@ public class SigRequirements {
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op) {
         for (final var adjust : op.getTransfers().getAccountAmountsList()) {
-            final var unaliasedAccountNum =
-                    sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
-            final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
-            if (adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum)) {
+            if (isReceivingFungibleValue(adjust, target)) {
                 return true;
             }
         }
         for (final var transfers : op.getTokenTransfersList()) {
             for (final var adjust : transfers.getTransfersList()) {
-                final var unaliasedAccountNum =
-                        sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
-                final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
-                if (adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum)) {
+                if (isReceivingFungibleValue(adjust, target)) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    private boolean isReceivingFungibleValue(final AccountAmount adjust, final AccountID target) {
+        final var unaliasedAccountNum = sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
+        final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
+        return adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum);
     }
 
     private <T> void addToMutableReqIfPresent(

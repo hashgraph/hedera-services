@@ -29,5 +29,12 @@ public interface AccountSigMetaLookup {
 
     SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias);
 
+    /**
+     * Gets the unaliased form of an account. If the account is not an alias, returns the account.
+     * Otherwise, returns the account to which the alias points.
+     *
+     * @param idOrAlias id of the account or alias
+     * @return the unaliased account
+     */
     EntityNum unaliasedAccount(AccountID idOrAlias);
 }
