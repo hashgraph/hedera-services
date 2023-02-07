@@ -232,6 +232,11 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.logic().incorporateConsensus(round);
     }
 
+    @Override
+    public void preHandle(final Event event) {
+        metadata.app().eventExpansion().expandAllSigs(event, this);
+    }
+
     public void init(
             final Platform platform,
             final AddressBook addressBook,
@@ -271,11 +276,6 @@ public class ServicesState extends PartialNaryMerkleInternal
                         tokenRelMigrator);
             }
         }
-    }
-
-    @Override
-    public void preHandle(final Event event) {
-        metadata.app().eventExpansion().expandAllSigs(event, this);
     }
 
     private ServicesApp deserializedInit(
