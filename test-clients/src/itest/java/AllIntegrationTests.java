@@ -71,7 +71,7 @@ class AllIntegrationTests extends IntegrationTestBase {
     List<DynamicTest> recordStreamValidation() {
         return List.of(
                 recordStreamValidation(
-                        "hedera-node/data/recordstreams/record0.0.3",
+                        "build/network/itest/records/node_0",
                         new BalanceReconciliationValidator(),
                         new ExpiryRecordsValidator()));
     }
