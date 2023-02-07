@@ -125,7 +125,7 @@ public class FileUpdateSuite extends HapiSuite {
     private static final String INVALID_ENTITY_ID = "1.2.3";
 
     public static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
-    private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
+    public static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
     private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
@@ -138,11 +138,11 @@ public class FileUpdateSuite extends HapiSuite {
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final String DEFAULT_MAX_CUSTOM_FEES =
             HapiSpecSetup.getDefaultNodeProps().get(MAX_CUSTOM_FEES_PROP);
-    private static final String DEFAULT_MAX_KV_PAIRS_PER_CONTRACT =
+    public static final String DEFAULT_MAX_KV_PAIRS_PER_CONTRACT =
             HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
-    private static final String DEFAULT_MAX_KV_PAIRS =
+    public static final String DEFAULT_MAX_KV_PAIRS =
             HapiSpecSetup.getDefaultNodeProps().get(AGGREGATE_KV_LIMIT_PROP);
-    private static final String DEFAULT_MAX_CONS_GAS =
+    public static final String DEFAULT_MAX_CONS_GAS =
             HapiSpecSetup.getDefaultNodeProps().get(CONS_MAX_GAS_PROP);
 
     public static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
