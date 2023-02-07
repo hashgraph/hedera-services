@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -40,15 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
@@ -60,11 +53,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,18 +85,30 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     storageExpiryWorksAtTheExpectedInterval(),
                     autoRenewWorksAsExpected(),
                     autoRenewInGracePeriodIfEnoughBalance(),
-                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete()
+                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
+                    // This spec should be at the end of this suite
+                    validateStreams()
                 });
+    }
+
+    private HapiSpec validateStreams() {
+        return onlyDefaultHapiSpec("validateStreams")
+                .given()
+                .when()
+                .then(
+                        sourcing(
+                                () ->
+                                        assertEventuallyPasses(
+                                                new ExpiryRecordsValidator(),
+                                                Duration.ofMillis(2_100))));
     }
 
     private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
         final var contract = "User";
-        final var contract2 = "User";
         final var gasToOffer = 1_000_000;
         final var minimalLifetime = 4;
         final var initBalance = 100 * ONE_HBAR;
         final var autoRenewAccount = "autoRenewAccount";
-        final var canonicalUsdFee = 0.026;
 
         final var renewalFeeWithoutStorage = new AtomicLong();
         final var renewalFeeWithStorage = new AtomicLong();
