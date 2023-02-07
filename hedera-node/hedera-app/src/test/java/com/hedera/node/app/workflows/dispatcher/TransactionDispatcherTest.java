@@ -566,7 +566,8 @@ class TransactionDispatcherTest {
                                 .build(),
                         (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.networkUncheckedSubmitHandler()).preHandle(meta)),
+                                        verify(handlers.networkUncheckedSubmitHandler())
+                                                .preHandle(meta)),
 
                 // schedule
                 Arguments.of(

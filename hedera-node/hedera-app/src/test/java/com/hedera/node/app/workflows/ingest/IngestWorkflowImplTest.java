@@ -63,7 +63,6 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,8 +75,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IngestWorkflowImplTest {
 
     private static final AccountID ACCOUNT_ID = AccountID.newBuilder().setAccountNum(42L).build();
-    private static final TransactionID TRANSACTION_ID = TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
-    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
+    private static final TransactionID TRANSACTION_ID =
+            TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
+    private static final TransactionBody TRANSACTION_BODY =
+            TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
             new OnsetResult(
