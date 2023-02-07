@@ -412,50 +412,6 @@ public class ServicesState extends PartialNaryMerkleInternal
         return app;
     }
 
-    public void init(
-            final Platform platform,
-            final AddressBook addressBook,
-            final SwirldDualState dualState,
-            final InitTrigger trigger,
-            final SoftwareVersion deserializedVersion) {
-        // first store a reference to the platform
-        this.platform = platform;
-
-        if (trigger == GENESIS) {
-            genesisInit(platform, addressBook, dualState);
-        } else {
-            if (deserializedVersion == null) {
-                throw new IllegalStateException(
-                        "No software version for deserialized state version "
-                                + deserializedStateVersion);
-            }
-            // Note this returns the app in case we need to do something with it  after making
-            // final changes to state (e.g. after migrating something from memory to disk)
-            deserializedInit(platform, addressBook, dualState, trigger, deserializedVersion);
-            final var isUpgrade =
-                    SEMANTIC_VERSIONS.deployedSoftwareVersion().isAfter(deserializedVersion);
-            if (isUpgrade) {
-                migrateFrom(deserializedVersion);
-            }
-
-            // Because the flags below can be toggled without a software upgrade, we need to
-            // check for migration regardless of versioning. This should be done after any
-            // other migrations are complete.
-            if (shouldMigrateNfts()) {
-                migrateFromUniqueTokenMerkleMap(this);
-            }
-            if (shouldMigrateSomethingToDisk()) {
-                mapToDiskMigration.migrateToDiskAsApropos(
-                        INSERTIONS_PER_COPY,
-                        this,
-                        new ToDiskMigrations(enableVirtualAccounts, enableVirtualTokenRels),
-                        vmFactory.apply(JasperDbBuilder::new),
-                        accountMigrator,
-                        tokenRelMigrator);
-            }
-        }
-    }
-
     /* --- FastCopyable --- */
     @Override
     public synchronized ServicesState copy() {
