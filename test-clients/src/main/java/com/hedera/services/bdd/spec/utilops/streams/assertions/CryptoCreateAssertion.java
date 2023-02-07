@@ -26,9 +26,9 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import javax.annotation.Nullable;
 
 /**
- * Hello world-style example of a {@link RecordStreamAssertion}. This one asserts that
- * the record stream includes an item matching the creation of a given account, based on
- * its name in the {@link com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry}.
+ * Hello world-style example of a {@link RecordStreamAssertion}. This one asserts that the record
+ * stream includes an item matching the creation of a given account, based on its name in the {@link
+ * com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry}.
  */
 public class CryptoCreateAssertion implements RecordStreamAssertion {
     private final HapiSpec spec;

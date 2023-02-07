@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
@@ -267,21 +266,22 @@ public class CryptoTransferSuite extends HapiSuite {
                                         copyFromUtf8("e"),
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
-                .when(cryptoTransfer(
-                        movingUnique(NON_FUNGIBLE_TOKEN,
-                                1L, 2L, 3L, 4L, 5L, 6L, 7L)
-                                .between(TREASURY, ownerWith4AutoAssoc))
-                )
+                .when(
+                        cryptoTransfer(
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L, 3L, 4L, 5L, 6L, 7L)
+                                        .between(TREASURY, ownerWith4AutoAssoc)))
                 .then(
-                        wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc,
+                        wipeTokenAccount(
+                                NON_FUNGIBLE_TOKEN,
+                                ownerWith4AutoAssoc,
                                 List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
-                        wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc,
-                                List.of(7L)),
-                        getAccountBalance(ownerWith4AutoAssoc).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
+                        wipeTokenAccount(NON_FUNGIBLE_TOKEN, ownerWith4AutoAssoc, List.of(7L)),
+                        getAccountBalance(ownerWith4AutoAssoc)
+                                .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0L));
     }
 
     private HapiSpec okToRepeatSerialNumbersInBurnList() {
-        return onlyDefaultHapiSpec("CannotRepeatSerialNumbersInWipeList")
+        return defaultHapiSpec("CannotRepeatSerialNumbersInBurnList")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(WIPE_KEY),
@@ -304,7 +304,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                         copyFromUtf8("e"),
                                         copyFromUtf8("f"),
                                         copyFromUtf8("g"))))
-                .when( )
+                .when()
                 .then(
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(1L, 1L, 2L, 3L, 4L, 5L, 6L)),
                         burnToken(NON_FUNGIBLE_TOKEN, List.of(7L)),
