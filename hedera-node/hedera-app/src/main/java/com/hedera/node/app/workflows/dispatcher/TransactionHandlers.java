@@ -33,7 +33,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
@@ -63,8 +63,11 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** A record that contains all records that are available in the app */
-public record Handlers(
+/**
+ * A record that contains all {@link com.hedera.node.app.spi.workflows.TransactionHandler}s that are
+ * available in the app
+ */
+public record TransactionHandlers(
         @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
         @NonNull ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
         @NonNull ConsensusDeleteTopicHandler consensusDeleteTopicHandler,
@@ -91,7 +94,7 @@ public record Handlers(
         @NonNull FileSystemDeleteHandler fileSystemDeleteHandler,
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
         @NonNull FreezeHandler freezeHandler,
-        @NonNull UncheckedSubmitHandler uncheckedSubmitHandler,
+        @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,

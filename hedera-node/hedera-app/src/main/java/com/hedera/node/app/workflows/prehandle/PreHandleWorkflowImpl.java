@@ -25,7 +25,7 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.Dispatcher;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Default implementation of {@link PreHandleWorkflow} */
+/** Implementation of {@link PreHandleWorkflow} */
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
@@ -65,21 +65,21 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                                     TransactionBody.parser()));
 
     private final WorkflowOnset onset;
-    private final Dispatcher dispatcher;
+    private final TransactionDispatcher dispatcher;
     private final Function<Supplier<?>, CompletableFuture<?>> runner;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@code
-     *     preHandle()}-methods
+     * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
+     *     {@code preHandle()}-methods
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
-            @NonNull final Dispatcher dispatcher,
+            @NonNull final TransactionDispatcher dispatcher,
             @NonNull final WorkflowOnset onset) {
         requireNonNull(exe);
 
@@ -90,7 +90,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     // Used only for testing
     PreHandleWorkflowImpl(
-            @NonNull final Dispatcher dispatcher,
+            @NonNull final TransactionDispatcher dispatcher,
             @NonNull final WorkflowOnset onset,
             @NonNull final Function<Supplier<?>, CompletableFuture<?>> runner) {
         this.dispatcher = requireNonNull(dispatcher);

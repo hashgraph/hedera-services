@@ -63,6 +63,7 @@ import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Supplier;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +74,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
+
+    private static final AccountID ACCOUNT_ID = AccountID.newBuilder().setAccountNum(42L).build();
+    private static final TransactionID TRANSACTION_ID = TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
+    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
+    private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
+    private static final OnsetResult ONSET_RESULT =
+            new OnsetResult(
+                    TRANSACTION_BODY,
+                    TRANSACTION_BODY.toByteArray(),
+                    OK,
+                    SIGNATURE_MAP,
+                    ConsensusCreateTopic);
 
     @Mock private NodeInfo nodeInfo;
 
@@ -96,33 +109,25 @@ class IngestWorkflowImplTest {
     @Mock private SubmissionManager submissionManager;
     @Mock private HapiOpCounters opCounters;
 
-    @Mock private ByteBuffer requestBuffer;
-
     @Mock private Parser<Query> queryParser;
     @Mock private Parser<Transaction> txParser;
     @Mock private Parser<SignedTransaction> signedParser;
     @Mock private Parser<TransactionBody> txBodyParser;
 
-    private TransactionBody transactionBody;
-    private SignatureMap signatureMap;
     private SessionContext ctx;
     private IngestWorkflowImpl workflow;
+    private ByteBuffer requestBuffer;
 
     @BeforeEach
     void setup(@Mock(strictness = LENIENT) HederaState state) throws PreCheckException {
-        final var accountID = AccountID.newBuilder().setAccountNum(42L).build();
-        final var transactionID = TransactionID.newBuilder().setAccountID(accountID);
-        transactionBody = TransactionBody.newBuilder().setTransactionID(transactionID).build();
-        signatureMap = SignatureMap.newBuilder().build();
-        final var onsetResult =
-                new OnsetResult(transactionBody, OK, signatureMap, ConsensusCreateTopic);
-
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(onsetResult);
-        when(accountStore.getAccount(accountID)).thenReturn(Optional.of(account));
+        when(accountStore.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
+        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
+        when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
+
         workflow =
                 new IngestWorkflowImpl(
                         nodeInfo,
@@ -249,7 +254,26 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(transactionBody, requestBuffer, txBodyParser);
+        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer.array(), txBodyParser);
+        verify(opCounters).countSubmitted(ConsensusCreateTopic);
+    }
+
+    @Test
+    void testSuccessWithNonDirectByteBuffer(@Mock ByteBuffer localRequestBuffer)
+            throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+        when(onset.parseAndCheck(ctx, localRequestBuffer)).thenReturn(ONSET_RESULT);
+
+        // when
+        workflow.submitTransaction(ctx, localRequestBuffer, responseBuffer, states -> accountStore);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -358,6 +382,16 @@ class IngestWorkflowImplTest {
             throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
+        workflow =
+                new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
+                        stateAccessor,
+                        onset,
+                        checker,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -368,7 +402,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(transactionBody, requestBuffer, txBodyParser);
+        verify(submissionManager, never()).submit(any(), any(), any());
         verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -377,7 +411,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                 .when(checker)
-                .checkPayerSignature(eq(transactionBody), eq(signatureMap), any());
+                .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -397,7 +431,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                 .when(checker)
-                .checkSolvency(eq(transactionBody), eq(ConsensusCreateTopic), any());
+                .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -418,7 +452,7 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(eq(transactionBody), eq(requestBuffer), any());
+                .submit(eq(TRANSACTION_BODY), eq(requestBuffer.array()), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when

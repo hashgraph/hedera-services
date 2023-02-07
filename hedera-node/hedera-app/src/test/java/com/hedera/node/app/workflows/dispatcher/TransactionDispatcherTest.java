@@ -27,14 +27,47 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
-import com.hedera.node.app.service.contract.impl.handlers.*;
-import com.hedera.node.app.service.file.impl.handlers.*;
-import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.handlers.*;
+import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -71,6 +104,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -106,7 +140,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class DispatcherTest {
+class TransactionDispatcherTest {
 
     @Mock(strictness = LENIENT)
     private HederaState state;
@@ -145,7 +179,7 @@ class DispatcherTest {
 
     @Mock private FreezeHandler freezeHandler;
 
-    @Mock private UncheckedSubmitHandler uncheckedSubmitHandler;
+    @Mock private NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler;
 
     @Mock private ScheduleCreateHandler scheduleCreateHandler;
     @Mock private ScheduleSignHandler scheduleSignHandler;
@@ -174,9 +208,10 @@ class DispatcherTest {
     @Mock private AccountKeyLookup keyLookup;
     private PreHandleContext preHandleCtx;
 
-    private Handlers handlers;
-    private Dispatcher dispatcher;
+    private TransactionHandlers handlers;
+    private TransactionDispatcher dispatcher;
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
     void setup(@Mock final ReadableStates readableStates, @Mock HederaKey payerKey) {
         when(state.createReadableStates(any())).thenReturn(readableStates);
@@ -184,7 +219,7 @@ class DispatcherTest {
                 .thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
         handlers =
-                new Handlers(
+                new TransactionHandlers(
                         consensusCreateTopicHandler,
                         consensusUpdateTopicHandler,
                         consensusDeleteTopicHandler,
@@ -211,7 +246,7 @@ class DispatcherTest {
                         fileSystemDeleteHandler,
                         fileSystemUndeleteHandler,
                         freezeHandler,
-                        uncheckedSubmitHandler,
+                        networkUncheckedSubmitHandler,
                         scheduleCreateHandler,
                         scheduleSignHandler,
                         scheduleDeleteHandler,
@@ -233,15 +268,15 @@ class DispatcherTest {
                         utilPrngHandler);
 
         preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
-        dispatcher = new Dispatcher(handlers, preHandleCtx);
+        dispatcher = new TransactionDispatcher(handlers, preHandleCtx);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new Dispatcher(null, preHandleCtx))
+        assertThatThrownBy(() -> new TransactionDispatcher(null, preHandleCtx))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new Dispatcher(handlers, null))
+        assertThatThrownBy(() -> new TransactionDispatcher(handlers, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -286,11 +321,40 @@ class DispatcherTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void testDataNotSetFails() {
+        // given
+        final var txBody = TransactionBody.newBuilder().build();
+        final var payer = AccountID.newBuilder().build();
+        final var tracker = new ReadableStatesTracker(state);
+        final var context = new PrehandleHandlerContext(accountStore, txBody, payer);
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void testNodeStakeUpdateFails() {
+        // given
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setNodeStakeUpdate(NodeStakeUpdateTransactionBody.getDefaultInstance())
+                        .build();
+        final var payer = AccountID.newBuilder().build();
+        final var tracker = new ReadableStatesTracker(state);
+        final var context = new PrehandleHandlerContext(accountStore, txBody, payer);
+
+        // then
+        assertThatThrownBy(() -> dispatcher.dispatchPreHandle(tracker, context))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testPreHandleWithPayer(
             final TransactionBody txBody,
-            final BiConsumer<Handlers, PrehandleHandlerContext> verification) {
+            final BiConsumer<TransactionHandlers, PrehandleHandlerContext> verification) {
         // given
         final var payer = AccountID.newBuilder().build();
         final var tracker = new ReadableStatesTracker(state);
@@ -311,7 +375,7 @@ class DispatcherTest {
                                 .setConsensusCreateTopic(
                                         ConsensusCreateTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.consensusCreateTopicHandler())
                                                 .preHandle(meta)),
@@ -320,7 +384,7 @@ class DispatcherTest {
                                 .setConsensusUpdateTopic(
                                         ConsensusUpdateTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.consensusUpdateTopicHandler())
                                                 .preHandle(meta)),
@@ -329,7 +393,7 @@ class DispatcherTest {
                                 .setConsensusDeleteTopic(
                                         ConsensusDeleteTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.consensusDeleteTopicHandler())
                                                 .preHandle(meta)),
@@ -338,7 +402,7 @@ class DispatcherTest {
                                 .setConsensusSubmitMessage(
                                         ConsensusSubmitMessageTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.consensusSubmitMessageHandler())
                                                 .preHandle(meta)),
@@ -349,7 +413,7 @@ class DispatcherTest {
                                 .setContractCreateInstance(
                                         ContractCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractCreateHandler()).preHandle(meta)),
                 Arguments.of(
@@ -357,14 +421,14 @@ class DispatcherTest {
                                 .setContractUpdateInstance(
                                         ContractUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractUpdateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractCallHandler()).preHandle(meta)),
                 Arguments.of(
@@ -372,7 +436,7 @@ class DispatcherTest {
                                 .setContractDeleteInstance(
                                         ContractDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractDeleteHandler()).preHandle(meta)),
                 Arguments.of(
@@ -380,7 +444,7 @@ class DispatcherTest {
                                 .setEthereumTransaction(
                                         EthereumTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.etherumTransactionHandler())
                                                 .preHandle(meta)),
@@ -391,7 +455,7 @@ class DispatcherTest {
                                 .setCryptoCreateAccount(
                                         CryptoCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoCreateHandler()).preHandle(meta)),
                 Arguments.of(
@@ -399,7 +463,7 @@ class DispatcherTest {
                                 .setCryptoUpdateAccount(
                                         CryptoUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoUpdateHandler())
                                                 .preHandle(eq(meta), any())),
@@ -408,7 +472,7 @@ class DispatcherTest {
                                 .setCryptoTransfer(
                                         CryptoTransferTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoTransferHandler())
                                                 .preHandle(eq(meta), any(), any())),
@@ -416,7 +480,7 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoDeleteHandler()).preHandle(meta)),
                 Arguments.of(
@@ -424,7 +488,7 @@ class DispatcherTest {
                                 .setCryptoApproveAllowance(
                                         CryptoApproveAllowanceTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoApproveAllowanceHandler())
                                                 .preHandle(meta)),
@@ -433,7 +497,7 @@ class DispatcherTest {
                                 .setCryptoDeleteAllowance(
                                         CryptoDeleteAllowanceTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoDeleteAllowanceHandler())
                                                 .preHandle(meta)),
@@ -442,7 +506,7 @@ class DispatcherTest {
                                 .setCryptoAddLiveHash(
                                         CryptoAddLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoAddLiveHashHandler())
                                                 .preHandle(meta)),
@@ -451,7 +515,7 @@ class DispatcherTest {
                                 .setCryptoDeleteLiveHash(
                                         CryptoDeleteLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.cryptoDeleteLiveHashHandler())
                                                 .preHandle(meta)),
@@ -461,28 +525,28 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setFileCreate(FileCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileCreateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setFileUpdate(FileUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileUpdateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setFileDelete(FileDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setFileAppend(FileAppendTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileAppendHandler()).preHandle(meta)),
 
@@ -491,7 +555,7 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setFreeze(FreezeTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.freezeHandler()).preHandle(meta)),
 
@@ -500,9 +564,9 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.uncheckedSubmitHandler()).preHandle(meta)),
+                                        verify(handlers.networkUncheckedSubmitHandler()).preHandle(meta)),
 
                 // schedule
                 Arguments.of(
@@ -510,7 +574,7 @@ class DispatcherTest {
                                 .setScheduleCreate(
                                         ScheduleCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.scheduleCreateHandler())
                                                 .preHandle(eq(meta), any())),
@@ -518,7 +582,7 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setScheduleSign(ScheduleSignTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.scheduleSignHandler())
                                                 .preHandle(eq(meta), any(), any())),
@@ -527,7 +591,7 @@ class DispatcherTest {
                                 .setScheduleDelete(
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.scheduleDeleteHandler())
                                                 .preHandle(eq(meta), any())),
@@ -537,21 +601,21 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenCreateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenUpdateHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenMintHandler())
                                                 .preHandle(eq(meta), any())),
@@ -559,21 +623,21 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenBurnHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenDeleteHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenAccountWipeHandler()).preHandle(meta)),
                 Arguments.of(
@@ -581,7 +645,7 @@ class DispatcherTest {
                                 .setTokenFreeze(
                                         TokenFreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenFreezeAccountHandler())
                                                 .preHandle(meta)),
@@ -590,7 +654,7 @@ class DispatcherTest {
                                 .setTokenUnfreeze(
                                         TokenUnfreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenUnfreezeAccountHandler())
                                                 .preHandle(eq(meta), any())),
@@ -598,7 +662,7 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenGrantKycToAccountHandler())
                                                 .preHandle(meta)),
@@ -607,7 +671,7 @@ class DispatcherTest {
                                 .setTokenRevokeKyc(
                                         TokenRevokeKycTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenRevokeKycFromAccountHandler())
                                                 .preHandle(eq(meta), any())),
@@ -616,7 +680,7 @@ class DispatcherTest {
                                 .setTokenAssociate(
                                         TokenAssociateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenAssociateToAccountHandler())
                                                 .preHandle(meta)),
@@ -625,7 +689,7 @@ class DispatcherTest {
                                 .setTokenDissociate(
                                         TokenDissociateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenDissociateFromAccountHandler())
                                                 .preHandle(meta)),
@@ -634,7 +698,7 @@ class DispatcherTest {
                                 .setTokenFeeScheduleUpdate(
                                         TokenFeeScheduleUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenFeeScheduleUpdateHandler())
                                                 .preHandle(eq(meta), any())),
@@ -642,14 +706,14 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setTokenPause(TokenPauseTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenPauseHandler()).preHandle(meta)),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenUnpause(TokenUnpauseTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenUnpauseHandler()).preHandle(meta)),
 
@@ -658,7 +722,7 @@ class DispatcherTest {
                         TransactionBody.newBuilder()
                                 .setUtilPrng(UtilPrngTransactionBody.getDefaultInstance())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.utilPrngHandler()).preHandle(meta)),
 
@@ -670,7 +734,7 @@ class DispatcherTest {
                                                 .setContractID(ContractID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractSystemDeleteHandler())
                                                 .preHandle(meta)),
@@ -681,7 +745,7 @@ class DispatcherTest {
                                                 .setFileID(FileID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileSystemDeleteHandler()).preHandle(meta)),
                 Arguments.of(
@@ -691,7 +755,7 @@ class DispatcherTest {
                                                 .setContractID(ContractID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.contractSystemUndeleteHandler())
                                                 .preHandle(meta)),
@@ -702,7 +766,7 @@ class DispatcherTest {
                                                 .setFileID(FileID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (BiConsumer<Handlers, PrehandleHandlerContext>)
+                        (BiConsumer<TransactionHandlers, PrehandleHandlerContext>)
                                 (handlers, meta) ->
                                         verify(handlers.fileSystemUndeleteHandler())
                                                 .preHandle(meta)));

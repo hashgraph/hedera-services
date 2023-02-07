@@ -35,28 +35,29 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A {@code Dispatcher} provides functionality to forward pre-check, pre-handle, and handle-requests
- * to the appropriate handler
+ * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and
+ * handle-transaction requests to the appropriate handler
  */
-public class Dispatcher {
+public class TransactionDispatcher {
 
     // TODO: Intermediate solution until we find a better way to get the service-key
     private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
     private static final String SCHEDULE_SERVICE_KEY = new ScheduleServiceImpl().getServiceName();
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
 
-    private final Handlers handlers;
+    private final TransactionHandlers handlers;
 
     private final CryptoSignatureWaivers cryptoSignatureWaivers;
 
     /**
-     * Constructor of {@code Dispatcher}
+     * Constructor of {@code TransactionDispatcher}
      *
-     * @param handlers a {@link Handlers} record with all available handlers
+     * @param handlers a {@link TransactionHandlers} record with all available handlers
      * @throws NullPointerException if one of the parameters is {@code null}
      */
-    public Dispatcher(
-            @NonNull final Handlers handlers, @NonNull final PreHandleContext preHandleContext) {
+    public TransactionDispatcher(
+            @NonNull final TransactionHandlers handlers,
+            @NonNull final PreHandleContext preHandleContext) {
         this.handlers = requireNonNull(handlers);
         this.cryptoSignatureWaivers =
                 new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
@@ -120,7 +121,8 @@ public class Dispatcher {
 
             case FREEZE -> handlers.freezeHandler().preHandle(handlerContext);
 
-            case UNCHECKEDSUBMIT -> handlers.uncheckedSubmitHandler().preHandle(handlerContext);
+            case UNCHECKEDSUBMIT -> handlers.networkUncheckedSubmitHandler()
+                    .preHandle(handlerContext);
 
             case SCHEDULECREATE -> handlers.scheduleCreateHandler()
                     .preHandle(handlerContext, setupPreHandleDispatcher(statesTracker));

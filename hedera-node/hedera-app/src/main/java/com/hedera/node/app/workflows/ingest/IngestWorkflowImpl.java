@@ -44,7 +44,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Default implementation of {@link IngestWorkflow} */
+/** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
     // TODO: Intermediate solution until we find a better way to get the service-key
@@ -67,10 +67,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
-     * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
+     * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
@@ -160,7 +161,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                submissionManager.submit(txBody, requestBuffer, ctx.txBodyParser());
+                final byte[] byteArray;
+                if (requestBuffer.hasArray()) {
+                    byteArray = requestBuffer.array();
+                } else {
+                    byteArray = new byte[requestBuffer.limit()];
+                    requestBuffer.get(byteArray);
+                }
+                submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
             } catch (InsufficientBalanceException e) {

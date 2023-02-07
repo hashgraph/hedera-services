@@ -26,11 +26,13 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -39,6 +41,18 @@ import java.util.List;
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}.
  */
 public class CryptoTransferHandler implements TransactionHandler {
+
+    /**
+     * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a
+     * {@link com.hederahashgraph.api.proto.java.Query}.
+     *
+     * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
+     * @throws PreCheckException if validation fails
+     */
+    public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
+        // TODO: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}
