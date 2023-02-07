@@ -356,6 +356,7 @@ public class IterableContractValue implements VirtualValue {
 
     // =================================================================================================================
     // Serialization Methods
+
     @Override
     public long getClassId() {
         return RUNTIME_CONSTRUCTABLE_ID;
@@ -364,6 +365,21 @@ public class IterableContractValue implements VirtualValue {
     @Override
     public int getVersion() {
         return ITERABLE_VERSION;
+    }
+
+    int getSerializedSize() {
+        int valueSize = uint256Value.length;
+        int prevSize =
+                (prevUint256Key == null)
+                        ? 1 // either an "empty" marker
+                        : 1 + prevUint256KeyNonZeroBytes; // or prev key non-zero bytes count +
+        // non-zero bytes
+        int nextSize =
+                (nextUint256Key == null)
+                        ? 1 // either an "empty" marker
+                        : 1 + nextUint256KeyNonZeroBytes; // or next key non-zero bytes count +
+        // non-zero bytes
+        return valueSize + prevSize + nextSize;
     }
 
     @Override

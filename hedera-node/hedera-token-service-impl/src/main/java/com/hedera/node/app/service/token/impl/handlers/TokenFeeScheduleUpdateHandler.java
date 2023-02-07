@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,15 +42,41 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
+     * @param txn the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
+     * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final ReadableTokenStore tokenStore) {
+        final var op = txn.getTokenFeeScheduleUpdate();
+        final var tokenId = op.getTokenId();
+        final var meta =
+                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+        final var tokenMeta = tokenStore.getTokenMeta(tokenId);
+        if (tokenMeta.failed()) {
+            meta.status(tokenMeta.failureReason());
+        } else {
+            final var tokenMetadata = tokenMeta.metadata();
+            final var feeScheduleKey = tokenMetadata.feeScheduleKey();
+            if (feeScheduleKey.isPresent()) {
+                meta.addToReqNonPayerKeys(feeScheduleKey.get());
+                for (final var customFee : op.getCustomFeesList()) {
+                    final var collector = customFee.getFeeCollectorAccountId();
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            collector, INVALID_CUSTOM_FEE_COLLECTOR);
+                }
+            }
+            // we do not set a failure status if a fee schedule key is not present for the token,
+            // we choose to fail with TOKEN_HAS_NO_FEE_SCHEDULE_KEY in the handle() method
+        }
+        return meta.build();
     }
 
     /**

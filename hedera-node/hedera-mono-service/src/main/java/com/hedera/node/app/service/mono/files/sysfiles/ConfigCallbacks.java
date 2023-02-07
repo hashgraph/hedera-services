@@ -17,11 +17,13 @@ package com.hedera.node.app.service.mono.files.sysfiles;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
@@ -56,6 +58,8 @@ public class ConfigCallbacks {
     private final FunctionalityThrottling scheduleThrottling;
     private final Supplier<MerkleNetworkContext> networkCtx;
     private final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos;
+    private final SigImpactHistorian sigImpactHistorian;
+    private final FileNumbers fileNumbers;
 
     @Inject
     public ConfigCallbacks(
@@ -69,7 +73,9 @@ public class ConfigCallbacks {
             final Supplier<AddressBook> addressBook,
             final @CompositeProps PropertySource properties,
             final Supplier<MerkleNetworkContext> networkCtx,
-            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos) {
+            final Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos,
+            final SigImpactHistorian sigImpactHistorian,
+            final FileNumbers fileNumbers) {
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;
@@ -81,11 +87,14 @@ public class ConfigCallbacks {
         this.stakingInfos = stakingInfos;
         this.addressBook = addressBook;
         this.properties = properties;
+        this.sigImpactHistorian = sigImpactHistorian;
+        this.fileNumbers = fileNumbers;
     }
 
     public Consumer<ServicesConfigurationList> propertiesCb() {
         return config -> {
             propertySources.reloadFrom(config);
+            sigImpactHistorian.markEntityChanged(fileNumbers.applicationProperties());
             dynamicProps.reload();
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();

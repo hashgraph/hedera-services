@@ -131,6 +131,7 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.*;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
@@ -150,7 +151,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFung
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -158,7 +158,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.IOException;
@@ -174,6 +174,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -227,37 +229,19 @@ class HTSPrecompiledContractTest {
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> updateTokenExpiryInfoPrecompile;
     private MockedStatic<ERCTransferPrecompile> ercTransferPrecompile;
     private MockedStatic<BurnPrecompile> burnPrecompile;
+    private MockedStatic<BalanceOfPrecompile> balanceOfPrecompile;
     @Mock private AssetsLoader assetLoader;
     @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     private static final long viewTimestamp = 10L;
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
-    private TokenInfo tokenInfo;
 
     public static final Id fungibleId = Id.fromGrpcToken(fungible);
     public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 
     @BeforeEach
     void setUp() throws IOException {
-        tokenInfo =
-                TokenInfo.newBuilder()
-                        .setLedgerId(fromString("0x03"))
-                        .setSupplyTypeValue(1)
-                        .setTokenId(fungible)
-                        .setDeleted(false)
-                        .setSymbol("FT")
-                        .setName("NAME")
-                        .setMemo("MEMO")
-                        .setTreasury(
-                                EntityIdUtils.accountIdFromEvmAddress(
-                                        Address.wrap(
-                                                Bytes.fromHexString(
-                                                        "0x00000000000000000000000000000000000005cc"))))
-                        .setTotalSupply(1L)
-                        .setMaxSupply(1000L)
-                        .build();
-
         precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
@@ -298,6 +282,7 @@ class HTSPrecompiledContractTest {
         updateTokenExpiryInfoPrecompile = Mockito.mockStatic(UpdateTokenExpiryInfoPrecompile.class);
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);
         burnPrecompile = Mockito.mockStatic(BurnPrecompile.class);
+        balanceOfPrecompile = Mockito.mockStatic(BalanceOfPrecompile.class);
     }
 
     @AfterEach
@@ -318,6 +303,7 @@ class HTSPrecompiledContractTest {
         updateTokenExpiryInfoPrecompile.close();
         ercTransferPrecompile.close();
         burnPrecompile.close();
+        balanceOfPrecompile.close();
     }
 
     private ByteString fromString(final String value) {
@@ -413,8 +399,6 @@ class HTSPrecompiledContractTest {
             given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
             given(worldUpdater.isInTransaction()).willReturn(false);
             given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
-            final var updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
-            final var ledgers = updater.trackingLedgers();
             final var viewExecutor =
                     new ViewExecutor(
                             input,
@@ -719,8 +703,6 @@ class HTSPrecompiledContractTest {
     @Test
     void replacesInheritedPropertiesOnCreateNonFungibleToken() {
         // given
-        final var parentId = EntityIdUtils.accountIdFromEvmAddress(contractAddress);
-
         final var autoRenewId = EntityId.fromIdentityCode(10);
         final var tokenCreateWrapper = mock(TokenCreateWrapper.class);
         given(tokenCreateWrapper.hasAutoRenewAccount()).willReturn(false);
@@ -1080,6 +1062,40 @@ class HTSPrecompiledContractTest {
 
         // then
         assertTrue(subject.getPrecompile() instanceof UnpausePrecompile);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void computeCallsCorrectImplementationForExplicitRedirectTokenCall(final boolean tokenExists) {
+        // given
+        givenFrameContext();
+        final Bytes input =
+                Bytes.fromHexString(
+                        // explicit redirectForToken input (normal encoding)
+                        "0x618dc65e000000000000000000000000000000000000000000000000000000000000043c0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002470a08231000000000000000000000000000000000000000000000000000000000000043b00000000000000000000000000000000000000000000000000000000");
+        balanceOfPrecompile
+                // the input passed in the actual decoding method should be in redirect form (packed
+                // encoding)
+                .when(
+                        () ->
+                                BalanceOfPrecompile.decodeBalanceOf(
+                                        eq(
+                                                Bytes.fromHexString(
+                                                        "0x70a08231000000000000000000000000000000000000000000000000000000000000043b")),
+                                        any()))
+                .thenReturn(HTSTestsUtil.balanceOfWrapper);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        final var tokensLedger = mock(TransactionalLedger.class);
+        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.exists(any(TokenID.class))).willReturn(tokenExists);
+
+        // when
+        subject.prepareFields(messageFrame);
+        subject.prepareComputation(input, a -> a);
+
+        // then
+        assertTrue(subject.getPrecompile() instanceof RedirectPrecompile);
     }
 
     @Test
