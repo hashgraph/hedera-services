@@ -364,8 +364,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         APPS.save(selfId.getId(), app);
 
-        assertDoesNotThrow(
-                () -> subject.init(platform, null, RESTART, currentVersion));
+        assertDoesNotThrow(() -> subject.init(platform, null, RESTART, currentVersion));
     }
 
     @Test
@@ -822,12 +821,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         APPS.save(platform.getSelfId().getId(), app);
         assertDoesNotThrow(
-                () ->
-                        servicesState.init(
-                                platform,
-                                new DualStateImpl(),
-                                InitTrigger.GENESIS,
-                                null));
+                () -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
     @Test
