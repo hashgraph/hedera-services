@@ -39,9 +39,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmStackedWorldStateUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
-    MockAccountAccessor accountAccessor = new MockAccountAccessor();
-    MockTokenAccessor tokenAccessor = new MockTokenAccessor();
-    MockEntityAccess entityAccess = new MockEntityAccess();
+    private final MockAccountAccessor accountAccessor = new MockAccountAccessor();
+    private final MockTokenAccessor tokenAccessor = new MockTokenAccessor();
+    private final MockEntityAccess entityAccess = new MockEntityAccess();
     @Mock private AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account> updater;
     @Mock private EvmProperties properties;
     private HederaEvmStackedWorldStateUpdater subject;
@@ -62,13 +62,62 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertNull(subject.createAccount(address, 1, Wei.ONE));
         assertEquals(Wei.of(100L), subject.getAccount(address).getBalance());
         assertEquals(Collections.emptyList(), subject.getTouchedAccounts());
-        subject.commit();
         assertEquals(Collections.emptyList(), subject.getDeletedAccountAddresses());
+        // not populated yet methods
+        subject.commit();
+        subject.revert();
+        subject.deleteAccount(address);
+    }
+
+    @Test
+    void get() {
+        given(updater.get(address)).willReturn(updatedHederaEvmAccount);
+        assertEquals(updatedHederaEvmAccount.getAddress(), subject.get(address).getAddress());
+    }
+
+    @Test
+    void getForRedirect() {
+        givenForRedirect();
+        assertEquals(updatedHederaEvmAccount.getAddress(), subject.get(address).getAddress());
+    }
+
+    @Test
+    void getWithTrack() {
+        given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
+        subject.getAccount(address);
+        subject.get(address);
+        assertEquals(updatedHederaEvmAccount.getAddress(), subject.get(address).getAddress());
+    }
+
+    @Test
+    void getWithNonCanonicalAddress() {
+        accountAccessor.changeAddress(Address.ZERO);
+        assertNull(subject.get(address));
     }
 
     @Test
     void getAccount() {
         given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
+        assertEquals(
+                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+    }
+
+    @Test
+    void getAccountWithTrack() {
+        given(updater.getForMutation(address)).willReturn(updatedHederaEvmAccount);
+        subject.getAccount(address);
+        assertEquals(
+                updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
+    }
+
+    @Test
+    void getAccountWithMissingWorldReturnsNull() {
+        assertNull(subject.getAccount(address));
+    }
+
+    @Test
+    void getAccountForRedirect() {
+        givenForRedirect();
         assertEquals(
                 updatedHederaEvmAccount.getAddress(), subject.getAccount(address).getAddress());
     }
@@ -84,5 +133,10 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
         assertFalse(subject.isTokenAddress(someAddress));
+    }
+
+    private void givenForRedirect() {
+        given(properties.isRedirectTokenCallsEnabled()).willReturn(true);
+        entityAccess.setIsTokenFor(address);
     }
 }
