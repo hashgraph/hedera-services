@@ -21,10 +21,7 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertT
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -46,6 +43,7 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.de
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.INSERT_ABI;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -86,13 +84,79 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     autoRenewWorksAsExpected(),
                     autoRenewInGracePeriodIfEnoughBalance(),
                     storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
-                    // This spec should be at the end of this suite
+                        receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
+//                     This spec should be at the end of this suite
                     validateStreams()
                 });
     }
 
+    private HapiSpec receiverSigReqBypassedForTreasuryAtEndOfGracePeriod() {
+        final var initcode = "initcode";
+        final var contractToRemove = "InstantStorageHog";
+        final var minimalLifetime = 4;
+        final var aFungibleToken = "aFT";
+        final var nonFungibleToken = "NFT";
+        final var supplyKey = "multi";
+        final var aFungibleAmount = 1_000_000L;
+
+        return defaultHapiSpec("receiverSigReqBypassedForTreasuryAtEndOfGracePeriod")
+                .given(
+                        newKeyNamed(supplyKey),
+                        cryptoCreate(TOKEN_TREASURY).receiverSigRequired(true),
+                        tokenCreate(aFungibleToken)
+                                .initialSupply(aFungibleAmount)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(nonFungibleToken)
+                                .initialSupply(0)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(supplyKey)
+                                .treasury(TOKEN_TREASURY),
+                        mintToken(
+                                nonFungibleToken,
+                                List.of(
+                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
+                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
+                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                        enableContractAutoRenewWith(minimalLifetime, 0),
+                        contractCreate(contractToRemove, new BigInteger("63"))
+                                .gas(2_000_000)
+                                .entityMemo("")
+                                .bytecode(initcode)
+                                .balance(0)
+                                .autoRenewSecs(minimalLifetime),
+                        tokenAssociate(
+                                contractToRemove,
+                                List.of(aFungibleToken, nonFungibleToken)),
+                        cryptoTransfer(
+                                moving(aFungibleAmount, aFungibleToken)
+                                        .between(TOKEN_TREASURY, contractToRemove),
+                                movingUnique(nonFungibleToken, 1L, 2L)
+                                        .between(TOKEN_TREASURY, contractToRemove)),
+                        sleepFor(minimalLifetime * 1_000L + 500L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(2_000L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                .then(
+                        // Now the contract is gone
+                        getContractInfo(contractToRemove)
+                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)
+                                .logged(),
+                        // And the fungible units were returned to the treasury
+                        getAccountBalance(TOKEN_TREASURY)
+                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .logged(),
+                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        // And the NFTs are now owned by the treasury
+                        getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
+                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
+    }
+
     private HapiSpec validateStreams() {
-        return onlyDefaultHapiSpec("validateStreams")
+        return defaultHapiSpec("validateStreams")
                 .given()
                 .when()
                 .then(
@@ -615,7 +679,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
         return defaultHapiSpec("StorageExpiryWorksAtTheExpectedInterval")
                 .given(
                         newKeyNamed(supplyKey),
-                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(TOKEN_TREASURY).receiverSigRequired(true),
                         tokenCreate(aFungibleToken)
                                 .initialSupply(aFungibleAmount)
                                 .treasury(TOKEN_TREASURY),

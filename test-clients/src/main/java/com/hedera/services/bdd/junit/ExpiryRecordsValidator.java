@@ -25,6 +25,9 @@ import java.util.List;
 
 /** This validator validates expiry contract records at the end of test run */
 public class ExpiryRecordsValidator implements RecordStreamValidator {
+    public ExpiryRecordsValidator(){
+
+    }
     private static final String AUTO_RENEWAL_MEMO = " was automatically renewed";
     private static final String AUTO_EXPIRY_MEMO = " was automatically deleted";
 
