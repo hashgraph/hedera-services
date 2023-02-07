@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#UncheckedSubmit}.
  */
-public class UncheckedSubmitHandler implements TransactionHandler {
+public class NetworkUncheckedSubmitHandler implements TransactionHandler {
 
     /**
      * This method is called during the pre-handle workflow.
