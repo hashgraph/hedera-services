@@ -54,7 +54,6 @@ import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HAL
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
 import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 
-import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.List;
 
@@ -62,7 +61,7 @@ import java.util.List;
  * This class contains the properties that are part of the {@code NodeLocalProperties} class in the
  * mono-service module.
  */
-@ConfigData
+// @ConfigData //FUTURE: Once we use the real config we can add the annotation
 public record NodeConfig(
         @ConfigProperty(GRPC_PORT) int port,
         @ConfigProperty(GRPC_TLS_PORT) int tlsPort,
