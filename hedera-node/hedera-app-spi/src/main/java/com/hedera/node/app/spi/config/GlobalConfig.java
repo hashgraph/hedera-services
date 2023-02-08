@@ -25,6 +25,4 @@ import com.swirlds.config.api.ConfigProperty;
  * the mono-service module.
  */
 @ConfigData
-public record GlobalConfig(@ConfigProperty(WORKFLOWS_ENABLED) boolean workflowsEnabled) {
-
-}
+public record GlobalConfig(@ConfigProperty(WORKFLOWS_ENABLED) boolean workflowsEnabled) {}
