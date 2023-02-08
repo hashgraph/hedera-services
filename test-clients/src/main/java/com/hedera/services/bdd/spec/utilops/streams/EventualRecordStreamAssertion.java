@@ -17,13 +17,34 @@ package com.hedera.services.bdd.spec.utilops.streams;
 
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
 
+import com.hedera.services.bdd.junit.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.stream.proto.RecordStreamItem;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * A {@link com.hedera.services.bdd.spec.utilops.UtilOp} that registers itself with {@link
+ * RecordStreamAccess} and continually updates the {@link RecordStreamAssertion} yielded by a given
+ * factory with each new {@link RecordStreamItem}.
+ *
+ * <p><b>Important:</b> {@code HapiSpec#exec()} recognizes {@link EventualRecordStreamAssertion}
+ * operations as a special case, in two ways.
+ *
+ * <ol>
+ *   <li>If a spec includes at least one {@link EventualRecordStreamAssertion}, and all other
+ *       operations have passed, it starts running "background traffic" to ensure record stream
+ *       files are being written.
+ *   <li>For each {@link EventualRecordStreamAssertion}, the spec then calls ts {@link
+ *       #assertHasPassed()}, method which blocks until the assertion has either passed or timed
+ *       out. (The default timeout is 3 seconds, since generally we expect the assertion to apply to
+ *       the contents of a single record stream file, which are created every 2 seconds given steady
+ *       background traffic.)
+ * </ol>
+ */
 public class EventualRecordStreamAssertion extends EventualAssertion {
     private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
     private final Function<HapiSpec, RecordStreamAssertion> assertionFactory;
