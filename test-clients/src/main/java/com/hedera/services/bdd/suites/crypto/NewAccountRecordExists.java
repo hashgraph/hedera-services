@@ -87,7 +87,7 @@ public class NewAccountRecordExists extends HapiSuite {
         final var balance = 1_234_567L;
         final var memo = "It was the best of times";
         final var account = "novel";
-        return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStream")
+        return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStreamV2")
                 .given(
                         streamMustInclude(
                                 recordedCryptoCreate(
