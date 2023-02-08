@@ -1,0 +1,86 @@
+[
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "self",
+        "type": "AddressBook.Data storage"
+      }
+    ],
+    "name": "getAddressList",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "self",
+        "type": "AddressBook.Data storage"
+      },
+      {
+        "name": "userAddr",
+        "type": "address"
+      }
+    ],
+    "name": "getAddressIndex",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "self",
+        "type": "AddressBook.Data storage"
+      },
+      {
+        "name": "userAddr",
+        "type": "address"
+      }
+    ],
+    "name": "checkAddressInBook",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "self",
+        "type": "AddressBook.Data storage"
+      }
+    ],
+    "name": "getAddressBookSize",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

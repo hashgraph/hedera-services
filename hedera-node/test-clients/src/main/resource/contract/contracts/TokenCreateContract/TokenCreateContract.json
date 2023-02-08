@@ -1,0 +1,973 @@
+[
+  {
+    "inputs": [],
+    "name": "createFrozenTokenWithDefaultKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createNFTTokenWithKeysAndExpiry",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractIdAndFeeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createNonFungibleTokenThenQuery",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractIdKey",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollectorAndTreasury",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "existingTokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      }
+    ],
+    "name": "createNonFungibleTokenWithCustomFees",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "contractIdKey",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollectorAndTreasury",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "existingTokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      }
+    ],
+    "name": "createNonFungibleTokenWithInvalidRoyaltyFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "ed25519AdminKey",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenThenQueryAndTransfer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "ecdsaAdminKey",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "existingTokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenWithAllCustomFeesAvailable",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "keyValueType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
+      }
+    ],
+    "name": "createTokenWithAllTypeKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "tokenId",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithAllTypesFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "tokenId",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithCorrectAndWrongTokenFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithCurrentTokenFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "firstKeyType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "secondKeyType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "keyValueType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
+      }
+    ],
+    "name": "createTokenWithCustomDuplexTypeKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "keyType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "keyValueType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "key",
+        "type": "bytes"
+      }
+    ],
+    "name": "createTokenWithCustomSingleTypeKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createTokenWithDefaultExpiryAndEmptyKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createTokenWithDefaultKeys",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createTokenWithDefaultKeysViaDelegateCall",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenWithEmptyKeysArray",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createTokenWithEmptyTokenStruct",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenId",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithFixedFeeForTokenAndHbars",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "numerator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "denominator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "netOfTransfers",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithFractionalFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "numerator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "denominator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "minimumAmount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "maximumAmount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "netOfTransfers",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithFractionalFeeWithLimits",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numerator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "denominator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "netOfTransfers",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "fixedFeeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "fractionalFeeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithHbarFixedFeeAndFractionalFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithHbarsFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "createTokenWithInheritedSupplyKey",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenWithInvalidExpiry",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "ecdsaAdminKey",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenWithInvalidFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithInvalidFlagsFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "createTokenWithKeyWithMultipleValues",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ed25519",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "ecdsa",
+        "type": "bytes"
+      },
+      {
+        "internalType": "address",
+        "name": "contractID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "delegatableContractID",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "toAssociateWith",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithKeysAndExpiry",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "numberOfFixedFees",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "numberOfFractionalFees",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "numerator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "denominator",
+        "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "netOfTransfers",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "fixedFeeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "fractionalFeeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithNAmountHbarFixedFeesAndNAmountFractionalFees",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "tokenId",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithTokenFixedFee",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "amount",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "tokenId",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "firstFeeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "secondFeeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "createTokenWithTokenFixedFees",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "treasury",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "autoRenewAccount",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "autoRenewPeriod",
+        "type": "uint32"
+      }
+    ],
+    "name": "delegateCallCreate",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "createdTokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

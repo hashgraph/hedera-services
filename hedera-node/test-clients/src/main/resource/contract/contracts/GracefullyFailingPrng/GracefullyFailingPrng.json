@@ -1,0 +1,29 @@
+[
+  {
+    "inputs": [],
+    "name": "getPseudorandomSeed",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "randomBytes",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "performLessThanFourBytesFunctionCall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "performNonExistingServiceFunctionCall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

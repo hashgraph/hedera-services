@@ -1,0 +1,102 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "served",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "int256",
+        "name": "ticketNumber",
+        "type": "int256"
+      }
+    ],
+    "name": "OrderHandled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "int256",
+        "name": "ticketNumber",
+        "type": "int256"
+      }
+    ],
+    "name": "OrderSkipped",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "isWorkday",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "workday",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isWorkingHours",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "workingHours",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "takeTicket",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "serialNumber",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "int64",
+        "name": "ticketNum",
+        "type": "int64"
+      }
+    ],
+    "name": "workTicket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
