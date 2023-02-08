@@ -58,11 +58,6 @@ public class TreasuryReturnHelper {
             final long serialNo,
             final List<EntityId> tokenTypes,
             final List<NftAdjustments> returnExchanges) {
-        final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
-        final var numPair =
-                EntityNumPair.fromLongs(token.treasuryNum().longValue(), tokenNum.longValue());
-        final var tokenRel = tokenRels.get().getForModify(numPair);
-
         final var tokenId = tokenNum.toEntityId();
         var typeI = tokenTypes.indexOf(tokenId);
         if (typeI == -1) {
@@ -79,8 +74,10 @@ public class TreasuryReturnHelper {
             returnExchanges
                     .get(typeI)
                     .appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
+
+            final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
             mutableTreasury.setNftsOwned(mutableTreasury.getNftsOwned() + 1);
-            tokenRel.setBalance(tokenRel.getBalance() + 1);
+            incrementTreasuryBalance(token, tokenNum, 1, tokenRels.get());
             return true;
         }
     }
