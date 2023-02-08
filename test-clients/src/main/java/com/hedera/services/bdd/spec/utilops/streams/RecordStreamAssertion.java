@@ -28,9 +28,6 @@ import com.hedera.services.stream.proto.RecordStreamItem;
  * assertion that the record stream includes a {@link RecordStreamItem} for a particular account's
  * creation.) A more complex assertion might validate that an account was not only created, but also
  * expired and was renewed with the correct new expiry.
- *
- * <p><b>Important:</b> If no call to {@link #updateAndTest(RecordStreamItem)} ever throws an {@link
- * AssertionError}, then the assertion is considered to have passed.
  */
 public interface RecordStreamAssertion {
     /**
@@ -44,13 +41,20 @@ public interface RecordStreamAssertion {
 
     /**
      * Updates the assertion's state based on a relevant {@link RecordStreamItem}, throwing an
-     * {@link AssertionError} if a failure state is reached.
+     * {@link AssertionError} if a failure state is reached; or returning true if the assertion has
+     * reached a success state.
      *
      * @param item the item to test
      * @throws AssertionError if the assertion has failed
+     * @return true if the assertion has succeeded
      */
     boolean updateAndTest(RecordStreamItem item) throws AssertionError;
 
+    /**
+     * Hint to implementers to return a string that describes the assertion.
+     *
+     * @return a string that describes the assertion
+     */
     @Override
     String toString();
 }

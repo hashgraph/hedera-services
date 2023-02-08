@@ -26,10 +26,20 @@ import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidatingListener extends FileAlterationListenerAdaptor {
-    private static final Logger log = LogManager.getLogger(ValidatingListener.class);
+/**
+ * A small utility class that listens for record stream files and provides them to any subscribed
+ * listeners.
+ */
+public class BroadcastingRecordStreamListener extends FileAlterationListenerAdaptor {
+    private static final Logger log = LogManager.getLogger(BroadcastingRecordStreamListener.class);
     private final List<Consumer<RecordStreamItem>> listeners = new CopyOnWriteArrayList<>();
 
+    /**
+     * Subscribes a listener to receive record stream items.
+     *
+     * @param listener the listener to subscribe
+     * @return a runnable that can be used to unsubscribe the listener
+     */
     public Runnable subscribe(final Consumer<RecordStreamItem> listener) {
         listeners.add(listener);
         return () -> listeners.remove(listener);

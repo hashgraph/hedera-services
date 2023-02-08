@@ -50,7 +50,8 @@ public enum RecordStreamAccess {
      * A map of record stream file locations to the listeners that are watching them. (In general we
      * only validate records from the single node0, but this could change?)
      */
-    private final Map<String, ValidatingListener> validatingListeners = new ConcurrentHashMap<>();
+    private final Map<String, BroadcastingRecordStreamListener> validatingListeners =
+            new ConcurrentHashMap<>();
 
     /** A bit of infrastructure that runs the polling loop for all the listeners. */
     private final FileAlterationMonitor monitor = new FileAlterationMonitor(MONITOR_INTERVAL_MS);
@@ -62,7 +63,7 @@ public enum RecordStreamAccess {
         // Count the number of subscribers (could derive from more than one concurrent HapiSpec)
         final var numSubscribers =
                 validatingListeners.values().stream()
-                        .mapToInt(ValidatingListener::numListeners)
+                        .mapToInt(BroadcastingRecordStreamListener::numListeners)
                         .sum();
         if (numSubscribers == 0) {
             try {
@@ -81,7 +82,7 @@ public enum RecordStreamAccess {
      * @return the listener for the given location
      * @throws Exception if there is an error starting the listener
      */
-    public synchronized ValidatingListener getValidatingListener(final String loc)
+    public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc)
             throws Exception {
         if (!validatingListeners.containsKey(loc)) {
             // In most cases should let us run HapiSpec#main() from both the root and test-clients/
@@ -163,9 +164,10 @@ public enum RecordStreamAccess {
         }
     }
 
-    private ValidatingListener newValidatingListener(final String loc) throws Exception {
+    private BroadcastingRecordStreamListener newValidatingListener(final String loc)
+            throws Exception {
         final var observer = new FileAlterationObserver(loc);
-        final var listener = new ValidatingListener();
+        final var listener = new BroadcastingRecordStreamListener();
         observer.addListener(listener);
         monitor.addObserver(observer);
         try {
