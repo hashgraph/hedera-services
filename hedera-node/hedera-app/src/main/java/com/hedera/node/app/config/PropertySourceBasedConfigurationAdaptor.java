@@ -1,0 +1,211 @@
+package com.hedera.node.app.config;
+
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.GRPC_TLS_PORT;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_PROFILES_ACTIVE;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_RESET_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.ISS_ROUNDS_TO_LOG;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_MODE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_START_RETRY_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_CERT_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.NETTY_TLS_KEY_PATH;
+import static com.hedera.node.app.spi.config.PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_RUNNING_AVG_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS;
+import static com.hedera.node.app.spi.config.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
+
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.config.GlobalConfig;
+import com.hedera.node.app.spi.config.NodeConfig;
+import com.hedera.node.app.spi.config.Profile;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collection;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
+
+public class PropertySourceBasedConfigurationAdaptor implements Configuration {
+
+  private final PropertySource propertySource;
+
+  private final NodeConfig nodeConfig;
+
+  private final GlobalConfig globalConfig;
+
+  public PropertySourceBasedConfigurationAdaptor(
+      @NonNull final PropertySource propertySource) {
+    this.propertySource = Objects.requireNonNull(propertySource);
+    nodeConfig = createNodeConfig();
+    globalConfig = createGlobalConfig();
+  }
+
+  @Override
+  public Stream<String> getPropertyNames() {
+    return propertySource.allPropertyNames().stream();
+  }
+
+  @Override
+  public boolean exists(final String name) {
+    return propertySource.containsProperty(name);
+  }
+
+  @Override
+  public String getValue(final String name) throws NoSuchElementException {
+    if (exists(name)) {
+      return propertySource.getRawValue(name);
+    }
+    throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+  }
+
+  @Override
+  public String getValue(final String name, final String defaultValue) {
+    if (exists(name)) {
+      return getValue(name);
+    }
+    return defaultValue;
+  }
+
+  @Override
+  public <T> T getValue(final String name, final Class<T> type)
+      throws NoSuchElementException, IllegalArgumentException {
+    if (exists(name)) {
+      return propertySource.getTypedProperty(type, name);
+    }
+    throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+  }
+
+  @Override
+  public <T> T getValue(final String name, final Class<T> type, final T defaultValue)
+      throws IllegalArgumentException {
+    if (exists(name)) {
+      return getValue(name, type);
+    }
+    return defaultValue;
+  }
+
+  @Override
+  public List<String> getValues(final String name) {
+    if (exists(name)) {
+      return propertySource.getTypedProperty(List.class, name);
+    }
+    throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+  }
+
+  @Override
+  public List<String> getValues(final String name, final List<String> defaultValues) {
+    if (exists(name)) {
+      return getValues(name);
+    }
+    return defaultValues;
+  }
+
+  @Override
+  public <T> List<T> getValues(final String name, final Class<T> type)
+      throws NoSuchElementException, IllegalArgumentException {
+    if (exists(name)) {
+      return propertySource.getTypedProperty(List.class, name);
+    }
+    throw new NoSuchElementException("Config property with name '" + name + "' does not exist!");
+  }
+
+  @Override
+  public <T> List<T> getValues(final String name, final Class<T> type, final List<T> defaultValues)
+      throws IllegalArgumentException {
+    if (exists(name)) {
+      return getValues(name, type);
+    }
+    return defaultValues;
+  }
+
+  @Override
+  public <T extends Record> T getConfigData(final Class<T> type) {
+    if (Objects.equals(type, GlobalConfig.class)) {
+      return (T) globalConfig;
+    }
+    if (Objects.equals(type, NodeConfig.class)) {
+      return (T) nodeConfig;
+    }
+    throw new IllegalArgumentException("Config data type '" + type.getName() + "' not defined");
+  }
+
+  @Override
+  public Collection<Class<? extends Record>> getConfigDataTypes() {
+    return Set.of(GlobalConfig.class, NodeConfig.class);
+  }
+
+  private NodeConfig createNodeConfig() {
+    return new NodeConfig(propertySource.getTypedProperty(Integer.class, GRPC_PORT),
+        propertySource.getTypedProperty(Integer.class, GRPC_TLS_PORT),
+        propertySource.getTypedProperty(Integer.class,
+            STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS),
+        propertySource.getTypedProperty(Integer.class, STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+        propertySource.getTypedProperty(Integer.class,
+            STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS),
+        propertySource.getTypedProperty(Profile.class, HEDERA_PROFILES_ACTIVE),
+        propertySource.getTypedProperty(Integer.class, STATS_SPEEDOMETER_HALF_LIFE_SECS),
+        propertySource.getTypedProperty(Integer.class, STATS_RUNNING_AVG_HALF_LIFE_SECS),
+        propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_LOG_DIR),
+        propertySource.getTypedProperty(Integer.class, HEDERA_RECORD_STREAM_LOG_PERIOD),
+        propertySource.getTypedProperty(Boolean.class, HEDERA_RECORD_STREAM_IS_ENABLED),
+        propertySource.getTypedProperty(Integer.class, HEDERA_RECORD_STREAM_QUEUE_CAPACITY),
+        propertySource.getTypedProperty(Integer.class, QUERIES_BLOB_LOOK_UP_RETRIES),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_KEEP_ALIVE_TIME),
+        propertySource.getTypedProperty(String.class, NETTY_TLS_CERT_PATH),
+        propertySource.getTypedProperty(String.class, NETTY_TLS_KEY_PATH),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_KEEP_ALIVE_TIMEOUT),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_MAX_CONNECTION_AGE),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_MAX_CONNECTION_AGE_GRACE),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_MAX_CONNECTION_IDLE),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_MAX_CONCURRENT_CALLS),
+        propertySource.getTypedProperty(Integer.class, NETTY_PROD_FLOW_CONTROL_WINDOW),
+        propertySource.getTypedProperty(String.class, DEV_DEFAULT_LISTENING_NODE_ACCOUNT),
+        propertySource.getTypedProperty(Boolean.class, DEV_ONLY_DEFAULT_NODE_LISTENS),
+        propertySource.getTypedProperty(String.class, HEDERA_ACCOUNTS_EXPORT_PATH),
+        propertySource.getTypedProperty(Boolean.class, HEDERA_EXPORT_ACCOUNTS_ON_STARTUP),
+        propertySource.getTypedProperty(Profile.class, NETTY_MODE),
+        propertySource.getTypedProperty(Integer.class, NETTY_START_RETRIES),
+        propertySource.getTypedProperty(Integer.class, NETTY_START_RETRY_INTERVAL_MS),
+        propertySource.getTypedProperty(Integer.class, STATS_EXECUTION_TIMES_TO_TRACK),
+        propertySource.getTypedProperty(Integer.class, ISS_RESET_PERIOD),
+        propertySource.getTypedProperty(Integer.class, ISS_ROUNDS_TO_LOG),
+        propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_QUEUE_CAPACITY),
+        propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_THREAD_POOL_SIZE),
+        propertySource.getTypedProperty(Integer.class, HEDERA_PREFETCH_CODE_CACHE_TTL_SECS),
+        propertySource.getTypedProperty(List.class, STATS_CONS_THROTTLES_TO_SAMPLE),
+        propertySource.getTypedProperty(List.class, STATS_HAPI_THROTTLES_TO_SAMPLE),
+        propertySource.getTypedProperty(String.class, HEDERA_RECORD_STREAM_SIDE_CAR_DIR));
+  }
+
+  private GlobalConfig createGlobalConfig() {
+    return new GlobalConfig(propertySource.getTypedProperty(Boolean.class, WORKFLOWS_ENABLED));
+  }
+}
