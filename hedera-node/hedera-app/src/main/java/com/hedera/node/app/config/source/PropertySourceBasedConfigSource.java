@@ -1,4 +1,4 @@
-package com.hedera.node.app.config.v1;
+package com.hedera.node.app.config.source;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.swirlds.config.api.source.ConfigSource;

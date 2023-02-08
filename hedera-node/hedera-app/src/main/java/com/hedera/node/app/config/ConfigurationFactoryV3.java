@@ -1,4 +1,4 @@
-package com.hedera.node.app.config.v2;
+package com.hedera.node.app.config;
 
 import com.hedera.node.app.config.converter.AccountIDConverter;
 import com.hedera.node.app.config.converter.CongestionMultipliersConverter;
@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class ConfigurationFactory {
+public class ConfigurationFactoryV3 {
 
   @NonNull
   public Configuration createConfiguration() throws IOException {

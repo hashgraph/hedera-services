@@ -1,4 +1,4 @@
-package com.hedera.node.app.config;
+package com.hedera.node.app.config.adaptor;
 
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT;
 import static com.hedera.node.app.spi.config.PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS;

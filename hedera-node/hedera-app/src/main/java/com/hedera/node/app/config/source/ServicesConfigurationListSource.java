@@ -1,4 +1,4 @@
-package com.hedera.node.app.config.v2;
+package com.hedera.node.app.config.source;
 
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.config.api.source.ConfigSource;

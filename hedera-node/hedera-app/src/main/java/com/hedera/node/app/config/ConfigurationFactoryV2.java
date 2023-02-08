@@ -1,4 +1,4 @@
-package com.hedera.node.app.config.v1;
+package com.hedera.node.app.config;
 
 import com.hedera.node.app.config.converter.AccountIDConverter;
 import com.hedera.node.app.config.converter.CongestionMultipliersConverter;
@@ -12,12 +12,13 @@ import com.hedera.node.app.config.converter.ProfileConverter;
 import com.hedera.node.app.config.converter.ScaleFactorConverter;
 import com.hedera.node.app.config.converter.SidecarTypeConverter;
 import com.hedera.node.app.config.converter.StakeStartupHelperRecomputeTypeConverter;
+import com.hedera.node.app.config.source.PropertySourceBasedConfigSource;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class ConfigurationFactoryV1 {
+public class ConfigurationFactoryV2 {
 
   public Configuration create(@NonNull final PropertySource propertySource) {
     return ConfigurationBuilder.create()
