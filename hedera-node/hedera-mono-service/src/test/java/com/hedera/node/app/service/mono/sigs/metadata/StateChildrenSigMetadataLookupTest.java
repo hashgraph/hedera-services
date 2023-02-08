@@ -127,8 +127,8 @@ class StateChildrenSigMetadataLookupTest {
     void recognizesMissingSchedule() {
         given(stateChildren.schedules()).willReturn(schedules);
         given(schedules.byId()).willReturn(schedulesById);
-
-        final var result = subject.scheduleSigningMetaFor(unknownSchedule, null);
+        final var linkedRefs = new LinkedRefs();
+        final var result = subject.scheduleSigningMetaFor(unknownSchedule, linkedRefs);
 
         assertEquals(MISSING_SCHEDULE, result.failureIfAny());
     }
@@ -136,11 +136,12 @@ class StateChildrenSigMetadataLookupTest {
     @Test
     void echoesUnaliasedAccountId() {
         final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
-
-        assertEquals(EntityNum.fromLong(1234), subject.unaliasedAccount(literalId, null));
+        final var linkedRefs = new LinkedRefs();
+        assertEquals(EntityNum.fromLong(1234), subject.unaliasedAccount(literalId, linkedRefs));
         assertEquals(
                 EntityNum.MISSING_NUM,
-                subject.unaliasedAccount(AccountID.getDefaultInstance(), null));
+                subject.unaliasedAccount(AccountID.getDefaultInstance(), linkedRefs));
+        assertTrue(linkedRefs.linkedAliases().isEmpty());
     }
 
     @Test
@@ -149,8 +150,10 @@ class StateChildrenSigMetadataLookupTest {
         final var num = Longs.fromByteArray(java.util.Arrays.copyOfRange(mockAddr, 12, 20));
         final var expectedId = EntityNum.fromLong(num);
         final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var linkedRefs = new LinkedRefs();
 
-        assertEquals(expectedId, subject.unaliasedAccount(input, null));
+        assertEquals(expectedId, subject.unaliasedAccount(input, linkedRefs));
+        assertTrue(linkedRefs.linkedAliases().isEmpty());
     }
 
     @Test
@@ -162,8 +165,10 @@ class StateChildrenSigMetadataLookupTest {
         given(aliases.getOrDefault(ByteString.copyFrom(mockAddr), MISSING_NUM))
                 .willReturn(extantNum);
 
-        final var unaliasedId = subject.unaliasedAccount(input, null);
+        final var linkedRefs = new LinkedRefs();
+        final var unaliasedId = subject.unaliasedAccount(input, linkedRefs);
         assertEquals(extantNum, unaliasedId);
+        assertTrue(linkedRefs.linkedAliases().contains(ByteString.copyFrom(mockAddr)));
     }
 
     @Test
