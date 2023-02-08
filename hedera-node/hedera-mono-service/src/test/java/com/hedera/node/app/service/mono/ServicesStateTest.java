@@ -822,6 +822,40 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
+    void skipsDeletedTokens() {
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+        // Doesn't matter, just something that won't be found in the token map
+        nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
+        final var uniqueTokens = UniqueTokenMapAdapter.wrap(nfts);
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        final var deletedToken = new MerkleToken();
+        deletedToken.setDeleted(true);
+        tokens.put(EntityNum.fromLong(1234L), deletedToken);
+        // Doesn't matter, just something that won't be found in the token map
+        nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
+        // Doesn't matter, just reference the deleted token
+        nfts.put(EntityNumPair.fromLongs(1234L, 2L), new MerkleUniqueToken());
+        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, tokens));
+
+        final var pretendStats =
+                new ServicesState.NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        // Doesn't matter, just something that won't be found in the accounts map
+        pretendStats.totalOwned().put(EntityNum.fromLong(1L), 1);
+        // Doesn't matter, just something that won't be found in the tokens map
+        pretendStats.totalSupply().put(EntityNum.fromLong(1L), 1);
+        // Doesn't matter, just something that won't be found in the associations map
+        pretendStats.totalOwnedByType().put(EntityNumPair.fromLongs(2L, 3L), 1);
+
+        assertDoesNotThrow(
+                () ->
+                        ServicesState.logNftStats(
+                                pretendStats,
+                                AccountStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                tokens));
+    }
+
+    @Test
     void warnsOnMissingEntities() {
         final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
         // Doesn't matter, just something that won't be found in the token map

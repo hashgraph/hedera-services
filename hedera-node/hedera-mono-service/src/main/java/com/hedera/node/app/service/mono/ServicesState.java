@@ -559,20 +559,20 @@ public class ServicesState extends PartialNaryMerkleInternal
                 .forEach(
                         (key, nft) -> {
                             var owner = nft.getOwner();
+                            final var token = tokens.get(key.getHiOrderAsNum());
+                            if (token == null) {
+                                log.warn(
+                                        "Failed to find token 0.0.{} for NFT serial no {}",
+                                        key.getHiOrderAsLong(),
+                                        key.getLowOrderAsLong());
+                                return;
+                            }
+                            if (token.isDeleted()) {
+                                // Don't mess with stats for deleted tokens
+                                return;
+                            }
                             if (owner.num() == 0L) {
-                                // Owned by treasury, need to look up its number
-                                try {
-                                    owner =
-                                            Objects.requireNonNull(
-                                                            tokens.get(key.getHiOrderAsNum()))
-                                                    .treasury();
-                                } catch (final NullPointerException ignore) {
-                                    log.warn(
-                                            "Failed to find token 0.0.{} for NFT serial no {}",
-                                            key.getHiOrderAsLong(),
-                                            key.getLowOrderAsLong());
-                                    return;
-                                }
+                                owner = token.treasury();
                             }
                             stats.totalOwned().merge(owner.asNum(), 1, Integer::sum);
                             final var tokenNum = key.getHiOrderAsNum();
@@ -679,13 +679,15 @@ public class ServicesState extends PartialNaryMerkleInternal
                         accountNum -> {
                             final var account = accounts.get(accountNum);
                             final var totalOwned = stats.totalOwned().get(accountNum);
-                            if (account != null && account.getNftsOwned() != totalOwned) {
-                                log.info(
-                                        "Account 0.0.{} owns {} NFTs (was: {})",
-                                        accountNum.longValue(),
-                                        totalOwned,
-                                        account.getNftsOwned());
-                                accounts.getForModify(accountNum).setNftsOwned(totalOwned);
+                            if (account != null) {
+                                if (account.getNftsOwned() != totalOwned) {
+                                    log.info(
+                                            "Account 0.0.{} owns {} NFTs (was: {})",
+                                            accountNum.longValue(),
+                                            totalOwned,
+                                            account.getNftsOwned());
+                                    accounts.getForModify(accountNum).setNftsOwned(totalOwned);
+                                }
                             } else {
                                 log.warn(
                                         "Missing account 0.0.{} owns {} NFTs",
@@ -699,13 +701,15 @@ public class ServicesState extends PartialNaryMerkleInternal
                         tokenNum -> {
                             final var token = tokens.get(tokenNum);
                             final var totalSupply = stats.totalSupply().get(tokenNum);
-                            if (token != null && token.totalSupply() != totalSupply) {
-                                log.info(
-                                        "Token 0.0.{} has {} total supply (was: {})",
-                                        tokenNum.longValue(),
-                                        totalSupply,
-                                        token.totalSupply());
-                                tokens.getForModify(tokenNum).setTotalSupply(totalSupply);
+                            if (token != null) {
+                                if (token.totalSupply() != totalSupply) {
+                                    log.info(
+                                            "Token 0.0.{} has {} total supply (was: {})",
+                                            tokenNum.longValue(),
+                                            totalSupply,
+                                            token.totalSupply());
+                                    tokens.getForModify(tokenNum).setTotalSupply(totalSupply);
+                                }
                             } else {
                                 log.warn(
                                         "Missing token 0.0.{} has total supply {}",
@@ -720,17 +724,18 @@ public class ServicesState extends PartialNaryMerkleInternal
                             final var association = associations.get(accountTokenNums);
                             final var totalOwnedByType =
                                     stats.totalOwnedByType().get(accountTokenNums);
-                            if (association != null
-                                    && association.getBalance() != totalOwnedByType) {
-                                log.info(
-                                        "Association 0.0.{}-0.0.{} has balance {} (was: {})",
-                                        accountTokenNums.getHiOrderAsLong(),
-                                        accountTokenNums.getLowOrderAsLong(),
-                                        totalOwnedByType,
-                                        association.getBalance());
-                                associations
-                                        .getForModify(accountTokenNums)
-                                        .setBalance(totalOwnedByType);
+                            if (association != null) {
+                                if (association.getBalance() != totalOwnedByType) {
+                                    log.info(
+                                            "Association 0.0.{}-0.0.{} has balance {} (was: {})",
+                                            accountTokenNums.getHiOrderAsLong(),
+                                            accountTokenNums.getLowOrderAsLong(),
+                                            totalOwnedByType,
+                                            association.getBalance());
+                                    associations
+                                            .getForModify(accountTokenNums)
+                                            .setBalance(totalOwnedByType);
+                                }
                             } else {
                                 log.warn(
                                         "Missing association 0.0.{}-0.0.{} has balance {}",
