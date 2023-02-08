@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.state.expiry.removal;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
+import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
@@ -30,6 +31,7 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -39,9 +41,14 @@ import org.apache.logging.log4j.Logger;
 public class TreasuryReturnHelper {
     private static final Logger log = LogManager.getLogger(TreasuryReturnHelper.class);
 
+    private final Supplier<TokenRelStorageAdapter> tokenRels;
+    private final EntityLookup entityLookup;
+
     @Inject
-    public TreasuryReturnHelper() {
-        // Dagger2
+    public TreasuryReturnHelper(
+            final EntityLookup entityLookup, final Supplier<TokenRelStorageAdapter> tokenRels) {
+        this.tokenRels = tokenRels;
+        this.entityLookup = entityLookup;
     }
 
     boolean updateNftReturns(
@@ -51,6 +58,11 @@ public class TreasuryReturnHelper {
             final long serialNo,
             final List<EntityId> tokenTypes,
             final List<NftAdjustments> returnExchanges) {
+        final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
+        final var numPair =
+                EntityNumPair.fromLongs(token.treasuryNum().longValue(), tokenNum.longValue());
+        final var tokenRel = tokenRels.get().getForModify(numPair);
+
         final var tokenId = tokenNum.toEntityId();
         var typeI = tokenTypes.indexOf(tokenId);
         if (typeI == -1) {
@@ -67,6 +79,8 @@ public class TreasuryReturnHelper {
             returnExchanges
                     .get(typeI)
                     .appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
+            mutableTreasury.setNftsOwned(mutableTreasury.getNftsOwned() + 1);
+            tokenRel.setBalance(tokenRel.getBalance() + 1);
             return true;
         }
     }
