@@ -20,5 +20,11 @@ import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+/**
+ * This class contains the properties that are part of the {@code GlobalStaticProperties} class in
+ * the mono-service module.
+ */
 @ConfigData
-public record GlobalConfig(@ConfigProperty(WORKFLOWS_ENABLED) boolean workflowsEnabled) {}
+public record GlobalConfig(@ConfigProperty(WORKFLOWS_ENABLED) boolean workflowsEnabled) {
+
+}
