@@ -66,9 +66,9 @@ public class StartStaking extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StartStaking.class);
 
     // Change desired network
-    private static final String TARGET_NODES = "34.94.106.61:0.0.3";
-    private static final String PAYER_PEM_LOC = "stabletestnet-account50.pem";
-    private static final String PAYER_PEM_PASSPHRASE = "stabletestnet-account50.pass";
+    private static final String TARGET_NODES = "<node0-ip>:0.0.3";
+    private static final String PAYER_PEM_LOC = "<path-to-PEM>";
+    private static final String PAYER_PEM_PASSPHRASE = "<PEM passphrase>";
     private static final int NUM_TARGET_NODES = 7;
 
     private static final SplittableRandom RANDOM = new SplittableRandom(1234567);
