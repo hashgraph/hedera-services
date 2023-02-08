@@ -194,4 +194,9 @@ public class UniqueTokenMapAdapter {
     public VirtualMap<UniqueTokenKey, UniqueTokenValue> getOnDiskNfts() {
         return virtualMap;
     }
+
+    @Nullable
+    public MerkleMap<EntityNumPair, MerkleUniqueToken> getMerkleMap() {
+        return merkleMap;
+    }
 }

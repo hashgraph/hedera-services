@@ -29,6 +29,8 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,7 +54,10 @@ public class BurnLogic {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public void burn(final Id targetId, final long amount, final List<Long> serialNumbersList) {
+    public void burn(final Id targetId, final long amount, List<Long> serialNumbersList) {
+        // De-duplicate serial numbers
+        serialNumbersList = new ArrayList<>(new LinkedHashSet<>(serialNumbersList));
+
         /* --- Load the models --- */
         final var token = tokenStore.loadToken(targetId);
         final var treasuryRel = tokenStore.loadTokenRelationship(token, token.getTreasury());

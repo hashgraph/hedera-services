@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static com.hedera.node.app.service.mono.utils.EntityNum.areValidNums;
 
+import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
-public record EntityNumPair(long value) {
+public record EntityNumPair(long value) implements Comparable<EntityNumPair> {
     public static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
 
     public EntityNumPair {
@@ -96,6 +97,11 @@ public record EntityNumPair(long value) {
         return Pair.of(
                 STATIC_PROPERTIES.scopedAccountWith(getHiOrderAsLong()),
                 STATIC_PROPERTIES.scopedTokenWith(getLowOrderAsLong()));
+    }
+
+    @Override
+    public int compareTo(final EntityNumPair that) {
+        return Longs.compare(this.value, that.value);
     }
 
     public Pair<Long, Long> asTokenNumAndSerialPair() {
