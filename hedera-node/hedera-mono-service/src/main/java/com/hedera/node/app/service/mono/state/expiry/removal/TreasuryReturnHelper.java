@@ -73,9 +73,14 @@ public class TreasuryReturnHelper {
             returnExchanges
                     .get(typeI)
                     .appendAdjust(expiredNum.toEntityId(), token.treasury(), serialNo);
-            // Update treasury's owned NFTs
-            final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
-            mutableTreasury.setNftsOwned(mutableTreasury.getNftsOwned() + 1);
+            try {
+                // Update treasury's owned NFTs
+                final var mutableTreasury = entityLookup.getMutableAccount(token.treasuryNum());
+                mutableTreasury.setNftsOwned(mutableTreasury.getNftsOwned() + 1);
+            } catch (Exception ex) {
+                log.error("Error updating treasury's owned NFTs", ex);
+            }
+
             incrementTreasuryBalance(token, tokenNum, 1, tokenRels.get());
             return true;
         }
