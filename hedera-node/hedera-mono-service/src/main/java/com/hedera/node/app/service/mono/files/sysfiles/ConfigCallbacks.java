@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.files.sysfiles;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.spi.config.PropertyNames.*;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;

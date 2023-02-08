@@ -127,9 +127,21 @@ dependencyResolutionManagement {
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
-            bundle("besu", listOf("besu-bls12-381", "besu-evm", "besu-datatypes", "besu-secp256k1", "tuweni-units"))
+            bundle(
+                "besu",
+                listOf(
+                    "besu-bls12-381",
+                    "besu-evm",
+                    "besu-datatypes",
+                    "besu-secp256k1",
+                    "tuweni-units"
+                )
+            )
             // Use when you need to use bouncy castle
-            bundle("bouncycastle", listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on"))
+            bundle(
+                "bouncycastle",
+                listOf("bouncycastle-bcprov-jdk15on", "bouncycastle-bcpkix-jdk15on")
+            )
             // Use when you need to make use of dependency injection.
             bundle("di", listOf("javax-inject", "dagger-api"))
             // Use when you need a grpc server
@@ -154,10 +166,22 @@ dependencyResolutionManagement {
 
             // Define the individual libraries
             library("pbj-runtime", "com.hedera.pbj", "pbj-runtime").versionRef("pbj-version")
-            library("besu-bls12-381", "org.hyperledger.besu", "bls12-381").versionRef("besu-native-version")
-            library("besu-secp256k1", "org.hyperledger.besu", "secp256k1").versionRef("besu-native-version")
+            library(
+                "besu-bls12-381",
+                "org.hyperledger.besu",
+                "bls12-381"
+            ).versionRef("besu-native-version")
+            library(
+                "besu-secp256k1",
+                "org.hyperledger.besu",
+                "secp256k1"
+            ).versionRef("besu-native-version")
             library("besu-evm", "org.hyperledger.besu", "evm").versionRef("besu-version")
-            library("besu-datatypes", "org.hyperledger.besu", "besu-datatypes").versionRef("besu-version")
+            library(
+                "besu-datatypes",
+                "org.hyperledger.besu",
+                "besu-datatypes"
+            ).versionRef("besu-version")
             library(
                 "bouncycastle-bcprov-jdk15on",
                 "org.bouncycastle",
@@ -168,7 +192,11 @@ dependencyResolutionManagement {
                 "org.bouncycastle",
                 "bcpkix-jdk15on"
             ).versionRef("bouncycastle-version")
-            library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine-version")
+            library(
+                "caffeine",
+                "com.github.ben-manes.caffeine",
+                "caffeine"
+            ).versionRef("caffeine-version")
             library(
                 "eclipse-collections",
                 "org.eclipse.collections",
@@ -179,50 +207,128 @@ dependencyResolutionManagement {
                 "org.apache.commons",
                 "commons-collections4"
             ).versionRef("commons-collections4-version")
-            library("commons-codec", "commons-codec", "commons-codec").versionRef("commons-codec-version")
+            library(
+                "commons-codec",
+                "commons-codec",
+                "commons-codec"
+            ).versionRef("commons-codec-version")
             library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
-            library("commons-lang3", "org.apache.commons", "commons-lang3").versionRef("commons-lang3-version")
+            library(
+                "commons-lang3",
+                "org.apache.commons",
+                "commons-lang3"
+            ).versionRef("commons-lang3-version")
             library("dagger-api", "com.google.dagger", "dagger").versionRef("dagger-version")
-            library("dagger-compiler", "com.google.dagger", "dagger-compiler").versionRef("dagger-version")
+            library(
+                "dagger-compiler",
+                "com.google.dagger",
+                "dagger-compiler"
+            ).versionRef("dagger-version")
             library("eddsa", "net.i2p.crypto", "eddsa").versionRef("eddsa-version")
             library("grpc-stub", "io.grpc", "grpc-stub").versionRef("grpc-version")
             library("grpc-protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc-version")
             library("grpc-netty", "io.grpc", "grpc-netty").versionRef("grpc-version")
             library("guava", "com.google.guava", "guava").versionRef("guava-version")
-            library("hapi", "com.hedera.hashgraph", "hedera-protobuf-java-api").versionRef("hapi-version")
+            library(
+                "hapi",
+                "com.hedera.hashgraph",
+                "hedera-protobuf-java-api"
+            ).versionRef("hapi-version")
             library("headlong", "com.esaulpaugh", "headlong").versionRef("headlong-version")
-            library("helidon-server", "io.helidon.webserver", "helidon-webserver-http2").versionRef("helidon-version")
-            library("helidon-grpc-server", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
+            library("helidon-server", "io.helidon.webserver", "helidon-webserver-http2").versionRef(
+                "helidon-version"
+            )
+            library(
+                "helidon-grpc-server",
+                "io.helidon.grpc",
+                "helidon-grpc-server"
+            ).versionRef("helidon-version")
             library("helidon-io-grpc", "io.helidon.grpc", "io.grpc").versionRef("helidon-version")
-            library("jackson", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson-version")
+            library(
+                "jackson",
+                "com.fasterxml.jackson.core",
+                "jackson-databind"
+            ).versionRef("jackson-version")
             library(
                 "javax-annotation",
                 "javax.annotation",
                 "javax.annotation-api"
             ).versionRef("javax-annotation-version")
-            library("javax-inject", "javax.inject", "javax.inject").versionRef("javax-inject-version")
-            library("jetbrains-annotation", "org.jetbrains", "annotations").versionRef("jetbrains-annotation-version")
-            library("jsr305-annotation", "com.google.code.findbugs", "jsr305").versionRef("jsr305-version")
-            library("log4j-api", "org.apache.logging.log4j", "log4j-api").versionRef("log4j-version")
-            library("log4j-core", "org.apache.logging.log4j", "log4j-core").versionRef("log4j-version")
-            library("log4j-slf4j", "org.apache.logging.log4j", "log4j-slf4j-impl").versionRef("log4j-version")
+            library(
+                "javax-inject",
+                "javax.inject",
+                "javax.inject"
+            ).versionRef("javax-inject-version")
+            library(
+                "jetbrains-annotation",
+                "org.jetbrains",
+                "annotations"
+            ).versionRef("jetbrains-annotation-version")
+            library(
+                "jsr305-annotation",
+                "com.google.code.findbugs",
+                "jsr305"
+            ).versionRef("jsr305-version")
+            library(
+                "log4j-api",
+                "org.apache.logging.log4j",
+                "log4j-api"
+            ).versionRef("log4j-version")
+            library(
+                "log4j-core",
+                "org.apache.logging.log4j",
+                "log4j-core"
+            ).versionRef("log4j-version")
+            library(
+                "log4j-slf4j",
+                "org.apache.logging.log4j",
+                "log4j-slf4j-impl"
+            ).versionRef("log4j-version")
             library(
                 "netty-transport-native-epoll",
                 "io.netty",
                 "netty-transport-native-epoll"
             ).versionRef("netty-version")
             library("netty-handler", "io.netty", "netty-handler").versionRef("netty-version")
-            library("protobuf-java", "com.google.protobuf", "protobuf-java").versionRef("protobuf-java-version")
+            library(
+                "protobuf-java",
+                "com.google.protobuf",
+                "protobuf-java"
+            ).versionRef("protobuf-java-version")
             library("swirlds-common", "com.swirlds", "swirlds-common").versionRef("swirlds-version")
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("slf4j-simple", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
-            library("swirlds-platform-core", "com.swirlds", "swirlds-platform-core").versionRef("swirlds-version")
-            library("swirlds-fchashmap", "com.swirlds", "swirlds-fchashmap").versionRef("swirlds-version")
+            library(
+                "swirlds-platform-core",
+                "com.swirlds",
+                "swirlds-platform-core"
+            ).versionRef("swirlds-version")
+            library(
+                "swirlds-fchashmap",
+                "com.swirlds",
+                "swirlds-fchashmap"
+            ).versionRef("swirlds-version")
             library("swirlds-merkle", "com.swirlds", "swirlds-merkle").versionRef("swirlds-version")
-            library("swirlds-fcqueue", "com.swirlds", "swirlds-fcqueue").versionRef("swirlds-version")
-            library("swirlds-jasperdb", "com.swirlds", "swirlds-jasperdb").versionRef("swirlds-version")
-            library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
-            library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
+            library(
+                "swirlds-fcqueue",
+                "com.swirlds",
+                "swirlds-fcqueue"
+            ).versionRef("swirlds-version")
+            library(
+                "swirlds-jasperdb",
+                "com.swirlds",
+                "swirlds-jasperdb"
+            ).versionRef("swirlds-version")
+            library(
+                "swirlds-virtualmap",
+                "com.swirlds",
+                "swirlds-virtualmap"
+            ).versionRef("swirlds-version")
+            library(
+                "tuweni-units",
+                "org.apache.tuweni",
+                "tuweni-units"
+            ).versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
             library(
                 "spotbugs-annotations",
@@ -247,6 +353,9 @@ dependencyResolutionManagement {
             version("classgraph-version", "4.8.65")
             version("assertj-version", "3.23.1")
 
+            version("swirlds-version", "0.35.0")
+
+
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
             bundle("testcontainers", listOf("testcontainers-core", "testcontainers-junit"))
@@ -265,27 +374,68 @@ dependencyResolutionManagement {
                 )
             )
 
+            library(
+                "swirlds-testframework",
+                "com.swirlds",
+                "swirlds-test-framework"
+            ).versionRef("swirlds-version")
+
+
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
-            library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
+            library(
+                "besu-internal",
+                "org.hyperledger.besu.internal",
+                "crypto"
+            ).versionRef("besu-internal-version")
             library(
                 "commons-collections4",
                 "org.apache.commons",
                 "commons-collections4"
             ).versionRef("commons-collections4-version")
             library("hamcrest", "org.hamcrest", "hamcrest").versionRef("hamcrest-version")
-            library("helidon-grpc-client", "io.helidon.grpc", "helidon-grpc-client").versionRef("helidon-version")
+            library(
+                "helidon-grpc-client",
+                "io.helidon.grpc",
+                "helidon-grpc-client"
+            ).versionRef("helidon-version")
             library("json", "org.json", "json").versionRef("json-version")
-            library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").versionRef("junit5-version")
-            library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api").versionRef("junit5-version")
-            library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef("junit5-version")
+            library(
+                "junit-jupiter",
+                "org.junit.jupiter",
+                "junit-jupiter"
+            ).versionRef("junit5-version")
+            library(
+                "junit-jupiter-api",
+                "org.junit.jupiter",
+                "junit-jupiter-api"
+            ).versionRef("junit5-version")
+            library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params").versionRef(
+                "junit5-version"
+            )
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
-            library("mockito-jupiter", "org.mockito", "mockito-junit-jupiter").versionRef("mockito-version")
+            library(
+                "mockito-jupiter",
+                "org.mockito",
+                "mockito-junit-jupiter"
+            ).versionRef("mockito-version")
             library("mockito-inline", "org.mockito", "mockito-inline").versionRef("mockito-version")
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
-            library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
-            library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
-            library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
+            library(
+                "testcontainers-core",
+                "org.testcontainers",
+                "testcontainers"
+            ).versionRef("testcontainers-version")
+            library(
+                "testcontainers-junit",
+                "org.testcontainers",
+                "junit-jupiter"
+            ).versionRef("testcontainers-version")
+            library(
+                "classgraph",
+                "io.github.classgraph",
+                "classgraph"
+            ).versionRef("classgraph-version")
             library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
         }
     }

@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -24,24 +26,31 @@ import java.util.function.Supplier;
  * Supplier} instances.
  */
 public class SupplierMapPropertySource implements PropertySource {
-    private final Map<String, Supplier<Object>> source;
 
-    public SupplierMapPropertySource(Map<String, Supplier<Object>> source) {
-        this.source = source;
-    }
+  private final Map<String, Supplier<Object>> source;
 
-    @Override
-    public boolean containsProperty(String name) {
-        return source.containsKey(name);
-    }
+  public SupplierMapPropertySource(final Map<String, Supplier<Object>> source) {
+    this.source = source;
+  }
 
-    @Override
-    public Object getProperty(String name) {
-        return source.get(name).get();
-    }
+  @Override
+  public boolean containsProperty(final String name) {
+    return source.containsKey(name);
+  }
 
-    @Override
-    public Set<String> allPropertyNames() {
-        return source.keySet();
-    }
+  @Override
+  public Object getProperty(final String name) {
+    return source.get(name).get();
+  }
+
+  @Override
+  public Set<String> allPropertyNames() {
+    return source.keySet();
+  }
+
+  @NonNull
+  @Override
+  public Properties getRawProperties() {
+    throw new IllegalStateException("Not yet implemented");
+  }
 }

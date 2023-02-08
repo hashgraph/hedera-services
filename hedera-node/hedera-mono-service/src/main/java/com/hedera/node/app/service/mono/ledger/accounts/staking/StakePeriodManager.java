@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_SECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;

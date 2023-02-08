@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.files.sysfiles;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
+import static com.hedera.node.app.spi.config.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
 import static org.mockito.BDDMockito.given;

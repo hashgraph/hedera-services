@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
+import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;

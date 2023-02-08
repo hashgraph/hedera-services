@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.files;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NETWORK_PROPERTIES;
 import static com.hedera.node.app.service.mono.files.DataMapFactory.dataMapFrom;
 import static com.hedera.node.app.service.mono.files.MetadataMapFactory.metaMapFrom;
 import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.uncheckedParse;

@@ -15,32 +15,46 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 public class ChainedSources implements PropertySource {
-    private final PropertySource first;
-    private final PropertySource second;
 
-    public ChainedSources(PropertySource first, PropertySource second) {
-        this.first = first;
-        this.second = second;
-    }
+  private final PropertySource first;
+  private final PropertySource second;
 
-    @Override
-    public boolean containsProperty(String name) {
-        return first.containsProperty(name) || second.containsProperty(name);
-    }
+  public ChainedSources(final PropertySource first, final PropertySource second) {
+    this.first = first;
+    this.second = second;
+  }
 
-    @Override
-    public Object getProperty(String name) {
-        return first.containsProperty(name) ? first.getProperty(name) : second.getProperty(name);
-    }
+  @Override
+  public boolean containsProperty(final String name) {
+    return first.containsProperty(name) || second.containsProperty(name);
+  }
 
-    @Override
-    public Set<String> allPropertyNames() {
-        final var all = new HashSet<>(first.allPropertyNames());
-        all.addAll(second.allPropertyNames());
-        return all;
-    }
+  @Override
+  public Object getProperty(final String name) {
+    return first.containsProperty(name) ? first.getProperty(name) : second.getProperty(name);
+  }
+
+  @NonNull
+  @Override
+  public Properties getRawProperties() {
+    final Properties properties = new Properties();
+    second.getRawProperties().stringPropertyNames()
+        .forEach(name -> properties.put(name, first.getRawProperties().getProperty(name)));
+    first.getRawProperties().stringPropertyNames()
+        .forEach(name -> properties.put(name, first.getRawProperties().getProperty(name)));
+    return null;
+  }
+
+  @Override
+  public Set<String> allPropertyNames() {
+    final var all = new HashSet<>(first.allPropertyNames());
+    all.addAll(second.allPropertyNames());
+    return all;
+  }
 }

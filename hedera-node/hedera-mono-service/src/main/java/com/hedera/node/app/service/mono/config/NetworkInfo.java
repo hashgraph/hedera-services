@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_ID;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;

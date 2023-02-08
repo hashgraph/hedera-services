@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.utils.MapValueListUtils.linkInPla
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.service.mono.state.expiry.UniqueTokensListMutation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;

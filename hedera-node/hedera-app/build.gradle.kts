@@ -43,6 +43,7 @@ dependencies {
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
     implementation(project(":hedera-node:hedera-evm"))
+    implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.swirlds)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)
@@ -56,6 +57,7 @@ dependencies {
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+    testImplementation(testLibs.swirlds.testframework)
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
 }

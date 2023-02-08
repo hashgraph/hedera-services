@@ -22,7 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
+import com.hedera.node.app.spi.config.Profile;
 import java.io.FileNotFoundException;
 import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,103 +34,104 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConfigDrivenNettyFactoryTest {
 
-    int port = 50123;
-    long keepAliveTime = 10;
-    long keepAliveTimeout = 3;
-    long maxConnectionAge = 15;
-    long maxConnectionAgeGrace = 5;
-    long maxConnectionIdle = 10;
-    int maxConcurrentCalls = 10;
-    int flowControlWindow = 10240;
+  int port = 50123;
+  long keepAliveTime = 10;
+  long keepAliveTimeout = 3;
+  long maxConnectionAge = 15;
+  long maxConnectionAgeGrace = 5;
+  long maxConnectionIdle = 10;
+  int maxConcurrentCalls = 10;
+  int flowControlWindow = 10240;
 
-    @Mock NodeLocalProperties nodeLocalProperties;
+  @Mock
+  NodeLocalProperties nodeLocalProperties;
 
-    ConfigDrivenNettyFactory subject;
+  ConfigDrivenNettyFactory subject;
 
-    @BeforeEach
-    void setup() {
-        subject = new ConfigDrivenNettyFactory(nodeLocalProperties);
+  @BeforeEach
+  void setup() {
+    subject = new ConfigDrivenNettyFactory(nodeLocalProperties);
+  }
+
+  @Test
+  void usesProdPropertiesWhenAppropros() {
+    given(nodeLocalProperties.nettyMode()).willReturn(Profile.PROD);
+    given(nodeLocalProperties.nettyProdKeepAliveTime()).willReturn(keepAliveTime);
+    given(nodeLocalProperties.nettyProdKeepAliveTimeout()).willReturn(keepAliveTimeout);
+    given(nodeLocalProperties.nettyMaxConnectionAge()).willReturn(maxConnectionAge);
+    given(nodeLocalProperties.nettyMaxConnectionAgeGrace()).willReturn(maxConnectionAgeGrace);
+    given(nodeLocalProperties.nettyMaxConnectionIdle()).willReturn(maxConnectionIdle);
+    given(nodeLocalProperties.nettyMaxConcurrentCalls()).willReturn(maxConcurrentCalls);
+    given(nodeLocalProperties.nettyFlowControlWindow()).willReturn(flowControlWindow);
+
+    // when:
+    try {
+      subject.builderFor(port, false);
+    } catch (final Throwable ignore) {
+      /* If run on OS X, will throw java.lang.UnsatisfiedLinkError from Epoll.ensureAvailability */
     }
 
-    @Test
-    void usesProdPropertiesWhenAppropros() {
-        given(nodeLocalProperties.nettyMode()).willReturn(Profile.PROD);
-        given(nodeLocalProperties.nettyProdKeepAliveTime()).willReturn(keepAliveTime);
-        given(nodeLocalProperties.nettyProdKeepAliveTimeout()).willReturn(keepAliveTimeout);
-        given(nodeLocalProperties.nettyMaxConnectionAge()).willReturn(maxConnectionAge);
-        given(nodeLocalProperties.nettyMaxConnectionAgeGrace()).willReturn(maxConnectionAgeGrace);
-        given(nodeLocalProperties.nettyMaxConnectionIdle()).willReturn(maxConnectionIdle);
-        given(nodeLocalProperties.nettyMaxConcurrentCalls()).willReturn(maxConcurrentCalls);
-        given(nodeLocalProperties.nettyFlowControlWindow()).willReturn(flowControlWindow);
+    // then:
+    verify(nodeLocalProperties, times(2)).nettyProdKeepAliveTime();
+    verify(nodeLocalProperties).nettyProdKeepAliveTimeout();
+    verify(nodeLocalProperties).nettyMaxConnectionAge();
+    verify(nodeLocalProperties).nettyMaxConnectionAgeGrace();
+    verify(nodeLocalProperties).nettyMaxConnectionIdle();
+    verify(nodeLocalProperties).nettyMaxConcurrentCalls();
+    verify(nodeLocalProperties).nettyFlowControlWindow();
+  }
 
-        // when:
-        try {
-            subject.builderFor(port, false);
-        } catch (Throwable ignore) {
-            /* If run on OS X, will throw java.lang.UnsatisfiedLinkError from Epoll.ensureAvailability */
-        }
+  @Test
+  void interpretsDevProfileActiveAsDisablingProdNetty()
+      throws FileNotFoundException, SSLException {
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
 
-        // then:
-        verify(nodeLocalProperties, times(2)).nettyProdKeepAliveTime();
-        verify(nodeLocalProperties).nettyProdKeepAliveTimeout();
-        verify(nodeLocalProperties).nettyMaxConnectionAge();
-        verify(nodeLocalProperties).nettyMaxConnectionAgeGrace();
-        verify(nodeLocalProperties).nettyMaxConnectionIdle();
-        verify(nodeLocalProperties).nettyMaxConcurrentCalls();
-        verify(nodeLocalProperties).nettyFlowControlWindow();
-    }
+    // when:
+    subject.builderFor(port, false);
 
-    @Test
-    void interpretsDevProfileActiveAsDisablingProdNetty()
-            throws FileNotFoundException, SSLException {
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+    // then:
+    verify(nodeLocalProperties, never()).nettyProdKeepAliveTime();
+    verify(nodeLocalProperties, never()).nettyProdKeepAliveTimeout();
+    verify(nodeLocalProperties, never()).nettyMaxConnectionAge();
+    verify(nodeLocalProperties, never()).nettyMaxConnectionAgeGrace();
+    verify(nodeLocalProperties, never()).nettyMaxConnectionIdle();
+    verify(nodeLocalProperties, never()).nettyMaxConcurrentCalls();
+    verify(nodeLocalProperties, never()).nettyFlowControlWindow();
+  }
 
-        // when:
-        subject.builderFor(port, false);
+  @Test
+  void failsFastWhenCrtIsMissing() {
+    given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
+    given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("not-a-real-crt");
 
-        // then:
-        verify(nodeLocalProperties, never()).nettyProdKeepAliveTime();
-        verify(nodeLocalProperties, never()).nettyProdKeepAliveTimeout();
-        verify(nodeLocalProperties, never()).nettyMaxConnectionAge();
-        verify(nodeLocalProperties, never()).nettyMaxConnectionAgeGrace();
-        verify(nodeLocalProperties, never()).nettyMaxConnectionIdle();
-        verify(nodeLocalProperties, never()).nettyMaxConcurrentCalls();
-        verify(nodeLocalProperties, never()).nettyFlowControlWindow();
-    }
+    // when:
+    assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
+  }
 
-    @Test
-    void failsFastWhenCrtIsMissing() {
-        given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
-        given(nodeLocalProperties.nettyTlsCrtPath()).willReturn("not-a-real-crt");
+  @Test
+  void failsFastWhenKeyIsMissing() {
+    given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
+    given(nodeLocalProperties.nettyTlsCrtPath())
+        .willReturn("src/test/resources/test-hedera.crt");
+    given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("not-a-real-key");
 
-        // when:
-        assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
-    }
+    // when:
+    assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
+  }
 
-    @Test
-    void failsFastWhenKeyIsMissing() {
-        given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
-        given(nodeLocalProperties.nettyTlsCrtPath())
-                .willReturn("src/test/resources/test-hedera.crt");
-        given(nodeLocalProperties.nettyTlsKeyPath()).willReturn("not-a-real-key");
+  @Test
+  void usesSslPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
+    given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
+    given(nodeLocalProperties.nettyTlsCrtPath())
+        .willReturn("src/test/resources/test-hedera.crt");
+    given(nodeLocalProperties.nettyTlsKeyPath())
+        .willReturn("src/test/resources/test-hedera.key");
 
-        // when:
-        assertThrows(FileNotFoundException.class, () -> subject.builderFor(port, true));
-    }
+    // when:
+    subject.builderFor(port, true).build();
 
-    @Test
-    void usesSslPropertiesWhenAppropros() throws FileNotFoundException, SSLException {
-        given(nodeLocalProperties.nettyMode()).willReturn(Profile.TEST);
-        given(nodeLocalProperties.nettyTlsCrtPath())
-                .willReturn("src/test/resources/test-hedera.crt");
-        given(nodeLocalProperties.nettyTlsKeyPath())
-                .willReturn("src/test/resources/test-hedera.key");
-
-        // when:
-        subject.builderFor(port, true).build();
-
-        // then:
-        verify(nodeLocalProperties).nettyTlsCrtPath();
-        verify(nodeLocalProperties).nettyTlsKeyPath();
-    }
+    // then:
+    verify(nodeLocalProperties).nettyTlsCrtPath();
+    verify(nodeLocalProperties).nettyTlsKeyPath();
+  }
 }

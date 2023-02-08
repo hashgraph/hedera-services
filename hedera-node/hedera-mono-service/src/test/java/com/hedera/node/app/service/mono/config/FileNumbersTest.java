@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.mono.config;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NODE_DETAILS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.node.app.spi.config.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

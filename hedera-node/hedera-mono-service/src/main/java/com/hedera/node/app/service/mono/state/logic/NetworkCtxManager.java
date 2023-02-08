@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isGasThrottled;
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;

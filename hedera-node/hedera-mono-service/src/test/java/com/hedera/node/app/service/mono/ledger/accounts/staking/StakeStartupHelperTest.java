@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.context.properties.PropertyNames;
+import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;

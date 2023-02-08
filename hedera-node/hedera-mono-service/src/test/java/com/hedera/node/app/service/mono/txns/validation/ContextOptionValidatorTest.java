@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.validation;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
