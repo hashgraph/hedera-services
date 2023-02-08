@@ -36,7 +36,6 @@ public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Acco
     public UpdateTrackingAccount<A> getForMutation(Address address) {
         final var wrapped = wrappedWorldView();
         final A account = wrapped.getForMutation(address);
-        // TODO provide default UpdatedAccountTracker impl for the balance setting
         return account == null ? null : new UpdateTrackingAccount<>(account, null);
     }
 }

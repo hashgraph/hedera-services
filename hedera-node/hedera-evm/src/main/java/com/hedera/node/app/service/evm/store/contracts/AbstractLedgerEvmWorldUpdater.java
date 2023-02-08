@@ -137,20 +137,22 @@ public abstract class AbstractLedgerEvmWorldUpdater<W extends WorldView, A exten
         if (origin == null) {
             return null;
         }
-        // TODO provide default UpdatedAccountTracker impl for the balance setting
-        final var newMutable = new UpdateTrackingAccount<>(origin, null);
-        return new WrappedEvmAccount(track(newMutable));
+        final var trackedAccount = track(new UpdateTrackingAccount<>(origin, null));
+        trackedAccount.setEvmEntityAccess(hederaEvmEntityAccess);
+
+        return new WrappedEvmAccount(trackedAccount);
     }
 
     public Map<Address, UpdateTrackingAccount<A>> getUpdatedAccounts() {
         return updatedAccounts;
     }
 
-    // TODO public ContractAliases aliases()
+    // FeatureWork public ContractAliases aliases()
 
-    private UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
-        account.setEvmEntityAccess(hederaEvmEntityAccess);
-        updatedAccounts.put(account.getAddress(), account);
+    protected UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
+        final var address = account.getAddress();
+        updatedAccounts.put(address, account);
+        deletedAccounts.remove(address);
         return account;
     }
 }

@@ -38,7 +38,7 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 
 public class UpdateTrackingAccount<A extends Account> implements MutableAccount, EvmAccount {
     private final Address address;
-    private Hash addressHash;
+    private final Hash addressHash;
     private long nonce;
     private Wei balance;
     private HederaEvmEntityAccess hederaEvmEntityAccess;
@@ -192,20 +192,18 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
         if (storageWasCleared) {
             return UInt256.ZERO;
         }
+        // Branching for the evm-module lib flow, where data source is Ledgers alternative
         if (hederaEvmEntityAccess != null) {
-            return evmFlow(key);
+            return getStorageValueEvmFlow(key);
         }
 
         return account == null ? UInt256.ZERO : account.getStorageValue(key);
     }
 
-    // TODO rename
-    private UInt256 evmFlow(UInt256 key) {
+    private UInt256 getStorageValueEvmFlow(UInt256 key) {
         final var value =
                 UInt256.fromBytes(hederaEvmEntityAccess.getStorage(address, key.toBytes()));
-        if (value == null) {
-            return UInt256.ZERO;
-        }
+
         setStorageValue(key, value);
         return value;
     }

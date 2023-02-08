@@ -318,13 +318,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         return trackingLedgers;
     }
 
-    protected UpdateTrackingAccount<A> track(final UpdateTrackingAccount<A> account) {
-        final var address = account.getAddress();
-        updatedAccounts.put(address, account);
-        deletedAccounts.remove(address);
-        return account;
-    }
-
     public void trackLazilyCreatedAccount(final Address address) {
         final var newMutable =
                 new UpdateTrackingAccount<A>(

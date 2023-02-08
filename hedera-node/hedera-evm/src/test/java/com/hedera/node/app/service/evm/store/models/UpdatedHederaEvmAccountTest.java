@@ -34,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-// TODO delete
 class UpdatedHederaEvmAccountTest {
     private final Address newAddress =
             Address.fromHexString("0x000000000000000000000000000000000000066e");
@@ -49,7 +48,6 @@ class UpdatedHederaEvmAccountTest {
 
     @BeforeEach
     void setUp() {
-        // TODO the null
         subject = new UpdateTrackingAccount(address, null);
         subject.setBalance(Wei.ONE);
         subject.setNonce(1L);

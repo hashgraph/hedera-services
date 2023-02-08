@@ -59,7 +59,6 @@ public class HederaEvmStackedWorldStateUpdater
     public EvmAccount getAccount(final Address address) {
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            // TODO provide default UpdatedAccountTracker impl for the balance setting
             final var newMutable = new UpdateTrackingAccount<>(proxyAccount, null);
             newMutable.setEvmEntityAccess(hederaEvmEntityAccess);
             return new WrappedEvmAccount(newMutable);

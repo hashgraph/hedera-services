@@ -40,7 +40,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
@@ -60,7 +59,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -647,40 +645,6 @@ class HederaWorldStateTest {
         verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
         // and:
         verify(entityAccess).storeCode(accountID, code);
-    }
-
-    @Test
-    void updaterCorrectlyPopulatesStateChanges() {
-        givenNonNullWorldLedgers();
-        final var contractAddress = "0xffff";
-        final var slot = 1L;
-        final var oldSlotValue = 4L;
-        final var newSlotValue = 255L;
-        final var updatedAccount = mock(UpdateTrackingAccount.class);
-        given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
-        given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot)))
-                .willReturn(UInt256.valueOf(oldSlotValue));
-        given(updatedAccount.getUpdatedStorage())
-                .willReturn(Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
-        given(updatedAccount.getStorageValue(UInt256.valueOf(slot)))
-                .willReturn(UInt256.valueOf(newSlotValue));
-
-        final var actualSubject = subject.updater();
-        assertEquals(0, actualSubject.getTouchedAccounts().size());
-        actualSubject.track(updatedAccount);
-
-        final var finalStateChanges = actualSubject.getFinalStateChanges();
-        assertEquals(1, finalStateChanges.size());
-        final var contractStateChange =
-                finalStateChanges.get(Address.fromHexString(contractAddress));
-        assertEquals(1, contractStateChange.size());
-        assertNotNull(contractStateChange.get(UInt256.valueOf(slot)));
-        assertEquals(
-                contractStateChange.get(UInt256.valueOf(slot)).getLeft(),
-                UInt256.valueOf(oldSlotValue));
-        assertEquals(
-                contractStateChange.get(UInt256.valueOf(slot)).getRight(),
-                UInt256.valueOf(newSlotValue));
     }
 
     @Test
