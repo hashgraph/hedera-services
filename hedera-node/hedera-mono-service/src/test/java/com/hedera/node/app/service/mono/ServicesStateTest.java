@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
@@ -46,6 +47,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -60,16 +62,23 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -106,7 +115,9 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
@@ -164,10 +175,10 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void setUp() {
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setProto(SemanticVersion.newBuilder().setMinor(32).build());
+                .setProto(SemanticVersion.newBuilder().setMinor(35).build());
         SEMANTIC_VERSIONS
                 .deployedSoftwareVersion()
-                .setServices(SemanticVersion.newBuilder().setMinor(32).build());
+                .setServices(SemanticVersion.newBuilder().setMinor(35).setPatch(1).build());
         subject = tracked(new ServicesState());
         setAllChildren();
     }
@@ -808,6 +819,114 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         new DualStateImpl(),
                         RESTART,
                         forHapiAndHedera("0.30.0", "0.30.5"));
+    }
+
+    @Test
+    void warnsOnMissingEntities() {
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+        // Doesn't matter, just something that won't be found in the token map
+        nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
+        final var uniqueTokens = UniqueTokenMapAdapter.wrap(nfts);
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, tokens));
+
+        final var pretendStats =
+                new ServicesState.NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        // Doesn't matter, just something that won't be found in the accounts map
+        pretendStats.totalOwned().put(EntityNum.fromLong(1L), 1);
+        // Doesn't matter, just something that won't be found in the tokens map
+        pretendStats.totalSupply().put(EntityNum.fromLong(1L), 1);
+        // Doesn't matter, just something that won't be found in the associations map
+        pretendStats.totalOwnedByType().put(EntityNumPair.fromLongs(2L, 3L), 1);
+
+        assertDoesNotThrow(
+                () ->
+                        ServicesState.logNftStats(
+                                pretendStats,
+                                AccountStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                tokens));
+    }
+
+    @Test
+    void testLoading0350State() {
+        ClassLoaderHelper.loadClassPathDependencies();
+        final AtomicReference<SignedState> ref = new AtomicReference<>();
+        assertDoesNotThrow(
+                () -> ref.set(loadSignedState(signedStateDir + "v0.35.0/SignedState.swh")));
+        final var mockPlatform = createMockPlatformWithCrypto();
+        final var mutableState = (ServicesState) ref.get().getSwirldState();
+        final var aCounts =
+                ServicesState.countByOwnershipIn(
+                        mutableState.uniqueTokens(), mutableState.tokens());
+
+        tracked(mutableState)
+                .init(
+                        mockPlatform,
+                        createPretendBookFrom(mockPlatform, false),
+                        new DualStateImpl(),
+                        RESTART,
+                        forHapiAndHedera("0.35.0", "0.35.0"));
+
+        final var bCounts =
+                countByBoundedIterationOver(
+                        mutableState.accounts(),
+                        mutableState.tokenAssociations(),
+                        mutableState.tokens());
+        aCounts.totalOwned()
+                .forEach(
+                        (k, v) ->
+                                assertEquals(
+                                        v,
+                                        bCounts.totalOwned().get(k),
+                                        "Mismatch for " + k + " in totalOwned"));
+        aCounts.totalSupply()
+                .forEach(
+                        (k, v) ->
+                                assertEquals(
+                                        v,
+                                        bCounts.totalSupply().get(k),
+                                        "Mismatch for " + k + " in totalSupply"));
+        aCounts.totalOwnedByType()
+                .forEach(
+                        (k, v) ->
+                                assertEquals(
+                                        v,
+                                        bCounts.totalOwnedByType().get(k),
+                                        "Mismatch for " + k + " in totalOwnedByType"));
+    }
+
+    private ServicesState.NftStats countByBoundedIterationOver(
+            final AccountStorageAdapter accounts,
+            final TokenRelStorageAdapter tokenAssociations,
+            final MerkleMap<EntityNum, MerkleToken> tokens) {
+        final var stats =
+                new ServicesState.NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        MiscUtils.forEach(
+                Objects.requireNonNull(accounts.getInMemoryAccounts()),
+                (num, account) -> {
+                    stats.totalOwned().put(num, (int) account.getNftsOwned());
+                    doBoundedIteration(
+                            tokenAssociations,
+                            tokens,
+                            account,
+                            (token, rel) -> {
+                                final var type = token.tokenType();
+                                if (type == TokenType.NON_FUNGIBLE_UNIQUE) {
+                                    final var tokenNum =
+                                            EntityNum.fromLong(rel.getRelatedTokenNum());
+                                    final var numPair =
+                                            EntityNumPair.fromLongs(
+                                                    account.getKey().longValue(),
+                                                    tokenNum.longValue());
+                                    stats.totalOwnedByType().put(numPair, (int) rel.getBalance());
+                                }
+                            });
+                });
+        MiscUtils.forEach(
+                tokens,
+                (tokenNum, token) -> stats.totalSupply().put(tokenNum, (int) token.totalSupply()));
+        return stats;
     }
 
     @Test
