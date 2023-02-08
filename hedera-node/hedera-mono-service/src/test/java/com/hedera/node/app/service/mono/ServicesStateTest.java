@@ -63,6 +63,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
@@ -73,6 +74,7 @@ import com.hedera.node.app.service.mono.state.migration.ToDiskMigrations;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.ProcessLogic;
@@ -118,6 +120,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
@@ -822,20 +825,53 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
+    void stillCountsOwnershipForNftsOfDeletedTokensIfOwnerRemainsAssociated() {
+        // Set up a token with a deleted NFT, and an account that owns that NFT
+        // and is still associated with the token
+        final var deletedTokenNum = EntityNum.fromLong(1234L);
+        final var accountNumWithDeletedNft = EntityNum.fromLong(2345L);
+        final var deletedNftSerialNo = EntityNum.fromLong(666L);
+
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        final var deletedToken = new MerkleToken();
+        deletedToken.setDeleted(true);
+        tokens.put(deletedTokenNum, deletedToken);
+
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+        final var nft = new MerkleUniqueToken();
+        nft.setOwner(accountNumWithDeletedNft.toEntityId());
+        nfts.put(EntityNumPair.fromNums(deletedTokenNum, deletedNftSerialNo), nft);
+        final var nftsAdapter = UniqueTokenMapAdapter.wrap(nfts);
+
+        final var knownRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+        final var relWithDeleted = new MerkleTokenRelStatus();
+        relWithDeleted.setBalance(1);
+        knownRels.put(
+                EntityNumPair.fromNums(accountNumWithDeletedNft, deletedTokenNum), relWithDeleted);
+
+        final var stats = ServicesState.countByOwnershipIn(nftsAdapter, knownRels, tokens);
+        final var ownedNfts =
+                Optional.ofNullable(stats.totalOwned().get(accountNumWithDeletedNft)).orElse(0);
+        assertEquals(1, ownedNfts);
+    }
+
+    @Test
     void skipsDeletedTokens() {
+        final var emptyRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
         // Doesn't matter, just something that won't be found in the token map
         nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
         final var uniqueTokens = UniqueTokenMapAdapter.wrap(nfts);
         final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
         final var deletedToken = new MerkleToken();
+        deletedToken.setTreasury(EntityId.MISSING_ENTITY_ID);
         deletedToken.setDeleted(true);
         tokens.put(EntityNum.fromLong(1234L), deletedToken);
         // Doesn't matter, just something that won't be found in the token map
         nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
         // Doesn't matter, just reference the deleted token
         nfts.put(EntityNumPair.fromLongs(1234L, 2L), new MerkleUniqueToken());
-        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, tokens));
+        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, emptyRels, tokens));
 
         final var pretendStats =
                 new ServicesState.NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
@@ -851,18 +887,20 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.logNftStats(
                                 pretendStats,
                                 AccountStorageAdapter.fromInMemory(new MerkleMap<>()),
-                                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                emptyRels,
                                 tokens));
     }
 
     @Test
     void warnsOnMissingEntities() {
+        final var emptyRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+
         final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
         // Doesn't matter, just something that won't be found in the token map
         nfts.put(EntityNumPair.fromLongs(1L, 2L), new MerkleUniqueToken());
         final var uniqueTokens = UniqueTokenMapAdapter.wrap(nfts);
         final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, tokens));
+        assertDoesNotThrow(() -> ServicesState.countByOwnershipIn(uniqueTokens, emptyRels, tokens));
 
         final var pretendStats =
                 new ServicesState.NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
@@ -878,7 +916,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.logNftStats(
                                 pretendStats,
                                 AccountStorageAdapter.fromInMemory(new MerkleMap<>()),
-                                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>()),
+                                emptyRels,
                                 tokens));
     }
 
@@ -892,7 +930,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
         final var mutableState = (ServicesState) ref.get().getSwirldState();
         final var aCounts =
                 ServicesState.countByOwnershipIn(
-                        mutableState.uniqueTokens(), mutableState.tokens());
+                        mutableState.uniqueTokens(),
+                        mutableState.tokenAssociations(),
+                        mutableState.tokens());
 
         tracked(mutableState)
                 .init(

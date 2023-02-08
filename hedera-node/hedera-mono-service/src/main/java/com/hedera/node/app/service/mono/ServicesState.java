@@ -553,6 +553,7 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     static NftStats countByOwnershipIn(
             final UniqueTokenMapAdapter uniqueTokens,
+            final TokenRelStorageAdapter associations,
             final MerkleMap<EntityNum, MerkleToken> tokens) {
         final var stats = new NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
         Objects.requireNonNull(uniqueTokens.getMerkleMap())
@@ -567,19 +568,29 @@ public class ServicesState extends PartialNaryMerkleInternal
                                         key.getLowOrderAsLong());
                                 return;
                             }
-                            if (token.isDeleted()) {
-                                // Don't mess with stats for deleted tokens
-                                return;
-                            }
                             if (owner.num() == 0L) {
                                 owner = token.treasury();
                             }
+                            if (token.isDeleted()) {
+                                // We only want to count ownership of NFT's from deleted
+                                // tokens *IF* they are still associated to the owner account
+                                final var association =
+                                        associations.get(
+                                                EntityNumPair.fromLongs(
+                                                        owner.num(), key.getHiOrderAsLong()));
+                                if (association == null) {
+                                    // Owner isn't associated, so we don't count this NFT
+                                    return;
+                                }
+                            }
                             stats.totalOwned().merge(owner.asNum(), 1, Integer::sum);
                             final var tokenNum = key.getHiOrderAsNum();
-                            stats.totalSupply().merge(tokenNum, 1, Integer::sum);
                             final var numPair =
                                     EntityNumPair.fromLongs(owner.num(), tokenNum.longValue());
                             stats.totalOwnedByType().merge(numPair, 1, Integer::sum);
+                            if (!token.isDeleted()) {
+                                stats.totalSupply().merge(tokenNum, 1, Integer::sum);
+                            }
                         });
         return stats;
     }
@@ -663,7 +674,7 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
-        final var nftStats = countByOwnershipIn(uniqueTokens(), tokens());
+        final var nftStats = countByOwnershipIn(uniqueTokens(), tokenAssociations(), tokens());
         logNftStats(nftStats, accounts(), tokenAssociations(), tokens());
         networkCtx().markPostUpgradeScanStatus();
     }
