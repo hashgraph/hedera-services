@@ -1351,7 +1351,7 @@ public class SigRequirements {
                 } else {
                     final var tokenMeta = tokenResult.metadata();
                     if (tokenMeta.hasRoyaltyWithFallback()
-                            && !receivesFungibleValue(counterparty, op)) {
+                            && !receivesFungibleValue(counterparty, op, linkedRefs)) {
                         // Fallback situation; but we still need to check if the treasury is
                         // the sender or receiver, since in neither case will the fallback fee
                         // actually be charged
@@ -1369,15 +1369,15 @@ public class SigRequirements {
     }
 
     private boolean receivesFungibleValue(
-            final AccountID target, final CryptoTransferTransactionBody op) {
+            final AccountID target, final CryptoTransferTransactionBody op, LinkedRefs linkedRefs) {
         for (final var adjust : op.getTransfers().getAccountAmountsList()) {
-            if (isReceivingFungibleValue(adjust, target)) {
+            if (isReceivingFungibleValue(adjust, target, linkedRefs)) {
                 return true;
             }
         }
         for (final var transfers : op.getTokenTransfersList()) {
             for (final var adjust : transfers.getTransfersList()) {
-                if (isReceivingFungibleValue(adjust, target)) {
+                if (isReceivingFungibleValue(adjust, target, linkedRefs)) {
                     return true;
                 }
             }
@@ -1385,9 +1385,11 @@ public class SigRequirements {
         return false;
     }
 
-    private boolean isReceivingFungibleValue(final AccountAmount adjust, final AccountID target) {
-        final var unaliasedAccountNum = sigMetaLookup.unaliasedAccount(adjust.getAccountID(), null);
-        final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, null);
+    private boolean isReceivingFungibleValue(
+            final AccountAmount adjust, final AccountID target, final LinkedRefs linkedRefs) {
+        final var unaliasedAccountNum =
+                sigMetaLookup.unaliasedAccount(adjust.getAccountID(), linkedRefs);
+        final var unaliasedTargetNum = sigMetaLookup.unaliasedAccount(target, linkedRefs);
         return adjust.getAmount() > 0 && unaliasedAccountNum.equals(unaliasedTargetNum);
     }
 

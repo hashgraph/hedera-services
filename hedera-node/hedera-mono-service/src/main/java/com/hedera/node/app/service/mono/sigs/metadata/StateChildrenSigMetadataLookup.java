@@ -146,7 +146,9 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     @Override
     public EntityNum unaliasedAccount(AccountID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
         if (isAlias(idOrAlias)) {
-            return unaliased(idOrAlias, aliasManager);
+            return (linkedRefs == null)
+                    ? unaliased(idOrAlias, aliasManager)
+                    : unaliased(idOrAlias, aliasManager, linkedRefs::link);
         }
         return fromAccountId(idOrAlias);
     }
