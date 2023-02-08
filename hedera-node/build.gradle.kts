@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
@@ -40,7 +39,7 @@ var updateDockerEnvTask = tasks.register<Exec>("updateDockerEnv") {
     description = "Creates the .env file in the docker folder that contains environment variables for docker"
     group = "docker"
 
-    workingDir("${projectDir}/docker")
+    workingDir("$projectDir/docker")
     commandLine("./update-env.sh", project.version)
 }
 
@@ -49,7 +48,7 @@ tasks.register<Exec>("createDockerImage") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir("${projectDir}/docker")
+    workingDir("$projectDir/docker")
     commandLine("./docker-build.sh", project.version, rootProject.projectDir)
     finalizedBy(removeTempDockerFilesTask)
 }
@@ -59,7 +58,7 @@ tasks.register<Exec>("startDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir("${projectDir}/docker")
+    workingDir("$projectDir/docker")
     commandLine("docker-compose", "up")
 }
 
@@ -68,6 +67,6 @@ tasks.register<Exec>("stopDockerContainers") {
     group = "docker"
 
     dependsOn(updateDockerEnvTask)
-    workingDir("${projectDir}/docker")
+    workingDir("$projectDir/docker")
     commandLine("docker-compose", "stop")
 }
