@@ -94,7 +94,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     private static final String PAUSE_KEY = TokenKeyType.PAUSE_KEY.name();
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
     private static final String FEE_DENOM = "denom";
-    private static final String HTS_COLLECTOR = "denomFee";
+    public static final String HTS_COLLECTOR = "denomFee";
     private static final String ACCOUNT = "Account";
     private static final String CREATE_TXN = "CreateTxn";
     private static final String TOKEN_INFO_TXN = "TokenInfoTxn";

@@ -34,12 +34,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.*;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.defaultMinAutoRenewPeriod;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
+import static com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite.HTS_COLLECTOR;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.INSERT_ABI;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -82,10 +85,95 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     autoRenewWorksAsExpected(),
                     autoRenewInGracePeriodIfEnoughBalance(),
                     storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
+                    renewalWithCustomFeesWorks(),
                     receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
                     //                     This spec should be at the end of this suite
                     validateStreams()
                 });
+    }
+
+    private HapiSpec renewalWithCustomFeesWorks() {
+        final var initcode = "initcode";
+        final var contractToRemove = "InstantStorageHog";
+        final var minimalLifetime = 4;
+        final var aFungibleToken = "aFT";
+        final var bFungibleToken = "bFT";
+        final var nonFungibleToken = "NFT";
+        final var supplyKey = "multi";
+        final var aFungibleAmount = 1_000_000L;
+        final var bFungibleAmount = 666L;
+        final var feeDenom = "feeDenom";
+
+        return defaultHapiSpec("RenewalWithCustomFeesWorks")
+                .given(
+                        newKeyNamed(supplyKey),
+                        cryptoCreate(TOKEN_TREASURY).receiverSigRequired(true),
+                        cryptoCreate(HTS_COLLECTOR).maxAutomaticTokenAssociations(5),
+                        tokenCreate(feeDenom).treasury(TOKEN_TREASURY),
+                        tokenAssociate(HTS_COLLECTOR, feeDenom),
+                        tokenCreate(aFungibleToken)
+                                .initialSupply(aFungibleAmount)
+                                .withCustom(fixedHtsFee(1, feeDenom, HTS_COLLECTOR))
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(bFungibleToken)
+                                .initialSupply(bFungibleAmount)
+                                .withCustom(fixedHbarFee(1, HTS_COLLECTOR))
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(HTS_COLLECTOR, aFungibleToken, bFungibleToken),
+                        tokenCreate(nonFungibleToken)
+                                .initialSupply(0)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, aFungibleToken),
+                                                HTS_COLLECTOR))
+                                .supplyKey(supplyKey)
+                                .treasury(TOKEN_TREASURY),
+                        mintToken(
+                                nonFungibleToken,
+                                List.of(
+                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
+                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
+                        createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+                        enableContractAutoRenewWith(minimalLifetime, 0),
+                        contractCreate(contractToRemove, new BigInteger("63"))
+                                .gas(2_000_000)
+                                .entityMemo("")
+                                .bytecode(initcode)
+                                .balance(0)
+                                .autoRenewSecs(minimalLifetime),
+                        tokenAssociate(
+                                contractToRemove,
+                                List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
+                        cryptoTransfer(
+                                moving(aFungibleAmount, aFungibleToken)
+                                        .between(TOKEN_TREASURY, contractToRemove),
+                                moving(bFungibleAmount, bFungibleToken)
+                                        .between(TOKEN_TREASURY, contractToRemove),
+                                movingUnique(nonFungibleToken, 1L, 2L)
+                                        .between(TOKEN_TREASURY, contractToRemove)),
+                        sleepFor(minimalLifetime * 1_000L + 500L))
+                .when(
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(2_000L),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
+                .then(
+                        // Now the contract is gone
+                        getContractInfo(contractToRemove)
+                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
+                        // And the fungible units were returned to the treasury
+                        getAccountBalance(TOKEN_TREASURY)
+                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
+                                .hasTokenBalance(bFungibleToken, bFungibleAmount)
+                                .hasTokenBalance(nonFungibleToken, 2),
+                        // And the NFTs are now owned by the treasury
+                        getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
+                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
 
     private HapiSpec receiverSigReqBypassedForTreasuryAtEndOfGracePeriod() {
