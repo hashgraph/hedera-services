@@ -38,55 +38,55 @@ import org.junit.jupiter.api.Test;
 
 class StoresModuleTest {
 
-  @Test
-  void testTransactionalLedgerWhenVirtualNftsEnabled() {
-    final var bootstrapProperties = mock(BootstrapProperties.class);
-    final var usageLimits = mock(UsageLimits.class);
-    final var uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
-    given(bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE))
-        .willReturn(true);
-    final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
-    final var transactionalLedger =
-        StoresModule.provideNftsLedger(
-            bootstrapProperties,
-            usageLimits,
-            uniqueTokensLinkManager,
-            () -> UniqueTokenMapAdapter.wrap(virtualMap));
-    transactionalLedger.begin();
-    final var nftId = NftId.withDefaultShardRealm(3, 4);
-    final var token = UniqueTokenAdapter.newEmptyVirtualToken();
-    transactionalLedger.put(nftId, token);
-    transactionalLedger.commit();
-    assertEquals(token, transactionalLedger.getImmutableRef(nftId));
-  }
+    @Test
+    void testTransactionalLedgerWhenVirtualNftsEnabled() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        final var usageLimits = mock(UsageLimits.class);
+        final var uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
+        given(bootstrapProperties.getBooleanProperty(TOKENS_NFTS_USE_VIRTUAL_MERKLE))
+                .willReturn(true);
+        final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
+        final var transactionalLedger =
+                StoresModule.provideNftsLedger(
+                        bootstrapProperties,
+                        usageLimits,
+                        uniqueTokensLinkManager,
+                        () -> UniqueTokenMapAdapter.wrap(virtualMap));
+        transactionalLedger.begin();
+        final var nftId = NftId.withDefaultShardRealm(3, 4);
+        final var token = UniqueTokenAdapter.newEmptyVirtualToken();
+        transactionalLedger.put(nftId, token);
+        transactionalLedger.commit();
+        assertEquals(token, transactionalLedger.getImmutableRef(nftId));
+    }
 
-  @Test
-  void picksOnDiskAccountWhenOnDiskIsTrue() {
-    final var bootstrapProperties = mock(BootstrapProperties.class);
-    given(bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)).willReturn(true);
-    final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
-    assertInstanceOf(OnDiskAccount.class, subject.get());
-  }
+    @Test
+    void picksOnDiskAccountWhenOnDiskIsTrue() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        given(bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)).willReturn(true);
+        final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
+        assertInstanceOf(OnDiskAccount.class, subject.get());
+    }
 
-  @Test
-  void picksMerkleAccountWhenOnDiskIsFalse() {
-    final var bootstrapProperties = mock(BootstrapProperties.class);
-    final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
-    assertInstanceOf(MerkleAccount.class, subject.get());
-  }
+    @Test
+    void picksMerkleAccountWhenOnDiskIsFalse() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        final var subject = StoresModule.provideAccountSupplier(bootstrapProperties);
+        assertInstanceOf(MerkleAccount.class, subject.get());
+    }
 
-  @Test
-  void picksOnDiskRelWhenOnDiskIsTrue() {
-    final var bootstrapProperties = mock(BootstrapProperties.class);
-    given(bootstrapProperties.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK)).willReturn(true);
-    final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
-    assertInstanceOf(OnDiskTokenRel.class, subject.get());
-  }
+    @Test
+    void picksOnDiskRelWhenOnDiskIsTrue() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        given(bootstrapProperties.getBooleanProperty(TOKENS_STORE_RELS_ON_DISK)).willReturn(true);
+        final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
+        assertInstanceOf(OnDiskTokenRel.class, subject.get());
+    }
 
-  @Test
-  void picksMerkleRelWhenOnDiskIsFalse() {
-    final var bootstrapProperties = mock(BootstrapProperties.class);
-    final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
-    assertInstanceOf(MerkleTokenRelStatus.class, subject.get());
-  }
+    @Test
+    void picksMerkleRelWhenOnDiskIsFalse() {
+        final var bootstrapProperties = mock(BootstrapProperties.class);
+        final var subject = StoresModule.provideTokenRelSupplier(bootstrapProperties);
+        assertInstanceOf(MerkleTokenRelStatus.class, subject.get());
+    }
 }

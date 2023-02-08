@@ -43,93 +43,82 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StateInitializationFlowTest {
 
-  private final HederaNumbers defaultNumbers = new MockHederaNumbers();
+    private final HederaNumbers defaultNumbers = new MockHederaNumbers();
 
-  @Mock
-  private Hash hash;
-  @Mock
-  private HederaFs hfs;
-  @Mock
-  private RunningHash runningHash;
-  @Mock
-  private ServicesState activeState;
-  @Mock
-  private BootstrapProperties bootstrapProperties;
-  @Mock
-  private RecordsRunningHashLeaf runningHashLeaf;
-  @Mock
-  private MutableStateChildren workingState;
-  @Mock
-  private RecordStreamManager recordStreamManager;
-  @Mock
-  private FileUpdateInterceptor aFileInterceptor;
-  @Mock
-  private FileUpdateInterceptor bFileInterceptor;
-  @Mock
-  private StateInitializationFlow.NumberConfigurer numberConfigurer;
+    @Mock private Hash hash;
+    @Mock private HederaFs hfs;
+    @Mock private RunningHash runningHash;
+    @Mock private ServicesState activeState;
+    @Mock private BootstrapProperties bootstrapProperties;
+    @Mock private RecordsRunningHashLeaf runningHashLeaf;
+    @Mock private MutableStateChildren workingState;
+    @Mock private RecordStreamManager recordStreamManager;
+    @Mock private FileUpdateInterceptor aFileInterceptor;
+    @Mock private FileUpdateInterceptor bFileInterceptor;
+    @Mock private StateInitializationFlow.NumberConfigurer numberConfigurer;
 
-  private StateInitializationFlow subject;
+    private StateInitializationFlow subject;
 
-  @BeforeEach
-  void setUp() {
-    subject =
-        new StateInitializationFlow(
-            hfs,
-            defaultNumbers,
-            recordStreamManager,
-            workingState,
-            Set.of(aFileInterceptor, bFileInterceptor));
-  }
+    @BeforeEach
+    void setUp() {
+        subject =
+                new StateInitializationFlow(
+                        hfs,
+                        defaultNumbers,
+                        recordStreamManager,
+                        workingState,
+                        Set.of(aFileInterceptor, bFileInterceptor));
+    }
 
-  @Test
-  void performsAsExpectedWithNoInterceptorsRegistered() {
-    setupMockNumInitialization();
+    @Test
+    void performsAsExpectedWithNoInterceptorsRegistered() {
+        setupMockNumInitialization();
 
-    given(runningHash.getHash()).willReturn(hash);
-    given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-    given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-    given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
+        given(runningHash.getHash()).willReturn(hash);
+        given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
 
-    // when:
-    subject.runWith(activeState, bootstrapProperties);
+        // when:
+        subject.runWith(activeState, bootstrapProperties);
 
-    // then:
-    verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
-    verify(workingState).updateFrom(activeState);
-    verify(recordStreamManager).setInitialHash(hash);
-    verify(hfs).register(aFileInterceptor);
-    verify(hfs).register(bFileInterceptor);
+        // then:
+        verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
+        verify(workingState).updateFrom(activeState);
+        verify(recordStreamManager).setInitialHash(hash);
+        verify(hfs).register(aFileInterceptor);
+        verify(hfs).register(bFileInterceptor);
 
-    cleanupMockNumInitialization();
-  }
+        cleanupMockNumInitialization();
+    }
 
-  @Test
-  void performsAsExpectedWithInterceptorsRegistered() {
-    setupMockNumInitialization();
+    @Test
+    void performsAsExpectedWithInterceptorsRegistered() {
+        setupMockNumInitialization();
 
-    given(runningHash.getHash()).willReturn(hash);
-    given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
-    given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
-    given(hfs.numRegisteredInterceptors()).willReturn(5);
-    given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
+        given(runningHash.getHash()).willReturn(hash);
+        given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+        given(hfs.numRegisteredInterceptors()).willReturn(5);
+        given(bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT)).willReturn(100L);
 
-    // when:
-    subject.runWith(activeState, bootstrapProperties);
+        // when:
+        subject.runWith(activeState, bootstrapProperties);
 
-    // then:
-    verify(workingState).updateFrom(activeState);
-    verify(recordStreamManager).setInitialHash(hash);
-    verify(hfs, never()).register(any());
-    verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
+        // then:
+        verify(workingState).updateFrom(activeState);
+        verify(recordStreamManager).setInitialHash(hash);
+        verify(hfs, never()).register(any());
+        verify(numberConfigurer).configureNumbers(defaultNumbers, 100L);
 
-    cleanupMockNumInitialization();
-  }
+        cleanupMockNumInitialization();
+    }
 
-  private void setupMockNumInitialization() {
-    StateInitializationFlow.setNumberConfigurer(numberConfigurer);
-  }
+    private void setupMockNumInitialization() {
+        StateInitializationFlow.setNumberConfigurer(numberConfigurer);
+    }
 
-  private void cleanupMockNumInitialization() {
-    StateInitializationFlow.setNumberConfigurer(StaticPropertiesHolder::configureNumbers);
-  }
+    private void cleanupMockNumInitialization() {
+        StateInitializationFlow.setNumberConfigurer(StaticPropertiesHolder::configureNumbers);
+    }
 }

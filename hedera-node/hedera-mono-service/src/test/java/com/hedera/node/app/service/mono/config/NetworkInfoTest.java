@@ -30,40 +30,39 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class NetworkInfoTest {
 
-  @Mock
-  private PropertySource properties;
+    @Mock private PropertySource properties;
 
-  private NetworkInfo subject;
+    private NetworkInfo subject;
 
-  @BeforeEach
-  void setUp() {
-    subject = new NetworkInfo(properties);
-  }
+    @BeforeEach
+    void setUp() {
+        subject = new NetworkInfo(properties);
+    }
 
-  @Test
-  void getsLedgerIdFromProperties() {
-    final var bytes = new byte[]{4};
-    final var ledgerId = "0x04";
+    @Test
+    void getsLedgerIdFromProperties() {
+        final var bytes = new byte[] {4};
+        final var ledgerId = "0x04";
 
-    given(properties.getStringProperty(LEDGER_ID)).willReturn(ledgerId);
-    final var actual = subject.ledgerId();
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(ledgerId);
+        final var actual = subject.ledgerId();
 
-    assertArrayEquals(bytes, actual.toByteArray());
-  }
+        assertArrayEquals(bytes, actual.toByteArray());
+    }
 
-  @Test
-  void throwsAsExpected() {
-    final var invalidLedgerId1 = "0v04";
-    final var invalidLedgerId2 = "0xv04";
-    final var invalidLedgerId3 = "0xZZ04";
+    @Test
+    void throwsAsExpected() {
+        final var invalidLedgerId1 = "0v04";
+        final var invalidLedgerId2 = "0xv04";
+        final var invalidLedgerId3 = "0xZZ04";
 
-    given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId1);
-    assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId1);
+        assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
-    given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId2);
-    assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId2);
+        assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
 
-    given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId3);
-    assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
-  }
+        given(properties.getStringProperty(LEDGER_ID)).willReturn(invalidLedgerId3);
+        assertThrows(IllegalArgumentException.class, () -> subject.ledgerId());
+    }
 }

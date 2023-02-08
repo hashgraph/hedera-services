@@ -28,34 +28,34 @@ import javax.inject.Singleton;
 @Singleton
 public class BasedLedgerValidator implements LedgerValidator {
 
-  private final long expectedFloat;
+    private final long expectedFloat;
 
-  @Inject
-  public BasedLedgerValidator(final @CompositeProps PropertySource properties) {
-    this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
-  }
-
-  @Override
-  public void validate(final AccountStorageAdapter accounts) {
-    final var totalFloat = new AtomicReference<>(BigInteger.ZERO);
-    accounts.forEach(
-        (id, account) -> {
-          final var num = id.longValue();
-          if (num < 1) {
-            throw new IllegalStateException(
-                String.format("Invalid num in account %s", id.toIdString()));
-          }
-          totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
-        });
-    try {
-      final var actualFloat = totalFloat.get().longValueExact();
-      if (actualFloat != expectedFloat) {
-        throw new IllegalStateException(
-            "Wrong ℏ float, expected " + expectedFloat + " but was " + actualFloat);
-      }
-    } catch (final ArithmeticException ae) {
-      throw new IllegalStateException(
-          "Wrong ℏ float, expected " + expectedFloat + " but overflowed instead");
+    @Inject
+    public BasedLedgerValidator(final @CompositeProps PropertySource properties) {
+        this.expectedFloat = properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT);
     }
-  }
+
+    @Override
+    public void validate(final AccountStorageAdapter accounts) {
+        final var totalFloat = new AtomicReference<>(BigInteger.ZERO);
+        accounts.forEach(
+                (id, account) -> {
+                    final var num = id.longValue();
+                    if (num < 1) {
+                        throw new IllegalStateException(
+                                String.format("Invalid num in account %s", id.toIdString()));
+                    }
+                    totalFloat.set(totalFloat.get().add(BigInteger.valueOf(account.getBalance())));
+                });
+        try {
+            final var actualFloat = totalFloat.get().longValueExact();
+            if (actualFloat != expectedFloat) {
+                throw new IllegalStateException(
+                        "Wrong ℏ float, expected " + expectedFloat + " but was " + actualFloat);
+            }
+        } catch (final ArithmeticException ae) {
+            throw new IllegalStateException(
+                    "Wrong ℏ float, expected " + expectedFloat + " but overflowed instead");
+        }
+    }
 }

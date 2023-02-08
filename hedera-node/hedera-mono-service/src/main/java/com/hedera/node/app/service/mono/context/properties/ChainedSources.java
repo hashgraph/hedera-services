@@ -20,33 +20,33 @@ import java.util.Set;
 
 public class ChainedSources implements PropertySource {
 
-  private final PropertySource first;
-  private final PropertySource second;
+    private final PropertySource first;
+    private final PropertySource second;
 
-  public ChainedSources(final PropertySource first, final PropertySource second) {
-    this.first = first;
-    this.second = second;
-  }
+    public ChainedSources(final PropertySource first, final PropertySource second) {
+        this.first = first;
+        this.second = second;
+    }
 
-  @Override
-  public boolean containsProperty(final String name) {
-    return first.containsProperty(name) || second.containsProperty(name);
-  }
+    @Override
+    public boolean containsProperty(final String name) {
+        return first.containsProperty(name) || second.containsProperty(name);
+    }
 
-  @Override
-  public Object getProperty(final String name) {
-    return first.containsProperty(name) ? first.getProperty(name) : second.getProperty(name);
-  }
+    @Override
+    public Object getProperty(final String name) {
+        return first.containsProperty(name) ? first.getProperty(name) : second.getProperty(name);
+    }
 
-  @Override
-  public Set<String> allPropertyNames() {
-    final var all = new HashSet<>(first.allPropertyNames());
-    all.addAll(second.allPropertyNames());
-    return all;
-  }
+    @Override
+    public Set<String> allPropertyNames() {
+        final var all = new HashSet<>(first.allPropertyNames());
+        all.addAll(second.allPropertyNames());
+        return all;
+    }
 
-  @Override
-  public String getRawValue(final String name) {
-    return first.containsProperty(name) ? first.getRawValue(name) : second.getRawValue(name);
-  }
+    @Override
+    public String getRawValue(final String name) {
+        return first.containsProperty(name) ? first.getRawValue(name) : second.getRawValue(name);
+    }
 }

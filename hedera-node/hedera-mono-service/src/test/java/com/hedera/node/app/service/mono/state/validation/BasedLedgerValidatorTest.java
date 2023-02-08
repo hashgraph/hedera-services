@@ -35,92 +35,92 @@ import org.junit.jupiter.api.Test;
 
 class BasedLedgerValidatorTest {
 
-  private final long shard = 1;
-  private final long realm = 2;
+    private final long shard = 1;
+    private final long realm = 2;
 
-  MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+    MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 
-  HederaNumbers hederaNums;
-  PropertySource properties;
+    HederaNumbers hederaNums;
+    PropertySource properties;
 
-  BasedLedgerValidator subject;
+    BasedLedgerValidator subject;
 
-  @BeforeEach
-  void setup() {
-    hederaNums = mock(HederaNumbers.class);
-    given(hederaNums.realm()).willReturn(realm);
-    given(hederaNums.shard()).willReturn(shard);
+    @BeforeEach
+    void setup() {
+        hederaNums = mock(HederaNumbers.class);
+        given(hederaNums.realm()).willReturn(realm);
+        given(hederaNums.shard()).willReturn(shard);
 
-    properties = mock(PropertySource.class);
-    given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(100L);
+        properties = mock(PropertySource.class);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(100L);
 
-    subject = new BasedLedgerValidator(properties);
-  }
+        subject = new BasedLedgerValidator(properties);
+    }
 
-  @Test
-  void recognizesRightFloat() throws NegativeAccountBalanceException {
-    // given:
-    accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
-    accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
+    @Test
+    void recognizesRightFloat() throws NegativeAccountBalanceException {
+        // given:
+        accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
+        accounts.put(EntityNum.fromLong(2L), expectedWith(50L));
 
-    // expect:
-    assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
-  }
+        // expect:
+        assertDoesNotThrow(() -> subject.validate(AccountStorageAdapter.fromInMemory(accounts)));
+    }
 
-  @Test
-  void recognizesWrongFloat() throws NegativeAccountBalanceException {
-    // given:
-    accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
-    accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
+    @Test
+    void recognizesWrongFloat() throws NegativeAccountBalanceException {
+        // given:
+        accounts.put(EntityNum.fromLong(1L), expectedWith(50L));
+        accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-    final var adapter = AccountStorageAdapter.fromInMemory(accounts);
-    // expect:
-    assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
-  }
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        // expect:
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
+    }
 
-  @Test
-  void recognizesExcessFloat() throws NegativeAccountBalanceException {
-    // given:
-    accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
-    accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
+    @Test
+    void recognizesExcessFloat() throws NegativeAccountBalanceException {
+        // given:
+        accounts.put(EntityNum.fromLong(1L), expectedWith(Long.MAX_VALUE));
+        accounts.put(EntityNum.fromLong(2L), expectedWith(51L));
 
-    final var adapter = AccountStorageAdapter.fromInMemory(accounts);
-    // expect:
-    assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
-  }
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        // expect:
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
+    }
 
-  @Test
-  void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
-    // given:
-    accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
+    @Test
+    void doesntThrowWithValidIds() throws NegativeAccountBalanceException {
+        // given:
+        accounts.put(EntityNum.fromLong(3L), expectedWith(100L));
 
-    final var adapter = AccountStorageAdapter.fromInMemory(accounts);
-    // expect:
-    assertDoesNotThrow(() -> subject.validate(adapter));
-  }
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        // expect:
+        assertDoesNotThrow(() -> subject.validate(adapter));
+    }
 
-  @Test
-  void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
-    // given:
-    accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
+    @Test
+    void throwsOnIdWithNumTooSmall() throws NegativeAccountBalanceException {
+        // given:
+        accounts.put(EntityNum.fromLong(0L), expectedWith(100L));
 
-    final var adapter = AccountStorageAdapter.fromInMemory(accounts);
-    // expect:
-    assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
-  }
+        final var adapter = AccountStorageAdapter.fromInMemory(accounts);
+        // expect:
+        assertThrows(IllegalStateException.class, () -> subject.validate(adapter));
+    }
 
-  private MerkleAccount expectedWith(final long balance) throws NegativeAccountBalanceException {
-    final MerkleAccount hAccount =
-        (MerkleAccount)
-            new HederaAccountCustomizer()
-                .isReceiverSigRequired(false)
-                .proxy(MISSING_ENTITY_ID)
-                .isDeleted(false)
-                .expiry(1_234_567L)
-                .memo("")
-                .isSmartContract(false)
-                .customizing(new MerkleAccount());
-    hAccount.setBalance(balance);
-    return hAccount;
-  }
+    private MerkleAccount expectedWith(final long balance) throws NegativeAccountBalanceException {
+        final MerkleAccount hAccount =
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .isReceiverSigRequired(false)
+                                .proxy(MISSING_ENTITY_ID)
+                                .isDeleted(false)
+                                .expiry(1_234_567L)
+                                .memo("")
+                                .isSmartContract(false)
+                                .customizing(new MerkleAccount());
+        hAccount.setBalance(balance);
+        return hAccount;
+    }
 }

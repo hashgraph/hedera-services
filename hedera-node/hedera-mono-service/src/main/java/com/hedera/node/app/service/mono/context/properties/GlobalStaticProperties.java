@@ -24,20 +24,20 @@ import javax.inject.Singleton;
 @Singleton
 public class GlobalStaticProperties {
 
-  private final PropertySource properties;
-  private boolean workflowsEnabled;
+    private final PropertySource properties;
+    private boolean workflowsEnabled;
 
-  @Inject
-  public GlobalStaticProperties(@Nullable final BootstrapProperties properties) {
-    this.properties = properties;
-    reload();
-  }
+    @Inject
+    public GlobalStaticProperties(@Nullable final BootstrapProperties properties) {
+        this.properties = properties;
+        reload();
+    }
 
-  public void reload() {
-    workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
-  }
+    public void reload() {
+        workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
+    }
 
-  public boolean workflowsEnabled() {
-    return workflowsEnabled;
-  }
+    public boolean workflowsEnabled() {
+        return workflowsEnabled;
+    }
 }

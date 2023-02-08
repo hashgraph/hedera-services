@@ -35,19 +35,19 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class RecordCacheFactory {
 
-  private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
+    private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
-  private final PropertySource properties;
+    private final PropertySource properties;
 
-  @Inject
-  public RecordCacheFactory(final @CompositeProps PropertySource properties) {
-    this.properties = properties;
-  }
+    @Inject
+    public RecordCacheFactory(final @CompositeProps PropertySource properties) {
+        this.properties = properties;
+    }
 
-  public Cache<TransactionID, Boolean> getCache() {
-    final var ttl = properties.getIntProperty(CACHE_RECORDS_TTL);
+    public Cache<TransactionID, Boolean> getCache() {
+        final var ttl = properties.getIntProperty(CACHE_RECORDS_TTL);
 
-    log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
-    return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();
-  }
+        log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
+        return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();
+    }
 }

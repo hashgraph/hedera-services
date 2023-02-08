@@ -32,88 +32,91 @@ import org.junit.jupiter.api.Test;
 
 class ScreenedNodeFilePropsTest {
 
-  Logger log;
+    Logger log;
 
-  ScreenedNodeFileProps subject;
+    ScreenedNodeFileProps subject;
 
-  private final String STD_NODE_PROPS_LOC = "src/test/resources/bootstrap/node.properties";
-  private final String EMPTY_NODE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
-  private final String BROKEN_NODE_PROPS_LOC = "src/test/resources/bootstrap/broken-node.properties";
-  private final String LEGACY_NODE_PROPS_LOC = "src/test/resources/bootstrap/legacy-node.properties";
+    private final String STD_NODE_PROPS_LOC = "src/test/resources/bootstrap/node.properties";
+    private final String EMPTY_NODE_PROPS_LOC =
+            "src/test/resources/bootstrap/empty-override.properties";
+    private final String BROKEN_NODE_PROPS_LOC =
+            "src/test/resources/bootstrap/broken-node.properties";
+    private final String LEGACY_NODE_PROPS_LOC =
+            "src/test/resources/bootstrap/legacy-node.properties";
 
-  private static final Map<String, Object> expectedProps =
-      Map.ofEntries(
-          entry(GRPC_PORT, 60211),
-          entry(GRPC_TLS_PORT, 40212),
-          entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
+    private static final Map<String, Object> expectedProps =
+            Map.ofEntries(
+                    entry(GRPC_PORT, 60211),
+                    entry(GRPC_TLS_PORT, 40212),
+                    entry(HEDERA_PROFILES_ACTIVE, Profile.TEST));
 
-  @BeforeEach
-  void setup() {
-    log = mock(Logger.class);
-    ScreenedNodeFileProps.log = log;
-    ScreenedNodeFileProps.nodePropsLoc = STD_NODE_PROPS_LOC;
-    ScreenedNodeFileProps.legacyNodePropsLoc = LEGACY_NODE_PROPS_LOC;
+    @BeforeEach
+    void setup() {
+        log = mock(Logger.class);
+        ScreenedNodeFileProps.log = log;
+        ScreenedNodeFileProps.nodePropsLoc = STD_NODE_PROPS_LOC;
+        ScreenedNodeFileProps.legacyNodePropsLoc = LEGACY_NODE_PROPS_LOC;
 
-    subject = new ScreenedNodeFileProps();
-  }
-
-  @Test
-  void warnsOfFailedTransform() {
-    // setup:
-    ScreenedNodeFileProps.nodePropsLoc = BROKEN_NODE_PROPS_LOC;
-    ScreenedNodeFileProps.legacyNodePropsLoc = EMPTY_NODE_PROPS_LOC;
-
-    // given:
-    subject = new ScreenedNodeFileProps();
-
-    // expect:
-    verify(log)
-        .warn(
-            String.format(
-                ScreenedNodeFileProps.UNTRANSFORMABLE_PROP_TPL,
-                "asdf",
-                "environment",
-                "NumberFormatException"));
-    // and:
-    assertTrue(subject.getFromFile().isEmpty());
-  }
-
-  @Test
-  void warnsOfUnparseableAndDeprecated() {
-    // expect:
-    verify(log)
-        .warn(
-            String.format(
-                ScreenedNodeFileProps.DEPRECATED_PROP_TPL,
-                "tlsPort",
-                "grpc.tlsPort",
-                STD_NODE_PROPS_LOC));
-    // and:
-    verify(log)
-        .warn(
-            String.format(
-                ScreenedNodeFileProps.UNPARSEABLE_PROP_TPL,
-                "ABCDEF",
-                "grpc.tlsPort",
-                "NumberFormatException"));
-  }
-
-  @Test
-  void ignoresNonNodeProps() {
-    // expect:
-    verify(log).warn(String.format(ScreenedNodeFileProps.MISPLACED_PROP_TPL, "hedera.shard"));
-  }
-
-  @Test
-  void hasExpectedProps() {
-    // expect:
-    for (final String name : expectedProps.keySet()) {
-      assertTrue(subject.containsProperty(name), "Should have '" + name + "'!");
-      assertEquals(expectedProps.get(name), subject.getProperty(name));
+        subject = new ScreenedNodeFileProps();
     }
-    // and:
-    assertEquals(expectedProps, subject.getFromFile());
-    // and:
-    assertEquals(expectedProps.keySet(), subject.allPropertyNames());
-  }
+
+    @Test
+    void warnsOfFailedTransform() {
+        // setup:
+        ScreenedNodeFileProps.nodePropsLoc = BROKEN_NODE_PROPS_LOC;
+        ScreenedNodeFileProps.legacyNodePropsLoc = EMPTY_NODE_PROPS_LOC;
+
+        // given:
+        subject = new ScreenedNodeFileProps();
+
+        // expect:
+        verify(log)
+                .warn(
+                        String.format(
+                                ScreenedNodeFileProps.UNTRANSFORMABLE_PROP_TPL,
+                                "asdf",
+                                "environment",
+                                "NumberFormatException"));
+        // and:
+        assertTrue(subject.getFromFile().isEmpty());
+    }
+
+    @Test
+    void warnsOfUnparseableAndDeprecated() {
+        // expect:
+        verify(log)
+                .warn(
+                        String.format(
+                                ScreenedNodeFileProps.DEPRECATED_PROP_TPL,
+                                "tlsPort",
+                                "grpc.tlsPort",
+                                STD_NODE_PROPS_LOC));
+        // and:
+        verify(log)
+                .warn(
+                        String.format(
+                                ScreenedNodeFileProps.UNPARSEABLE_PROP_TPL,
+                                "ABCDEF",
+                                "grpc.tlsPort",
+                                "NumberFormatException"));
+    }
+
+    @Test
+    void ignoresNonNodeProps() {
+        // expect:
+        verify(log).warn(String.format(ScreenedNodeFileProps.MISPLACED_PROP_TPL, "hedera.shard"));
+    }
+
+    @Test
+    void hasExpectedProps() {
+        // expect:
+        for (final String name : expectedProps.keySet()) {
+            assertTrue(subject.containsProperty(name), "Should have '" + name + "'!");
+            assertEquals(expectedProps.get(name), subject.getProperty(name));
+        }
+        // and:
+        assertEquals(expectedProps, subject.getFromFile());
+        // and:
+        assertEquals(expectedProps.keySet(), subject.allPropertyNames());
+    }
 }

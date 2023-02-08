@@ -64,252 +64,251 @@ import org.mockito.ArgumentCaptor;
 @ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
 
-  private final long shard = 0;
-  private final long realm = 0;
-  private final long totalBalance = 100l;
-  private final long expiry = Instant.now().getEpochSecond() + 1_234_567L;
-  private final int numAccounts = 4;
-  private final JEd25519Key pretendKey =
-      new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private final long shard = 0;
+    private final long realm = 0;
+    private final long totalBalance = 100l;
+    private final long expiry = Instant.now().getEpochSecond() + 1_234_567L;
+    private final int numAccounts = 4;
+    private final JEd25519Key pretendKey =
+            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
 
-  private JKey genesisKey;
-  private PropertySource properties;
-  private AddressBook book;
-  private BackingStore<AccountID, HederaAccount> backingAccounts;
-  private TreasuryCloner treasuryCloner;
-  private HederaAccountNumbers accountNums;
+    private JKey genesisKey;
+    private PropertySource properties;
+    private AddressBook book;
+    private BackingStore<AccountID, HederaAccount> backingAccounts;
+    private TreasuryCloner treasuryCloner;
+    private HederaAccountNumbers accountNums;
 
-  @LoggingTarget
-  private LogCaptor logCaptor;
-  @LoggingSubject
-  private BackedSystemAccountsCreator subject;
+    @LoggingTarget private LogCaptor logCaptor;
+    @LoggingSubject private BackedSystemAccountsCreator subject;
 
-  @BeforeEach
-  @SuppressWarnings("unchecked")
-  void setup()
-      throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
-    genesisKey =
-        JKey.mapKey(
-            Key.newBuilder()
-                .setKeyList(
-                    KeyList.newBuilder()
-                        .addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
-                .build());
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setup()
+            throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+        genesisKey =
+                JKey.mapKey(
+                        Key.newBuilder()
+                                .setKeyList(
+                                        KeyList.newBuilder()
+                                                .addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
+                                .build());
 
-    final HederaNumbers hederaNums = mock(HederaNumbers.class);
-    given(hederaNums.realm()).willReturn(realm);
-    given(hederaNums.shard()).willReturn(shard);
-    accountNums = mock(AccountNumbers.class);
-    given(accountNums.treasury()).willReturn(2L);
-    given(accountNums.stakingRewardAccount()).willReturn(800L);
-    given(accountNums.nodeRewardAccount()).willReturn(801L);
-    properties = mock(PropertySource.class);
+        final HederaNumbers hederaNums = mock(HederaNumbers.class);
+        given(hederaNums.realm()).willReturn(realm);
+        given(hederaNums.shard()).willReturn(shard);
+        accountNums = mock(AccountNumbers.class);
+        given(accountNums.treasury()).willReturn(2L);
+        given(accountNums.stakingRewardAccount()).willReturn(800L);
+        given(accountNums.nodeRewardAccount()).willReturn(801L);
+        properties = mock(PropertySource.class);
 
-    given(properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS)).willReturn(numAccounts);
-    given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalBalance);
-    given(properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY)).willReturn(expiry);
+        given(properties.getIntProperty(LEDGER_NUM_SYSTEM_ACCOUNTS)).willReturn(numAccounts);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalBalance);
+        given(properties.getLongProperty(BOOTSTRAP_SYSTEM_ENTITY_EXPIRY)).willReturn(expiry);
 
-    final var address = mock(Address.class);
-    given(address.getMemo()).willReturn("0.0.3");
-    book = mock(AddressBook.class);
-    given(book.getSize()).willReturn(1);
-    given(book.getAddress(0L)).willReturn(address);
+        final var address = mock(Address.class);
+        given(address.getMemo()).willReturn("0.0.3");
+        book = mock(AddressBook.class);
+        given(book.getSize()).willReturn(1);
+        given(book.getAddress(0L)).willReturn(address);
 
-    backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
-    given(backingAccounts.idSet())
-        .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
-    given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
-    given(backingAccounts.getImmutableRef(accountWith(2)))
-        .willReturn(withExpectedBalance(totalBalance));
-    given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
-    given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
+        backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
+        given(backingAccounts.idSet())
+                .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
+        given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
+        given(backingAccounts.getImmutableRef(accountWith(2)))
+                .willReturn(withExpectedBalance(totalBalance));
+        given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
+        given(backingAccounts.getImmutableRef(accountWith(4))).willReturn(withExpectedBalance(0));
 
-    treasuryCloner = mock(TreasuryCloner.class);
+        treasuryCloner = mock(TreasuryCloner.class);
 
-    subject =
-        new BackedSystemAccountsCreator(
-            accountNums,
-            properties,
-            () -> pretendKey,
-            MerkleAccount::new,
-            treasuryCloner);
-  }
+        subject =
+                new BackedSystemAccountsCreator(
+                        accountNums,
+                        properties,
+                        () -> pretendKey,
+                        MerkleAccount::new,
+                        treasuryCloner);
+    }
 
-  @Test
-  void gettersWorkAsExpected() throws NegativeAccountBalanceException {
-    final var treasuryClones = List.of(withExpectedBalance(0), withExpectedBalance(0));
-    final var missingSystemAccount = List.of(withExpectedBalance(0));
-    given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
-    givenMissingSystemAccount();
+    @Test
+    void gettersWorkAsExpected() throws NegativeAccountBalanceException {
+        final var treasuryClones = List.of(withExpectedBalance(0), withExpectedBalance(0));
+        final var missingSystemAccount = List.of(withExpectedBalance(0));
+        given(treasuryCloner.getClonesCreated()).willReturn(treasuryClones);
+        givenMissingSystemAccount();
 
-    // when:
-    subject.ensureSystemAccounts(backingAccounts, book);
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
-    assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
+        assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
+        assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
 
-    subject.forgetCreations();
+        subject.forgetCreations();
 
-    verify(treasuryCloner).forgetCreatedClones();
-    assertEquals(0, subject.getSystemAccountsCreated().size());
-  }
+        verify(treasuryCloner).forgetCreatedClones();
+        assertEquals(0, subject.getSystemAccountsCreated().size());
+    }
 
-  @Test
-  void throwsOnNegativeBalance() {
-    givenMissingTreasury();
-    given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(-100L);
+    @Test
+    void throwsOnNegativeBalance() {
+        givenMissingTreasury();
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(-100L);
 
-    // expect:
-    assertThrows(
-        IllegalStateException.class,
-        () -> subject.ensureSystemAccounts(backingAccounts, book));
-  }
+        // expect:
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.ensureSystemAccounts(backingAccounts, book));
+    }
 
-  @Test
-  void createsMissingNode() throws NegativeAccountBalanceException {
-    givenMissingNode();
+    @Test
+    void createsMissingNode() throws NegativeAccountBalanceException {
+        givenMissingNode();
 
-    // when:
-    subject.ensureSystemAccounts(backingAccounts, book);
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    // then:
-    verify(backingAccounts).put(accountWith(3), withExpectedBalance(0));
-  }
+        // then:
+        verify(backingAccounts).put(accountWith(3), withExpectedBalance(0));
+    }
 
-  @Test
-  void createsMissingSystemAccount() throws NegativeAccountBalanceException {
-    givenMissingSystemAccount();
+    @Test
+    void createsMissingSystemAccount() throws NegativeAccountBalanceException {
+        givenMissingSystemAccount();
 
-    // when:
-    subject.ensureSystemAccounts(backingAccounts, book);
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    // then:
-    verify(backingAccounts).put(accountWith(4), withExpectedBalance(0));
-    assertEquals(1, subject.getSystemAccountsCreated().size());
-  }
+        // then:
+        verify(backingAccounts).put(accountWith(4), withExpectedBalance(0));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
+    }
 
-  @Test
-  void createsMissingTreasury() throws NegativeAccountBalanceException {
-    givenMissingTreasury();
+    @Test
+    void createsMissingTreasury() throws NegativeAccountBalanceException {
+        givenMissingTreasury();
 
-    // when:
-    subject.ensureSystemAccounts(backingAccounts, book);
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    // then:
-    verify(backingAccounts).put(accountWith(2), withExpectedBalance(totalBalance));
-    assertEquals(1, subject.getSystemAccountsCreated().size());
-  }
+        // then:
+        verify(backingAccounts).put(accountWith(2), withExpectedBalance(totalBalance));
+        assertEquals(1, subject.getSystemAccountsCreated().size());
+    }
 
-  @Test
-  void createsMissingSpecialAccounts() throws NegativeAccountBalanceException {
-    givenMissingSpecialAccounts();
+    @Test
+    void createsMissingSpecialAccounts() throws NegativeAccountBalanceException {
+        givenMissingSpecialAccounts();
 
-    subject.ensureSystemAccounts(backingAccounts, book);
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    verify(backingAccounts).put(accountWith(900), withExpectedBalance(0));
-    verify(backingAccounts).put(accountWith(1000), withExpectedBalance(0));
-    assertEquals(2, subject.getSystemAccountsCreated().size());
-  }
+        verify(backingAccounts).put(accountWith(900), withExpectedBalance(0));
+        verify(backingAccounts).put(accountWith(1000), withExpectedBalance(0));
+        assertEquals(2, subject.getSystemAccountsCreated().size());
+    }
 
-  @Test
-  void createsNothingIfAllPresent() {
-    given(backingAccounts.contains(any())).willReturn(true);
-    final var desiredInfo =
-        String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
+    @Test
+    void createsNothingIfAllPresent() {
+        given(backingAccounts.contains(any())).willReturn(true);
+        final var desiredInfo =
+                String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
 
-    // when:
-    subject.ensureSystemAccounts(backingAccounts, book);
+        // when:
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    // then:
-    verify(backingAccounts, never()).put(any(), any());
-    // and:
-    assertThat(logCaptor.infoLogs(), contains(desiredInfo));
-  }
+        // then:
+        verify(backingAccounts, never()).put(any(), any());
+        // and:
+        assertThat(logCaptor.infoLogs(), contains(desiredInfo));
+    }
 
-  @Test
-  void createsStakingFundAndTreasuryCloneAccounts() {
-    final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
-    final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
-    given(backingAccounts.contains(any())).willReturn(true);
-    given(backingAccounts.contains(funding801)).willReturn(false);
+    @Test
+    void createsStakingFundAndTreasuryCloneAccounts() {
+        final var captor = ArgumentCaptor.forClass(MerkleAccount.class);
+        final var funding801 = AccountID.newBuilder().setAccountNum(801).build();
+        given(backingAccounts.contains(any())).willReturn(true);
+        given(backingAccounts.contains(funding801)).willReturn(false);
 
-    subject.ensureSystemAccounts(backingAccounts, book);
+        subject.ensureSystemAccounts(backingAccounts, book);
 
-    verify(backingAccounts).put(eq(funding801), captor.capture());
-    final var new801 = captor.getValue();
-    assertEquals(canonicalFundingAccount(), new801);
-    verify(treasuryCloner).ensureTreasuryClonesExist();
-  }
+        verify(backingAccounts).put(eq(funding801), captor.capture());
+        final var new801 = captor.getValue();
+        assertEquals(canonicalFundingAccount(), new801);
+        verify(treasuryCloner).ensureTreasuryClonesExist();
+    }
 
-  private MerkleAccount canonicalFundingAccount() {
-    final var account = new MerkleAccount();
-    BackedSystemAccountsCreator.customizeAsStakingFund(account);
-    return account;
-  }
+    private MerkleAccount canonicalFundingAccount() {
+        final var account = new MerkleAccount();
+        BackedSystemAccountsCreator.customizeAsStakingFund(account);
+        return account;
+    }
 
-  private void givenMissingSystemAccount() {
-    given(backingAccounts.contains(accountWith(1L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(2L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(3L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(4L))).willReturn(false);
-    givenAllPresentSpecialAccounts();
-  }
+    private void givenMissingSystemAccount() {
+        given(backingAccounts.contains(accountWith(1L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(2L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(3L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(4L))).willReturn(false);
+        givenAllPresentSpecialAccounts();
+    }
 
-  private void givenMissingTreasury() {
-    given(backingAccounts.contains(accountWith(1L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(2L))).willReturn(false);
-    given(backingAccounts.contains(accountWith(3L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(4L))).willReturn(true);
-    givenAllPresentSpecialAccounts();
-  }
+    private void givenMissingTreasury() {
+        given(backingAccounts.contains(accountWith(1L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(2L))).willReturn(false);
+        given(backingAccounts.contains(accountWith(3L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(4L))).willReturn(true);
+        givenAllPresentSpecialAccounts();
+    }
 
-  private void givenMissingNode() {
-    given(backingAccounts.contains(accountWith(1L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(2L))).willReturn(true);
-    given(backingAccounts.contains(accountWith(3L))).willReturn(false);
-    given(backingAccounts.contains(accountWith(4L))).willReturn(true);
-    givenAllPresentSpecialAccounts();
-  }
+    private void givenMissingNode() {
+        given(backingAccounts.contains(accountWith(1L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(2L))).willReturn(true);
+        given(backingAccounts.contains(accountWith(3L))).willReturn(false);
+        given(backingAccounts.contains(accountWith(4L))).willReturn(true);
+        givenAllPresentSpecialAccounts();
+    }
 
-  private void givenAllPresentSpecialAccounts() {
-    given(
-        backingAccounts.contains(
-            argThat(
-                accountID ->
-                    (900 <= accountID.getAccountNum()
-                        && accountID.getAccountNum() <= 1000))))
-        .willReturn(true);
-  }
+    private void givenAllPresentSpecialAccounts() {
+        given(
+                        backingAccounts.contains(
+                                argThat(
+                                        accountID ->
+                                                (900 <= accountID.getAccountNum()
+                                                        && accountID.getAccountNum() <= 1000))))
+                .willReturn(true);
+    }
 
-  private void givenMissingSpecialAccounts() {
-    given(
-        backingAccounts.contains(
-            argThat(
-                accountID ->
-                    (accountID.getAccountNum() != 900
-                        && accountID.getAccountNum() != 1000))))
-        .willReturn(true);
-    given(backingAccounts.contains(accountWith(900L))).willReturn(false);
-    given(backingAccounts.contains(accountWith(1000L))).willReturn(false);
-  }
+    private void givenMissingSpecialAccounts() {
+        given(
+                        backingAccounts.contains(
+                                argThat(
+                                        accountID ->
+                                                (accountID.getAccountNum() != 900
+                                                        && accountID.getAccountNum() != 1000))))
+                .willReturn(true);
+        given(backingAccounts.contains(accountWith(900L))).willReturn(false);
+        given(backingAccounts.contains(accountWith(1000L))).willReturn(false);
+    }
 
-  private AccountID accountWith(final long num) {
-    return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
-  }
+    private AccountID accountWith(final long num) {
+        return IdUtils.asAccount(String.format("%d.%d.%d", shard, realm, num));
+    }
 
-  private HederaAccount withExpectedBalance(final long balance) throws NegativeAccountBalanceException {
-    final MerkleAccount hAccount =
-        (MerkleAccount)
-            new HederaAccountCustomizer()
-                .isReceiverSigRequired(false)
-                .isDeleted(false)
-                .expiry(expiry)
-                .memo("")
-                .isSmartContract(false)
-                .key(genesisKey)
-                .autoRenewPeriod(expiry)
-                .customizing(new MerkleAccount());
-    hAccount.setBalance(balance);
-    return hAccount;
-  }
+    private HederaAccount withExpectedBalance(final long balance)
+            throws NegativeAccountBalanceException {
+        final MerkleAccount hAccount =
+                (MerkleAccount)
+                        new HederaAccountCustomizer()
+                                .isReceiverSigRequired(false)
+                                .isDeleted(false)
+                                .expiry(expiry)
+                                .memo("")
+                                .isSmartContract(false)
+                                .key(genesisKey)
+                                .autoRenewPeriod(expiry)
+                                .customizing(new MerkleAccount());
+        hAccount.setBalance(balance);
+        return hAccount;
+    }
 }

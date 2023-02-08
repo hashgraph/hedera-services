@@ -37,47 +37,47 @@ import org.junit.jupiter.api.Test;
 
 class AccountNumbersTest {
 
-  PropertySource properties;
-  AccountNumbers subject;
+    PropertySource properties;
+    AccountNumbers subject;
 
-  @BeforeEach
-  void setup() {
-    properties = mock(PropertySource.class);
-    given(properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN)).willReturn(55L);
-    given(properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN)).willReturn(56L);
-    given(properties.getLongProperty(ACCOUNTS_FREEZE_ADMIN)).willReturn(58L);
-    given(properties.getLongProperty(ACCOUNTS_EXCHANGE_RATES_ADMIN)).willReturn(57L);
-    given(properties.getLongProperty(ACCOUNTS_NODE_REWARD_ACCOUNT)).willReturn(801L);
-    given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
-    given(properties.getLongProperty(ACCOUNTS_SYSTEM_DELETE_ADMIN)).willReturn(59L);
-    given(properties.getLongProperty(ACCOUNTS_SYSTEM_UNDELETE_ADMIN)).willReturn(60L);
-    given(properties.getLongProperty(ACCOUNTS_SYSTEM_ADMIN)).willReturn(50L);
-    given(properties.getLongProperty(ACCOUNTS_TREASURY)).willReturn(2L);
+    @BeforeEach
+    void setup() {
+        properties = mock(PropertySource.class);
+        given(properties.getLongProperty(ACCOUNTS_ADDRESS_BOOK_ADMIN)).willReturn(55L);
+        given(properties.getLongProperty(ACCOUNTS_FEE_SCHEDULE_ADMIN)).willReturn(56L);
+        given(properties.getLongProperty(ACCOUNTS_FREEZE_ADMIN)).willReturn(58L);
+        given(properties.getLongProperty(ACCOUNTS_EXCHANGE_RATES_ADMIN)).willReturn(57L);
+        given(properties.getLongProperty(ACCOUNTS_NODE_REWARD_ACCOUNT)).willReturn(801L);
+        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_DELETE_ADMIN)).willReturn(59L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_UNDELETE_ADMIN)).willReturn(60L);
+        given(properties.getLongProperty(ACCOUNTS_SYSTEM_ADMIN)).willReturn(50L);
+        given(properties.getLongProperty(ACCOUNTS_TREASURY)).willReturn(2L);
 
-    subject = new AccountNumbers(properties);
-  }
+        subject = new AccountNumbers(properties);
+    }
 
-  @Test
-  void hasExpectedNumbers() {
-    // expect:
-    assertEquals(2, subject.treasury());
-    assertEquals(50, subject.systemAdmin());
-    assertEquals(58, subject.freezeAdmin());
-    assertEquals(55, subject.addressBookAdmin());
-    assertEquals(56, subject.feeSchedulesAdmin());
-    assertEquals(57, subject.exchangeRatesAdmin());
-    assertEquals(59, subject.systemDeleteAdmin());
-    assertEquals(60, subject.systemUndeleteAdmin());
-    assertEquals(800, subject.stakingRewardAccount());
-    assertEquals(801, subject.nodeRewardAccount());
-  }
+    @Test
+    void hasExpectedNumbers() {
+        // expect:
+        assertEquals(2, subject.treasury());
+        assertEquals(50, subject.systemAdmin());
+        assertEquals(58, subject.freezeAdmin());
+        assertEquals(55, subject.addressBookAdmin());
+        assertEquals(56, subject.feeSchedulesAdmin());
+        assertEquals(57, subject.exchangeRatesAdmin());
+        assertEquals(59, subject.systemDeleteAdmin());
+        assertEquals(60, subject.systemUndeleteAdmin());
+        assertEquals(800, subject.stakingRewardAccount());
+        assertEquals(801, subject.nodeRewardAccount());
+    }
 
-  @Test
-  void recognizesAdmins() {
-    // expect:
-    assertTrue(subject.isSuperuser(2));
-    assertTrue(subject.isSuperuser(50));
-    assertFalse(subject.isSuperuser(3));
-    assertFalse(subject.isSuperuser(55));
-  }
+    @Test
+    void recognizesAdmins() {
+        // expect:
+        assertTrue(subject.isSuperuser(2));
+        assertTrue(subject.isSuperuser(50));
+        assertFalse(subject.isSuperuser(3));
+        assertFalse(subject.isSuperuser(55));
+    }
 }

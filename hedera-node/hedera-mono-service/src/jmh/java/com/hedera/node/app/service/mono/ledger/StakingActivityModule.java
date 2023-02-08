@@ -71,125 +71,125 @@ import javax.inject.Singleton;
 @Module
 public interface StakingActivityModule {
 
-  @Binds
-  @Singleton
-  EntityCreator bindEntityCreator(MockEntityCreator entityCreator);
+    @Binds
+    @Singleton
+    EntityCreator bindEntityCreator(MockEntityCreator entityCreator);
 
-  @Binds
-  @Singleton
-  RecordsHistorian bindRecordsHistorian(MockRecordsHistorian recordsHistorian);
+    @Binds
+    @Singleton
+    RecordsHistorian bindRecordsHistorian(MockRecordsHistorian recordsHistorian);
 
-  @Binds
-  @Singleton
-  TransactionContext bindTransactionContext(MockTransactionContext transactionContext);
+    @Binds
+    @Singleton
+    TransactionContext bindTransactionContext(MockTransactionContext transactionContext);
 
-  @Binds
-  @Singleton
-  BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+    @Binds
+    @Singleton
+    BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
-  @Provides
-  @Singleton
-  static GlobalDynamicProperties provideGlobalDynamicProperties() {
-    return mockPropertiesWith(500_000_000, 163_840);
-  }
+    @Provides
+    @Singleton
+    static GlobalDynamicProperties provideGlobalDynamicProperties() {
+        return mockPropertiesWith(500_000_000, 163_840);
+    }
 
-  @Provides
-  @Singleton
-  @SuppressWarnings("unchecked")
-  static Supplier<AccountStorageAdapter> provideAccountsSupplier(
-      final InfrastructureBundle bundle) {
-    return () ->
-        AccountStorageAdapter.fromInMemory(
-            (MerkleMap<EntityNum, MerkleAccount>)
-                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
-  }
+    @Provides
+    @Singleton
+    @SuppressWarnings("unchecked")
+    static Supplier<AccountStorageAdapter> provideAccountsSupplier(
+            final InfrastructureBundle bundle) {
+        return () ->
+                AccountStorageAdapter.fromInMemory(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+    }
 
-  @Provides
-  @Singleton
-  @SuppressWarnings("unchecked")
-  static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
-      final InfrastructureBundle bundle) {
-    return () ->
-        RecordsStorageAdapter.fromLegacy(
-            (MerkleMap<EntityNum, MerkleAccount>)
-                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
-  }
+    @Provides
+    @Singleton
+    @SuppressWarnings("unchecked")
+    static Supplier<RecordsStorageAdapter> providePayerRecordsSupplier(
+            final InfrastructureBundle bundle) {
+        return () ->
+                RecordsStorageAdapter.fromLegacy(
+                        (MerkleMap<EntityNum, MerkleAccount>)
+                                bundle.getterFor(InfrastructureType.ACCOUNTS_MM).get());
+    }
 
-  @Provides
-  @Singleton
-  static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideStakingInfosSupplier(
-      final InfrastructureBundle bundle) {
-    return bundle.getterFor(InfrastructureType.STAKING_INFOS_MM);
-  }
+    @Provides
+    @Singleton
+    static Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> provideStakingInfosSupplier(
+            final InfrastructureBundle bundle) {
+        return bundle.getterFor(InfrastructureType.STAKING_INFOS_MM);
+    }
 
-  @Provides
-  @Singleton
-  static Supplier<MerkleNetworkContext> provideNetworkContext() {
-    final var networkCtx = new MerkleNetworkContext();
-    return () -> networkCtx;
-  }
+    @Provides
+    @Singleton
+    static Supplier<MerkleNetworkContext> provideNetworkContext() {
+        final var networkCtx = new MerkleNetworkContext();
+        return () -> networkCtx;
+    }
 
-  @Provides
-  @Singleton
-  @MockProps
-  static HederaAccountNumbers bindAccountNumbers() {
-    return new MockAccountNumbers();
-  }
+    @Provides
+    @Singleton
+    @MockProps
+    static HederaAccountNumbers bindAccountNumbers() {
+        return new MockAccountNumbers();
+    }
 
-  @Binds
-  @Singleton
-  AccountUsageTracking bindUsageTracking(MockAccountTracking accountTracking);
+    @Binds
+    @Singleton
+    AccountUsageTracking bindUsageTracking(MockAccountTracking accountTracking);
 
-  @Provides
-  @Singleton
-  @CompositeProps
-  static PropertySource providePropertySource() {
-    final Map<String, Supplier<Object>> source = new HashMap<>();
-    source.put(STAKING_PERIOD_MINS, () -> 1440L);
-    source.put(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, () -> 365);
-    source.put(STAKING_REWARD_RATE, () -> 273972602739726L);
-    source.put(ACCOUNTS_STAKING_REWARD_ACCOUNT, () -> 800L);
-    return new SupplierMapPropertySource(source);
-  }
+    @Provides
+    @Singleton
+    @CompositeProps
+    static PropertySource providePropertySource() {
+        final Map<String, Supplier<Object>> source = new HashMap<>();
+        source.put(STAKING_PERIOD_MINS, () -> 1440L);
+        source.put(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, () -> 365);
+        source.put(STAKING_REWARD_RATE, () -> 273972602739726L);
+        source.put(ACCOUNTS_STAKING_REWARD_ACCOUNT, () -> 800L);
+        return new SupplierMapPropertySource(source);
+    }
 
-  @Provides
-  @Singleton
-  static TransactionalLedger<AccountID, AccountProperty, HederaAccount> provideAccountsLedger(
-      final BackingStore<AccountID, HederaAccount> backingAccounts,
-      final SideEffectsTracker sideEffectsTracker,
-      final BootstrapProperties bootstrapProperties,
-      final Supplier<MerkleNetworkContext> networkCtx,
-      final GlobalDynamicProperties dynamicProperties,
-      final RewardCalculator rewardCalculator,
-      final StakeChangeManager stakeChangeManager,
-      final StakePeriodManager stakePeriodManager,
-      final StakeInfoManager stakeInfoManager,
-      final @MockProps HederaAccountNumbers accountNumbers,
-      final TransactionContext txnCtx,
-      final AccountUsageTracking usageTracking) {
-    final Supplier<HederaAccount> accountSupplier =
-        bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
-            ? OnDiskAccount::new
-            : MerkleAccount::new;
-    final var accountsLedger =
-        new TransactionalLedger<>(
-            AccountProperty.class,
-            accountSupplier,
-            backingAccounts,
-            new ChangeSummaryManager<>());
-    final var accountsCommitInterceptor =
-        new StakingAccountsCommitInterceptor(
-            sideEffectsTracker,
-            networkCtx,
-            dynamicProperties,
-            rewardCalculator,
-            stakeChangeManager,
-            stakePeriodManager,
-            stakeInfoManager,
-            accountNumbers,
-            txnCtx,
-            usageTracking);
-    accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
-    return accountsLedger;
-  }
+    @Provides
+    @Singleton
+    static TransactionalLedger<AccountID, AccountProperty, HederaAccount> provideAccountsLedger(
+            final BackingStore<AccountID, HederaAccount> backingAccounts,
+            final SideEffectsTracker sideEffectsTracker,
+            final BootstrapProperties bootstrapProperties,
+            final Supplier<MerkleNetworkContext> networkCtx,
+            final GlobalDynamicProperties dynamicProperties,
+            final RewardCalculator rewardCalculator,
+            final StakeChangeManager stakeChangeManager,
+            final StakePeriodManager stakePeriodManager,
+            final StakeInfoManager stakeInfoManager,
+            final @MockProps HederaAccountNumbers accountNumbers,
+            final TransactionContext txnCtx,
+            final AccountUsageTracking usageTracking) {
+        final Supplier<HederaAccount> accountSupplier =
+                bootstrapProperties.getBooleanProperty(ACCOUNTS_STORE_ON_DISK)
+                        ? OnDiskAccount::new
+                        : MerkleAccount::new;
+        final var accountsLedger =
+                new TransactionalLedger<>(
+                        AccountProperty.class,
+                        accountSupplier,
+                        backingAccounts,
+                        new ChangeSummaryManager<>());
+        final var accountsCommitInterceptor =
+                new StakingAccountsCommitInterceptor(
+                        sideEffectsTracker,
+                        networkCtx,
+                        dynamicProperties,
+                        rewardCalculator,
+                        stakeChangeManager,
+                        stakePeriodManager,
+                        stakeInfoManager,
+                        accountNumbers,
+                        txnCtx,
+                        usageTracking);
+        accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+        return accountsLedger;
+    }
 }

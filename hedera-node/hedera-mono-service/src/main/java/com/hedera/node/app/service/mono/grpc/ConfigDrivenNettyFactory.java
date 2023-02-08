@@ -38,78 +38,78 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 
-  private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
+    private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
 
-  private static final List<String> SUPPORTED_CIPHERS =
-      List.of(
-          "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-          "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-          "TLS_AES_256_GCM_SHA384");
-  private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
+    private static final List<String> SUPPORTED_CIPHERS =
+            List.of(
+                    "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_AES_256_GCM_SHA384");
+    private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
 
-  private final NodeLocalProperties nodeProperties;
+    private final NodeLocalProperties nodeProperties;
 
-  @Inject
-  public ConfigDrivenNettyFactory(final NodeLocalProperties nodeProperties) {
-    this.nodeProperties = nodeProperties;
-  }
-
-  @Override
-  public NettyServerBuilder builderFor(final int port, final boolean sslEnabled)
-      throws FileNotFoundException, SSLException {
-    final var activeProfile = nodeProperties.activeProfile();
-    final var nettyMode = (activeProfile == DEV) ? DEV : nodeProperties.nettyMode();
-
-    log.info(
-        "Configuring a Netty server on port {} (TLS {}) for {} environment",
-        port,
-        (sslEnabled ? "ON" : "OFF"),
-        nettyMode);
-
-    final var builder = NettyServerBuilder.forPort(port);
-    if (nettyMode == PROD) {
-      configureProd(builder);
-    }
-    if (sslEnabled) {
-      configureTls(builder);
+    @Inject
+    public ConfigDrivenNettyFactory(final NodeLocalProperties nodeProperties) {
+        this.nodeProperties = nodeProperties;
     }
 
-    return builder;
-  }
+    @Override
+    public NettyServerBuilder builderFor(final int port, final boolean sslEnabled)
+            throws FileNotFoundException, SSLException {
+        final var activeProfile = nodeProperties.activeProfile();
+        final var nettyMode = (activeProfile == DEV) ? DEV : nodeProperties.nettyMode();
 
-  private void configureProd(final NettyServerBuilder builder) {
-    builder.keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
-        .permitKeepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
-        .keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS)
-        .maxConnectionAge(nodeProperties.nettyMaxConnectionAge(), TimeUnit.SECONDS)
-        .maxConnectionAgeGrace(
-            nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
-        .maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
-        .maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
-        .flowControlWindow(nodeProperties.nettyFlowControlWindow())
-        .directExecutor()
-        .channelType(EpollServerSocketChannel.class)
-        .bossEventLoopGroup(new EpollEventLoopGroup())
-        .workerEventLoopGroup(new EpollEventLoopGroup());
-  }
+        log.info(
+                "Configuring a Netty server on port {} (TLS {}) for {} environment",
+                port,
+                (sslEnabled ? "ON" : "OFF"),
+                nettyMode);
 
-  private void configureTls(final NettyServerBuilder builder)
-      throws SSLException, FileNotFoundException {
-    final var crt = new File(nodeProperties.nettyTlsCrtPath());
-    if (!crt.exists()) {
-      log.warn("Specified TLS cert '{}' doesn't exist!", nodeProperties.nettyTlsCrtPath());
-      throw new FileNotFoundException(nodeProperties.nettyTlsCrtPath());
+        final var builder = NettyServerBuilder.forPort(port);
+        if (nettyMode == PROD) {
+            configureProd(builder);
+        }
+        if (sslEnabled) {
+            configureTls(builder);
+        }
+
+        return builder;
     }
-    final var key = new File(nodeProperties.nettyTlsKeyPath());
-    if (!key.exists()) {
-      log.warn("Specified TLS key '{}' doesn't exist!", nodeProperties.nettyTlsKeyPath());
-      throw new FileNotFoundException(nodeProperties.nettyTlsKeyPath());
+
+    private void configureProd(final NettyServerBuilder builder) {
+        builder.keepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+                .permitKeepAliveTime(nodeProperties.nettyProdKeepAliveTime(), TimeUnit.SECONDS)
+                .keepAliveTimeout(nodeProperties.nettyProdKeepAliveTimeout(), TimeUnit.SECONDS)
+                .maxConnectionAge(nodeProperties.nettyMaxConnectionAge(), TimeUnit.SECONDS)
+                .maxConnectionAgeGrace(
+                        nodeProperties.nettyMaxConnectionAgeGrace(), TimeUnit.SECONDS)
+                .maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
+                .maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
+                .flowControlWindow(nodeProperties.nettyFlowControlWindow())
+                .directExecutor()
+                .channelType(EpollServerSocketChannel.class)
+                .bossEventLoopGroup(new EpollEventLoopGroup())
+                .workerEventLoopGroup(new EpollEventLoopGroup());
     }
-    final var sslContext =
-        GrpcSslContexts.configure(SslContextBuilder.forServer(crt, key))
-            .protocols(SUPPORTED_PROTOCOLS)
-            .ciphers(SUPPORTED_CIPHERS, INSTANCE)
-            .build();
-    builder.sslContext(sslContext);
-  }
+
+    private void configureTls(final NettyServerBuilder builder)
+            throws SSLException, FileNotFoundException {
+        final var crt = new File(nodeProperties.nettyTlsCrtPath());
+        if (!crt.exists()) {
+            log.warn("Specified TLS cert '{}' doesn't exist!", nodeProperties.nettyTlsCrtPath());
+            throw new FileNotFoundException(nodeProperties.nettyTlsCrtPath());
+        }
+        final var key = new File(nodeProperties.nettyTlsKeyPath());
+        if (!key.exists()) {
+            log.warn("Specified TLS key '{}' doesn't exist!", nodeProperties.nettyTlsKeyPath());
+            throw new FileNotFoundException(nodeProperties.nettyTlsKeyPath());
+        }
+        final var sslContext =
+                GrpcSslContexts.configure(SslContextBuilder.forServer(crt, key))
+                        .protocols(SUPPORTED_PROTOCOLS)
+                        .ciphers(SUPPORTED_CIPHERS, INSTANCE)
+                        .build();
+        builder.sslContext(sslContext);
+    }
 }

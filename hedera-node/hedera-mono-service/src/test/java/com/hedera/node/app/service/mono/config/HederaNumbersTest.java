@@ -27,23 +27,23 @@ import org.junit.jupiter.api.Test;
 
 class HederaNumbersTest {
 
-  PropertySource properties;
-  HederaNumbers subject;
+    PropertySource properties;
+    HederaNumbers subject;
 
-  @BeforeEach
-  void setup() {
-    properties = mock(PropertySource.class);
-    given(properties.getLongProperty(HEDERA_SHARD)).willReturn(1L);
-    given(properties.getLongProperty(HEDERA_REALM)).willReturn(2L);
+    @BeforeEach
+    void setup() {
+        properties = mock(PropertySource.class);
+        given(properties.getLongProperty(HEDERA_SHARD)).willReturn(1L);
+        given(properties.getLongProperty(HEDERA_REALM)).willReturn(2L);
 
-    subject = new HederaNumbers(properties);
-  }
+        subject = new HederaNumbers(properties);
+    }
 
-  @Test
-  void hasExpectedNumbers() {
-    // expect:
-    assertEquals(1L, subject.shard());
-    assertEquals(2L, subject.realm());
-    assertEquals(750L, subject.numReservedSystemEntities());
-  }
+    @Test
+    void hasExpectedNumbers() {
+        // expect:
+        assertEquals(1L, subject.shard());
+        assertEquals(2L, subject.realm());
+        assertEquals(750L, subject.numReservedSystemEntities());
+    }
 }

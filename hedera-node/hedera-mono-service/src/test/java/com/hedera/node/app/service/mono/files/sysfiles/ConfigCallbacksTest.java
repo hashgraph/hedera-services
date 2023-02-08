@@ -52,117 +52,107 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConfigCallbacksTest {
 
-  private static final long node0MaxStake = 100L;
-  private static final long node1MaxStake = 200L;
-  private static final long node2MaxStake = 300L;
-  private static final String literalBlockValues =
-      "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
-  private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
-  private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
+    private static final long node0MaxStake = 100L;
+    private static final long node1MaxStake = 200L;
+    private static final long node2MaxStake = 300L;
+    private static final String literalBlockValues =
+            "c9e37a7a454638ca62662bd1a06de49ef40b3444203fe329bbc81363604ea7f8@666";
+    private static final List<MapAccessType> minReqUnitOfWork = List.of(ACCOUNTS_GET, STORAGE_PUT);
+    private static final KnownBlockValues blockValues = KnownBlockValues.from(literalBlockValues);
 
-  @Mock
-  private ExpiryThrottle expiryThrottle;
-  @Mock
-  private AddressBook addressBook;
-  @Mock
-  private GlobalDynamicProperties dynamicProps;
-  @Mock
-  private PropertySources propertySources;
-  @Mock
-  private HapiOpPermissions hapiOpPermissions;
-  @Mock
-  private FunctionalityThrottling functionalityThrottling;
-  @Mock
-  private MerkleNetworkContext networkCtx;
-  @Mock
-  private PropertySource properties;
-  @Mock
-  private SigImpactHistorian sigImpactHistorian;
-  @Mock
-  private FileNumbers fileNumbers;
+    @Mock private ExpiryThrottle expiryThrottle;
+    @Mock private AddressBook addressBook;
+    @Mock private GlobalDynamicProperties dynamicProps;
+    @Mock private PropertySources propertySources;
+    @Mock private HapiOpPermissions hapiOpPermissions;
+    @Mock private FunctionalityThrottling functionalityThrottling;
+    @Mock private MerkleNetworkContext networkCtx;
+    @Mock private PropertySource properties;
+    @Mock private SigImpactHistorian sigImpactHistorian;
+    @Mock private FileNumbers fileNumbers;
 
-  private final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
-  private ConfigCallbacks subject;
+    private final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
+    private ConfigCallbacks subject;
 
-  @BeforeEach
-  void setUp() {
-    subject =
-        new ConfigCallbacks(
-            hapiOpPermissions,
-            dynamicProps,
-            propertySources,
-            expiryThrottle,
-            functionalityThrottling,
-            functionalityThrottling,
-            functionalityThrottling,
-            () -> addressBook,
-            properties,
-            () -> networkCtx,
-            () -> stakingInfos,
-            sigImpactHistorian,
-            fileNumbers);
-  }
+    @BeforeEach
+    void setUp() {
+        subject =
+                new ConfigCallbacks(
+                        hapiOpPermissions,
+                        dynamicProps,
+                        propertySources,
+                        expiryThrottle,
+                        functionalityThrottling,
+                        functionalityThrottling,
+                        functionalityThrottling,
+                        () -> addressBook,
+                        properties,
+                        () -> networkCtx,
+                        () -> stakingInfos,
+                        sigImpactHistorian,
+                        fileNumbers);
+    }
 
-  @Test
-  void propertiesCbAsExpected() {
-    final var numNodes = 10;
-    final var hbarFloat = 50_000_000_000L * 100_000_000L;
-    final var expiryResourceLoc = "something.json";
-    givenWellKnownStakingInfos();
-    given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
-    given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
-    given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY))
-        .willReturn(minReqUnitOfWork);
-    given(addressBook.getSize()).willReturn(numNodes);
-    given(dynamicProps.knownBlockValues()).willReturn(blockValues);
-    given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
-    final var overrideMaxStake = hbarFloat / numNodes;
-    final var config = ServicesConfigurationList.getDefaultInstance();
+    @Test
+    void propertiesCbAsExpected() {
+        final var numNodes = 10;
+        final var hbarFloat = 50_000_000_000L * 100_000_000L;
+        final var expiryResourceLoc = "something.json";
+        givenWellKnownStakingInfos();
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
+        given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
+        given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY))
+                .willReturn(minReqUnitOfWork);
+        given(addressBook.getSize()).willReturn(numNodes);
+        given(dynamicProps.knownBlockValues()).willReturn(blockValues);
+        given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
+        final var overrideMaxStake = hbarFloat / numNodes;
+        final var config = ServicesConfigurationList.getDefaultInstance();
 
-    // when:
-    subject.propertiesCb().accept(config);
+        // when:
+        subject.propertiesCb().accept(config);
 
-    // then:
-    verify(propertySources).reloadFrom(config);
-    verify(expiryThrottle).rebuildGiven(expiryResourceLoc, minReqUnitOfWork);
-    verify(dynamicProps).reload();
-    verify(functionalityThrottling, times(3)).applyGasConfig();
-    verify(networkCtx).renumberBlocksToMatch(blockValues);
-    // and:
-    final var updatedNode0Info = stakingInfos.get(EntityNum.fromLong(0L));
-    assertStakes(updatedNode0Info, overrideMaxStake / 2, overrideMaxStake);
-    final var updatedNode1Info = stakingInfos.get(EntityNum.fromLong(1L));
-    assertStakes(updatedNode1Info, overrideMaxStake / 8, overrideMaxStake);
-    final var updatedNode2Info = stakingInfos.get(EntityNum.fromLong(2L));
-    assertStakes(updatedNode2Info, overrideMaxStake / 4, overrideMaxStake);
-  }
+        // then:
+        verify(propertySources).reloadFrom(config);
+        verify(expiryThrottle).rebuildGiven(expiryResourceLoc, minReqUnitOfWork);
+        verify(dynamicProps).reload();
+        verify(functionalityThrottling, times(3)).applyGasConfig();
+        verify(networkCtx).renumberBlocksToMatch(blockValues);
+        // and:
+        final var updatedNode0Info = stakingInfos.get(EntityNum.fromLong(0L));
+        assertStakes(updatedNode0Info, overrideMaxStake / 2, overrideMaxStake);
+        final var updatedNode1Info = stakingInfos.get(EntityNum.fromLong(1L));
+        assertStakes(updatedNode1Info, overrideMaxStake / 8, overrideMaxStake);
+        final var updatedNode2Info = stakingInfos.get(EntityNum.fromLong(2L));
+        assertStakes(updatedNode2Info, overrideMaxStake / 4, overrideMaxStake);
+    }
 
-  @Test
-  void permissionsCbAsExpected() {
-    final var config = ServicesConfigurationList.getDefaultInstance();
+    @Test
+    void permissionsCbAsExpected() {
+        final var config = ServicesConfigurationList.getDefaultInstance();
 
-    // when:
-    subject.permissionsCb().accept(config);
+        // when:
+        subject.permissionsCb().accept(config);
 
-    // then:
-    verify(hapiOpPermissions).reloadFrom(config);
-  }
+        // then:
+        verify(hapiOpPermissions).reloadFrom(config);
+    }
 
-  private void assertStakes(
-      final MerkleStakingInfo info, final long minStake, final long maxStake) {
-    Assertions.assertEquals(minStake, info.getMinStake());
-    Assertions.assertEquals(maxStake, info.getMaxStake());
-  }
+    private void assertStakes(
+            final MerkleStakingInfo info, final long minStake, final long maxStake) {
+        Assertions.assertEquals(minStake, info.getMinStake());
+        Assertions.assertEquals(maxStake, info.getMaxStake());
+    }
 
-  private void givenWellKnownStakingInfos() {
-    stakingInfos.put(EntityNum.fromLong(0L), infoWith(node0MaxStake));
-    stakingInfos.put(EntityNum.fromLong(1L), infoWith(node1MaxStake));
-    stakingInfos.put(EntityNum.fromLong(2L), infoWith(node2MaxStake));
-  }
+    private void givenWellKnownStakingInfos() {
+        stakingInfos.put(EntityNum.fromLong(0L), infoWith(node0MaxStake));
+        stakingInfos.put(EntityNum.fromLong(1L), infoWith(node1MaxStake));
+        stakingInfos.put(EntityNum.fromLong(2L), infoWith(node2MaxStake));
+    }
 
-  private MerkleStakingInfo infoWith(final long maxStake) {
-    final var ans = new MerkleStakingInfo();
-    ans.setMaxStake(maxStake);
-    return ans;
-  }
+    private MerkleStakingInfo infoWith(final long maxStake) {
+        final var ans = new MerkleStakingInfo();
+        ans.setMaxStake(maxStake);
+        return ans;
+    }
 }

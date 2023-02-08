@@ -64,201 +64,201 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public final class ScreenedSysFileProps implements PropertySource {
 
-  private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
+    private static final Logger log = LogManager.getLogger(ScreenedSysFileProps.class);
 
-  static final String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
-  static final String MISPLACED_PROP_TPL =
-      "Property '%s' is not global/dynamic, please find it a proper home!";
-  static final String DEPRECATED_PROP_TPL =
-      "Property name '%s' is deprecated, please use '%s' instead!";
-  static final String UNPARSEABLE_PROP_TPL =
-      "Value '%s' is unparseable for '%s' (%s), being ignored!";
-  static final String UNTRANSFORMABLE_PROP_TPL =
-      "Value '%s' is untransformable for deprecated '%s' (%s), being " + "ignored!";
+    static final String UNUSABLE_PROP_TPL = "Value '%s' is unusable for '%s', being ignored!";
+    static final String MISPLACED_PROP_TPL =
+            "Property '%s' is not global/dynamic, please find it a proper home!";
+    static final String DEPRECATED_PROP_TPL =
+            "Property name '%s' is deprecated, please use '%s' instead!";
+    static final String UNPARSEABLE_PROP_TPL =
+            "Value '%s' is unparseable for '%s' (%s), being ignored!";
+    static final String UNTRANSFORMABLE_PROP_TPL =
+            "Value '%s' is untransformable for deprecated '%s' (%s), being " + "ignored!";
 
-  private static final Map<String, String> STANDARDIZED_NAMES =
-      Map.ofEntries(
-          entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
-          entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
-          entry("maxFileSize", FILES_MAX_SIZE_KB),
-          entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
-          entry("txReceiptTTL", CACHE_RECORDS_TTL),
-          entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
-          entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
-          entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
-          entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
-          entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
-          entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
-          entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
-          entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
-          entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
-          entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
-          entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
-          entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
-  private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
-      Map.ofEntries(
-          entry(
-              "defaultFeeCollectionAccount",
-              legacy -> "" + parseAccount(legacy).getAccountNum()),
-          entry(
-              "accountBalanceExportPeriodMinutes",
-              legacy -> "" + (60 * Integer.parseInt(legacy))));
+    private static final Map<String, String> STANDARDIZED_NAMES =
+            Map.ofEntries(
+                    entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
+                    entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
+                    entry("maxFileSize", FILES_MAX_SIZE_KB),
+                    entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+                    entry("txReceiptTTL", CACHE_RECORDS_TTL),
+                    entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
+                    entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
+                    entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
+                    entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
+                    entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
+                    entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
+                    entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
+                    entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
+                    entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
+                    entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
+                    entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
+                    entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
+    private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
+            Map.ofEntries(
+                    entry(
+                            "defaultFeeCollectionAccount",
+                            legacy -> "" + parseAccount(legacy).getAccountNum()),
+                    entry(
+                            "accountBalanceExportPeriodMinutes",
+                            legacy -> "" + (60 * Integer.parseInt(legacy))));
 
-  @SuppressWarnings("unchecked")
-  private static final Map<String, Predicate<Object>> VALUE_SCREENS =
-      Map.ofEntries(
-          entry(
-              RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
-              limitPercent -> (int) limitPercent > 0),
-          entry(
-              SCHEDULING_WHITE_LIST,
-              whitelist ->
-                  ((Set<HederaFunctionality>) whitelist)
-                      .stream()
-                      .noneMatch(
-                          MiscUtils.QUERY_FUNCTIONS::contains)),
-          entry(
-              TOKENS_MAX_SYMBOL_UTF8_BYTES,
-              maxUtf8Bytes ->
-                  (int) maxUtf8Bytes
-                      <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
-          entry(
-              TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
-              maxUtf8Bytes ->
-                  (int) maxUtf8Bytes
-                      <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
-          entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
-          entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
-          entry(
-              CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-              maxRefundPercentage ->
-                  (int) maxRefundPercentage >= 0
-                      && (int) maxRefundPercentage <= 100));
+    @SuppressWarnings("unchecked")
+    private static final Map<String, Predicate<Object>> VALUE_SCREENS =
+            Map.ofEntries(
+                    entry(
+                            RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
+                            limitPercent -> (int) limitPercent > 0),
+                    entry(
+                            SCHEDULING_WHITE_LIST,
+                            whitelist ->
+                                    ((Set<HederaFunctionality>) whitelist)
+                                            .stream()
+                                                    .noneMatch(
+                                                            MiscUtils.QUERY_FUNCTIONS::contains)),
+                    entry(
+                            TOKENS_MAX_SYMBOL_UTF8_BYTES,
+                            maxUtf8Bytes ->
+                                    (int) maxUtf8Bytes
+                                            <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
+                    entry(
+                            TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
+                            maxUtf8Bytes ->
+                                    (int) maxUtf8Bytes
+                                            <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
+                    entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(
+                            CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
+                            maxRefundPercentage ->
+                                    (int) maxRefundPercentage >= 0
+                                            && (int) maxRefundPercentage <= 100));
 
-  Map<String, Object> from121 = Collections.emptyMap();
+    Map<String, Object> from121 = Collections.emptyMap();
 
-  private final Properties rawProperties = new Properties();
+    private final Properties rawProperties = new Properties();
 
-  @Inject
-  public ScreenedSysFileProps() {
-    /* No-op */
-  }
+    @Inject
+    public ScreenedSysFileProps() {
+        /* No-op */
+    }
 
-  void screenNew(final ServicesConfigurationList rawProps) {
-    from121 =
+    void screenNew(final ServicesConfigurationList rawProps) {
+        from121 =
+                rawProps.getNameValueList().stream()
+                        .map(this::withStandardizedName)
+                        .filter(this::isValidGlobalDynamic)
+                        .filter(this::hasParseableValue)
+                        .filter(this::isUsableGlobalDynamic)
+                        .collect(
+                                Collectors.toMap(
+                                        Setting::getName, this::asTypedValue, (a, b) -> b));
+
+        rawProperties.clear();
         rawProps.getNameValueList().stream()
-            .map(this::withStandardizedName)
-            .filter(this::isValidGlobalDynamic)
-            .filter(this::hasParseableValue)
-            .filter(this::isUsableGlobalDynamic)
-            .collect(
-                Collectors.toMap(
-                    Setting::getName, this::asTypedValue, (a, b) -> b));
+                .map(this::withStandardizedName)
+                .filter(this::isValidGlobalDynamic)
+                .filter(this::hasParseableValue)
+                .filter(this::isUsableGlobalDynamic)
+                .forEach(setting -> rawProperties.put(setting.getName(), setting.getValue()));
 
-    rawProperties.clear();
-    rawProps.getNameValueList().stream()
-        .map(this::withStandardizedName)
-        .filter(this::isValidGlobalDynamic)
-        .filter(this::hasParseableValue)
-        .filter(this::isUsableGlobalDynamic)
-        .forEach(setting -> rawProperties.put(setting.getName(), setting.getValue()));
-
-    final var msg =
-        "Global/dynamic properties overridden in system file are:\n  "
-            + GLOBAL_DYNAMIC_PROPS.stream()
-            .filter(from121::containsKey)
-            .sorted()
-            .map(name -> String.format("%s=%s", name, from121.get(name)))
-            .collect(Collectors.joining("\n  "));
-    log.info(msg);
-  }
-
-  private boolean isUsableGlobalDynamic(final Setting prop) {
-    final var name = prop.getName();
-    return Optional.ofNullable(VALUE_SCREENS.get(name))
-        .map(
-            screen -> {
-              final var usable = screen.test(asTypedValue(prop));
-              if (!usable) {
-                log.warn(String.format(UNUSABLE_PROP_TPL, prop.getValue(), name));
-              }
-              return usable;
-            })
-        .orElse(true);
-  }
-
-  private boolean isValidGlobalDynamic(final Setting prop) {
-    final var name = prop.getName();
-    final var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
-    if (!clearlyBelongs) {
-      log.warn(String.format(MISPLACED_PROP_TPL, name));
+        final var msg =
+                "Global/dynamic properties overridden in system file are:\n  "
+                        + GLOBAL_DYNAMIC_PROPS.stream()
+                                .filter(from121::containsKey)
+                                .sorted()
+                                .map(name -> String.format("%s=%s", name, from121.get(name)))
+                                .collect(Collectors.joining("\n  "));
+        log.info(msg);
     }
-    return clearlyBelongs;
-  }
 
-  private Setting withStandardizedName(final Setting rawProp) {
-    /* Note rawName is never null as gRPC object getters return a non-null default value for any missing field */
-    final var rawName = rawProp.getName();
-    final var standardizedName = STANDARDIZED_NAMES.getOrDefault(rawName, rawName);
-    if (!rawName.equals(standardizedName)) {
-      log.warn(String.format(DEPRECATED_PROP_TPL, rawName, standardizedName));
+    private boolean isUsableGlobalDynamic(final Setting prop) {
+        final var name = prop.getName();
+        return Optional.ofNullable(VALUE_SCREENS.get(name))
+                .map(
+                        screen -> {
+                            final var usable = screen.test(asTypedValue(prop));
+                            if (!usable) {
+                                log.warn(String.format(UNUSABLE_PROP_TPL, prop.getValue(), name));
+                            }
+                            return usable;
+                        })
+                .orElse(true);
     }
-    final var builder = rawProp.toBuilder().setName(standardizedName);
-    if (STANDARDIZED_FORMATS.containsKey(rawName)) {
-      try {
-        builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
-      } catch (final Exception reason) {
-        log.warn(
-            String.format(
-                UNTRANSFORMABLE_PROP_TPL,
-                rawProp.getValue(),
-                rawName,
-                reason.getClass().getSimpleName()));
-        return rawProp;
-      }
+
+    private boolean isValidGlobalDynamic(final Setting prop) {
+        final var name = prop.getName();
+        final var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
+        if (!clearlyBelongs) {
+            log.warn(String.format(MISPLACED_PROP_TPL, name));
+        }
+        return clearlyBelongs;
     }
-    return builder.build();
-  }
 
-  private Object asTypedValue(final Setting prop) {
-    return transformFor(prop.getName()).apply(prop.getValue());
-  }
-
-  private boolean hasParseableValue(final Setting prop) {
-    try {
-      transformFor(prop.getName()).apply(prop.getValue());
-      return true;
-    } catch (final Exception reason) {
-      log.warn(
-          String.format(
-              UNPARSEABLE_PROP_TPL,
-              prop.getValue(),
-              prop.getName(),
-              reason.getClass().getSimpleName()));
-      return false;
+    private Setting withStandardizedName(final Setting rawProp) {
+        /* Note rawName is never null as gRPC object getters return a non-null default value for any missing field */
+        final var rawName = rawProp.getName();
+        final var standardizedName = STANDARDIZED_NAMES.getOrDefault(rawName, rawName);
+        if (!rawName.equals(standardizedName)) {
+            log.warn(String.format(DEPRECATED_PROP_TPL, rawName, standardizedName));
+        }
+        final var builder = rawProp.toBuilder().setName(standardizedName);
+        if (STANDARDIZED_FORMATS.containsKey(rawName)) {
+            try {
+                builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
+            } catch (final Exception reason) {
+                log.warn(
+                        String.format(
+                                UNTRANSFORMABLE_PROP_TPL,
+                                rawProp.getValue(),
+                                rawName,
+                                reason.getClass().getSimpleName()));
+                return rawProp;
+            }
+        }
+        return builder.build();
     }
-  }
 
-  @Override
-  public boolean containsProperty(final String name) {
-    return from121.containsKey(name);
-  }
-
-  @Override
-  public Object getProperty(final String name) {
-    return from121.get(name);
-  }
-
-  @Override
-  public Set<String> allPropertyNames() {
-    return from121.keySet();
-  }
-
-  @Override
-  public String getRawValue(final String name) {
-    if (rawProperties.contains(name)) {
-      return rawProperties.getProperty(name);
+    private Object asTypedValue(final Setting prop) {
+        return transformFor(prop.getName()).apply(prop.getValue());
     }
-    throw new NoSuchElementException("Property of name '" + name + "' can not be found!");
-  }
+
+    private boolean hasParseableValue(final Setting prop) {
+        try {
+            transformFor(prop.getName()).apply(prop.getValue());
+            return true;
+        } catch (final Exception reason) {
+            log.warn(
+                    String.format(
+                            UNPARSEABLE_PROP_TPL,
+                            prop.getValue(),
+                            prop.getName(),
+                            reason.getClass().getSimpleName()));
+            return false;
+        }
+    }
+
+    @Override
+    public boolean containsProperty(final String name) {
+        return from121.containsKey(name);
+    }
+
+    @Override
+    public Object getProperty(final String name) {
+        return from121.get(name);
+    }
+
+    @Override
+    public Set<String> allPropertyNames() {
+        return from121.keySet();
+    }
+
+    @Override
+    public String getRawValue(final String name) {
+        if (rawProperties.contains(name)) {
+            return rawProperties.getProperty(name);
+        }
+        throw new NoSuchElementException("Property of name '" + name + "' can not be found!");
+    }
 }

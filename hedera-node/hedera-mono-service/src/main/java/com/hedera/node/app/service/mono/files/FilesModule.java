@@ -54,78 +54,78 @@ import javax.inject.Singleton;
 @Module
 public interface FilesModule {
 
-  @Binds
-  @Singleton
-  HederaFs bindHederaFs(TieredHederaFs tieredHederaFs);
+    @Binds
+    @Singleton
+    HederaFs bindHederaFs(TieredHederaFs tieredHederaFs);
 
-  @Provides
-  @Singleton
-  static Map<String, byte[]> provideBlobStore(
-      final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage) {
-    return new FcBlobsBytesStore(storage);
-  }
+    @Provides
+    @Singleton
+    static Map<String, byte[]> provideBlobStore(
+            final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage) {
+        return new FcBlobsBytesStore(storage);
+    }
 
-  @Provides
-  @Singleton
-  static Map<FileID, byte[]> provideDataMap(final Map<String, byte[]> blobStore) {
-    return dataMapFrom(blobStore);
-  }
+    @Provides
+    @Singleton
+    static Map<FileID, byte[]> provideDataMap(final Map<String, byte[]> blobStore) {
+        return dataMapFrom(blobStore);
+    }
 
-  @Provides
-  @Singleton
-  static Map<FileID, HFileMeta> provideMetadataMap(final Map<String, byte[]> blobStore) {
-    return metaMapFrom(blobStore);
-  }
+    @Provides
+    @Singleton
+    static Map<FileID, HFileMeta> provideMetadataMap(final Map<String, byte[]> blobStore) {
+        return metaMapFrom(blobStore);
+    }
 
-  @Provides
-  @Singleton
-  static Consumer<ExchangeRateSet> provideExchangeRateSetUpdate(final HbarCentExchange exchange) {
-    return exchange::updateRates;
-  }
+    @Provides
+    @Singleton
+    static Consumer<ExchangeRateSet> provideExchangeRateSetUpdate(final HbarCentExchange exchange) {
+        return exchange::updateRates;
+    }
 
-  @Provides
-  @Singleton
-  static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>>
-  provideLimitChangeTestFactory() {
-    return limitPercent ->
-        (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent);
-  }
+    @Provides
+    @Singleton
+    static IntFunction<BiPredicate<ExchangeRates, ExchangeRateSet>>
+            provideLimitChangeTestFactory() {
+        return limitPercent ->
+                (base, proposed) -> isNormalIntradayChange(base, proposed, limitPercent);
+    }
 
-  @Provides
-  @ElementsIntoSet
-  static Set<FileUpdateInterceptor> provideFileUpdateInterceptors(
-      final FileNumbers fileNums,
-      final SysFileCallbacks sysFileCallbacks,
-      final Supplier<AddressBook> addressBook,
-      final FeeSchedulesManager feeSchedulesManager,
-      final TxnAwareRatesManager txnAwareRatesManager,
-      @CompositeProps final PropertySource properties) {
-    final var propertiesCb = sysFileCallbacks.propertiesCb();
-    final var propertiesManager =
-        new ValidatingCallbackInterceptor(
-            0,
-            FILES_NETWORK_PROPERTIES,
-            properties,
-            contents -> propertiesCb.accept(uncheckedParse(contents)),
-            ConfigListUtils::isConfigList);
+    @Provides
+    @ElementsIntoSet
+    static Set<FileUpdateInterceptor> provideFileUpdateInterceptors(
+            final FileNumbers fileNums,
+            final SysFileCallbacks sysFileCallbacks,
+            final Supplier<AddressBook> addressBook,
+            final FeeSchedulesManager feeSchedulesManager,
+            final TxnAwareRatesManager txnAwareRatesManager,
+            @CompositeProps final PropertySource properties) {
+        final var propertiesCb = sysFileCallbacks.propertiesCb();
+        final var propertiesManager =
+                new ValidatingCallbackInterceptor(
+                        0,
+                        FILES_NETWORK_PROPERTIES,
+                        properties,
+                        contents -> propertiesCb.accept(uncheckedParse(contents)),
+                        ConfigListUtils::isConfigList);
 
-    final var permissionsCb = sysFileCallbacks.permissionsCb();
-    final var permissionsManager =
-        new ValidatingCallbackInterceptor(
-            0,
-            FILES_HAPI_PERMISSIONS,
-            properties,
-            contents -> permissionsCb.accept(uncheckedParse(contents)),
-            ConfigListUtils::isConfigList);
+        final var permissionsCb = sysFileCallbacks.permissionsCb();
+        final var permissionsManager =
+                new ValidatingCallbackInterceptor(
+                        0,
+                        FILES_HAPI_PERMISSIONS,
+                        properties,
+                        contents -> permissionsCb.accept(uncheckedParse(contents)),
+                        ConfigListUtils::isConfigList);
 
-    final var throttlesCb = sysFileCallbacks.throttlesCb();
-    final var throttleDefsManager = new ThrottleDefsManager(fileNums, addressBook, throttlesCb);
+        final var throttlesCb = sysFileCallbacks.throttlesCb();
+        final var throttleDefsManager = new ThrottleDefsManager(fileNums, addressBook, throttlesCb);
 
-    return Set.of(
-        feeSchedulesManager,
-        txnAwareRatesManager,
-        propertiesManager,
-        permissionsManager,
-        throttleDefsManager);
-  }
+        return Set.of(
+                feeSchedulesManager,
+                txnAwareRatesManager,
+                propertiesManager,
+                permissionsManager,
+                throttleDefsManager);
+    }
 }

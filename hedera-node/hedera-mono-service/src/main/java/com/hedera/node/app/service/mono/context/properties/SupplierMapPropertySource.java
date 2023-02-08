@@ -25,29 +25,29 @@ import java.util.function.Supplier;
  */
 public class SupplierMapPropertySource implements PropertySource {
 
-  private final Map<String, Supplier<Object>> source;
+    private final Map<String, Supplier<Object>> source;
 
-  public SupplierMapPropertySource(final Map<String, Supplier<Object>> source) {
-    this.source = source;
-  }
+    public SupplierMapPropertySource(final Map<String, Supplier<Object>> source) {
+        this.source = source;
+    }
 
-  @Override
-  public boolean containsProperty(final String name) {
-    return source.containsKey(name);
-  }
+    @Override
+    public boolean containsProperty(final String name) {
+        return source.containsKey(name);
+    }
 
-  @Override
-  public Object getProperty(final String name) {
-    return source.get(name).get();
-  }
+    @Override
+    public Object getProperty(final String name) {
+        return source.get(name).get();
+    }
 
-  @Override
-  public Set<String> allPropertyNames() {
-    return source.keySet();
-  }
+    @Override
+    public Set<String> allPropertyNames() {
+        return source.keySet();
+    }
 
-  @Override
-  public String getRawValue(final String name) {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
+    @Override
+    public String getRawValue(final String name) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

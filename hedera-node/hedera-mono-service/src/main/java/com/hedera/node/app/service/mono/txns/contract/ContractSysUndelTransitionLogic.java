@@ -45,71 +45,71 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class ContractSysUndelTransitionLogic implements TransitionLogic {
 
-  private static final Logger log = LogManager.getLogger(ContractSysUndelTransitionLogic.class);
+    private static final Logger log = LogManager.getLogger(ContractSysUndelTransitionLogic.class);
 
-  private final boolean supported;
-  private final OptionValidator validator;
-  private final SigImpactHistorian sigImpactHistorian;
-  private final TransactionContext txnCtx;
-  private final LegacySystemUndeleter delegate;
-  private final Supplier<AccountStorageAdapter> contracts;
+    private final boolean supported;
+    private final OptionValidator validator;
+    private final SigImpactHistorian sigImpactHistorian;
+    private final TransactionContext txnCtx;
+    private final LegacySystemUndeleter delegate;
+    private final Supplier<AccountStorageAdapter> contracts;
 
-  @Inject
-  public ContractSysUndelTransitionLogic(
-      final OptionValidator validator,
-      final SigImpactHistorian sigImpactHistorian,
-      final TransactionContext txnCtx,
-      final LegacySystemUndeleter delegate,
-      final Supplier<AccountStorageAdapter> contracts,
-      @CompositeProps final PropertySource properties) {
-    this.validator = validator;
-    this.txnCtx = txnCtx;
-    this.delegate = delegate;
-    this.contracts = contracts;
-    this.sigImpactHistorian = sigImpactHistorian;
-    this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(CONTRACT);
-  }
-
-  @FunctionalInterface
-  public interface LegacySystemUndeleter {
-
-    TransactionRecord perform(TransactionBody txn, Instant consensusTime);
-  }
-
-  @Override
-  public void doStateTransition() {
-    try {
-      final var contractSysUndelTxn = txnCtx.accessor().getTxn();
-
-      final var legacyRecord = delegate.perform(contractSysUndelTxn, txnCtx.consensusTime());
-      final var status = legacyRecord.getReceipt().getStatus();
-      if (status == SUCCESS) {
-        final var target = contractSysUndelTxn.getSystemUndelete().getContractID();
-        sigImpactHistorian.markEntityChanged(target.getContractNum());
-      }
-      txnCtx.setStatus(status);
-    } catch (final Exception e) {
-      log.warn("Avoidable exception!", e);
-      txnCtx.setStatus(FAIL_INVALID);
+    @Inject
+    public ContractSysUndelTransitionLogic(
+            final OptionValidator validator,
+            final SigImpactHistorian sigImpactHistorian,
+            final TransactionContext txnCtx,
+            final LegacySystemUndeleter delegate,
+            final Supplier<AccountStorageAdapter> contracts,
+            @CompositeProps final PropertySource properties) {
+        this.validator = validator;
+        this.txnCtx = txnCtx;
+        this.delegate = delegate;
+        this.contracts = contracts;
+        this.sigImpactHistorian = sigImpactHistorian;
+        this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(CONTRACT);
     }
-  }
 
-  @Override
-  public Predicate<TransactionBody> applicability() {
-    return txn -> txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID();
-  }
+    @FunctionalInterface
+    public interface LegacySystemUndeleter {
 
-  @Override
-  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-    return this::validate;
-  }
-
-  public ResponseCodeEnum validate(final TransactionBody contractSysUndelTxn) {
-    if (!supported) {
-      return NOT_SUPPORTED;
+        TransactionRecord perform(TransactionBody txn, Instant consensusTime);
     }
-    final var op = contractSysUndelTxn.getSystemUndelete();
-    final var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
-    return (status != INVALID_CONTRACT_ID) ? OK : INVALID_CONTRACT_ID;
-  }
+
+    @Override
+    public void doStateTransition() {
+        try {
+            final var contractSysUndelTxn = txnCtx.accessor().getTxn();
+
+            final var legacyRecord = delegate.perform(contractSysUndelTxn, txnCtx.consensusTime());
+            final var status = legacyRecord.getReceipt().getStatus();
+            if (status == SUCCESS) {
+                final var target = contractSysUndelTxn.getSystemUndelete().getContractID();
+                sigImpactHistorian.markEntityChanged(target.getContractNum());
+            }
+            txnCtx.setStatus(status);
+        } catch (final Exception e) {
+            log.warn("Avoidable exception!", e);
+            txnCtx.setStatus(FAIL_INVALID);
+        }
+    }
+
+    @Override
+    public Predicate<TransactionBody> applicability() {
+        return txn -> txn.hasSystemUndelete() && txn.getSystemUndelete().hasContractID();
+    }
+
+    @Override
+    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+        return this::validate;
+    }
+
+    public ResponseCodeEnum validate(final TransactionBody contractSysUndelTxn) {
+        if (!supported) {
+            return NOT_SUPPORTED;
+        }
+        final var op = contractSysUndelTxn.getSystemUndelete();
+        final var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
+        return (status != INVALID_CONTRACT_ID) ? OK : INVALID_CONTRACT_ID;
+    }
 }

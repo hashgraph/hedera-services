@@ -49,127 +49,128 @@ import org.junit.jupiter.params.provider.CsvSource;
 @ExtendWith(LogCaptureExtension.class)
 class ScreenedSysFilePropsTest {
 
-  @LoggingTarget
-  private LogCaptor logCaptor;
+    @LoggingTarget private LogCaptor logCaptor;
 
-  @LoggingSubject
-  private ScreenedSysFileProps subject;
+    @LoggingSubject private ScreenedSysFileProps subject;
 
-  @BeforeEach
-  void setup() {
-    subject = new ScreenedSysFileProps();
-  }
+    @BeforeEach
+    void setup() {
+        subject = new ScreenedSysFileProps();
+    }
 
-  @Test
-  void delegationWorks() {
-    subject.from121 = Map.of(TOKENS_MAX_RELS_PER_INFO_QUERY, 42);
+    @Test
+    void delegationWorks() {
+        subject.from121 = Map.of(TOKENS_MAX_RELS_PER_INFO_QUERY, 42);
 
-    assertEquals(Set.of(TOKENS_MAX_RELS_PER_INFO_QUERY), subject.allPropertyNames());
-    assertEquals(42, subject.getProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
-    assertTrue(subject.containsProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
-    assertFalse(subject.containsProperty("nonsense"));
-  }
+        assertEquals(Set.of(TOKENS_MAX_RELS_PER_INFO_QUERY), subject.allPropertyNames());
+        assertEquals(42, subject.getProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertTrue(subject.containsProperty(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertFalse(subject.containsProperty("nonsense"));
+    }
 
-  @Test
-  void ignoresNonGlobalDynamic() {
-    subject.screenNew(withJust("notGlobalDynamic", "42"));
+    @Test
+    void ignoresNonGlobalDynamic() {
+        subject.screenNew(withJust("notGlobalDynamic", "42"));
 
-    assertTrue(subject.from121.isEmpty());
-    assertThat(
-        logCaptor.warnLogs(),
-        contains(String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
-  }
+        assertTrue(subject.from121.isEmpty());
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(String.format(MISPLACED_PROP_TPL, "notGlobalDynamic")));
+    }
 
-  @Test
-  void incorporatesStandardGlobalDynamic() {
-    final var oldMap = subject.from121;
+    @Test
+    void incorporatesStandardGlobalDynamic() {
+        final var oldMap = subject.from121;
 
-    subject.screenNew(
-        withAllOf(
-            Map.of(
-                TOKENS_MAX_RELS_PER_INFO_QUERY, "42",
-                LEDGER_TRANSFERS_MAX_LEN, "42",
-                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "42")));
+        subject.screenNew(
+                withAllOf(
+                        Map.of(
+                                TOKENS_MAX_RELS_PER_INFO_QUERY, "42",
+                                LEDGER_TRANSFERS_MAX_LEN, "42",
+                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "42")));
 
-    assertEquals(42, subject.from121.get(TOKENS_MAX_RELS_PER_INFO_QUERY));
-    assertEquals(42, subject.from121.get(LEDGER_TRANSFERS_MAX_LEN));
-    assertEquals(42, subject.from121.get(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
-    assertNotSame(oldMap, subject.from121);
-  }
+        assertEquals(42, subject.from121.get(TOKENS_MAX_RELS_PER_INFO_QUERY));
+        assertEquals(42, subject.from121.get(LEDGER_TRANSFERS_MAX_LEN));
+        assertEquals(42, subject.from121.get(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+        assertNotSame(oldMap, subject.from121);
+    }
 
-  @Test
-  void incorporatesLegacyGlobalDynamicWithTransform() {
-    subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
+    @Test
+    void incorporatesLegacyGlobalDynamicWithTransform() {
+        subject.screenNew(withJust("defaultFeeCollectionAccount", "0.0.98"));
 
-    assertEquals(1, subject.from121.size());
-    assertEquals(98L, subject.from121.get(LEDGER_FUNDING_ACCOUNT));
-    assertThat(
-        logCaptor.warnLogs(),
-        contains(
-            String.format(
-                DEPRECATED_PROP_TPL,
-                "defaultFeeCollectionAccount",
-                LEDGER_FUNDING_ACCOUNT)));
-  }
+        assertEquals(1, subject.from121.size());
+        assertEquals(98L, subject.from121.get(LEDGER_FUNDING_ACCOUNT));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        String.format(
+                                DEPRECATED_PROP_TPL,
+                                "defaultFeeCollectionAccount",
+                                LEDGER_FUNDING_ACCOUNT)));
+    }
 
-  @ParameterizedTest
-  @CsvSource({
-      "ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
-      "CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
-      "CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
-      (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1)
-          + ", tokens.maxTokenNameUtf8Bytes, true,",
-      "1, ledger.transfers.maxLen, true,",
-      "1, ledger.tokenTransfers.maxLen, true,",
-      (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
-      "-1, rates.intradayChangeLimitPercent, true,",
-      "-1, contracts.maxRefundPercentOfGasLimit, true,",
-      "101, contracts.maxRefundPercentOfGasLimit, true,",
-  })
-  void warnsOfUnusableOrUnparseable(
-      String unsupported, final String prop, final boolean isUnusable, final String exception) {
-    unsupported = unsupported.replaceAll(";", ",");
-    final var expectedLog =
-        isUnusable
-            ? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
-            : String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
+    @ParameterizedTest
+    @CsvSource({
+        "ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
+        "CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
+        "CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
+        (MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1)
+                + ", tokens.maxTokenNameUtf8Bytes, true,",
+        "1, ledger.transfers.maxLen, true,",
+        "1, ledger.tokenTransfers.maxLen, true,",
+        (MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES + 1) + ", tokens.maxSymbolUtf8Bytes, true,",
+        "-1, rates.intradayChangeLimitPercent, true,",
+        "-1, contracts.maxRefundPercentOfGasLimit, true,",
+        "101, contracts.maxRefundPercentOfGasLimit, true,",
+    })
+    void warnsOfUnusableOrUnparseable(
+            String unsupported,
+            final String prop,
+            final boolean isUnusable,
+            final String exception) {
+        unsupported = unsupported.replaceAll(";", ",");
+        final var expectedLog =
+                isUnusable
+                        ? String.format(UNUSABLE_PROP_TPL, unsupported, prop)
+                        : String.format(UNPARSEABLE_PROP_TPL, unsupported, prop, exception);
 
-    subject.screenNew(withJust(prop, unsupported));
+        subject.screenNew(withJust(prop, unsupported));
 
-    assertTrue(subject.from121.isEmpty());
-    assertThat(logCaptor.warnLogs(), contains(expectedLog));
-  }
+        assertTrue(subject.from121.isEmpty());
+        assertThat(logCaptor.warnLogs(), contains(expectedLog));
+    }
 
-  @Test
-  void warnsOfUntransformableGlobalDynamic() {
-    subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
+    @Test
+    void warnsOfUntransformableGlobalDynamic() {
+        subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
 
-    assertTrue(subject.from121.isEmpty());
-    assertThat(
-        logCaptor.warnLogs(),
-        contains(
-            "Property name 'defaultFeeCollectionAccount' is deprecated, please use"
-                + " 'ledger.fundingAccount' instead!",
-            String.format(
-                UNTRANSFORMABLE_PROP_TPL,
-                "abc",
-                "defaultFeeCollectionAccount",
-                "IllegalArgumentException"),
-            "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
-                + " it a proper home!"));
-  }
+        assertTrue(subject.from121.isEmpty());
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(
+                        "Property name 'defaultFeeCollectionAccount' is deprecated, please use"
+                                + " 'ledger.fundingAccount' instead!",
+                        String.format(
+                                UNTRANSFORMABLE_PROP_TPL,
+                                "abc",
+                                "defaultFeeCollectionAccount",
+                                "IllegalArgumentException"),
+                        "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
+                                + " it a proper home!"));
+    }
 
-  private static ServicesConfigurationList withJust(final String name, final String value) {
-    return ServicesConfigurationList.newBuilder().addNameValue(from(name, value)).build();
-  }
+    private static ServicesConfigurationList withJust(final String name, final String value) {
+        return ServicesConfigurationList.newBuilder().addNameValue(from(name, value)).build();
+    }
 
-  private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {
-    final var builder = ServicesConfigurationList.newBuilder();
-    settings.forEach((key, value) -> builder.addNameValue(from(key, value)));
-    return builder.build();
-  }
+    private static ServicesConfigurationList withAllOf(final Map<String, String> settings) {
+        final var builder = ServicesConfigurationList.newBuilder();
+        settings.forEach((key, value) -> builder.addNameValue(from(key, value)));
+        return builder.build();
+    }
 
-  private static Setting from(final String name, final String value) {
-    return Setting.newBuilder().setName(name).setValue(value).build();
-  }
+    private static Setting from(final String name, final String value) {
+        return Setting.newBuilder().setName(name).setValue(value).build();
+    }
 }

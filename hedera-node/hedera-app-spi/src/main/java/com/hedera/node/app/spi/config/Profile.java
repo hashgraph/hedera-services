@@ -15,11 +15,9 @@
  */
 package com.hedera.node.app.spi.config;
 
-/**
- * Convenience type giving the scope of a property.
- */
+/** Convenience type giving the scope of a property. */
 public enum Profile {
-  DEV,
-  TEST,
-  PROD
+    DEV,
+    TEST,
+    PROD
 }

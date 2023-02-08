@@ -25,26 +25,26 @@ import com.swirlds.merkle.map.MerkleMap;
 
 public final class StakingInfoMapBuilder {
 
-  private StakingInfoMapBuilder() {
-    throw new UnsupportedOperationException("Utility class");
-  }
-
-  public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
-      final AddressBook addressBook, final BootstrapProperties bootstrapProperties) {
-    final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
-
-    final var numberOfNodes = addressBook.getSize();
-    final long maxStakePerNode =
-        bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
-    final long minStakePerNode = maxStakePerNode / 2;
-    for (int i = 0; i < numberOfNodes; i++) {
-      final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
-      final var info = new MerkleStakingInfo(bootstrapProperties);
-      info.setMinStake(minStakePerNode);
-      info.setMaxStake(maxStakePerNode);
-      stakingInfos.put(nodeNum, info);
+    private StakingInfoMapBuilder() {
+        throw new UnsupportedOperationException("Utility class");
     }
 
-    return stakingInfos;
-  }
+    public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
+            final AddressBook addressBook, final BootstrapProperties bootstrapProperties) {
+        final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
+
+        final var numberOfNodes = addressBook.getSize();
+        final long maxStakePerNode =
+                bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
+        for (int i = 0; i < numberOfNodes; i++) {
+            final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+            final var info = new MerkleStakingInfo(bootstrapProperties);
+            info.setMinStake(minStakePerNode);
+            info.setMaxStake(maxStakePerNode);
+            stakingInfos.put(nodeNum, info);
+        }
+
+        return stakingInfos;
+    }
 }

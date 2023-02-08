@@ -57,176 +57,176 @@ import org.junit.jupiter.api.Test;
 
 class ContractSysUndelTransitionLogicTest {
 
-  private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
-  private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+    private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
+    private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
 
-  private Instant consensusTime;
-  private OptionValidator validator;
-  private ContractSysUndelTransitionLogic.LegacySystemUndeleter delegate;
-  private TransactionBody contractSysUndelTxn;
-  private TransactionContext txnCtx;
-  private SignedTxnAccessor accessor;
-  private SigImpactHistorian sigImpactHistorian;
-  MerkleMap<EntityNum, MerkleAccount> contracts;
-  PropertySource properties;
+    private Instant consensusTime;
+    private OptionValidator validator;
+    private ContractSysUndelTransitionLogic.LegacySystemUndeleter delegate;
+    private TransactionBody contractSysUndelTxn;
+    private TransactionContext txnCtx;
+    private SignedTxnAccessor accessor;
+    private SigImpactHistorian sigImpactHistorian;
+    MerkleMap<EntityNum, MerkleAccount> contracts;
+    PropertySource properties;
 
-  ContractSysUndelTransitionLogic subject;
+    ContractSysUndelTransitionLogic subject;
 
-  @BeforeEach
-  void setup() {
-    consensusTime = Instant.now();
+    @BeforeEach
+    void setup() {
+        consensusTime = Instant.now();
 
-    delegate = mock(ContractSysUndelTransitionLogic.LegacySystemUndeleter.class);
-    txnCtx = mock(TransactionContext.class);
-    given(txnCtx.consensusTime()).willReturn(consensusTime);
-    accessor = mock(SignedTxnAccessor.class);
-    validator = mock(OptionValidator.class);
-    withRubberstampingValidator();
-    sigImpactHistorian = mock(SigImpactHistorian.class);
-    properties = mock(PropertySource.class);
-    given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-        .willReturn(EnumSet.of(CONTRACT));
+        delegate = mock(ContractSysUndelTransitionLogic.LegacySystemUndeleter.class);
+        txnCtx = mock(TransactionContext.class);
+        given(txnCtx.consensusTime()).willReturn(consensusTime);
+        accessor = mock(SignedTxnAccessor.class);
+        validator = mock(OptionValidator.class);
+        withRubberstampingValidator();
+        sigImpactHistorian = mock(SigImpactHistorian.class);
+        properties = mock(PropertySource.class);
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
+                .willReturn(EnumSet.of(CONTRACT));
 
-    subject =
-        new ContractSysUndelTransitionLogic(
-            validator,
-            sigImpactHistorian,
-            txnCtx,
-            delegate,
-            () -> AccountStorageAdapter.fromInMemory(contracts),
-            properties);
-  }
+        subject =
+                new ContractSysUndelTransitionLogic(
+                        validator,
+                        sigImpactHistorian,
+                        txnCtx,
+                        delegate,
+                        () -> AccountStorageAdapter.fromInMemory(contracts),
+                        properties);
+    }
 
-  @Test
-  void abortsIfNotSupported() {
-    givenValidTxnCtx();
-    given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-        .willReturn(EnumSet.of(EntityType.TOKEN));
+    @Test
+    void abortsIfNotSupported() {
+        givenValidTxnCtx();
+        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
+                .willReturn(EnumSet.of(EntityType.TOKEN));
 
-    subject =
-        new ContractSysUndelTransitionLogic(
-            validator,
-            sigImpactHistorian,
-            txnCtx,
-            delegate,
-            () -> AccountStorageAdapter.fromInMemory(contracts),
-            properties);
+        subject =
+                new ContractSysUndelTransitionLogic(
+                        validator,
+                        sigImpactHistorian,
+                        txnCtx,
+                        delegate,
+                        () -> AccountStorageAdapter.fromInMemory(contracts),
+                        properties);
 
-    assertEquals(NOT_SUPPORTED, subject.validate(contractSysUndelTxn));
-  }
+        assertEquals(NOT_SUPPORTED, subject.validate(contractSysUndelTxn));
+    }
 
-  @Test
-  void hasCorrectApplicability() {
-    givenValidTxnCtx();
+    @Test
+    void hasCorrectApplicability() {
+        givenValidTxnCtx();
 
-    // expect:
-    assertTrue(subject.applicability().test(contractSysUndelTxn));
-    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-  }
+        // expect:
+        assertTrue(subject.applicability().test(contractSysUndelTxn));
+        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    }
 
-  @Test
-  void capturesBadUndelete() {
-    // setup:
-    final TransactionRecord sysUndelRec =
-        TransactionRecord.newBuilder()
-            .setReceipt(
-                TransactionReceipt.newBuilder()
-                    .setStatus(INVALID_CONTRACT_ID)
-                    .build())
-            .build();
+    @Test
+    void capturesBadUndelete() {
+        // setup:
+        final TransactionRecord sysUndelRec =
+                TransactionRecord.newBuilder()
+                        .setReceipt(
+                                TransactionReceipt.newBuilder()
+                                        .setStatus(INVALID_CONTRACT_ID)
+                                        .build())
+                        .build();
 
-    givenValidTxnCtx();
-    // and:
-    given(delegate.perform(contractSysUndelTxn, consensusTime)).willReturn(sysUndelRec);
+        givenValidTxnCtx();
+        // and:
+        given(delegate.perform(contractSysUndelTxn, consensusTime)).willReturn(sysUndelRec);
 
-    // when:
-    subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-    // then:
-    verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
-  }
+        // then:
+        verify(txnCtx).setStatus(INVALID_CONTRACT_ID);
+    }
 
-  @Test
-  void followsHappyPathWithOverrides() {
-    // setup:
-    final TransactionRecord sysUndelRec =
-        TransactionRecord.newBuilder()
-            .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
-            .build();
+    @Test
+    void followsHappyPathWithOverrides() {
+        // setup:
+        final TransactionRecord sysUndelRec =
+                TransactionRecord.newBuilder()
+                        .setReceipt(TransactionReceipt.newBuilder().setStatus(SUCCESS).build())
+                        .build();
 
-    givenValidTxnCtx();
-    // and:
-    given(delegate.perform(contractSysUndelTxn, consensusTime)).willReturn(sysUndelRec);
+        givenValidTxnCtx();
+        // and:
+        given(delegate.perform(contractSysUndelTxn, consensusTime)).willReturn(sysUndelRec);
 
-    // when:
-    subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-    // then:
-    verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
-    verify(txnCtx).setStatus(SUCCESS);
-  }
+        // then:
+        verify(sigImpactHistorian).markEntityChanged(target.getContractNum());
+        verify(txnCtx).setStatus(SUCCESS);
+    }
 
-  @Test
-  void acceptsOkSyntax() {
-    givenValidTxnCtx();
+    @Test
+    void acceptsOkSyntax() {
+        givenValidTxnCtx();
 
-    // expect:
-    assertEquals(OK, subject.semanticCheck().apply(contractSysUndelTxn));
-  }
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractSysUndelTxn));
+    }
 
-  @Test
-  void acceptsDeletedContract() {
-    givenValidTxnCtx();
-    // and:
-    given(validator.queryableContractStatus(eq(target), any())).willReturn(CONTRACT_DELETED);
+    @Test
+    void acceptsDeletedContract() {
+        givenValidTxnCtx();
+        // and:
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(CONTRACT_DELETED);
 
-    // expect:
-    assertEquals(OK, subject.semanticCheck().apply(contractSysUndelTxn));
-  }
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractSysUndelTxn));
+    }
 
-  @Test
-  void rejectsInvalidCid() {
-    givenValidTxnCtx();
-    // and:
-    given(validator.queryableContractStatus(eq(target), any())).willReturn(INVALID_CONTRACT_ID);
+    @Test
+    void rejectsInvalidCid() {
+        givenValidTxnCtx();
+        // and:
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(INVALID_CONTRACT_ID);
 
-    // expect:
-    assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysUndelTxn));
-  }
+        // expect:
+        assertEquals(INVALID_CONTRACT_ID, subject.semanticCheck().apply(contractSysUndelTxn));
+    }
 
-  @Test
-  void translatesUnknownException() {
-    givenValidTxnCtx();
+    @Test
+    void translatesUnknownException() {
+        givenValidTxnCtx();
 
-    given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
+        given(delegate.perform(any(), any())).willThrow(IllegalStateException.class);
 
-    // when:
-    subject.doStateTransition();
+        // when:
+        subject.doStateTransition();
 
-    // then:
-    verify(txnCtx).setStatus(FAIL_INVALID);
-  }
+        // then:
+        verify(txnCtx).setStatus(FAIL_INVALID);
+    }
 
-  private void givenValidTxnCtx() {
-    final var op =
-        TransactionBody.newBuilder()
-            .setTransactionID(ourTxnId())
-            .setSystemUndelete(
-                SystemUndeleteTransactionBody.newBuilder().setContractID(target));
-    contractSysUndelTxn = op.build();
-    given(accessor.getTxn()).willReturn(contractSysUndelTxn);
-    given(txnCtx.accessor()).willReturn(accessor);
-  }
+    private void givenValidTxnCtx() {
+        final var op =
+                TransactionBody.newBuilder()
+                        .setTransactionID(ourTxnId())
+                        .setSystemUndelete(
+                                SystemUndeleteTransactionBody.newBuilder().setContractID(target));
+        contractSysUndelTxn = op.build();
+        given(accessor.getTxn()).willReturn(contractSysUndelTxn);
+        given(txnCtx.accessor()).willReturn(accessor);
+    }
 
-  private TransactionID ourTxnId() {
-    return TransactionID.newBuilder()
-        .setAccountID(payer)
-        .setTransactionValidStart(
-            Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
-        .build();
-  }
+    private TransactionID ourTxnId() {
+        return TransactionID.newBuilder()
+                .setAccountID(payer)
+                .setTransactionValidStart(
+                        Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
+                .build();
+    }
 
-  private void withRubberstampingValidator() {
-    given(validator.queryableContractStatus(eq(target), any())).willReturn(OK);
-  }
+    private void withRubberstampingValidator() {
+        given(validator.queryableContractStatus(eq(target), any())).willReturn(OK);
+    }
 }

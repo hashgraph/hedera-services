@@ -37,63 +37,63 @@ import org.junit.jupiter.api.Test;
 
 class FileNumbersTest {
 
-  private static final String FILES_SOFTWARE_UPDATE_ZIP = "files.softwareUpdateZip";
-  PropertySource properties;
-  HederaNumbers hederaNumbers;
+    private static final String FILES_SOFTWARE_UPDATE_ZIP = "files.softwareUpdateZip";
+    PropertySource properties;
+    HederaNumbers hederaNumbers;
 
-  FileNumbers subject;
+    FileNumbers subject;
 
-  @BeforeEach
-  void setup() {
-    properties = mock(PropertySource.class);
-    hederaNumbers = mock(HederaNumbers.class);
+    @BeforeEach
+    void setup() {
+        properties = mock(PropertySource.class);
+        hederaNumbers = mock(HederaNumbers.class);
 
-    given(hederaNumbers.realm()).willReturn(24L);
-    given(hederaNumbers.shard()).willReturn(42L);
+        given(hederaNumbers.realm()).willReturn(24L);
+        given(hederaNumbers.shard()).willReturn(42L);
 
-    given(properties.getLongProperty(FILES_ADDRESS_BOOK)).willReturn(101L);
-    given(properties.getLongProperty(FILES_NODE_DETAILS)).willReturn(102L);
-    given(properties.getLongProperty(FILES_NETWORK_PROPERTIES)).willReturn(121L);
-    given(properties.getLongProperty(FILES_HAPI_PERMISSIONS)).willReturn(122L);
-    given(properties.getLongProperty(FILES_FEE_SCHEDULES)).willReturn(111L);
-    given(properties.getLongProperty(FILES_EXCHANGE_RATES)).willReturn(112L);
-    given(properties.getLongProperty(FILES_SOFTWARE_UPDATE_ZIP)).willReturn(150L);
-    given(properties.getLongProperty(FILES_THROTTLE_DEFINITIONS)).willReturn(123L);
-    given(properties.getEntityNumRange(FILES_SOFTWARE_UPDATE_RANGE))
-        .willReturn(Pair.of(150L, 159L));
+        given(properties.getLongProperty(FILES_ADDRESS_BOOK)).willReturn(101L);
+        given(properties.getLongProperty(FILES_NODE_DETAILS)).willReturn(102L);
+        given(properties.getLongProperty(FILES_NETWORK_PROPERTIES)).willReturn(121L);
+        given(properties.getLongProperty(FILES_HAPI_PERMISSIONS)).willReturn(122L);
+        given(properties.getLongProperty(FILES_FEE_SCHEDULES)).willReturn(111L);
+        given(properties.getLongProperty(FILES_EXCHANGE_RATES)).willReturn(112L);
+        given(properties.getLongProperty(FILES_SOFTWARE_UPDATE_ZIP)).willReturn(150L);
+        given(properties.getLongProperty(FILES_THROTTLE_DEFINITIONS)).willReturn(123L);
+        given(properties.getEntityNumRange(FILES_SOFTWARE_UPDATE_RANGE))
+                .willReturn(Pair.of(150L, 159L));
 
-    subject = new FileNumbers(hederaNumbers, properties);
-  }
-
-  @Test
-  void hasExpectedNumbers() {
-    // expect:
-    assertEquals(101, subject.addressBook());
-    assertEquals(102, subject.nodeDetails());
-    assertEquals(111, subject.feeSchedules());
-    assertEquals(112, subject.exchangeRates());
-    assertEquals(121, subject.applicationProperties());
-    assertEquals(122, subject.apiPermissions());
-    assertEquals(123, subject.throttleDefinitions());
-    assertEquals(150L, subject.firstSoftwareUpdateFile());
-    assertEquals(159L, subject.lastSoftwareUpdateFile());
-  }
-
-  @Test
-  void knowsSpecialFiles() {
-    assertFalse(subject.isSoftwareUpdateFile(149L));
-    for (long sp = 150L; sp <= 159L; sp++) {
-      assertTrue(subject.isSoftwareUpdateFile(sp));
+        subject = new FileNumbers(hederaNumbers, properties);
     }
-    assertFalse(subject.isSoftwareUpdateFile(160L));
-  }
 
-  @Test
-  void getsExpectedFid() {
-    // when:
-    final var fid = subject.toFid(3L);
+    @Test
+    void hasExpectedNumbers() {
+        // expect:
+        assertEquals(101, subject.addressBook());
+        assertEquals(102, subject.nodeDetails());
+        assertEquals(111, subject.feeSchedules());
+        assertEquals(112, subject.exchangeRates());
+        assertEquals(121, subject.applicationProperties());
+        assertEquals(122, subject.apiPermissions());
+        assertEquals(123, subject.throttleDefinitions());
+        assertEquals(150L, subject.firstSoftwareUpdateFile());
+        assertEquals(159L, subject.lastSoftwareUpdateFile());
+    }
 
-    // then:
-    assertEquals(IdUtils.asFile("42.24.3"), fid);
-  }
+    @Test
+    void knowsSpecialFiles() {
+        assertFalse(subject.isSoftwareUpdateFile(149L));
+        for (long sp = 150L; sp <= 159L; sp++) {
+            assertTrue(subject.isSoftwareUpdateFile(sp));
+        }
+        assertFalse(subject.isSoftwareUpdateFile(160L));
+    }
+
+    @Test
+    void getsExpectedFid() {
+        // when:
+        final var fid = subject.toFid(3L);
+
+        // then:
+        assertEquals(IdUtils.asFile("42.24.3"), fid);
+    }
 }

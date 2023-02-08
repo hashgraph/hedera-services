@@ -71,84 +71,81 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ServicesAppTest {
 
-  private final long selfId = 123;
-  private final String accountMemo = "0.0.3";
-  private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final long selfId = 123;
+    private final String accountMemo = "0.0.3";
+    private final NodeId selfNodeId = new NodeId(false, selfId);
 
-  @Mock
-  private Platform platform;
-  @Mock
-  private Cryptography cryptography;
-  @Mock
-  private PropertySource overridingProps;
+    @Mock private Platform platform;
+    @Mock private Cryptography cryptography;
+    @Mock private PropertySource overridingProps;
 
-  private ServicesApp subject;
+    private ServicesApp subject;
 
-  @BeforeEach
-  void setUp() {
-    // setup:
-    final var bootstrapProps = new BootstrapProperties();
-    final var props = new ChainedSources(overridingProps, bootstrapProps);
-    final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
-    final var logDirVal = "data/recordStreams";
-    final var nodeProps = new ScreenedNodeFileProps();
+    @BeforeEach
+    void setUp() {
+        // setup:
+        final var bootstrapProps = new BootstrapProperties();
+        final var props = new ChainedSources(overridingProps, bootstrapProps);
+        final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
+        final var logDirVal = "data/recordStreams";
+        final var nodeProps = new ScreenedNodeFileProps();
 
-    given(platform.getCryptography()).willReturn(cryptography);
-    given(platform.getSelfId()).willReturn(selfNodeId);
-    if (!nodeProps.containsProperty(logDirKey)) {
-      given(overridingProps.containsProperty(any())).willReturn(false);
-      given(overridingProps.containsProperty(logDirKey)).willReturn(true);
-      given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
+        given(platform.getCryptography()).willReturn(cryptography);
+        given(platform.getSelfId()).willReturn(selfNodeId);
+        if (!nodeProps.containsProperty(logDirKey)) {
+            given(overridingProps.containsProperty(any())).willReturn(false);
+            given(overridingProps.containsProperty(logDirKey)).willReturn(true);
+            given(overridingProps.getProperty(logDirKey)).willReturn(logDirVal);
+        }
+
+        subject =
+                DaggerServicesApp.builder()
+                        .staticAccountMemo(accountMemo)
+                        .bootstrapProps(props)
+                        .initialHash(EMPTY_HASH)
+                        .platform(platform)
+                        .consoleCreator((ignore, visible) -> null)
+                        .crypto(cryptography)
+                        .selfId(selfId)
+                        .build();
     }
 
-    subject =
-        DaggerServicesApp.builder()
-            .staticAccountMemo(accountMemo)
-            .bootstrapProps(props)
-            .initialHash(EMPTY_HASH)
-            .platform(platform)
-            .consoleCreator((ignore, visible) -> null)
-            .crypto(cryptography)
-            .selfId(selfId)
-            .build();
-  }
-
-  @Test
-  @SuppressWarnings("java:S5961")
-  void objectGraphRootsAreAvailable() {
-    assertThat(subject.eventExpansion(), instanceOf(EventExpansion.class));
-    assertThat(subject.treasuryCloner(), instanceOf(TreasuryCloner.class));
-    assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
-    assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
-    assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
-    assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
-    assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
-    assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
-    assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
-    assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-    assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
-    assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
-    assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
-    assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
-    assertThat(subject.networkCtxManager(), instanceOf(NetworkCtxManager.class));
-    assertThat(subject.sysFilesManager(), instanceOf(HfsSystemFilesManager.class));
-    assertThat(subject.backingAccounts(), instanceOf(BackingAccounts.class));
-    assertThat(subject.statsManager(), instanceOf(ServicesStatsManager.class));
-    assertThat(subject.issListener(), instanceOf(ServicesIssListener.class));
-    assertThat(subject.newSignedStateListener(), instanceOf(ServicesSignedStateListener.class));
-    assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
-    assertThat(subject.systemExits(), instanceOf(JvmSystemExits.class));
-    assertThat(subject.sysAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
-    assertThat(subject.nodeInfo(), instanceOf(NodeInfo.class));
-    assertThat(subject.platform(), instanceOf(Platform.class));
-    assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
-    assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
-    assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
-    assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
-    assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
-    assertSame(subject.nodeId(), selfNodeId);
-    assertSame(SLEEPING_PAUSE, subject.pause());
-    assertTrue(subject.consoleOut().isEmpty());
-    assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
-  }
+    @Test
+    @SuppressWarnings("java:S5961")
+    void objectGraphRootsAreAvailable() {
+        assertThat(subject.eventExpansion(), instanceOf(EventExpansion.class));
+        assertThat(subject.treasuryCloner(), instanceOf(TreasuryCloner.class));
+        assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
+        assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
+        assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
+        assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
+        assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
+        assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
+        assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
+        assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
+        assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
+        assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
+        assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
+        assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));
+        assertThat(subject.networkCtxManager(), instanceOf(NetworkCtxManager.class));
+        assertThat(subject.sysFilesManager(), instanceOf(HfsSystemFilesManager.class));
+        assertThat(subject.backingAccounts(), instanceOf(BackingAccounts.class));
+        assertThat(subject.statsManager(), instanceOf(ServicesStatsManager.class));
+        assertThat(subject.issListener(), instanceOf(ServicesIssListener.class));
+        assertThat(subject.newSignedStateListener(), instanceOf(ServicesSignedStateListener.class));
+        assertThat(subject.ledgerValidator(), instanceOf(BasedLedgerValidator.class));
+        assertThat(subject.systemExits(), instanceOf(JvmSystemExits.class));
+        assertThat(subject.sysAccountsCreator(), instanceOf(BackedSystemAccountsCreator.class));
+        assertThat(subject.nodeInfo(), instanceOf(NodeInfo.class));
+        assertThat(subject.platform(), instanceOf(Platform.class));
+        assertThat(subject.reconnectListener(), instanceOf(ReconnectListener.class));
+        assertThat(subject.grpcStarter(), instanceOf(GrpcStarter.class));
+        assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
+        assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
+        assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
+        assertSame(subject.nodeId(), selfNodeId);
+        assertSame(SLEEPING_PAUSE, subject.pause());
+        assertTrue(subject.consoleOut().isEmpty());
+        assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
+    }
 }

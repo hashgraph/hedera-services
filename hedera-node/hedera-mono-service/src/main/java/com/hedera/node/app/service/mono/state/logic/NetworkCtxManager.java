@@ -55,192 +55,192 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class NetworkCtxManager {
 
-  private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
+    private static final Logger log = LogManager.getLogger(NetworkCtxManager.class);
 
-  private final int issResetPeriod;
+    private final int issResetPeriod;
 
-  private long gasUsedThisConsSec = 0L;
-  private boolean consensusSecondJustChanged = false;
+    private long gasUsedThisConsSec = 0L;
+    private boolean consensusSecondJustChanged = false;
 
-  private final long stakingPeriod;
-  private final IssEventInfo issInfo;
-  private final ExpiryThrottle expiryThrottle;
-  private final MiscRunningAvgs runningAvgs;
-  private final HapiOpCounters opCounters;
-  private final HbarCentExchange exchange;
-  private final SystemFilesManager systemFilesManager;
-  private final MultiplierSources multiplierSources;
-  private final GlobalDynamicProperties dynamicProperties;
-  private final FunctionalityThrottling handleThrottling;
-  private final Supplier<MerkleNetworkContext> networkCtx;
-  private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
-  private final TransactionContext txnCtx;
+    private final long stakingPeriod;
+    private final IssEventInfo issInfo;
+    private final ExpiryThrottle expiryThrottle;
+    private final MiscRunningAvgs runningAvgs;
+    private final HapiOpCounters opCounters;
+    private final HbarCentExchange exchange;
+    private final SystemFilesManager systemFilesManager;
+    private final MultiplierSources multiplierSources;
+    private final GlobalDynamicProperties dynamicProperties;
+    private final FunctionalityThrottling handleThrottling;
+    private final Supplier<MerkleNetworkContext> networkCtx;
+    private final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator;
+    private final TransactionContext txnCtx;
 
-  private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
+    private BiPredicate<Instant, Instant> isNextDay = (now, then) -> !inSameUtcDay(now, then);
 
-  @Inject
-  public NetworkCtxManager(
-      final IssEventInfo issInfo,
-      final ExpiryThrottle expiryThrottle,
-      final NodeLocalProperties nodeLocalProperties,
-      final HapiOpCounters opCounters,
-      final HbarCentExchange exchange,
-      final SystemFilesManager systemFilesManager,
-      final MultiplierSources multiplierSources,
-      final GlobalDynamicProperties dynamicProperties,
-      final @HandleThrottle FunctionalityThrottling handleThrottling,
-      final Supplier<MerkleNetworkContext> networkCtx,
-      final TransactionContext txnCtx,
-      final MiscRunningAvgs runningAvgs,
-      final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator,
-      final @CompositeProps PropertySource propertySource) {
-    issResetPeriod = nodeLocalProperties.issResetPeriod();
+    @Inject
+    public NetworkCtxManager(
+            final IssEventInfo issInfo,
+            final ExpiryThrottle expiryThrottle,
+            final NodeLocalProperties nodeLocalProperties,
+            final HapiOpCounters opCounters,
+            final HbarCentExchange exchange,
+            final SystemFilesManager systemFilesManager,
+            final MultiplierSources multiplierSources,
+            final GlobalDynamicProperties dynamicProperties,
+            final @HandleThrottle FunctionalityThrottling handleThrottling,
+            final Supplier<MerkleNetworkContext> networkCtx,
+            final TransactionContext txnCtx,
+            final MiscRunningAvgs runningAvgs,
+            final EndOfStakingPeriodCalculator endOfStakingPeriodCalculator,
+            final @CompositeProps PropertySource propertySource) {
+        issResetPeriod = nodeLocalProperties.issResetPeriod();
 
-    this.issInfo = issInfo;
-    this.expiryThrottle = expiryThrottle;
-    this.opCounters = opCounters;
-    this.exchange = exchange;
-    this.networkCtx = networkCtx;
-    this.systemFilesManager = systemFilesManager;
-    this.multiplierSources = multiplierSources;
-    this.handleThrottling = handleThrottling;
-    this.dynamicProperties = dynamicProperties;
-    this.runningAvgs = runningAvgs;
-    this.txnCtx = txnCtx;
-    this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
-    this.stakingPeriod = propertySource.getLongProperty(STAKING_PERIOD_MINS);
-  }
-
-  public void setObservableFilesNotLoaded() {
-    systemFilesManager.setObservableFilesNotLoaded();
-  }
-
-  public void loadObservableSysFilesIfNeeded() {
-    if (!systemFilesManager.areObservableFilesLoaded()) {
-      final var networkCtxNow = networkCtx.get();
-      log.info("Observable files not yet loaded, doing now");
-      systemFilesManager.loadObservableSystemFiles();
-      log.info("Loaded observable files");
-      networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
-      multiplierSources.resetExpectations();
-      networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
-      networkCtxNow.resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
+        this.issInfo = issInfo;
+        this.expiryThrottle = expiryThrottle;
+        this.opCounters = opCounters;
+        this.exchange = exchange;
+        this.networkCtx = networkCtx;
+        this.systemFilesManager = systemFilesManager;
+        this.multiplierSources = multiplierSources;
+        this.handleThrottling = handleThrottling;
+        this.dynamicProperties = dynamicProperties;
+        this.runningAvgs = runningAvgs;
+        this.txnCtx = txnCtx;
+        this.endOfStakingPeriodCalculator = endOfStakingPeriodCalculator;
+        this.stakingPeriod = propertySource.getLongProperty(STAKING_PERIOD_MINS);
     }
-  }
 
-  public void advanceConsensusClockTo(final Instant consensusTime) {
-    final var networkCtxNow = networkCtx.get();
-    final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
+    public void setObservableFilesNotLoaded() {
+        systemFilesManager.setObservableFilesNotLoaded();
+    }
 
-    if (lastConsensusTime == null
-        || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
-      consensusSecondJustChanged = true;
-      // We're in a new second, so check if it's the first of a UTC calendar day; there are
-      // some special actions that trigger on the first transaction after midnight
-      if (lastConsensusTime == null || isNextPeriod(lastConsensusTime, consensusTime)) {
-        networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
-        try {
-          endOfStakingPeriodCalculator.updateNodes(consensusTime);
-        } catch (final Exception e) {
-          log.error("CATASTROPHIC failure updating end-of-day stakes", e);
+    public void loadObservableSysFilesIfNeeded() {
+        if (!systemFilesManager.areObservableFilesLoaded()) {
+            final var networkCtxNow = networkCtx.get();
+            log.info("Observable files not yet loaded, doing now");
+            systemFilesManager.loadObservableSystemFiles();
+            log.info("Loaded observable files");
+            networkCtxNow.resetThrottlingFromSavedSnapshots(handleThrottling);
+            multiplierSources.resetExpectations();
+            networkCtxNow.resetMultiplierSourceFromSavedCongestionStarts(multiplierSources);
+            networkCtxNow.resetExpiryThrottleFromSavedSnapshot(expiryThrottle);
         }
-      }
-    } else {
-      consensusSecondJustChanged = false;
     }
 
-    networkCtxNow.setConsensusTimeOfLastHandledTxn(consensusTime);
+    public void advanceConsensusClockTo(final Instant consensusTime) {
+        final var networkCtxNow = networkCtx.get();
+        final var lastConsensusTime = networkCtxNow.consensusTimeOfLastHandledTxn();
 
-    if (issInfo.status() == ONGOING_ISS) {
-      issInfo.consensusTimeOfRecentAlert()
-          .ifPresentOrElse(
-              recentAlertTime -> {
-                final var resetTime = recentAlertTime.plus(issResetPeriod, SECONDS);
-                if (consensusTime.isAfter(resetTime)) {
-                  issInfo.relax();
+        if (lastConsensusTime == null
+                || consensusTime.getEpochSecond() > lastConsensusTime.getEpochSecond()) {
+            consensusSecondJustChanged = true;
+            // We're in a new second, so check if it's the first of a UTC calendar day; there are
+            // some special actions that trigger on the first transaction after midnight
+            if (lastConsensusTime == null || isNextPeriod(lastConsensusTime, consensusTime)) {
+                networkCtxNow.midnightRates().replaceWith(exchange.activeRates());
+                try {
+                    endOfStakingPeriodCalculator.updateNodes(consensusTime);
+                } catch (final Exception e) {
+                    log.error("CATASTROPHIC failure updating end-of-day stakes", e);
                 }
-              },
-              issInfo::relax);
-    }
-  }
+            }
+        } else {
+            consensusSecondJustChanged = false;
+        }
 
-  @VisibleForTesting
-  boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
-    if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
-      return isNextDay.test(lastConsensusTime, consensusTime);
-    } else {
-      return getPeriod(consensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-          != getPeriod(lastConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
-    }
-  }
+        networkCtxNow.setConsensusTimeOfLastHandledTxn(consensusTime);
 
-  public boolean currentTxnIsFirstInConsensusSecond() {
-    return consensusSecondJustChanged;
-  }
-
-  /**
-   * Callback used by the processing flow to notify the context manager it should update any network
-   * context that derives from the side effects of handled transactions.
-   *
-   * <p>At present, this context includes:
-   *
-   * <ol>
-   *   <li>The {@code *Handled} counts.
-   *   <li>The {@code gasPerConsSec} running average.
-   *   <li>The "in-handle" throttles.
-   *   <li>The congestion pricing multiplier.
-   * </ol>
-   *
-   * @param op the type of transaction just handled
-   */
-  public void finishIncorporating(@NonNull final HederaFunctionality op) {
-    opCounters.countHandled(op);
-    if (consensusSecondJustChanged) {
-      runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
-      gasUsedThisConsSec = 0L;
+        if (issInfo.status() == ONGOING_ISS) {
+            issInfo.consensusTimeOfRecentAlert()
+                    .ifPresentOrElse(
+                            recentAlertTime -> {
+                                final var resetTime = recentAlertTime.plus(issResetPeriod, SECONDS);
+                                if (consensusTime.isAfter(resetTime)) {
+                                    issInfo.relax();
+                                }
+                            },
+                            issInfo::relax);
+        }
     }
 
-    if (isGasThrottled(op) && txnCtx.hasContractResult()) {
-      final var gasUsed = txnCtx.getGasUsedForContractTxn();
-      gasUsedThisConsSec += gasUsed;
-      if (dynamicProperties.shouldThrottleByGas()) {
-        final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
-        handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(), excessAmount);
-      }
+    @VisibleForTesting
+    boolean isNextPeriod(final Instant lastConsensusTime, final Instant consensusTime) {
+        if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
+            return isNextDay.test(lastConsensusTime, consensusTime);
+        } else {
+            return getPeriod(consensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
+                    != getPeriod(lastConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+        }
     }
 
-    final var networkCtxNow = networkCtx.get();
-    networkCtxNow.syncThrottling(handleThrottling);
-    networkCtxNow.syncMultiplierSources(multiplierSources);
-  }
+    public boolean currentTxnIsFirstInConsensusSecond() {
+        return consensusSecondJustChanged;
+    }
 
-  public static boolean inSameUtcDay(final Instant now, final Instant then) {
-    return LocalDateTime.ofInstant(now, UTC).getDayOfYear()
-        == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
-  }
+    /**
+     * Callback used by the processing flow to notify the context manager it should update any
+     * network context that derives from the side effects of handled transactions.
+     *
+     * <p>At present, this context includes:
+     *
+     * <ol>
+     *   <li>The {@code *Handled} counts.
+     *   <li>The {@code gasPerConsSec} running average.
+     *   <li>The "in-handle" throttles.
+     *   <li>The congestion pricing multiplier.
+     * </ol>
+     *
+     * @param op the type of transaction just handled
+     */
+    public void finishIncorporating(@NonNull final HederaFunctionality op) {
+        opCounters.countHandled(op);
+        if (consensusSecondJustChanged) {
+            runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
+            gasUsedThisConsSec = 0L;
+        }
 
-  /* --- Only used in unit tests --- */
-  int getIssResetPeriod() {
-    return issResetPeriod;
-  }
+        if (isGasThrottled(op) && txnCtx.hasContractResult()) {
+            final var gasUsed = txnCtx.getGasUsedForContractTxn();
+            gasUsedThisConsSec += gasUsed;
+            if (dynamicProperties.shouldThrottleByGas()) {
+                final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
+                handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(), excessAmount);
+            }
+        }
 
-  void setConsensusSecondJustChanged(final boolean consensusSecondJustChanged) {
-    this.consensusSecondJustChanged = consensusSecondJustChanged;
-  }
+        final var networkCtxNow = networkCtx.get();
+        networkCtxNow.syncThrottling(handleThrottling);
+        networkCtxNow.syncMultiplierSources(multiplierSources);
+    }
 
-  long getGasUsedThisConsSec() {
-    return gasUsedThisConsSec;
-  }
+    public static boolean inSameUtcDay(final Instant now, final Instant then) {
+        return LocalDateTime.ofInstant(now, UTC).getDayOfYear()
+                == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
+    }
 
-  void setGasUsedThisConsSec(final long gasUsedThisConsSec) {
-    this.gasUsedThisConsSec = gasUsedThisConsSec;
-  }
+    /* --- Only used in unit tests --- */
+    int getIssResetPeriod() {
+        return issResetPeriod;
+    }
 
-  void setIsNextDay(final BiPredicate<Instant, Instant> isNextDay) {
-    this.isNextDay = isNextDay;
-  }
+    void setConsensusSecondJustChanged(final boolean consensusSecondJustChanged) {
+        this.consensusSecondJustChanged = consensusSecondJustChanged;
+    }
 
-  BiPredicate<Instant, Instant> getIsNextDay() {
-    return isNextDay;
-  }
+    long getGasUsedThisConsSec() {
+        return gasUsedThisConsSec;
+    }
+
+    void setGasUsedThisConsSec(final long gasUsedThisConsSec) {
+        this.gasUsedThisConsSec = gasUsedThisConsSec;
+    }
+
+    void setIsNextDay(final BiPredicate<Instant, Instant> isNextDay) {
+        this.isNextDay = isNextDay;
+    }
+
+    BiPredicate<Instant, Instant> getIsNextDay() {
+        return isNextDay;
+    }
 }
