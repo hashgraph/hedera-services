@@ -158,9 +158,7 @@ public final class ScreenedSysFileProps implements PropertySource {
         rawProperties.clear();
         rawProps.getNameValueList().stream()
                 .map(this::withStandardizedName)
-                .filter(this::isValidGlobalDynamic)
-                .filter(this::hasParseableValue)
-                .filter(this::isUsableGlobalDynamic)
+                .filter(setting -> from121.containsKey(setting.getName()))
                 .forEach(setting -> rawProperties.put(setting.getName(), setting.getValue()));
 
         final var msg =

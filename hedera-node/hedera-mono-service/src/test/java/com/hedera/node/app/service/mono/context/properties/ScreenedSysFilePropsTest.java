@@ -25,6 +25,8 @@ import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUN
 import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
 import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,13 +103,11 @@ class ScreenedSysFilePropsTest {
 
         assertEquals(1, subject.from121.size());
         assertEquals(98L, subject.from121.get(LEDGER_FUNDING_ACCOUNT));
+
         assertThat(
-                logCaptor.warnLogs(),
-                contains(
-                        String.format(
-                                DEPRECATED_PROP_TPL,
-                                "defaultFeeCollectionAccount",
-                                LEDGER_FUNDING_ACCOUNT)));
+                String.format(
+                        DEPRECATED_PROP_TPL, "defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+                is(in(logCaptor.warnLogs())));
     }
 
     @ParameterizedTest
@@ -146,18 +146,22 @@ class ScreenedSysFilePropsTest {
         subject.screenNew(withJust("defaultFeeCollectionAccount", "abc"));
 
         assertTrue(subject.from121.isEmpty());
+
         assertThat(
-                logCaptor.warnLogs(),
-                contains(
-                        "Property name 'defaultFeeCollectionAccount' is deprecated, please use"
-                                + " 'ledger.fundingAccount' instead!",
-                        String.format(
-                                UNTRANSFORMABLE_PROP_TPL,
-                                "abc",
-                                "defaultFeeCollectionAccount",
-                                "IllegalArgumentException"),
-                        "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
-                                + " it a proper home!"));
+                "Property name 'defaultFeeCollectionAccount' is deprecated, please use"
+                        + " 'ledger.fundingAccount' instead!",
+                is(in(logCaptor.warnLogs())));
+        assertThat(
+                String.format(
+                        UNTRANSFORMABLE_PROP_TPL,
+                        "abc",
+                        "defaultFeeCollectionAccount",
+                        "IllegalArgumentException"),
+                is(in(logCaptor.warnLogs())));
+        assertThat(
+                "Property 'defaultFeeCollectionAccount' is not global/dynamic, please find"
+                        + " it a proper home!",
+                is(in(logCaptor.warnLogs())));
     }
 
     private static ServicesConfigurationList withJust(final String name, final String value) {
