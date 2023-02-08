@@ -94,8 +94,9 @@ public class NewAccountRecordExists extends HapiSuite {
                                         account, a -> a.withMemo(memo).withBalance(balance))))
                 .when(cryptoCreate(account).balance(balance).memo(memo))
                 .then(
-                        // HapiSpec automatically waits for the streamIncludes()
-                        // expectation to pass, fail, or time out
+                        // HapiSpec automatically waits for the streamMustInclude()
+                        // assertion to pass, fail, or time out while ensuring enough
+                        // background traffic to keep closing record stream files
                         );
     }
 
