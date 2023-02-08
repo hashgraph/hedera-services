@@ -55,7 +55,7 @@ RUN ./gradlew assemble copyLib copyApp
 
 ## Finishes by copying the Services JAR to the base runtime
 FROM base-runtime AS final-image
-COPY docker/start-services.sh /opt/hedera/services/start-services.sh
+COPY hedera-node/docker/start-services.sh /opt/hedera/services/start-services.sh
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib
