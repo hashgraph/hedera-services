@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -43,7 +42,6 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.de
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.*;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.INSERT_ABI;
-import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -84,8 +82,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     autoRenewWorksAsExpected(),
                     autoRenewInGracePeriodIfEnoughBalance(),
                     storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
-                        receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
-//                     This spec should be at the end of this suite
+                    receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
+                    //                     This spec should be at the end of this suite
                     validateStreams()
                 });
     }
@@ -124,9 +122,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(initcode)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(
-                                contractToRemove,
-                                List.of(aFungibleToken, nonFungibleToken)),
+                        tokenAssociate(contractToRemove, List.of(aFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
                                 moving(aFungibleAmount, aFungibleToken)
                                         .between(TOKEN_TREASURY, contractToRemove),
