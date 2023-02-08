@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -33,49 +33,52 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingInfoMapBuilderTest {
-    @Mock AddressBook addressBook;
-    @Mock BootstrapProperties bootstrapProperties;
 
-    @Test
-    void buildsStakingInfoMapAsExpected() {
-        final var address1 = mock(Address.class);
-        final var address2 = mock(Address.class);
-        final var address3 = mock(Address.class);
-        final var address4 = mock(Address.class);
-        final var address5 = mock(Address.class);
-        final var totalHbar = 5_000_000_000L;
-        final var expectedMaxStakePerNode = 1_000_000_000L;
-        final var expectedMinStakePerNode = 500_000_000L;
+  @Mock
+  AddressBook addressBook;
+  @Mock
+  BootstrapProperties bootstrapProperties;
 
-        given(addressBook.getSize()).willReturn(5);
-        given(addressBook.getAddress(0)).willReturn(address1);
-        given(address1.getId()).willReturn(0L);
-        given(addressBook.getAddress(1)).willReturn(address2);
-        given(address2.getId()).willReturn(1L);
-        given(addressBook.getAddress(2)).willReturn(address3);
-        given(address3.getId()).willReturn(2L);
-        given(addressBook.getAddress(3)).willReturn(address4);
-        given(address4.getId()).willReturn(3L);
-        given(addressBook.getAddress(4)).willReturn(address5);
-        given(address5.getId()).willReturn(4L);
-        given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
-                .willReturn(totalHbar);
+  @Test
+  void buildsStakingInfoMapAsExpected() {
+    final var address1 = mock(Address.class);
+    final var address2 = mock(Address.class);
+    final var address3 = mock(Address.class);
+    final var address4 = mock(Address.class);
+    final var address5 = mock(Address.class);
+    final var totalHbar = 5_000_000_000L;
+    final var expectedMaxStakePerNode = 1_000_000_000L;
+    final var expectedMinStakePerNode = 500_000_000L;
 
-        var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
+    given(addressBook.getSize()).willReturn(5);
+    given(addressBook.getAddress(0)).willReturn(address1);
+    given(address1.getId()).willReturn(0L);
+    given(addressBook.getAddress(1)).willReturn(address2);
+    given(address2.getId()).willReturn(1L);
+    given(addressBook.getAddress(2)).willReturn(address3);
+    given(address3.getId()).willReturn(2L);
+    given(addressBook.getAddress(3)).willReturn(address4);
+    given(address4.getId()).willReturn(3L);
+    given(addressBook.getAddress(4)).willReturn(address5);
+    given(address5.getId()).willReturn(4L);
+    given(bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT))
+        .willReturn(totalHbar);
 
-        assertEquals(5, stakingInfoMap.size());
-        assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(0)));
-        assertEquals(
-                expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMaxStake());
-        assertEquals(
-                expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMinStake());
-        assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(1)));
-        assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(2)));
-        assertEquals(
-                expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMaxStake());
-        assertEquals(
-                expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMinStake());
-        assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(3)));
-        assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(4)));
-    }
+    final var stakingInfoMap = buildStakingInfoMap(addressBook, bootstrapProperties);
+
+    assertEquals(5, stakingInfoMap.size());
+    assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(0)));
+    assertEquals(
+        expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMaxStake());
+    assertEquals(
+        expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(0)).getMinStake());
+    assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(1)));
+    assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(2)));
+    assertEquals(
+        expectedMaxStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMaxStake());
+    assertEquals(
+        expectedMinStakePerNode, stakingInfoMap.get(EntityNum.fromInt(2)).getMinStake());
+    assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(3)));
+    assertTrue(stakingInfoMap.containsKey(EntityNum.fromInt(4)));
+  }
 }

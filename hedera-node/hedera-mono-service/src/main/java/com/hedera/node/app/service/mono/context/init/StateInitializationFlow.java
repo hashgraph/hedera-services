@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context.init;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_LAST_THROTTLE_EXEMPT;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.ServicesState;
@@ -34,58 +34,60 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StateInitializationFlow {
-    private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
 
-    private final HederaFs hfs;
-    private final HederaNumbers hederaNums;
-    private final RecordStreamManager recordStreamManager;
-    private final MutableStateChildren workingState;
-    private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
+  private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
 
-    @Inject
-    public StateInitializationFlow(
-            final HederaFs hfs,
-            final HederaNumbers hederaNums,
-            final RecordStreamManager recordStreamManager,
-            final MutableStateChildren workingState,
-            final Set<FileUpdateInterceptor> fileUpdateInterceptors) {
-        this.hfs = hfs;
-        this.hederaNums = hederaNums;
-        this.workingState = workingState;
-        this.recordStreamManager = recordStreamManager;
-        this.fileUpdateInterceptors = fileUpdateInterceptors;
+  private final HederaFs hfs;
+  private final HederaNumbers hederaNums;
+  private final RecordStreamManager recordStreamManager;
+  private final MutableStateChildren workingState;
+  private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
+
+  @Inject
+  public StateInitializationFlow(
+      final HederaFs hfs,
+      final HederaNumbers hederaNums,
+      final RecordStreamManager recordStreamManager,
+      final MutableStateChildren workingState,
+      final Set<FileUpdateInterceptor> fileUpdateInterceptors) {
+    this.hfs = hfs;
+    this.hederaNums = hederaNums;
+    this.workingState = workingState;
+    this.recordStreamManager = recordStreamManager;
+    this.fileUpdateInterceptors = fileUpdateInterceptors;
+  }
+
+  public void runWith(
+      final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
+    final var lastThrottleExempt =
+        bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
+    // The last throttle-exempt account is configurable to make it easy to start dev networks
+    // without throttling
+    numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
+
+    workingState.updateFrom(activeState);
+    log.info("Context updated with working state");
+
+    final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
+    recordStreamManager.setInitialHash(activeHash);
+    log.info("Record running hash initialized");
+
+    if (hfs.numRegisteredInterceptors() == 0) {
+      fileUpdateInterceptors.forEach(hfs::register);
+      log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
     }
+  }
 
-    public void runWith(
-            final ServicesState activeState, final BootstrapProperties bootstrapProperties) {
-        final var lastThrottleExempt =
-                bootstrapProperties.getLongProperty(ACCOUNTS_LAST_THROTTLE_EXEMPT);
-        // The last throttle-exempt account is configurable to make it easy to start dev networks
-        // without throttling
-        numberConfigurer.configureNumbers(hederaNums, lastThrottleExempt);
+  interface NumberConfigurer {
 
-        workingState.updateFrom(activeState);
-        log.info("Context updated with working state");
+    void configureNumbers(HederaNumbers numbers, long lastThrottleExempt);
+  }
 
-        final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
-        recordStreamManager.setInitialHash(activeHash);
-        log.info("Record running hash initialized");
+  private static NumberConfigurer numberConfigurer = StaticPropertiesHolder::configureNumbers;
 
-        if (hfs.numRegisteredInterceptors() == 0) {
-            fileUpdateInterceptors.forEach(hfs::register);
-            log.info("Registered {} file update interceptors", fileUpdateInterceptors.size());
-        }
-    }
-
-    interface NumberConfigurer {
-        void configureNumbers(HederaNumbers numbers, long lastThrottleExempt);
-    }
-
-    private static NumberConfigurer numberConfigurer = StaticPropertiesHolder::configureNumbers;
-
-    /* --- Only used by unit tests --- */
-    @VisibleForTesting
-    static void setNumberConfigurer(final NumberConfigurer numberConfigurer) {
-        StateInitializationFlow.numberConfigurer = numberConfigurer;
-    }
+  /* --- Only used by unit tests --- */
+  @VisibleForTesting
+  static void setNumberConfigurer(final NumberConfigurer numberConfigurer) {
+    StateInitializationFlow.numberConfigurer = numberConfigurer;
+  }
 }

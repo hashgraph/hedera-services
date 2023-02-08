@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -45,80 +45,89 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PendingRewardsManagementTest {
 
-    @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
-    @Mock private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private SyntheticTxnFactory syntheticTxnFactory;
-    @Mock private RecordsHistorian recordsHistorian;
-    @Mock private EntityCreator creator;
-    @Mock private PropertySource properties;
-    @Mock private MerkleStakingInfo info;
-    @Mock private GlobalDynamicProperties dynamicProperties;
+  @Mock
+  private MerkleMap<EntityNum, MerkleAccount> accounts;
+  @Mock
+  private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+  @Mock
+  private MerkleNetworkContext networkCtx;
+  @Mock
+  private SyntheticTxnFactory syntheticTxnFactory;
+  @Mock
+  private RecordsHistorian recordsHistorian;
+  @Mock
+  private EntityCreator creator;
+  @Mock
+  private PropertySource properties;
+  @Mock
+  private MerkleStakingInfo info;
+  @Mock
+  private GlobalDynamicProperties dynamicProperties;
 
-    private EndOfStakingPeriodCalculator subject;
+  private EndOfStakingPeriodCalculator subject;
 
-    @BeforeEach
-    void setUp() {
-        subject =
-                new EndOfStakingPeriodCalculator(
-                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                        () -> stakingInfos,
-                        () -> networkCtx,
-                        syntheticTxnFactory,
-                        recordsHistorian,
-                        creator,
-                        properties,
-                        dynamicProperties);
-    }
+  @BeforeEach
+  void setUp() {
+    subject =
+        new EndOfStakingPeriodCalculator(
+            () -> AccountStorageAdapter.fromInMemory(accounts),
+            () -> stakingInfos,
+            () -> networkCtx,
+            syntheticTxnFactory,
+            recordsHistorian,
+            creator,
+            properties,
+            dynamicProperties);
+  }
 
-    @Test
-    void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
-        given800Balance(1_000_000_000_000L);
-        given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
-        given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
-        given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
-        given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
-        given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
-        given(info.stakeRewardStartMinusUnclaimed())
-                .willReturn(stakeRewardStart - unclaimedStakeRewardStart);
-        given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
-        given(
-                        info.updateRewardSumHistory(
-                                rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
-                                lastPeriodRewardRate,
-                                true))
-                .willReturn(lastPeriodRewardRate);
-        given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
-        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+  @Test
+  void pendingRewardsIsUpdatedBasedOnLastPeriodRewardRateAndStakeRewardStart() {
+    given800Balance(1_000_000_000_000L);
+    given(dynamicProperties.maxDailyStakeRewardThPerH()).willReturn(lastPeriodRewardRate);
+    given(networkCtx.getTotalStakedRewardStart()).willReturn(totalStakedRewardStart);
+    given(properties.getLongProperty(STAKING_REWARD_RATE)).willReturn(rewardRate);
+    given(stakingInfos.keySet()).willReturn(Set.of(onlyNodeNum));
+    given(stakingInfos.getForModify(onlyNodeNum)).willReturn(info);
+    given(info.stakeRewardStartMinusUnclaimed())
+        .willReturn(stakeRewardStart - unclaimedStakeRewardStart);
+    given(dynamicProperties.requireMinStakeToReward()).willReturn(true);
+    given(
+        info.updateRewardSumHistory(
+            rewardRate / (totalStakedRewardStart / HBARS_TO_TINYBARS),
+            lastPeriodRewardRate,
+            true))
+        .willReturn(lastPeriodRewardRate);
+    given(info.reviewElectionsAndRecomputeStakes()).willReturn(updatedStakeRewardStart);
+    given(dynamicProperties.isStakingEnabled()).willReturn(true);
 
-        subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
+    subject.updateNodes(Instant.EPOCH.plusSeconds(123_456));
 
-        verify(networkCtx)
-                .increasePendingRewards(
-                        (stakeRewardStart - unclaimedStakeRewardStart)
-                                / 100_000_000
-                                * lastPeriodRewardRate);
-    }
+    verify(networkCtx)
+        .increasePendingRewards(
+            (stakeRewardStart - unclaimedStakeRewardStart)
+                / 100_000_000
+                * lastPeriodRewardRate);
+  }
 
-    @Test
-    void rewardRateIsZeroIfPendingRewardsExceed800Balance() {
-        given800Balance(123);
-        given(networkCtx.pendingRewards()).willReturn(124L);
+  @Test
+  void rewardRateIsZeroIfPendingRewardsExceed800Balance() {
+    given800Balance(123);
+    given(networkCtx.pendingRewards()).willReturn(124L);
 
-        Assertions.assertEquals(0, subject.rewardRateForEndingPeriod());
-    }
+    Assertions.assertEquals(0, subject.rewardRateForEndingPeriod());
+  }
 
-    private void given800Balance(final long balance) {
-        given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
-        given(accounts.get(EntityNum.fromLong(800)))
-                .willReturn(MerkleAccountFactory.newAccount().balance(balance).get());
-    }
+  private void given800Balance(final long balance) {
+    given(properties.getLongProperty(ACCOUNTS_STAKING_REWARD_ACCOUNT)).willReturn(800L);
+    given(accounts.get(EntityNum.fromLong(800)))
+        .willReturn(MerkleAccountFactory.newAccount().balance(balance).get());
+  }
 
-    private static final long rewardRate = 100_000_000;
-    private static final long stakeRewardStart = 666L * 100_000_000L;
-    private static final long unclaimedStakeRewardStart = stakeRewardStart / 10;
-    private static final long updatedStakeRewardStart = 777L * 100_000_000L;
-    private static final long lastPeriodRewardRate = 100_000L;
-    private static final long totalStakedRewardStart = 100_000_000_000L;
-    private static final EntityNum onlyNodeNum = EntityNum.fromLong(123);
+  private static final long rewardRate = 100_000_000;
+  private static final long stakeRewardStart = 666L * 100_000_000L;
+  private static final long unclaimedStakeRewardStart = stakeRewardStart / 10;
+  private static final long updatedStakeRewardStart = 777L * 100_000_000L;
+  private static final long lastPeriodRewardRate = 100_000L;
+  private static final long totalStakedRewardStart = 100_000_000_000L;
+  private static final EntityNum onlyNodeNum = EntityNum.fromLong(123);
 }

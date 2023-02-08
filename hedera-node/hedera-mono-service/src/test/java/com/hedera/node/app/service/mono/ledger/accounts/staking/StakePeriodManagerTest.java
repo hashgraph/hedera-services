@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NA;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,213 +38,217 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakePeriodManagerTest {
-    @Mock private TransactionContext txnCtx;
-    @Mock private MerkleNetworkContext networkCtx;
-    @Mock private PropertySource properties;
 
-    private StakePeriodManager subject;
+  @Mock
+  private TransactionContext txnCtx;
+  @Mock
+  private MerkleNetworkContext networkCtx;
+  @Mock
+  private PropertySource properties;
 
-    @Test
-    void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {
-        givenProdManager();
+  private StakePeriodManager subject;
 
-        final var then = Instant.parse("2021-06-07T23:59:58.369613Z");
-        final var dateThen = LocalDate.ofInstant(then, ZONE_UTC);
-        final var prodPeriod = dateThen.toEpochDay();
-        final var midnight = dateThen.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+  @Test
+  void stakePeriodStartForProdSettingIsMidnightOfUtcCalendarDay() {
+    givenProdManager();
 
-        assertEquals(midnight, subject.epochSecondAtStartOfPeriod(prodPeriod));
-    }
+    final var then = Instant.parse("2021-06-07T23:59:58.369613Z");
+    final var dateThen = LocalDate.ofInstant(then, ZONE_UTC);
+    final var prodPeriod = dateThen.toEpochDay();
+    final var midnight = dateThen.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
 
-    @Test
-    void stakePeriodStartForNonProdSettingIsPeriodTimesSeconds() {
-        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2L);
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+    assertEquals(midnight, subject.epochSecondAtStartOfPeriod(prodPeriod));
+  }
 
-        final var somePeriod = 1_234_567L;
+  @Test
+  void stakePeriodStartForNonProdSettingIsPeriodTimesSeconds() {
+    given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2L);
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
 
-        assertEquals(
-                somePeriod * 2 * Units.MINUTES_TO_SECONDS,
-                subject.epochSecondAtStartOfPeriod(somePeriod));
-    }
+    final var somePeriod = 1_234_567L;
 
-    @Test
-    void noPeriodStartChangeIfNotStakingToANode() {
-        givenAgnosticManager();
-        assertEquals(NA, subject.startUpdateFor(0, 0, false, false));
-    }
+    assertEquals(
+        somePeriod * 2 * Units.MINUTES_TO_SECONDS,
+        subject.epochSecondAtStartOfPeriod(somePeriod));
+  }
 
-    @Test
-    void resetToCurrentPeriodIfStakeMetaChanges() {
-        givenProdManager();
-        // UTC day 14
-        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
+  @Test
+  void noPeriodStartChangeIfNotStakingToANode() {
+    givenAgnosticManager();
+    assertEquals(NA, subject.startUpdateFor(0, 0, false, false));
+  }
 
-        assertEquals(14, subject.startUpdateFor(-1, -1, false, true));
-    }
+  @Test
+  void resetToCurrentPeriodIfStakeMetaChanges() {
+    givenProdManager();
+    // UTC day 14
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
-    @Test
-    void noStartPeriodChangeIfStakeMetaUntouched() {
-        givenProdManager();
+    assertEquals(14, subject.startUpdateFor(-1, -1, false, true));
+  }
 
-        assertEquals(NA, subject.startUpdateFor(-1, -1, false, false));
-    }
+  @Test
+  void noStartPeriodChangeIfStakeMetaUntouched() {
+    givenProdManager();
 
-    @Test
-    void stakePeriodIsCurrentIfNowStakingToNode() {
-        givenProdManager();
-        // UTC day 14
-        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
+    assertEquals(NA, subject.startUpdateFor(-1, -1, false, false));
+  }
 
-        assertEquals(14, subject.startUpdateFor(0, -1, false, true));
-    }
+  @Test
+  void stakePeriodIsCurrentIfNowStakingToNode() {
+    givenProdManager();
+    // UTC day 14
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
-    @Test
-    void resetsToPreviousPeriodIfRewarded() {
-        givenProdManager();
-        // UTC day 14
-        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
+    assertEquals(14, subject.startUpdateFor(0, -1, false, true));
+  }
 
-        assertEquals(13, subject.startUpdateFor(-1, -1, true, false));
-    }
+  @Test
+  void resetsToPreviousPeriodIfRewarded() {
+    givenProdManager();
+    // UTC day 14
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(1_234_567));
 
-    @Test
-    void givesCurrentStakePeriod() {
-        givenProdManager();
-        final var instant = Instant.ofEpochSecond(12345L);
-        given(txnCtx.consensusTime()).willReturn(instant);
-        final var period = subject.currentStakePeriod();
-        final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay();
-        assertEquals(expectedPeriod, period);
+    assertEquals(13, subject.startUpdateFor(-1, -1, true, false));
+  }
 
-        var firstNonRewardable = subject.firstNonRewardableStakePeriod();
-        assertEquals(Long.MIN_VALUE, firstNonRewardable);
+  @Test
+  void givesCurrentStakePeriod() {
+    givenProdManager();
+    final var instant = Instant.ofEpochSecond(12345L);
+    given(txnCtx.consensusTime()).willReturn(instant);
+    final var period = subject.currentStakePeriod();
+    final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay();
+    assertEquals(expectedPeriod, period);
 
-        given(networkCtx.areRewardsActivated()).willReturn(true);
-        firstNonRewardable = subject.firstNonRewardableStakePeriod();
-        assertEquals(expectedPeriod - 1, firstNonRewardable);
-    }
+    var firstNonRewardable = subject.firstNonRewardableStakePeriod();
+    assertEquals(Long.MIN_VALUE, firstNonRewardable);
 
-    @Test
-    void estimatesBasedOnInstantNowForNonProdProperty() {
-        givenDevManager();
-        final var approx = Instant.now().getEpochSecond() / 60;
-        assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
+    given(networkCtx.areRewardsActivated()).willReturn(true);
+    firstNonRewardable = subject.firstNonRewardableStakePeriod();
+    assertEquals(expectedPeriod - 1, firstNonRewardable);
+  }
 
-        assertEquals(Long.MIN_VALUE, subject.estimatedFirstNonRewardableStakePeriod());
-        given(networkCtx.areRewardsActivated()).willReturn(true);
-        assertEquals(approx - 1, subject.estimatedFirstNonRewardableStakePeriod());
+  @Test
+  void estimatesBasedOnInstantNowForNonProdProperty() {
+    givenDevManager();
+    final var approx = Instant.now().getEpochSecond() / 60;
+    assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
 
-        assertFalse(subject.isEstimatedRewardable(-1));
-        assertFalse(subject.isEstimatedRewardable(approx - 1));
-        assertTrue(subject.isEstimatedRewardable(approx - 2));
-    }
+    assertEquals(Long.MIN_VALUE, subject.estimatedFirstNonRewardableStakePeriod());
+    given(networkCtx.areRewardsActivated()).willReturn(true);
+    assertEquals(approx - 1, subject.estimatedFirstNonRewardableStakePeriod());
 
-    @Test
-    void estimatesBasedOnInstantNowForProdProperty() {
-        givenProdManager();
-        final var expected = LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
-        assertEquals(expected, subject.estimatedCurrentStakePeriod());
-    }
+    assertFalse(subject.isEstimatedRewardable(-1));
+    assertFalse(subject.isEstimatedRewardable(approx - 1));
+    assertTrue(subject.isEstimatedRewardable(approx - 2));
+  }
 
-    @Test
-    void calculatesIfRewardShouldBeEarned() {
-        givenProdManager();
-        final var instant = Instant.ofEpochSecond(123456789L);
-        given(txnCtx.consensusTime()).willReturn(instant);
-        final var todayNumber = subject.currentStakePeriod() - 1;
-        given(networkCtx.areRewardsActivated()).willReturn(true);
+  @Test
+  void estimatesBasedOnInstantNowForProdProperty() {
+    givenProdManager();
+    final var expected = LocalDate.ofInstant(Instant.now(), ZONE_UTC).toEpochDay();
+    assertEquals(expected, subject.estimatedCurrentStakePeriod());
+  }
 
-        var stakePeriodStart = todayNumber - 366;
-        assertTrue(subject.isRewardable(stakePeriodStart));
+  @Test
+  void calculatesIfRewardShouldBeEarned() {
+    givenProdManager();
+    final var instant = Instant.ofEpochSecond(123456789L);
+    given(txnCtx.consensusTime()).willReturn(instant);
+    final var todayNumber = subject.currentStakePeriod() - 1;
+    given(networkCtx.areRewardsActivated()).willReturn(true);
 
-        stakePeriodStart = -1;
-        assertFalse(subject.isRewardable(stakePeriodStart));
+    var stakePeriodStart = todayNumber - 366;
+    assertTrue(subject.isRewardable(stakePeriodStart));
 
-        stakePeriodStart = todayNumber - 365;
-        assertTrue(subject.isRewardable(stakePeriodStart));
+    stakePeriodStart = -1;
+    assertFalse(subject.isRewardable(stakePeriodStart));
 
-        stakePeriodStart = todayNumber - 1;
-        assertTrue(subject.isRewardable(stakePeriodStart));
+    stakePeriodStart = todayNumber - 365;
+    assertTrue(subject.isRewardable(stakePeriodStart));
 
-        stakePeriodStart = todayNumber - 2;
-        assertTrue(subject.isRewardable(stakePeriodStart));
-    }
+    stakePeriodStart = todayNumber - 1;
+    assertTrue(subject.isRewardable(stakePeriodStart));
 
-    @Test
-    void calculatesOnlyOncePerSecond() {
-        givenProdManager();
-        var consensusTime = Instant.ofEpochSecond(12345678L);
-        var expectedStakePeriod = LocalDate.ofInstant(consensusTime, ZONE_UTC).toEpochDay();
+    stakePeriodStart = todayNumber - 2;
+    assertTrue(subject.isRewardable(stakePeriodStart));
+  }
 
-        given(txnCtx.consensusTime()).willReturn(consensusTime);
-        assertEquals(expectedStakePeriod, subject.currentStakePeriod());
-        assertEquals(consensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
+  @Test
+  void calculatesOnlyOncePerSecond() {
+    givenProdManager();
+    final var consensusTime = Instant.ofEpochSecond(12345678L);
+    var expectedStakePeriod = LocalDate.ofInstant(consensusTime, ZONE_UTC).toEpochDay();
 
-        final var newConsensusTime = Instant.ofEpochSecond(12345679L);
-        given(txnCtx.consensusTime()).willReturn(newConsensusTime);
-        expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, ZONE_UTC).toEpochDay();
+    given(txnCtx.consensusTime()).willReturn(consensusTime);
+    assertEquals(expectedStakePeriod, subject.currentStakePeriod());
+    assertEquals(consensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
 
-        assertEquals(expectedStakePeriod, subject.currentStakePeriod());
-        assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
-    }
+    final var newConsensusTime = Instant.ofEpochSecond(12345679L);
+    given(txnCtx.consensusTime()).willReturn(newConsensusTime);
+    expectedStakePeriod = LocalDate.ofInstant(newConsensusTime, ZONE_UTC).toEpochDay();
 
-    @Test
-    void validatesIfStartPeriodIsWithinRange() {
-        givenProdManager();
-        final var instant = Instant.ofEpochSecond(12345678910L);
-        given(txnCtx.consensusTime()).willReturn(instant);
-        given(networkCtx.areRewardsActivated()).willReturn(true);
-        final long stakePeriodStart = subject.currentStakePeriod();
+    assertEquals(expectedStakePeriod, subject.currentStakePeriod());
+    assertEquals(newConsensusTime.getEpochSecond(), subject.getPrevConsensusSecs());
+  }
 
-        assertTrue(subject.isRewardable(stakePeriodStart - 365));
-        assertFalse(subject.isRewardable(-1));
-        assertFalse(subject.isRewardable(stakePeriodStart));
-    }
+  @Test
+  void validatesIfStartPeriodIsWithinRange() {
+    givenProdManager();
+    final var instant = Instant.ofEpochSecond(12345678910L);
+    given(txnCtx.consensusTime()).willReturn(instant);
+    given(networkCtx.areRewardsActivated()).willReturn(true);
+    final long stakePeriodStart = subject.currentStakePeriod();
 
-    @Test
-    void givesEffectivePeriodCorrectly() {
-        givenProdManager();
-        final var delta = 500;
-        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(12345678910L));
+    assertTrue(subject.isRewardable(stakePeriodStart - 365));
+    assertFalse(subject.isRewardable(-1));
+    assertFalse(subject.isRewardable(stakePeriodStart));
+  }
 
-        final var stakePeriod = subject.currentStakePeriod();
-        final var period = subject.effectivePeriod(stakePeriod - delta);
+  @Test
+  void givesEffectivePeriodCorrectly() {
+    givenProdManager();
+    final var delta = 500;
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(12345678910L));
 
-        final var expectedEffectivePeriod =
-                LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
-        assertEquals(expectedEffectivePeriod - 365, period);
-        assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
-    }
+    final var stakePeriod = subject.currentStakePeriod();
+    final var period = subject.effectivePeriod(stakePeriod - delta);
 
-    @Test
-    void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
-        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2880L);
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
-        final var instant = Instant.ofEpochSecond(12345L);
-        final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay() / 2;
-        given(txnCtx.consensusTime()).willReturn(instant);
-        final var period = subject.currentStakePeriod();
-        assertEquals(expectedPeriod, period);
+    final var expectedEffectivePeriod =
+        LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
+    assertEquals(expectedEffectivePeriod - 365, period);
+    assertEquals(expectedEffectivePeriod - 10, subject.effectivePeriod(stakePeriod - 10));
+  }
 
-        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(10L);
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
-        given(txnCtx.consensusTime()).willReturn(instant.plusSeconds(12345L));
-        assertEquals(41L, subject.currentStakePeriod());
-    }
+  @Test
+  void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
+    given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(2880L);
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+    final var instant = Instant.ofEpochSecond(12345L);
+    final var expectedPeriod = LocalDate.ofInstant(instant, ZONE_UTC).toEpochDay() / 2;
+    given(txnCtx.consensusTime()).willReturn(instant);
+    final var period = subject.currentStakePeriod();
+    assertEquals(expectedPeriod, period);
 
-    private void givenAgnosticManager() {
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
-    }
+    given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(10L);
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+    given(txnCtx.consensusTime()).willReturn(instant.plusSeconds(12345L));
+    assertEquals(41L, subject.currentStakePeriod());
+  }
 
-    private void givenProdManager() {
-        given(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(365);
-        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
-    }
+  private void givenAgnosticManager() {
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+  }
 
-    private void givenDevManager() {
-        given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
-        subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
-    }
+  private void givenProdManager() {
+    given(properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(365);
+    given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1440L);
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+  }
+
+  private void givenDevManager() {
+    given(properties.getLongProperty(STAKING_PERIOD_MINS)).willReturn(1L);
+    subject = new StakePeriodManager(txnCtx, () -> networkCtx, properties);
+  }
 }

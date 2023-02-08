@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -37,38 +37,41 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class RecordCacheFactoryTest {
-    private static final TransactionID txnIdA =
-            TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
-    private static final TransactionID txnIdB =
-            TransactionID.newBuilder().setAccountID(asAccount("2.2.0")).build();
 
-    @LoggingTarget private LogCaptor logCaptor;
+  private static final TransactionID txnIdA =
+      TransactionID.newBuilder().setAccountID(asAccount("0.0.2")).build();
+  private static final TransactionID txnIdB =
+      TransactionID.newBuilder().setAccountID(asAccount("2.2.0")).build();
 
-    @LoggingSubject private RecordCacheFactory subject;
+  @LoggingTarget
+  private LogCaptor logCaptor;
 
-    private PropertySource properties;
+  @LoggingSubject
+  private RecordCacheFactory subject;
 
-    @BeforeEach
-    void setUp() {
-        properties = mock(PropertySource.class);
-        given(properties.getIntProperty(CACHE_RECORDS_TTL)).willReturn(1);
+  private PropertySource properties;
 
-        subject = new RecordCacheFactory(properties);
-    }
+  @BeforeEach
+  void setUp() {
+    properties = mock(PropertySource.class);
+    given(properties.getIntProperty(CACHE_RECORDS_TTL)).willReturn(1);
 
-    @Test
-    void hasExpectedExpiry() {
-        final var cache = subject.getCache();
-        cache.put(txnIdA, RecordCache.MARKER);
+    subject = new RecordCacheFactory(properties);
+  }
 
-        assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
-        assertNull(cache.getIfPresent(txnIdB));
-        SLEEPING_PAUSE.forMs(50L);
-        assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
-        SLEEPING_PAUSE.forMs(1000L);
-        assertNull(cache.getIfPresent(txnIdA));
-        assertThat(
-                logCaptor.infoLogs(),
-                contains("Constructing the node-local txn id cache with ttl=1s"));
-    }
+  @Test
+  void hasExpectedExpiry() {
+    final var cache = subject.getCache();
+    cache.put(txnIdA, RecordCache.MARKER);
+
+    assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
+    assertNull(cache.getIfPresent(txnIdB));
+    SLEEPING_PAUSE.forMs(50L);
+    assertEquals(RecordCache.MARKER, cache.getIfPresent(txnIdA));
+    SLEEPING_PAUSE.forMs(1000L);
+    assertNull(cache.getIfPresent(txnIdA));
+    assertThat(
+        logCaptor.infoLogs(),
+        contains("Constructing the node-local txn id cache with ttl=1s"));
+  }
 }

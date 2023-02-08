@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.context.properties.Profile;
+import com.hedera.node.app.spi.config.Profile;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -43,146 +43,154 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class GrpcStarterTest {
-    private final int port = 50211;
-    private final int tlsPort = 50212;
-    private final NodeId nodeId = new NodeId(false, 123L);
 
-    @Mock private Address nodeAddress;
-    @Mock private AddressBook addressBook;
-    @Mock private GrpcServerManager grpcServerManager;
-    @Mock private NodeLocalProperties nodeLocalProperties;
-    @Mock private PrintStream console;
+  private final int port = 50211;
+  private final int tlsPort = 50212;
+  private final NodeId nodeId = new NodeId(false, 123L);
 
-    @LoggingTarget private LogCaptor logCaptor;
-    @LoggingSubject private GrpcStarter subject;
+  @Mock
+  private Address nodeAddress;
+  @Mock
+  private AddressBook addressBook;
+  @Mock
+  private GrpcServerManager grpcServerManager;
+  @Mock
+  private NodeLocalProperties nodeLocalProperties;
+  @Mock
+  private PrintStream console;
 
-    @BeforeEach
-    void setUp() {
-        subject =
-                new GrpcStarter(
-                        nodeId,
-                        grpcServerManager,
-                        nodeLocalProperties,
-                        () -> addressBook,
-                        Optional.of(console));
-    }
+  @LoggingTarget
+  private LogCaptor logCaptor;
+  @LoggingSubject
+  private GrpcStarter subject;
 
-    @Test
-    void startsUnconditionallyWithProdProfile() {
-        withPorts();
+  @BeforeEach
+  void setUp() {
+    subject =
+        new GrpcStarter(
+            nodeId,
+            grpcServerManager,
+            nodeLocalProperties,
+            () -> addressBook,
+            Optional.of(console));
+  }
 
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.PROD);
+  @Test
+  void startsUnconditionallyWithProdProfile() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.PROD);
 
-        // then:
-        verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
-        // and:
-        assertThat(
-                logCaptor.infoLogs(),
-                contains(
-                        equalTo("TLS is turned on by default on node 123"),
-                        equalTo("Active profile: PROD")));
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void weirdlyJustWarnsOnTestProfile() {
-        withPorts();
+    // then:
+    verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
+    // and:
+    assertThat(
+        logCaptor.infoLogs(),
+        contains(
+            equalTo("TLS is turned on by default on node 123"),
+            equalTo("Active profile: PROD")));
+  }
 
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.TEST);
+  @Test
+  void weirdlyJustWarnsOnTestProfile() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.TEST);
 
-        // then:
-        verifyNoInteractions(grpcServerManager);
-        // and:
-        assertThat(
-                logCaptor.warnLogs(),
-                contains(equalTo("No Netty config for profile TEST, skipping gRPC startup")));
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
-        withPorts();
+    // then:
+    verifyNoInteractions(grpcServerManager);
+    // and:
+    assertThat(
+        logCaptor.warnLogs(),
+        contains(equalTo("No Netty config for profile TEST, skipping gRPC startup")));
+  }
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
-        given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
-        given(nodeAddress.getMemo()).willReturn("0.0.3");
-        given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
+  @Test
+  void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+    given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
+    given(nodeAddress.getMemo()).willReturn("0.0.3");
+    given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
 
-        // then:
-        verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
-        withPorts();
+    // then:
+    verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
+  }
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
-        given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
-        given(nodeAddress.getMemo()).willReturn("0.0.4");
-        given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
+  @Test
+  void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+    given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
+    given(nodeAddress.getMemo()).willReturn("0.0.4");
+    given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
 
-        // then:
-        verifyNoInteractions(grpcServerManager);
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void startsIfBlessedOnDevProfileAllNodesListening() {
-        withPorts();
+    // then:
+    verifyNoInteractions(grpcServerManager);
+  }
 
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
-        given(nodeAddress.getMemo()).willReturn("0.0.3");
-        given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+  @Test
+  void startsIfBlessedOnDevProfileAllNodesListening() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+    given(nodeAddress.getMemo()).willReturn("0.0.3");
+    given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
+    given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
 
-        // then:
-        verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void startsIfUnblessedOnDevProfileAllNodesListening() {
-        withPorts();
+    // then:
+    verify(grpcServerManager).start(intThat(i -> i == port), intThat(j -> j == tlsPort), any());
+  }
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
-        given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
-        given(nodeAddress.getMemo()).willReturn("0.0.4");
-        given(nodeAddress.getPortExternalIpv4()).willReturn(50666);
-        given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
+  @Test
+  void startsIfUnblessedOnDevProfileAllNodesListening() {
+    withPorts();
 
-        // when:
-        subject.startIfAppropriate();
+    given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+    given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
+    given(nodeAddress.getMemo()).willReturn("0.0.4");
+    given(nodeAddress.getPortExternalIpv4()).willReturn(50666);
+    given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
 
-        // then:
-        verify(grpcServerManager)
-                .start(intThat(i -> i == port + 666), intThat(j -> j == tlsPort + 666), any());
-    }
+    // when:
+    subject.startIfAppropriate();
 
-    @Test
-    void logWithConsoleInfoWorks() {
-        // when:
-        subject.logInfoWithConsoleEcho("NOOP");
+    // then:
+    verify(grpcServerManager)
+        .start(intThat(i -> i == port + 666), intThat(j -> j == tlsPort + 666), any());
+  }
 
-        // then:
-        assertThat(logCaptor.infoLogs(), contains(equalTo("NOOP")));
-        verify(console).println("NOOP");
-    }
+  @Test
+  void logWithConsoleInfoWorks() {
+    // when:
+    subject.logInfoWithConsoleEcho("NOOP");
 
-    private void withPorts() {
-        given(nodeLocalProperties.port()).willReturn(port);
-        given(nodeLocalProperties.tlsPort()).willReturn(tlsPort);
-    }
+    // then:
+    assertThat(logCaptor.infoLogs(), contains(equalTo("NOOP")));
+    verify(console).println("NOOP");
+  }
+
+  private void withPorts() {
+    given(nodeLocalProperties.port()).willReturn(port);
+    given(nodeLocalProperties.tlsPort()).willReturn(tlsPort);
+  }
 }

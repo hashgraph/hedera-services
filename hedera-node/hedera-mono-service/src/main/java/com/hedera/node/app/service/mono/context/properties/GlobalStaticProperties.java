@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
+import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -23,20 +23,21 @@ import javax.inject.Singleton;
 
 @Singleton
 public class GlobalStaticProperties {
-    private final PropertySource properties;
-    private boolean workflowsEnabled;
 
-    @Inject
-    public GlobalStaticProperties(@Nullable final BootstrapProperties properties) {
-        this.properties = properties;
-        reload();
-    }
+  private final PropertySource properties;
+  private boolean workflowsEnabled;
 
-    public void reload() {
-        workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
-    }
+  @Inject
+  public GlobalStaticProperties(@Nullable final BootstrapProperties properties) {
+    this.properties = properties;
+    reload();
+  }
 
-    public boolean workflowsEnabled() {
-        return workflowsEnabled;
-    }
+  public void reload() {
+    workflowsEnabled = properties != null && properties.getBooleanProperty(WORKFLOWS_ENABLED);
+  }
+
+  public boolean workflowsEnabled() {
+    return workflowsEnabled;
+  }
 }

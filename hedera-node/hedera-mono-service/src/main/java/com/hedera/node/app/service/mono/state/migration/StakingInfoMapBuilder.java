@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -24,26 +24,27 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 
 public final class StakingInfoMapBuilder {
-    private StakingInfoMapBuilder() {
-        throw new UnsupportedOperationException("Utility class");
+
+  private StakingInfoMapBuilder() {
+    throw new UnsupportedOperationException("Utility class");
+  }
+
+  public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
+      final AddressBook addressBook, final BootstrapProperties bootstrapProperties) {
+    final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
+
+    final var numberOfNodes = addressBook.getSize();
+    final long maxStakePerNode =
+        bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
+    final long minStakePerNode = maxStakePerNode / 2;
+    for (int i = 0; i < numberOfNodes; i++) {
+      final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+      final var info = new MerkleStakingInfo(bootstrapProperties);
+      info.setMinStake(minStakePerNode);
+      info.setMaxStake(maxStakePerNode);
+      stakingInfos.put(nodeNum, info);
     }
 
-    public static MerkleMap<EntityNum, MerkleStakingInfo> buildStakingInfoMap(
-            final AddressBook addressBook, final BootstrapProperties bootstrapProperties) {
-        final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos = new MerkleMap<>();
-
-        final var numberOfNodes = addressBook.getSize();
-        long maxStakePerNode =
-                bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
-        long minStakePerNode = maxStakePerNode / 2;
-        for (int i = 0; i < numberOfNodes; i++) {
-            final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
-            final var info = new MerkleStakingInfo(bootstrapProperties);
-            info.setMinStake(minStakePerNode);
-            info.setMaxStake(maxStakePerNode);
-            stakingInfos.put(nodeNum, info);
-        }
-
-        return stakingInfos;
-    }
+    return stakingInfos;
+  }
 }

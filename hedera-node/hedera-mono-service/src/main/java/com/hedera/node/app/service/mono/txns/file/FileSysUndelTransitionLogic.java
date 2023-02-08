@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -42,83 +42,84 @@ import javax.inject.Singleton;
 
 @Singleton
 public class FileSysUndelTransitionLogic implements TransitionLogic {
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
 
-    private final boolean supported;
-    private final HederaFs hfs;
-    private final SigImpactHistorian sigImpactHistorian;
-    private final TransactionContext txnCtx;
-    private final Map<EntityId, Long> expiries;
+  private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
+      ignore -> OK;
 
-    @Inject
-    public FileSysUndelTransitionLogic(
-            final HederaFs hfs,
-            final SigImpactHistorian sigImpactHistorian,
-            final Map<EntityId, Long> expiries,
-            final TransactionContext txnCtx,
-            @CompositeProps final PropertySource properties) {
-        this.hfs = hfs;
-        this.expiries = expiries;
-        this.txnCtx = txnCtx;
-        this.sigImpactHistorian = sigImpactHistorian;
-        this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(FILE);
+  private final boolean supported;
+  private final HederaFs hfs;
+  private final SigImpactHistorian sigImpactHistorian;
+  private final TransactionContext txnCtx;
+  private final Map<EntityId, Long> expiries;
+
+  @Inject
+  public FileSysUndelTransitionLogic(
+      final HederaFs hfs,
+      final SigImpactHistorian sigImpactHistorian,
+      final Map<EntityId, Long> expiries,
+      final TransactionContext txnCtx,
+      @CompositeProps final PropertySource properties) {
+    this.hfs = hfs;
+    this.expiries = expiries;
+    this.txnCtx = txnCtx;
+    this.sigImpactHistorian = sigImpactHistorian;
+    this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(FILE);
+  }
+
+  @Override
+  public void doStateTransition() {
+    if (!supported) {
+      txnCtx.setStatus(NOT_SUPPORTED);
+      return;
     }
 
-    @Override
-    public void doStateTransition() {
-        if (!supported) {
-            txnCtx.setStatus(NOT_SUPPORTED);
-            return;
-        }
+    final var op = txnCtx.accessor().getTxn().getSystemUndelete();
+    final var tbu = op.getFileID();
+    final var entity = EntityId.fromGrpcFileId(tbu);
+    final var attr = new AtomicReference<HFileMeta>();
 
-        var op = txnCtx.accessor().getTxn().getSystemUndelete();
-        var tbu = op.getFileID();
-        var entity = EntityId.fromGrpcFileId(tbu);
-        var attr = new AtomicReference<HFileMeta>();
-
-        var validity = tryLookup(tbu, entity, attr);
-        if (validity != OK) {
-            txnCtx.setStatus(validity);
-            return;
-        }
-
-        var info = attr.get();
-        var oldExpiry = expiries.get(entity);
-        if (oldExpiry <= txnCtx.consensusTime().getEpochSecond()) {
-            hfs.rm(tbu);
-        } else {
-            info.setDeleted(false);
-            info.setExpiry(oldExpiry);
-            hfs.sudoSetattr(tbu, info);
-        }
-        expiries.remove(entity);
-        txnCtx.setStatus(SUCCESS);
-        sigImpactHistorian.markEntityChanged(tbu.getFileNum());
+    final var validity = tryLookup(tbu, entity, attr);
+    if (validity != OK) {
+      txnCtx.setStatus(validity);
+      return;
     }
 
-    private ResponseCodeEnum tryLookup(
-            FileID tbu, EntityId entity, AtomicReference<HFileMeta> attr) {
-        if (!expiries.containsKey(entity) || !hfs.exists(tbu)) {
-            return INVALID_FILE_ID;
-        }
+    final var info = attr.get();
+    final var oldExpiry = expiries.get(entity);
+    if (oldExpiry <= txnCtx.consensusTime().getEpochSecond()) {
+      hfs.rm(tbu);
+    } else {
+      info.setDeleted(false);
+      info.setExpiry(oldExpiry);
+      hfs.sudoSetattr(tbu, info);
+    }
+    expiries.remove(entity);
+    txnCtx.setStatus(SUCCESS);
+    sigImpactHistorian.markEntityChanged(tbu.getFileNum());
+  }
 
-        var info = hfs.getattr(tbu);
-        if (info.isDeleted()) {
-            attr.set(info);
-            return OK;
-        } else {
-            return INVALID_FILE_ID;
-        }
+  private ResponseCodeEnum tryLookup(
+      final FileID tbu, final EntityId entity, final AtomicReference<HFileMeta> attr) {
+    if (!expiries.containsKey(entity) || !hfs.exists(tbu)) {
+      return INVALID_FILE_ID;
     }
 
-    @Override
-    public Predicate<TransactionBody> applicability() {
-        return txn -> txn.hasSystemUndelete() && txn.getSystemUndelete().hasFileID();
+    final var info = hfs.getattr(tbu);
+    if (info.isDeleted()) {
+      attr.set(info);
+      return OK;
+    } else {
+      return INVALID_FILE_ID;
     }
+  }
 
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-        return SEMANTIC_RUBBER_STAMP;
-    }
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return txn -> txn.hasSystemUndelete() && txn.getSystemUndelete().hasFileID();
+  }
+
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_RUBBER_STAMP;
+  }
 }

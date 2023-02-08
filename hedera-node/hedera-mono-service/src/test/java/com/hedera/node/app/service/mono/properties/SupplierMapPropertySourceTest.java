@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.context.properties.EntityType;
-import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
 import com.hedera.node.app.service.mono.exceptions.UnparseablePropertyException;
+import com.hedera.node.app.spi.config.Profile;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumSet;
 import java.util.List;
@@ -34,108 +34,109 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class SupplierMapPropertySourceTest {
-    private final String INT_PROP = "a.int.prop";
-    private final String LONG_PROP = "a.long.prop";
-    private final String STRING_PROP = "a.string.prop";
-    private final String DOUBLE_PROP = "a.double.prop";
-    private final String CS_STRINGS_PROP = "a.cs_strings.prop";
-    private final String PROFILE_PROP = "a.profile.prop";
-    private final String BOOLEAN_PROP = "a.boolean.prop";
-    private final String MISSING_PROP = "a.missing.prop";
-    private final String BAD_ACCOUNT_PROP = "a.bad.account";
-    private final String GOOD_ACCOUNT_PROP = "a.good.account";
-    private final String ENTITY_TYPES_PROP = "some.types";
-    private final SupplierMapPropertySource subject =
-            new SupplierMapPropertySource(
-                    Map.of(
-                            INT_PROP, () -> 1,
-                            LONG_PROP, () -> 1L,
-                            DOUBLE_PROP, () -> 1.0d,
-                            STRING_PROP, () -> "cellar door",
-                            PROFILE_PROP, () -> Profile.DEV,
-                            BOOLEAN_PROP, () -> Boolean.TRUE,
-                            CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
-                            BAD_ACCOUNT_PROP, () -> "asdf",
-                            GOOD_ACCOUNT_PROP, () -> "0.0.2",
-                            ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
 
-    @Test
-    void getsEntityTypes() {
-        assertEquals(EnumSet.of(EntityType.FILE), subject.getTypesProperty(ENTITY_TYPES_PROP));
+  private final String INT_PROP = "a.int.prop";
+  private final String LONG_PROP = "a.long.prop";
+  private final String STRING_PROP = "a.string.prop";
+  private final String DOUBLE_PROP = "a.double.prop";
+  private final String CS_STRINGS_PROP = "a.cs_strings.prop";
+  private final String PROFILE_PROP = "a.profile.prop";
+  private final String BOOLEAN_PROP = "a.boolean.prop";
+  private final String MISSING_PROP = "a.missing.prop";
+  private final String BAD_ACCOUNT_PROP = "a.bad.account";
+  private final String GOOD_ACCOUNT_PROP = "a.good.account";
+  private final String ENTITY_TYPES_PROP = "some.types";
+  private final SupplierMapPropertySource subject =
+      new SupplierMapPropertySource(
+          Map.of(
+              INT_PROP, () -> 1,
+              LONG_PROP, () -> 1L,
+              DOUBLE_PROP, () -> 1.0d,
+              STRING_PROP, () -> "cellar door",
+              PROFILE_PROP, () -> Profile.DEV,
+              BOOLEAN_PROP, () -> Boolean.TRUE,
+              CS_STRINGS_PROP, () -> List.of("a", "b", "c"),
+              BAD_ACCOUNT_PROP, () -> "asdf",
+              GOOD_ACCOUNT_PROP, () -> "0.0.2",
+              ENTITY_TYPES_PROP, () -> EnumSet.of(EntityType.FILE)));
+
+  @Test
+  void getsEntityTypes() {
+    assertEquals(EnumSet.of(EntityType.FILE), subject.getTypesProperty(ENTITY_TYPES_PROP));
+  }
+
+  @Test
+  void testsForPresence() {
+    // expect:
+    assertTrue(subject.containsProperty(LONG_PROP));
+    assertFalse(subject.containsProperty(MISSING_PROP));
+  }
+
+  @Test
+  void getsParseableAccount() {
+    // expect:
+    assertEquals(
+        AccountID.newBuilder().setAccountNum(2L).build(),
+        subject.getAccountProperty(GOOD_ACCOUNT_PROP));
+  }
+
+  @Test
+  void allPropertyNames() {
+    assertNotNull(subject.allPropertyNames());
+    final var propSet =
+        Set.of(
+            "a.double.prop",
+            "a.string.prop",
+            "a.profile.prop",
+            "a.boolean.prop",
+            "a.bad.account",
+            "a.long.prop",
+            "a.good.account",
+            "a.int.prop",
+            "some.types",
+            "a.cs_strings.prop");
+    assertEquals(propSet, subject.allPropertyNames());
+  }
+
+  @Test
+  void throwsOnUnparseableAccount() {
+    // setup:
+    UnparseablePropertyException e = null;
+
+    // when:
+    try {
+      subject.getAccountProperty(BAD_ACCOUNT_PROP);
+    } catch (final UnparseablePropertyException upe) {
+      e = upe;
     }
 
-    @Test
-    void testsForPresence() {
-        // expect:
-        assertTrue(subject.containsProperty(LONG_PROP));
-        assertFalse(subject.containsProperty(MISSING_PROP));
-    }
+    // then:
+    assertEquals(
+        UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
+  }
 
-    @Test
-    void getsParseableAccount() {
-        // expect:
-        assertEquals(
-                AccountID.newBuilder().setAccountNum(2L).build(),
-                subject.getAccountProperty(GOOD_ACCOUNT_PROP));
-    }
+  @Test
+  void getsKnownProperty() {
+    // expect:
+    assertEquals(1L, subject.getProperty(LONG_PROP));
+  }
 
-    @Test
-    void allPropertyNames() {
-        assertNotNull(subject.allPropertyNames());
-        var propSet =
-                Set.of(
-                        "a.double.prop",
-                        "a.string.prop",
-                        "a.profile.prop",
-                        "a.boolean.prop",
-                        "a.bad.account",
-                        "a.long.prop",
-                        "a.good.account",
-                        "a.int.prop",
-                        "some.types",
-                        "a.cs_strings.prop");
-        assertEquals(propSet, subject.allPropertyNames());
-    }
-
-    @Test
-    void throwsOnUnparseableAccount() {
-        // setup:
-        UnparseablePropertyException e = null;
-
-        // when:
-        try {
-            subject.getAccountProperty(BAD_ACCOUNT_PROP);
-        } catch (UnparseablePropertyException upe) {
-            e = upe;
-        }
-
-        // then:
-        assertEquals(
-                UnparseablePropertyException.messageFor(BAD_ACCOUNT_PROP, "asdf"), e.getMessage());
-    }
-
-    @Test
-    void getsKnownProperty() {
-        // expect:
-        assertEquals(1L, subject.getProperty(LONG_PROP));
-    }
-
-    @Test
-    void castsToExpectedType() {
-        // expect:
-        assertThrows(ClassCastException.class, () -> subject.getIntProperty(DOUBLE_PROP));
-        assertDoesNotThrow(() -> subject.getDoubleProperty(DOUBLE_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getIntProperty(STRING_PROP));
-        assertDoesNotThrow(() -> subject.getIntProperty(INT_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getLongProperty(STRING_PROP));
-        assertDoesNotThrow(() -> subject.getLongProperty(LONG_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getStringProperty(LONG_PROP));
-        assertDoesNotThrow(() -> subject.getStringProperty(STRING_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getBooleanProperty(STRING_PROP));
-        assertDoesNotThrow(() -> subject.getBooleanProperty(BOOLEAN_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getProfileProperty(STRING_PROP));
-        assertDoesNotThrow(() -> subject.getProfileProperty(PROFILE_PROP));
-        assertThrows(ClassCastException.class, () -> subject.getStringsProperty(STRING_PROP));
-        assertDoesNotThrow(() -> subject.getStringsProperty(CS_STRINGS_PROP));
-    }
+  @Test
+  void castsToExpectedType() {
+    // expect:
+    assertThrows(ClassCastException.class, () -> subject.getIntProperty(DOUBLE_PROP));
+    assertDoesNotThrow(() -> subject.getDoubleProperty(DOUBLE_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getIntProperty(STRING_PROP));
+    assertDoesNotThrow(() -> subject.getIntProperty(INT_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getLongProperty(STRING_PROP));
+    assertDoesNotThrow(() -> subject.getLongProperty(LONG_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getStringProperty(LONG_PROP));
+    assertDoesNotThrow(() -> subject.getStringProperty(STRING_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getBooleanProperty(STRING_PROP));
+    assertDoesNotThrow(() -> subject.getBooleanProperty(BOOLEAN_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getProfileProperty(STRING_PROP));
+    assertDoesNotThrow(() -> subject.getProfileProperty(PROFILE_PROP));
+    assertThrows(ClassCastException.class, () -> subject.getStringsProperty(STRING_PROP));
+    assertDoesNotThrow(() -> subject.getStringsProperty(CS_STRINGS_PROP));
+  }
 }

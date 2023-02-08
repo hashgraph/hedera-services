@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.file;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -57,226 +57,227 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 class FileSysUndelTransitionLogicTest {
-    enum TargetType {
-        VALID,
-        MISSING,
-        DELETED
+
+  enum TargetType {
+    VALID,
+    MISSING,
+    DELETED
+  }
+
+  enum OldExpiryType {
+    NONE,
+    FUTURE,
+    PAST
+  }
+
+  long now = Instant.now().getEpochSecond();
+  long lifetime = 1_000_000L;
+  long currExpiry = now + lifetime / 2;
+  long oldPastExpiry = now - 1;
+  long oldFutureExpiry = now + lifetime;
+
+  FileID undeleted = IdUtils.asFile("0.0.13257");
+  FileID missing = IdUtils.asFile("0.0.75231");
+  FileID deleted = IdUtils.asFile("0.0.666");
+
+  HederaFs.UpdateResult success = new SimpleUpdateResult(true, false, SUCCESS);
+
+  JKey wacl;
+  HFileMeta attr, deletedAttr;
+
+  TransactionID txnId;
+  TransactionBody fileSysUndelTxn;
+  SignedTxnAccessor accessor;
+
+  HederaFs hfs;
+  SigImpactHistorian sigImpactHistorian;
+  Map<EntityId, Long> oldExpiries;
+  TransactionContext txnCtx;
+  PropertySource properties;
+
+  FileSysUndelTransitionLogic subject;
+
+  @BeforeEach
+  void setup() throws Throwable {
+    wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
+    attr = new HFileMeta(false, wacl, currExpiry);
+    deletedAttr = new HFileMeta(true, wacl, currExpiry);
+
+    accessor = mock(SignedTxnAccessor.class);
+    txnCtx = mock(TransactionContext.class);
+    oldExpiries = mock(Map.class);
+    sigImpactHistorian = mock(SigImpactHistorian.class);
+    properties = mock(PropertySource.class);
+
+    hfs = mock(HederaFs.class);
+    given(hfs.exists(undeleted)).willReturn(true);
+    given(hfs.exists(deleted)).willReturn(true);
+    given(hfs.exists(missing)).willReturn(false);
+    given(hfs.getattr(undeleted)).willReturn(attr);
+    given(hfs.getattr(deleted)).willReturn(deletedAttr);
+    given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
+        .willReturn(EnumSet.allOf(EntityType.class));
+
+    subject =
+        new FileSysUndelTransitionLogic(
+            hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+  }
+
+  @Test
+  void abortsIfNotSupported() {
+    given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
+        .willReturn(EnumSet.noneOf(EntityType.class));
+
+    subject =
+        new FileSysUndelTransitionLogic(
+            hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+
+    subject.doStateTransition();
+    verify(txnCtx).setStatus(NOT_SUPPORTED);
+    verifyNoInteractions(hfs);
+  }
+
+  @Test
+  void happyPathFlows() {
+    // setup:
+    final InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
+
+    givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
+    // and:
+    given(hfs.sudoSetattr(any(), any())).willReturn(success);
+
+    // when:
+    subject.doStateTransition();
+
+    // then:
+    assertFalse(deletedAttr.isDeleted());
+    assertEquals(oldFutureExpiry, deletedAttr.getExpiry());
+    inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
+    inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
+    inOrder.verify(txnCtx).setStatus(SUCCESS);
+    inOrder.verify(sigImpactHistorian).markEntityChanged(deleted.getFileNum());
+  }
+
+  @Test
+  void destroysIfOldExpiryIsPast() {
+    givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.PAST);
+
+    // when:
+    subject.doStateTransition();
+
+    // then:
+    verify(hfs).rm(deleted);
+    verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
+    verify(hfs, never()).sudoSetattr(any(), any());
+  }
+
+  @Test
+  void detectsUndeleted() {
+    givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
+
+    // when:
+    subject.doStateTransition();
+
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
+
+  @Test
+  void detectsMissing() {
+    givenTxnCtxSysUndeleting(TargetType.MISSING, OldExpiryType.FUTURE);
+
+    // when:
+    subject.doStateTransition();
+
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
+
+  @Test
+  void detectsUserDeleted() {
+    givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.NONE);
+
+    // when:
+    subject.doStateTransition();
+
+    // then:
+    verify(txnCtx).setStatus(INVALID_FILE_ID);
+  }
+
+  @Test
+  void hasCorrectApplicability() {
+    // setup:
+    final SystemUndeleteTransactionBody.Builder op =
+        SystemUndeleteTransactionBody.newBuilder()
+            .setContractID(IdUtils.asContract("0.0.1001"));
+    final var contractSysUndelTxn = TransactionBody.newBuilder().setSystemUndelete(op).build();
+
+    givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
+
+    // expect:
+    assertTrue(subject.applicability().test(fileSysUndelTxn));
+    assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+    assertFalse(subject.applicability().test(contractSysUndelTxn));
+  }
+
+  @Test
+  void syntaxCheckRubberstamps() {
+    // given:
+    final var syntaxCheck = subject.semanticCheck();
+
+    // expect:
+    assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
+  }
+
+  private void givenTxnCtxSysUndeleting(final TargetType type, final OldExpiryType expiryType) {
+    final SystemUndeleteTransactionBody.Builder op = SystemUndeleteTransactionBody.newBuilder();
+
+    FileID id = null;
+    switch (type) {
+      case VALID:
+        op.setFileID(undeleted);
+        id = undeleted;
+        break;
+      case MISSING:
+        op.setFileID(missing);
+        id = missing;
+        break;
+      case DELETED:
+        op.setFileID(deleted);
+        id = deleted;
+        break;
+    }
+    final EntityId entity = EntityId.fromGrpcFileId(id);
+
+    switch (expiryType) {
+      case NONE:
+        given(oldExpiries.containsKey(entity)).willReturn(false);
+        given(oldExpiries.get(entity)).willReturn(null);
+        break;
+      case FUTURE:
+        given(oldExpiries.containsKey(entity)).willReturn(true);
+        given(oldExpiries.get(entity)).willReturn(oldFutureExpiry);
+        break;
+      case PAST:
+        given(oldExpiries.containsKey(entity)).willReturn(true);
+        given(oldExpiries.get(entity)).willReturn(oldPastExpiry);
+        break;
     }
 
-    enum OldExpiryType {
-        NONE,
-        FUTURE,
-        PAST
-    }
-
-    long now = Instant.now().getEpochSecond();
-    long lifetime = 1_000_000L;
-    long currExpiry = now + lifetime / 2;
-    long oldPastExpiry = now - 1;
-    long oldFutureExpiry = now + lifetime;
-
-    FileID undeleted = IdUtils.asFile("0.0.13257");
-    FileID missing = IdUtils.asFile("0.0.75231");
-    FileID deleted = IdUtils.asFile("0.0.666");
-
-    HederaFs.UpdateResult success = new SimpleUpdateResult(true, false, SUCCESS);
-
-    JKey wacl;
-    HFileMeta attr, deletedAttr;
-
-    TransactionID txnId;
-    TransactionBody fileSysUndelTxn;
-    SignedTxnAccessor accessor;
-
-    HederaFs hfs;
-    SigImpactHistorian sigImpactHistorian;
-    Map<EntityId, Long> oldExpiries;
-    TransactionContext txnCtx;
-    PropertySource properties;
-
-    FileSysUndelTransitionLogic subject;
-
-    @BeforeEach
-    void setup() throws Throwable {
-        wacl = TxnHandlingScenario.SIMPLE_NEW_WACL_KT.asJKey();
-        attr = new HFileMeta(false, wacl, currExpiry);
-        deletedAttr = new HFileMeta(true, wacl, currExpiry);
-
-        accessor = mock(SignedTxnAccessor.class);
-        txnCtx = mock(TransactionContext.class);
-        oldExpiries = mock(Map.class);
-        sigImpactHistorian = mock(SigImpactHistorian.class);
-        properties = mock(PropertySource.class);
-
-        hfs = mock(HederaFs.class);
-        given(hfs.exists(undeleted)).willReturn(true);
-        given(hfs.exists(deleted)).willReturn(true);
-        given(hfs.exists(missing)).willReturn(false);
-        given(hfs.getattr(undeleted)).willReturn(attr);
-        given(hfs.getattr(deleted)).willReturn(deletedAttr);
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.allOf(EntityType.class));
-
-        subject =
-                new FileSysUndelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
-    }
-
-    @Test
-    void abortsIfNotSupported() {
-        given(properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE))
-                .willReturn(EnumSet.noneOf(EntityType.class));
-
-        subject =
-                new FileSysUndelTransitionLogic(
-                        hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
-
-        subject.doStateTransition();
-        verify(txnCtx).setStatus(NOT_SUPPORTED);
-        verifyNoInteractions(hfs);
-    }
-
-    @Test
-    void happyPathFlows() {
-        // setup:
-        InOrder inOrder = inOrder(hfs, txnCtx, oldExpiries, sigImpactHistorian);
-
-        givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.FUTURE);
-        // and:
-        given(hfs.sudoSetattr(any(), any())).willReturn(success);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        assertFalse(deletedAttr.isDeleted());
-        assertEquals(oldFutureExpiry, deletedAttr.getExpiry());
-        inOrder.verify(hfs).sudoSetattr(deleted, deletedAttr);
-        inOrder.verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
-        inOrder.verify(txnCtx).setStatus(SUCCESS);
-        inOrder.verify(sigImpactHistorian).markEntityChanged(deleted.getFileNum());
-    }
-
-    @Test
-    void destroysIfOldExpiryIsPast() {
-        givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.PAST);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(hfs).rm(deleted);
-        verify(oldExpiries).remove(EntityId.fromGrpcFileId(deleted));
-        verify(hfs, never()).sudoSetattr(any(), any());
-    }
-
-    @Test
-    void detectsUndeleted() {
-        givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(txnCtx).setStatus(INVALID_FILE_ID);
-    }
-
-    @Test
-    void detectsMissing() {
-        givenTxnCtxSysUndeleting(TargetType.MISSING, OldExpiryType.FUTURE);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(txnCtx).setStatus(INVALID_FILE_ID);
-    }
-
-    @Test
-    void detectsUserDeleted() {
-        givenTxnCtxSysUndeleting(TargetType.DELETED, OldExpiryType.NONE);
-
-        // when:
-        subject.doStateTransition();
-
-        // then:
-        verify(txnCtx).setStatus(INVALID_FILE_ID);
-    }
-
-    @Test
-    void hasCorrectApplicability() {
-        // setup:
-        SystemUndeleteTransactionBody.Builder op =
-                SystemUndeleteTransactionBody.newBuilder()
-                        .setContractID(IdUtils.asContract("0.0.1001"));
-        var contractSysUndelTxn = TransactionBody.newBuilder().setSystemUndelete(op).build();
-
-        givenTxnCtxSysUndeleting(TargetType.VALID, OldExpiryType.FUTURE);
-
-        // expect:
-        assertTrue(subject.applicability().test(fileSysUndelTxn));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-        assertFalse(subject.applicability().test(contractSysUndelTxn));
-    }
-
-    @Test
-    void syntaxCheckRubberstamps() {
-        // given:
-        var syntaxCheck = subject.semanticCheck();
-
-        // expect:
-        assertEquals(ResponseCodeEnum.OK, syntaxCheck.apply(TransactionBody.getDefaultInstance()));
-    }
-
-    private void givenTxnCtxSysUndeleting(TargetType type, OldExpiryType expiryType) {
-        SystemUndeleteTransactionBody.Builder op = SystemUndeleteTransactionBody.newBuilder();
-
-        FileID id = null;
-        switch (type) {
-            case VALID:
-                op.setFileID(undeleted);
-                id = undeleted;
-                break;
-            case MISSING:
-                op.setFileID(missing);
-                id = missing;
-                break;
-            case DELETED:
-                op.setFileID(deleted);
-                id = deleted;
-                break;
-        }
-        EntityId entity = EntityId.fromGrpcFileId(id);
-
-        switch (expiryType) {
-            case NONE:
-                given(oldExpiries.containsKey(entity)).willReturn(false);
-                given(oldExpiries.get(entity)).willReturn(null);
-                break;
-            case FUTURE:
-                given(oldExpiries.containsKey(entity)).willReturn(true);
-                given(oldExpiries.get(entity)).willReturn(oldFutureExpiry);
-                break;
-            case PAST:
-                given(oldExpiries.containsKey(entity)).willReturn(true);
-                given(oldExpiries.get(entity)).willReturn(oldPastExpiry);
-                break;
-        }
-
-        txnId =
-                TransactionID.newBuilder()
-                        .setTransactionValidStart(
-                                MiscUtils.asTimestamp(
-                                        Instant.ofEpochSecond(Instant.now().getEpochSecond())))
-                        .build();
-        fileSysUndelTxn =
-                TransactionBody.newBuilder()
-                        .setTransactionID(txnId)
-                        .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
-                        .setSystemUndelete(op)
-                        .build();
-        given(accessor.getTxn()).willReturn(fileSysUndelTxn);
-        given(txnCtx.accessor()).willReturn(accessor);
-        given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
-    }
+    txnId =
+        TransactionID.newBuilder()
+            .setTransactionValidStart(
+                MiscUtils.asTimestamp(
+                    Instant.ofEpochSecond(Instant.now().getEpochSecond())))
+            .build();
+    fileSysUndelTxn =
+        TransactionBody.newBuilder()
+            .setTransactionID(txnId)
+            .setTransactionValidDuration(Duration.newBuilder().setSeconds(180))
+            .setSystemUndelete(op)
+            .build();
+    given(accessor.getTxn()).willReturn(fileSysUndelTxn);
+    given(txnCtx.accessor()).willReturn(accessor);
+    given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
+  }
 }

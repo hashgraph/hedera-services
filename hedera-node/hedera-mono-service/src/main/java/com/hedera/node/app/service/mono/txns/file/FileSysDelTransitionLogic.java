@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.txns.file;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcFileId;
+import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -47,93 +47,94 @@ import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class FileSysDelTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(FileSysDelTransitionLogic.class);
 
-    private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
-            ignore -> OK;
+  private static final Logger log = LogManager.getLogger(FileSysDelTransitionLogic.class);
 
-    private final boolean supported;
-    private final HederaFs hfs;
-    private final SigImpactHistorian sigImpactHistorian;
-    private final TransactionContext txnCtx;
-    private final Map<EntityId, Long> expiries;
+  private static final Function<TransactionBody, ResponseCodeEnum> SEMANTIC_RUBBER_STAMP =
+      ignore -> OK;
 
-    @Inject
-    public FileSysDelTransitionLogic(
-            final HederaFs hfs,
-            final SigImpactHistorian sigImpactHistorian,
-            final Map<EntityId, Long> expiries,
-            final TransactionContext txnCtx,
-            @CompositeProps final PropertySource properties) {
-        this.hfs = hfs;
-        this.expiries = expiries;
-        this.txnCtx = txnCtx;
-        this.sigImpactHistorian = sigImpactHistorian;
-        this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(FILE);
+  private final boolean supported;
+  private final HederaFs hfs;
+  private final SigImpactHistorian sigImpactHistorian;
+  private final TransactionContext txnCtx;
+  private final Map<EntityId, Long> expiries;
+
+  @Inject
+  public FileSysDelTransitionLogic(
+      final HederaFs hfs,
+      final SigImpactHistorian sigImpactHistorian,
+      final Map<EntityId, Long> expiries,
+      final TransactionContext txnCtx,
+      @CompositeProps final PropertySource properties) {
+    this.hfs = hfs;
+    this.expiries = expiries;
+    this.txnCtx = txnCtx;
+    this.sigImpactHistorian = sigImpactHistorian;
+    this.supported = properties.getTypesProperty(ENTITIES_SYSTEM_DELETABLE).contains(FILE);
+  }
+
+  @Override
+  public void doStateTransition() {
+    if (!supported) {
+      txnCtx.setStatus(NOT_SUPPORTED);
+      return;
     }
+    try {
+      final var op = txnCtx.accessor().getTxn().getSystemDelete();
+      final var tbd = op.getFileID();
+      final var attr = new AtomicReference<HFileMeta>();
+      final var validity = tryLookupAgainst(hfs, tbd, attr);
 
-    @Override
-    public void doStateTransition() {
-        if (!supported) {
-            txnCtx.setStatus(NOT_SUPPORTED);
-            return;
-        }
-        try {
-            var op = txnCtx.accessor().getTxn().getSystemDelete();
-            var tbd = op.getFileID();
-            var attr = new AtomicReference<HFileMeta>();
-            var validity = tryLookupAgainst(hfs, tbd, attr);
+      if (validity != OK) {
+        txnCtx.setStatus(validity);
+        return;
+      }
 
-            if (validity != OK) {
-                txnCtx.setStatus(validity);
-                return;
-            }
-
-            var info = attr.get();
-            var newExpiry =
-                    op.hasExpirationTime() ? op.getExpirationTime().getSeconds() : info.getExpiry();
-            if (newExpiry <= txnCtx.consensusTime().getEpochSecond()) {
-                hfs.rm(tbd);
-            } else {
-                var oldExpiry = info.getExpiry();
-                info.setDeleted(true);
-                info.setExpiry(newExpiry);
-                hfs.setattr(tbd, info);
-                expiries.put(fromGrpcFileId(tbd), oldExpiry);
-            }
-            txnCtx.setStatus(SUCCESS);
-            sigImpactHistorian.markEntityChanged(tbd.getFileNum());
-        } catch (Exception unknown) {
-            log.warn(
-                    "Unrecognized failure handling {}!",
-                    txnCtx.accessor().getSignedTxnWrapper(),
-                    unknown);
-            txnCtx.setStatus(FAIL_INVALID);
-        }
+      final var info = attr.get();
+      final var newExpiry =
+          op.hasExpirationTime() ? op.getExpirationTime().getSeconds() : info.getExpiry();
+      if (newExpiry <= txnCtx.consensusTime().getEpochSecond()) {
+        hfs.rm(tbd);
+      } else {
+        final var oldExpiry = info.getExpiry();
+        info.setDeleted(true);
+        info.setExpiry(newExpiry);
+        hfs.setattr(tbd, info);
+        expiries.put(fromGrpcFileId(tbd), oldExpiry);
+      }
+      txnCtx.setStatus(SUCCESS);
+      sigImpactHistorian.markEntityChanged(tbd.getFileNum());
+    } catch (final Exception unknown) {
+      log.warn(
+          "Unrecognized failure handling {}!",
+          txnCtx.accessor().getSignedTxnWrapper(),
+          unknown);
+      txnCtx.setStatus(FAIL_INVALID);
     }
+  }
 
-    static ResponseCodeEnum tryLookupAgainst(
-            HederaFs hfs, FileID tbd, AtomicReference<HFileMeta> attr) {
-        if (hfs.exists(tbd)) {
-            var info = hfs.getattr(tbd);
-            if (info.isDeleted()) {
-                return FILE_DELETED;
-            } else {
-                attr.set(info);
-                return OK;
-            }
-        } else {
-            return INVALID_FILE_ID;
-        }
+  static ResponseCodeEnum tryLookupAgainst(
+      final HederaFs hfs, final FileID tbd, final AtomicReference<HFileMeta> attr) {
+    if (hfs.exists(tbd)) {
+      final var info = hfs.getattr(tbd);
+      if (info.isDeleted()) {
+        return FILE_DELETED;
+      } else {
+        attr.set(info);
+        return OK;
+      }
+    } else {
+      return INVALID_FILE_ID;
     }
+  }
 
-    @Override
-    public Predicate<TransactionBody> applicability() {
-        return txn -> txn.hasSystemDelete() && txn.getSystemDelete().hasFileID();
-    }
+  @Override
+  public Predicate<TransactionBody> applicability() {
+    return txn -> txn.hasSystemDelete() && txn.getSystemDelete().hasFileID();
+  }
 
-    @Override
-    public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-        return SEMANTIC_RUBBER_STAMP;
-    }
+  @Override
+  public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
+    return SEMANTIC_RUBBER_STAMP;
+  }
 }

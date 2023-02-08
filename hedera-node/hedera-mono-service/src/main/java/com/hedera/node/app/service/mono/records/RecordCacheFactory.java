@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -34,19 +34,20 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public final class RecordCacheFactory {
-    private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
-    private final PropertySource properties;
+  private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
 
-    @Inject
-    public RecordCacheFactory(final @CompositeProps PropertySource properties) {
-        this.properties = properties;
-    }
+  private final PropertySource properties;
 
-    public Cache<TransactionID, Boolean> getCache() {
-        final var ttl = properties.getIntProperty(CACHE_RECORDS_TTL);
+  @Inject
+  public RecordCacheFactory(final @CompositeProps PropertySource properties) {
+    this.properties = properties;
+  }
 
-        log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
-        return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();
-    }
+  public Cache<TransactionID, Boolean> getCache() {
+    final var ttl = properties.getIntProperty(CACHE_RECORDS_TTL);
+
+    log.info("Constructing the node-local txn id cache with ttl={}s", ttl);
+    return CacheBuilder.newBuilder().expireAfterWrite(ttl, TimeUnit.SECONDS).build();
+  }
 }
