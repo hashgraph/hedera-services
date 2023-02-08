@@ -478,7 +478,7 @@ public class UtilVerbs {
         return new RecordAssertions(timeout, validator);
     }
 
-    public static EventualAssertion streamIncludes(
+    public static EventualAssertion streamMustInclude(
             final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return new EventualRecordStreamAssertion(assertion);
     }

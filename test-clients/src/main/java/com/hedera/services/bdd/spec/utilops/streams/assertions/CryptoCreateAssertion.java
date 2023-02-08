@@ -91,6 +91,8 @@ public class CryptoCreateAssertion implements RecordStreamAssertion {
                 + ", expectedMemo='"
                 + expectedMemo
                 + '\''
+                + ", expectedBalance="
+                + expectedBalance
                 + '}';
     }
 

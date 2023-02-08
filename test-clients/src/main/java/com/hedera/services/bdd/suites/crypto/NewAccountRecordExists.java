@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPas
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedCryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamIncludes;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustInclude;
 import static com.hedera.services.bdd.suites.contract.Utils.asInstant;
 
 import com.hedera.services.bdd.junit.validators.AccountExistenceValidator;
@@ -89,7 +89,7 @@ public class NewAccountRecordExists extends HapiSuite {
         final var account = "novel";
         return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStream")
                 .given(
-                        streamIncludes(
+                        streamMustInclude(
                                 recordedCryptoCreate(
                                         account, a -> a.withMemo(memo).withBalance(balance))))
                 .when(cryptoCreate(account).balance(balance).memo(memo))
