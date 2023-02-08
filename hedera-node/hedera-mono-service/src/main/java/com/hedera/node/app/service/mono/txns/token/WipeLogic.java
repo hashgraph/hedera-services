@@ -25,6 +25,8 @@ import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,7 +51,10 @@ public class WipeLogic {
             final Id targetTokenId,
             final Id targetAccountId,
             final long amount,
-            final List<Long> serialNumbersList) {
+            List<Long> serialNumbersList) {
+        // De-duplicate serial numbers
+        serialNumbersList = new ArrayList<>(new LinkedHashSet<>(serialNumbersList));
+
         /* --- Load the model objects --- */
         final var token = tokenStore.loadToken(targetTokenId);
         final var account = accountStore.loadAccount(targetAccountId);
