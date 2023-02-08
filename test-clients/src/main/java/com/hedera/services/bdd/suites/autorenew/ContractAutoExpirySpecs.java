@@ -428,8 +428,13 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         .between(TOKEN_TREASURY, contractToRemove),
                                 movingUnique(nonFungibleToken, 1L, 2L)
                                         .between(TOKEN_TREASURY, contractToRemove)),
-                        // TODO: would like to add a check that the token move was successful
-                        sleepFor(minimalLifetime * 1_000L + 500L))
+                        sleepFor(minimalLifetime * 1_000L + 500L),
+
+                        // verify that token move was successful
+                        getAccountBalance(contractToRemove)
+                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
+                                .hasTokenBalance(bFungibleToken, bFungibleAmount)
+                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
