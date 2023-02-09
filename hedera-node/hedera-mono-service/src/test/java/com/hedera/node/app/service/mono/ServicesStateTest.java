@@ -108,7 +108,7 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -152,7 +152,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Mock private VirtualMapFactory virtualMapFactory;
     @Mock private ServicesState.StakingInfoBuilder stakingInfoBuilder;
     @Mock private ServicesState.MapToDiskMigration mapToDiskMigration;
-    @Mock private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
+    @Mock private Supplier<VirtualMapFactory> vmf;
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
     @Mock private SystemFilesManager systemFilesManager;
@@ -656,7 +656,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
+        given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
         mockAllMaps(mock(MerkleMap.class), vmap);
@@ -689,8 +689,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
 
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 
     @Test
@@ -704,7 +704,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(true);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
+        given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
         mockAllMaps(mock(MerkleMap.class), vmap);
@@ -736,8 +736,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
 
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 
     @Test
@@ -946,14 +946,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     private void mockMigratorsOnly() {
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
-        ServicesState.setVmFactory(vmf);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
+        ServicesState.setVmFactory(vmf);
     }
 
     private void unmockMigrators() {
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setStakingInfoBuilder(StakingInfoMapBuilder::buildStakingInfoMap);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 }

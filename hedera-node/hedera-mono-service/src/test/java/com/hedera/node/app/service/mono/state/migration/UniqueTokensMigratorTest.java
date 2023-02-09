@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
@@ -117,8 +116,7 @@ class UniqueTokensMigratorTest {
     @Test
     void givenDataAlreadyMigrated_noMigration() {
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
-        final var virtualMap =
-                new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
+        final var virtualMap = new VirtualMapFactory().newVirtualizedUniqueTokenStorage();
         state.setChild(UNIQUE_TOKENS, virtualMap);
 
         UniqueTokensMigrator.migrateFromUniqueTokenMerkleMap(state);
