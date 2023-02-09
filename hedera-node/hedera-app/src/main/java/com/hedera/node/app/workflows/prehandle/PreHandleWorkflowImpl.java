@@ -17,6 +17,9 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -24,7 +27,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -46,13 +48,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(
-                    () ->
-                            new SessionContext(
-                                    Query.parser(),
-                                    Transaction.parser(),
-                                    SignedTransaction.parser(),
-                                    TransactionBody.parser()));
+            ThreadLocal.withInitial(SessionContext::new);
 
     private final WorkflowOnset onset;
     private final Dispatcher dispatcher;
@@ -125,7 +121,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final AccountID payerID = txBody.getTransactionID().getAccountID();
+            final AccountID payerID = txBody.transactionID().accountID();
             final var metadata = dispatcher.dispatchPreHandle(state, txBody, payerID);
 
             // 3. Prepare signature-data

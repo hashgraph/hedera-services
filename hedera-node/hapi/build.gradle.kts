@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// see https://github.com/gradle/gradle/issues/22797, apparently the issue
+// requiring suppression will be fixed in Gradle 8.1
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     id("com.hedera.hashgraph.conventions")
     alias(libs.plugins.pbj)
+    `java-test-fixtures`
 }
 
 description = "Hedera API"
@@ -25,11 +30,13 @@ configurations.all {
 }
 
 dependencies {
+    api(libs.spotbugs.annotations)
     implementation(libs.pbj.runtime)
     implementation(libs.bundles.di)
     testImplementation(testLibs.bundles.testing)
     // we depend on the protoc compiled hapi during test as we test our pbj generated code against it to make sure it is compatible
     testImplementation(libs.hapi)
+    testFixturesImplementation(libs.pbj.runtime)
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them

@@ -15,31 +15,33 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
-
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.hapi.node.base.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
 
 /** Default implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -52,7 +54,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     private final IngestChecker checker;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
-    private final HapiOpCounters opCounters;
+
+    /** A metric for the number of transactions we have submitted to the platform for consensus */
+    private final Counter countSubmitted;
 
     /**
      * Constructor of {@code IngestWorkflowImpl}
@@ -66,7 +70,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
-     * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
+     * @param metrics the {@link Metrics} to use for tracking metrics
      */
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
@@ -77,7 +81,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final IngestChecker checker,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
-            @NonNull final HapiOpCounters opCounters) {
+            @NonNull final Metrics metrics) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -86,7 +90,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         this.checker = requireNonNull(checker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
-        this.opCounters = requireNonNull(opCounters);
+        this.countSubmitted = metrics.getOrCreate(new Counter.Config("app", "txSubmitted")
+                .withDescription("The number of transactions submitted for consensus"));
     }
 
     @Override
@@ -119,8 +124,6 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 final var signatureMap = onsetResult.signatureMap();
                 final var functionality = onsetResult.functionality();
 
-                opCounters.countReceived(functionality);
-
                 // 2. Check throttles
                 if (throttleAccumulator.shouldThrottle(functionality)) {
                     throw new PreCheckException(BUSY);
@@ -130,7 +133,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final AccountID payerID = txBody.getTransactionID().getAccountID();
+                final AccountID payerID = txBody.transactionID().accountID();
                 final var accountStore = storeCache.getAccountStore(state);
                 final var payer =
                         accountStore
@@ -144,9 +147,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                submissionManager.submit(txBody, requestBuffer, ctx.txBodyParser());
-
-                opCounters.countSubmitted(functionality);
+                submissionManager.submit(txBody, requestBuffer);
+                countSubmitted.increment();
             } catch (InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();
                 result = e.responseCode();
@@ -155,12 +157,19 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             }
         }
 
-        // 8. Return PreCheck code and evtl. estimated fee
+        // 8. Return PreCheck code and estimated fee
         final var transactionResponse =
                 TransactionResponse.newBuilder()
-                        .setNodeTransactionPrecheckCode(result)
-                        .setCost(estimatedFee)
+                        .nodeTransactionPrecheckCode(result)
+                        .cost(estimatedFee)
                         .build();
-        responseBuffer.put(transactionResponse.toByteArray());
+
+        try {
+            TransactionResponse.PROTOBUF.write(transactionResponse, DataBuffer.wrap(responseBuffer));
+        } catch (IOException ex) {
+            // It may be that the response couldn't be written because the response buffer was
+            // too small, which would be an internal server error.
+            throw new RuntimeException("Failed to write bytes to response buffer", ex);
+        }
     }
 }

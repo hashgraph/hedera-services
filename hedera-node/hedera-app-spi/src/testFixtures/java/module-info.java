@@ -1,4 +1,4 @@
-module hedera.services.hedera.node.hedera.app.spi.testFixtures {
+module hedera.services.hedera.node.hedera.app.spi.fixtures {
     exports com.hedera.node.app.spi.fixtures.state;
 
     requires com.hedera.node.app.spi;

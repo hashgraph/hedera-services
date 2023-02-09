@@ -15,38 +15,34 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.records.RecordCache;
-import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.hapi.node.base.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.RecordCache;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static java.util.Objects.requireNonNull;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
@@ -87,14 +83,18 @@ public class OnsetChecker {
      * @throws NullPointerException if {@code tx} is {@code null}
      */
     @SuppressWarnings("deprecation")
-    public void checkTransaction(@NonNull final Transaction tx) throws PreCheckException {
+    public void checkTransaction(@NonNull final Transaction tx, final int length) throws PreCheckException {
         requireNonNull(tx);
 
-        final var hasSignedTxnBytes = !tx.getSignedTransactionBytes().isEmpty();
-        final var hasDeprecatedSigMap = tx.hasSigMap();
-        final var hasDeprecatedBodyBytes = !tx.getBodyBytes().isEmpty();
-        final var hasDeprecatedBody = tx.hasBody();
-        final var hasDeprecatedSigs = tx.hasSigs();
+        if (length > maxSignedTxnSize) {
+            throw new PreCheckException(TRANSACTION_OVERSIZE);
+        }
+
+        final var hasSignedTxnBytes = tx.signedTransactionBytes().getLength() > 0;
+        final var hasDeprecatedSigMap = tx.sigMap() != null;
+        final var hasDeprecatedBodyBytes = tx.bodyBytes().getLength() > 0;
+        final var hasDeprecatedBody = tx.body() != null;
+        final var hasDeprecatedSigs = tx.sigs() != null;
 
         if (hasDeprecatedBody
                 || hasDeprecatedSigs
@@ -110,30 +110,6 @@ public class OnsetChecker {
         } else if (!hasDeprecatedBodyBytes) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
-
-        if (tx.getSerializedSize() > maxSignedTxnSize) {
-            throw new PreCheckException(TRANSACTION_OVERSIZE);
-        }
-
-        if (MiscUtils.hasUnknownFields(tx)) {
-            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        }
-    }
-
-    /**
-     * Validates a {@link SignedTransaction}
-     *
-     * @param tx the {@code SignedTransaction} to check
-     * @throws PreCheckException if validation fails
-     * @throws NullPointerException if {@code tx} is {@code null}
-     */
-    public void checkSignedTransaction(@NonNull final SignedTransaction tx)
-            throws PreCheckException {
-        requireNonNull(tx);
-
-        if (MiscUtils.hasUnknownFields(tx)) {
-            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        }
     }
 
     /**
@@ -148,30 +124,26 @@ public class OnsetChecker {
             throws PreCheckException {
         requireNonNull(txBody);
 
-        if (MiscUtils.hasUnknownFields(txBody)) {
-            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        }
-
-        if (!txBody.hasTransactionID()) {
+        if (txBody.transactionID() == null) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
         }
 
-        var txnId = txBody.getTransactionID();
-        if (!isPlausibleAccount(txnId.getAccountID())) {
+        var txnId = txBody.transactionID();
+        if (!isPlausibleAccount(txnId.accountID())) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
         }
 
-        checkMemo(txBody.getMemo());
+        checkMemo(txBody.memo());
 
         if (recordCache.isReceiptPresent(txnId)) {
             return DUPLICATE_TRANSACTION;
         }
 
-        if (!isPlausibleTxnFee(txBody.getTransactionFee())) {
+        if (!isPlausibleTxnFee(txBody.transactionFee())) {
             return INSUFFICIENT_TX_FEE;
         }
 
-        return checkTimebox(txnId.getTransactionValidStart(), txBody.getTransactionValidDuration());
+        return checkTimebox(txnId.transactionValidStart(), txBody.transactionValidDuration());
     }
 
     private static boolean isPlausibleTxnFee(final long transactionFee) {
@@ -179,9 +151,11 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        return accountID.getAccountNum() > 0
-                && accountID.getRealmNum() >= 0
-                && accountID.getShardNum() >= 0;
+        final var optAccountNum = accountID.accountNum();
+        final var hasAlias = accountID.alias().isPresent() || accountID.evmAddress().isPresent();
+        return ((optAccountNum.isPresent() && optAccountNum.get() > 0) || hasAlias)
+                && accountID.realmNum() >= 0
+                && accountID.shardNum() >= 0;
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
@@ -197,7 +171,7 @@ public class OnsetChecker {
     }
 
     private ResponseCodeEnum checkTimebox(final Timestamp start, final Duration duration) {
-        final var validForSecs = duration.getSeconds();
+        final var validForSecs = duration.seconds();
         if (validForSecs < dynamicProperties.minTxnDuration()
                 || validForSecs > dynamicProperties.maxTxnDuration()) {
             return INVALID_TRANSACTION_DURATION;
@@ -226,10 +200,10 @@ public class OnsetChecker {
     private static Instant safeguardedInstant(final Timestamp timestamp) {
         return Instant.ofEpochSecond(
                 Math.min(
-                        Math.max(Instant.MIN.getEpochSecond(), timestamp.getSeconds()),
+                        Math.max(Instant.MIN.getEpochSecond(), timestamp.seconds()),
                         Instant.MAX.getEpochSecond()),
                 Math.min(
-                        Math.max(Instant.MIN.getNano(), timestamp.getNanos()),
+                        Math.max(Instant.MIN.getNano(), timestamp.nanos()),
                         Instant.MAX.getNano()));
     }
 

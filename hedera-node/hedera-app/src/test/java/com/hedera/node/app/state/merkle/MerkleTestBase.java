@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.state.merkle;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.*;
@@ -25,7 +26,6 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
-import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.DigestType;
@@ -257,7 +257,7 @@ public class MerkleTestBase extends StateTestBase {
 
     /** A convenience method for creating {@link SemanticVersion}. */
     protected SemanticVersion version(int major, int minor, int patch) {
-        return SemanticVersion.newBuilder().setMajor(major).setMinor(minor).setPatch(patch).build();
+        return SemanticVersion.newBuilder().major(major).minor(minor).patch(patch).build();
     }
 
     /** A convenience method for adding a k/v pair to a merkle map */

@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
 import com.hedera.node.app.state.merkle.memory.InMemoryReadableKVState;
@@ -120,6 +121,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     private final Map<String, Map<String, StateMetadata<?, ?>>> services = new HashMap<>();
 
+    /** The cache used for tracking records in flight */
+    private final RecordCache recordCache = new MerkleRecordCache();
+
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
     public MerkleHederaState() {}
@@ -207,6 +211,12 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return stateMetadata == null
                 ? EMPTY_WRITABLE_STATES
                 : new MerkleWritableStates(stateMetadata);
+    }
+
+    @NonNull
+    @Override
+    public RecordCache getRecordCache() {
+        return recordCache;
     }
 
     /** {@inheritDoc} */

@@ -5,7 +5,6 @@ module com.hedera.node.app.service.token.impl {
     requires org.apache.commons.lang3;
     requires com.google.common;
     requires com.hedera.node.app.service.mono;
-    requires com.hedera.hashgraph.protobuf.java.api;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
     requires com.hedera.node.app.spi;

@@ -46,4 +46,7 @@ public interface HederaState {
      */
     @NonNull
     WritableStates createWritableStates(@NonNull String serviceName);
+
+    @NonNull
+    RecordCache getRecordCache();
 }

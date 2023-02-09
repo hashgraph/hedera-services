@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gradle.kotlin.dsl.accessors._de3ff27eccbd9efdc5c099f60a1d8f4c.check
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -104,7 +103,7 @@ testing {
         val itest by registering(JvmTestSuite::class) {
             testType.set(TestSuiteType.INTEGRATION_TEST)
             dependencies {
-                implementation(project)
+                implementation(project())
             }
 
             // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
@@ -123,7 +122,7 @@ testing {
         val hammer by registering(JvmTestSuite::class) {
             testType.set("hammer-test")
             dependencies {
-                implementation(project)
+                implementation(project())
             }
 
             targets {
@@ -142,7 +141,7 @@ testing {
                 val eet by registering(JvmTestSuite::class) {
                     testType.set("end-to-end-test")
                     dependencies {
-                        implementation(project)
+                        implementation(project())
                     }
 
                     // "shouldRunAfter" will only make sure if both test and eet are run concurrently,

@@ -18,15 +18,16 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
-import com.hedera.node.app.service.mono.records.RecordCache;
-import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
-import com.hedera.node.app.spi.state.Serdes;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.RecordCache;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.pbj.runtime.io.BytesBuffer;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
@@ -37,11 +38,15 @@ import org.slf4j.LoggerFactory;
 public class SubmissionManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
+    private static final String PLATFORM_TXN_REJECTIONS_NAME = "platformTxnNotCreated/sec";
+    private static final String PLATFORM_TXN_REJECTIONS_DESC =
+            "number of platform transactions not created per second";
+    private static final String SPEEDOMETER_FORMAT = "%,13.2f";
 
     private final Platform platform;
     private final RecordCache recordCache;
     private final NodeLocalProperties nodeLocalProperties;
-    private final MiscSpeedometers speedometers;
+    private final SpeedometerMetric platformTxnRejections;
 
     /**
      * Constructor of {@code SubmissionManager}
@@ -49,17 +54,21 @@ public class SubmissionManager {
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
-     * @param speedometers metrics related to submissions
+     * @param metrics {@link com.swirlds.common.metrics.Metrics} to use for metrics related to submissions
      */
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
             @NonNull final NodeLocalProperties nodeLocalProperties,
-            @NonNull final MiscSpeedometers speedometers) {
+            @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.nodeLocalProperties = requireNonNull(nodeLocalProperties);
-        this.speedometers = requireNonNull(speedometers);
+        this.platformTxnRejections = metrics.getOrCreate(
+                new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
+                        .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(nodeLocalProperties.statsSpeedometerHalfLifeSecs()));
     }
 
     /**
@@ -67,19 +76,15 @@ public class SubmissionManager {
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
      * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
-     * @param parser the {@link Parser} that is used to eventually parse the {@link
-     *     TransactionBody#uncheckedSubmit()} ()}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
             @NonNull final TransactionBody txBody,
-            @NonNull final ByteBuffer byteBuffer,
-            @NonNull final Serdes<TransactionBody> parser)
+            @NonNull final ByteBuffer byteBuffer)
             throws PreCheckException {
         requireNonNull(txBody);
         requireNonNull(byteBuffer);
-        requireNonNull(parser);
 
         final byte[] payload;
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
@@ -91,16 +96,11 @@ public class SubmissionManager {
                 // we do not allow unchecked submits in PROD
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
             }
-            try {
-                final var uncheckedSubmit = optUncheckedSubmit.get();
-                final var txBytes = uncheckedSubmit.transactionBytes();
-                payload =
-                        parser.parse()parseFrom(txBytes)
-                                .toByteArray();
-            } catch (InvalidProtocolBufferException e) {
-                LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
-                throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
-            }
+            final var uncheckedSubmit = optUncheckedSubmit.get();
+            final var txBytes = uncheckedSubmit.transactionBytes();
+            WorkflowOnset.parse(BytesBuffer.wrap(txBytes), UncheckedSubmitBody.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
+            payload = new byte[byteBuffer.limit()];
+            txBytes.getBytes(0, payload);
         } else if (byteBuffer.hasArray()) {
             payload = byteBuffer.array();
         } else {
@@ -110,9 +110,9 @@ public class SubmissionManager {
 
         final var success = platform.createTransaction(payload);
         if (success) {
-            recordCache.addPreConsensus(txBody.getTransactionID());
+            recordCache.addPreConsensus(txBody.transactionID());
         } else {
-            speedometers.cyclePlatformTxnRejections();
+            platformTxnRejections.cycle();
             throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
         }
     }

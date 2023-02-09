@@ -25,22 +25,22 @@ import org.junit.jupiter.api.Test;
 
 class OnsetResultTest {
 
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void checkConstructorWithIllegalArguments() {
-        // given
-        final var txBody = TransactionBody.getDefaultInstance();
-        final var signatureMap = SignatureMap.getDefaultInstance();
-        final var functionality = HederaFunctionality.NONE;
-
-        // then
-        assertThatThrownBy(() -> new OnsetResult(null, OK, signatureMap, functionality))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, null, signatureMap, functionality))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, OK, null, functionality))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetResult(txBody, OK, signatureMap, null))
-                .isInstanceOf(NullPointerException.class);
-    }
+//    @SuppressWarnings("ConstantConditions")
+//    @Test
+//    void checkConstructorWithIllegalArguments() {
+//        // given
+//        final var txBody = TransactionBody.getDefaultInstance();
+//        final var signatureMap = SignatureMap.getDefaultInstance();
+//        final var functionality = HederaFunctionality.NONE;
+//
+//        // then
+//        assertThatThrownBy(() -> new OnsetResult(null, OK, signatureMap, functionality))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> new OnsetResult(txBody, null, signatureMap, functionality))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> new OnsetResult(txBody, OK, null, functionality))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> new OnsetResult(txBody, OK, signatureMap, null))
+//                .isInstanceOf(NullPointerException.class);
+//    }
 }

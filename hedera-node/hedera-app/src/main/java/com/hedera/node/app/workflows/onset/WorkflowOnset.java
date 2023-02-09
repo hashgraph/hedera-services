@@ -17,21 +17,27 @@ package com.hedera.node.app.workflows.onset;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.hapi.node.transaction.TransactionBody;
-\import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.MalformedProtobufException;
+import com.hedera.pbj.runtime.UnknownFieldException;
+import com.hedera.pbj.runtime.io.Bytes;
+import com.hedera.pbj.runtime.io.BytesBuffer;
+import com.hedera.pbj.runtime.io.DataBuffer;
+import com.hedera.pbj.runtime.io.DataInput;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -67,7 +73,7 @@ public class WorkflowOnset {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
-        return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
+        return doParseAndCheck(ctx, buffer.remaining(), DataBuffer.wrap(buffer));
     }
 
     /**
@@ -85,71 +91,64 @@ public class WorkflowOnset {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
-        return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
+        return doParseAndCheck(ctx, buffer.length, DataBuffer.wrap(buffer));
     }
 
     @SuppressWarnings("deprecation")
     private OnsetResult doParseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier)
+            @NonNull final SessionContext ctx, final int length, @NonNull final DataBuffer txData)
             throws PreCheckException {
 
-        // 1. Parse the transaction object
-        final Transaction tx;
-        try {
-            tx = txSupplier.parse();
-        } catch (InvalidProtocolBufferException e) {
-            throw new PreCheckException(INVALID_TRANSACTION);
-        }
-
-        checker.checkTransaction(tx);
+        // 1. Parse and validate transaction object
+        final Transaction tx = parse(txData, Transaction.PROTOBUF, INVALID_TRANSACTION);
+        checker.checkTransaction(tx, length);
 
         // 2. Parse and validate the signed transaction (if available)
-        final ByteString bodyBytes;
+        final Bytes bodyBytes;
         final SignatureMap signatureMap;
-        if (!tx.getSignedTransactionBytes().isEmpty()) {
+        if (tx.signedTransactionBytes().getLength() > 0) {
+
             final SignedTransaction signedTransaction =
-                    parse(ctx.signedParser(), tx.getSignedTransactionBytes(), INVALID_TRANSACTION);
-            checker.checkSignedTransaction(signedTransaction);
-            bodyBytes = signedTransaction.getBodyBytes();
-            signatureMap = signedTransaction.getSigMap();
+                    parse(BytesBuffer.wrap(tx.signedTransactionBytes()), SignedTransaction.PROTOBUF, INVALID_TRANSACTION);
+            bodyBytes = signedTransaction.bodyBytes();
+            signatureMap = signedTransaction.sigMap();
         } else {
-            bodyBytes = tx.getBodyBytes();
-            signatureMap = tx.getSigMap();
+            bodyBytes = tx.bodyBytes();
+            signatureMap = tx.sigMap();
         }
 
-        // 3. Parse and validate TransactionBody
+        // 3. Parse and validate TransactionBody (either using the body that was part of
+        //    the transaction, if it was a deprecated transaction, or the body of the
+        //    signedTransaction, if it was not.
         final TransactionBody txBody =
-                parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
+                parse(BytesBuffer.wrap(bodyBytes), TransactionBody.PROTOBUF, INVALID_TRANSACTION_BODY);
         var errorCode = checker.checkTransactionBody(txBody);
 
-        // 4. Get HederaFunctionality
-        var functionality = HederaFunctionality.UNRECOGNIZED;
-        try {
-            functionality = MiscUtils.functionOf(txBody);
-        } catch (UnknownHederaFunctionality e) {
-            if (errorCode == ResponseCodeEnum.OK) {
-                errorCode = INVALID_TRANSACTION_BODY;
-            }
-        }
-
         // 4. return TransactionBody
-        return new OnsetResult(txBody, errorCode, signatureMap, functionality);
-    }
-
-    @FunctionalInterface
-    private interface TransactionSupplier {
-        Transaction parse() throws InvalidProtocolBufferException;
-    }
-
-    private static <T> T parse(
-            @NonNull final Parser<T> parser,
-            @NonNull final ByteString buffer,
-            @NonNull final ResponseCodeEnum errorCode)
-            throws PreCheckException {
         try {
-            return parser.parseFrom(buffer);
-        } catch (InvalidProtocolBufferException e) {
-            throw new PreCheckException(errorCode);
+            final var functionality = HapiUtils.functionOf(txBody);
+            return new OnsetResult(txBody, errorCode, signatureMap, functionality);
+        } catch (UnknownHederaFunctionality e) {
+            throw new PreCheckException(INVALID_TRANSACTION_BODY);
+        }
+    }
+
+    public static <T extends Record> T parse(DataInput data, Codec<T> codec, ResponseCodeEnum parseErrorCode) throws PreCheckException {
+        try {
+            return codec.parseStrict(data);
+        } catch (MalformedProtobufException e) {
+            // We could not parse the protobuf because it was not valid protobuf
+            throw new PreCheckException(parseErrorCode);
+        } catch (UnknownFieldException e) {
+            // We do not allow newer clients to send transactions to older networks.
+            throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
+        } catch (IOException e) {
+            // This should technically not be possible. The data buffer supplied
+            // is either based on a byte[] or a byte buffer, in both cases all data
+            // is available and a generic IO exception shouldn't happen. If it does,
+            // it indicates the data could not be parsed, but for a reason other than
+            // those causing an MalformedProtobufException or UnknownFieldException.
+            throw new PreCheckException(parseErrorCode);
         }
     }
 }

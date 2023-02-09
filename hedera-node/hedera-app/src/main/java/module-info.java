@@ -9,7 +9,7 @@ module com.hedera.node.app {
     requires com.swirlds.virtualmap;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
-    requires com.hedera.hashgraph.protobuf.java.api;
+    requires com.hedera.pbj.runtime;
     requires grpc.stub;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi;

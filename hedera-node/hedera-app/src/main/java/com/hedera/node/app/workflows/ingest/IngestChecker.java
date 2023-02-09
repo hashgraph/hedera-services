@@ -15,17 +15,17 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.hapi.node.base.AccountID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -64,12 +64,12 @@ public class IngestChecker {
         requireNonNull(txBody);
         requireNonNull(functionality);
 
-        if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
+        if (!Objects.equals(nodeAccountID, txBody.nodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
-        var txnId = txBody.getTransactionID();
-        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
+        var txnId = txBody.transactionID();
+        if (txnId.scheduled() || txnId.nonce() != USER_TRANSACTION_NONCE) {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
     }

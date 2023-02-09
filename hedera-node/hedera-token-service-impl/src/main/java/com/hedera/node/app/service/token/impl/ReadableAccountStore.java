@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ContractID.ContractOneOfType;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.writer.KeyWriter;
 import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.pbj.runtime.io.Bytes;
@@ -323,7 +322,7 @@ public class ReadableAccountStore implements AccountKeyLookup {
         try {
             final var bytes = new ByteArrayOutputStream();
             final var output = new DataOutputStream(bytes);
-            KeyWriter.write(key, output);
+            Key.PROTOBUF.write(key, output);
             final var googleKey = com.hederahashgraph.api.proto.java.Key.parseFrom(bytes.toByteArray());
             return Utils.asHederaKey(googleKey);
         } catch (IOException e) {

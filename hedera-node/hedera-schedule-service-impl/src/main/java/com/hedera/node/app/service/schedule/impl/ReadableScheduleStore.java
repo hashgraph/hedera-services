@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.schedule.impl;
 
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.hapi.node.base.AccountID;
-import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -55,16 +55,17 @@ public class ReadableScheduleStore {
      * @return the schedule with the given id
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
-        final var schedule = schedulesById.get(id.getScheduleNum());
-        return Optional.ofNullable(schedule)
-                .map(
-                        s ->
-                                new ScheduleMetadata(
-                                        schedule.adminKey(),
-                                        schedule.ordinaryViewOfScheduledTxn(),
-                                        schedule.hasExplicitPayer()
-                                                ? Optional.of(schedule.payer().toGrpcAccountId())
-                                                : Optional.empty()));
+//        final var schedule = schedulesById.get(id.scheduleNum());
+//        return Optional.ofNullable(schedule)
+//                .map(
+//                        s ->
+//                                new ScheduleMetadata(
+//                                        schedule.adminKey(),
+//                                        schedule.ordinaryViewOfScheduledTxn(),
+//                                        schedule.hasExplicitPayer()
+//                                                ? Optional.of(schedule.payer()).map(e -> AccountID.newBuilder().shardNum(e.shard()).realmNum(e.realm()).accountNum(e.num()).build())
+//                                                : Optional.empty()));
+        return null;
     }
 
     /**

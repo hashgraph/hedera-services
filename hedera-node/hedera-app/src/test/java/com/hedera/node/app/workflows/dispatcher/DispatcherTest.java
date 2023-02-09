@@ -19,6 +19,54 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
+import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractDeleteTransactionBody;
+import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.file.FileDeleteTransactionBody;
+import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
+import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleDeleteTransactionBody;
+import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
+import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteAllowanceTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteLiveHashTransactionBody;
+import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
+import com.hedera.hapi.node.token.TokenBurnTransactionBody;
+import com.hedera.hapi.node.token.TokenCreateTransactionBody;
+import com.hedera.hapi.node.token.TokenDeleteTransactionBody;
+import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
+import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenFreezeAccountTransactionBody;
+import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
+import com.hedera.hapi.node.token.TokenMintTransactionBody;
+import com.hedera.hapi.node.token.TokenPauseTransactionBody;
+import com.hedera.hapi.node.token.TokenRevokeKycTransactionBody;
+import com.hedera.hapi.node.token.TokenUnfreezeAccountTransactionBody;
+import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
+import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
+import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
+import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -38,7 +86,6 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StoreCache;
-import com.hederahashgraph.api.proto.java.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -189,17 +236,17 @@ class DispatcherTest {
         // given
         final var txBody =
                 TransactionBody.newBuilder()
-                        .setConsensusCreateTopic(
-                                ConsensusCreateTopicTransactionBody.getDefaultInstance())
+                        .consensusCreateTopic(
+                                ConsensusCreateTopicTransactionBody.newBuilder().build())
                         .build();
         final var payer = AccountID.newBuilder().build();
         final var invalidSystemDelete =
                 TransactionBody.newBuilder()
-                        .setSystemDelete(SystemDeleteTransactionBody.getDefaultInstance())
+                        .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
                         .build();
         final var invalidSystemUndelete =
                 TransactionBody.newBuilder()
-                        .setSystemUndelete(SystemUndeleteTransactionBody.getDefaultInstance())
+                        .systemUndelete(SystemUndeleteTransactionBody.newBuilder().build())
                         .build();
 
         // then
@@ -234,8 +281,8 @@ class DispatcherTest {
                 // consensus
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setConsensusCreateTopic(
-                                        ConsensusCreateTopicTransactionBody.getDefaultInstance())
+                                .consensusCreateTopic(
+                                        ConsensusCreateTopicTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -243,8 +290,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setConsensusUpdateTopic(
-                                        ConsensusUpdateTopicTransactionBody.getDefaultInstance())
+                                .consensusUpdateTopic(
+                                        ConsensusUpdateTopicTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -252,8 +299,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setConsensusDeleteTopic(
-                                        ConsensusDeleteTopicTransactionBody.getDefaultInstance())
+                                .consensusDeleteTopic(
+                                        ConsensusDeleteTopicTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -261,8 +308,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setConsensusSubmitMessage(
-                                        ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                                .consensusSubmitMessage(
+                                        ConsensusSubmitMessageTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -272,8 +319,8 @@ class DispatcherTest {
                 // contract
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setContractCreateInstance(
-                                        ContractCreateTransactionBody.getDefaultInstance())
+                                .contractCreateInstance(
+                                        ContractCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -281,8 +328,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setContractUpdateInstance(
-                                        ContractUpdateTransactionBody.getDefaultInstance())
+                                .contractUpdateInstance(
+                                        ContractUpdateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -290,7 +337,7 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setContractCall(ContractCallTransactionBody.getDefaultInstance())
+                                .contractCall(ContractCallTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -298,8 +345,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setContractDeleteInstance(
-                                        ContractDeleteTransactionBody.getDefaultInstance())
+                                .contractDeleteInstance(
+                                        ContractDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -307,8 +354,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setEthereumTransaction(
-                                        EthereumTransactionBody.getDefaultInstance())
+                                .ethereumTransaction(
+                                        EthereumTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.etherumTransactionHandler()).preHandle(any(), any())),
@@ -316,8 +363,8 @@ class DispatcherTest {
                 // crypto
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoCreateAccount(
-                                        CryptoCreateTransactionBody.getDefaultInstance())
+                                .cryptoCreateAccount(
+                                        CryptoCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -325,8 +372,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoUpdateAccount(
-                                        CryptoUpdateTransactionBody.getDefaultInstance())
+                                .cryptoUpdateAccount(
+                                        CryptoUpdateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -334,8 +381,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoTransfer(
-                                        CryptoTransferTransactionBody.getDefaultInstance())
+                                .cryptoTransfer(
+                                        CryptoTransferTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -343,7 +390,7 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
+                                .cryptoDelete(CryptoDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -351,8 +398,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoApproveAllowance(
-                                        CryptoApproveAllowanceTransactionBody.getDefaultInstance())
+                                .cryptoApproveAllowance(
+                                        CryptoApproveAllowanceTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -360,8 +407,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoDeleteAllowance(
-                                        CryptoDeleteAllowanceTransactionBody.getDefaultInstance())
+                                .cryptoDeleteAllowance(
+                                        CryptoDeleteAllowanceTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -369,15 +416,15 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoAddLiveHash(
-                                        CryptoAddLiveHashTransactionBody.getDefaultInstance())
+                                .cryptoAddLiveHash(
+                                        CryptoAddLiveHashTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.cryptoAddLiveHashHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setCryptoDeleteLiveHash(
-                                        CryptoDeleteLiveHashTransactionBody.getDefaultInstance())
+                                .cryptoDeleteLiveHash(
+                                        CryptoDeleteLiveHashTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -387,25 +434,25 @@ class DispatcherTest {
                 // file
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setFileCreate(FileCreateTransactionBody.getDefaultInstance())
+                                .fileCreate(FileCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.fileCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setFileUpdate(FileUpdateTransactionBody.getDefaultInstance())
+                                .fileUpdate(FileUpdateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.fileUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setFileDelete(FileDeleteTransactionBody.getDefaultInstance())
+                                .fileDelete(FileDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.fileDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setFileAppend(FileAppendTransactionBody.getDefaultInstance())
+                                .fileAppend(FileAppendTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.fileAppendHandler()).preHandle(any(), any())),
@@ -413,7 +460,7 @@ class DispatcherTest {
                 // freeze
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setFreeze(FreezeTransactionBody.getDefaultInstance())
+                                .freeze(FreezeTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.freezeHandler()).preHandle(any(), any())),
@@ -421,7 +468,7 @@ class DispatcherTest {
                 // network
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
+                                .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.uncheckedSubmitHandler()).preHandle(any(), any())),
@@ -429,8 +476,8 @@ class DispatcherTest {
                 // schedule
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setScheduleCreate(
-                                        ScheduleCreateTransactionBody.getDefaultInstance())
+                                .scheduleCreate(
+                                        ScheduleCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -438,7 +485,7 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setScheduleSign(ScheduleSignTransactionBody.getDefaultInstance())
+                                .scheduleSign(ScheduleSignTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -446,8 +493,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setScheduleDelete(
-                                        ScheduleDeleteTransactionBody.getDefaultInstance())
+                                .scheduleDelete(
+                                        ScheduleDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
@@ -455,51 +502,51 @@ class DispatcherTest {
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
+                                .tokenCreation(TokenCreateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
+                                .tokenUpdate(TokenUpdateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
+                                .tokenMint(TokenMintTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenMintHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
+                                .tokenBurn(TokenBurnTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenBurnHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
+                                .tokenDeletion(TokenDeleteTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
+                                .tokenWipe(TokenWipeAccountTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenAccountWipeHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenFreeze(
-                                        TokenFreezeAccountTransactionBody.getDefaultInstance())
+                                .tokenFreeze(
+                                        TokenFreezeAccountTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenFreezeAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenUnfreeze(
-                                        TokenUnfreezeAccountTransactionBody.getDefaultInstance())
+                                .tokenUnfreeze(
+                                        TokenUnfreezeAccountTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -507,7 +554,7 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenGrantKyc(TokenGrantKycTransactionBody.getDefaultInstance())
+                                .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -515,8 +562,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenRevokeKyc(
-                                        TokenRevokeKycTransactionBody.getDefaultInstance())
+                                .tokenRevokeKyc(
+                                        TokenRevokeKycTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -524,8 +571,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenAssociate(
-                                        TokenAssociateTransactionBody.getDefaultInstance())
+                                .tokenAssociate(
+                                        TokenAssociateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -533,8 +580,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenDissociate(
-                                        TokenDissociateTransactionBody.getDefaultInstance())
+                                .tokenDissociate(
+                                        TokenDissociateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -542,8 +589,8 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenFeeScheduleUpdate(
-                                        TokenFeeScheduleUpdateTransactionBody.getDefaultInstance())
+                                .tokenFeeScheduleUpdate(
+                                        TokenFeeScheduleUpdateTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h ->
@@ -551,13 +598,13 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenPause(TokenPauseTransactionBody.getDefaultInstance())
+                                .tokenPause(TokenPauseTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenPauseHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setTokenUnpause(TokenUnpauseTransactionBody.getDefaultInstance())
+                                .tokenUnpause(TokenUnpauseTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.tokenUnpauseHandler()).preHandle(any(), any())),
@@ -565,7 +612,7 @@ class DispatcherTest {
                 // util
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setUtilPrng(UtilPrngTransactionBody.getDefaultInstance())
+                                .utilPrng(UtilPrngTransactionBody.newBuilder().build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.utilPrngHandler()).preHandle(any(), any())),
@@ -573,9 +620,9 @@ class DispatcherTest {
                 // mixed
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setSystemDelete(
+                                .systemDelete(
                                         SystemDeleteTransactionBody.newBuilder()
-                                                .setContractID(ContractID.getDefaultInstance())
+                                                .contractID(ContractID.newBuilder().build())
                                                 .build())
                                 .build(),
                         (Consumer<Handlers>)
@@ -584,18 +631,18 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setSystemDelete(
+                                .systemDelete(
                                         SystemDeleteTransactionBody.newBuilder()
-                                                .setFileID(FileID.getDefaultInstance())
+                                                .fileID(FileID.newBuilder().build())
                                                 .build())
                                 .build(),
                         (Consumer<Handlers>)
                                 h -> verify(h.fileSystemDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setSystemUndelete(
+                                .systemUndelete(
                                         SystemUndeleteTransactionBody.newBuilder()
-                                                .setContractID(ContractID.getDefaultInstance())
+                                                .contractID(ContractID.newBuilder().build())
                                                 .build())
                                 .build(),
                         (Consumer<Handlers>)
@@ -604,9 +651,9 @@ class DispatcherTest {
                                                 .preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
-                                .setSystemUndelete(
+                                .systemUndelete(
                                         SystemUndeleteTransactionBody.newBuilder()
-                                                .setFileID(FileID.getDefaultInstance())
+                                                .fileID(FileID.newBuilder().build())
                                                 .build())
                                 .build(),
                         (Consumer<Handlers>)

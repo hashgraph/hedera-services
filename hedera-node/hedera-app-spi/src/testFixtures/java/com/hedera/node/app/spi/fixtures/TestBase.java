@@ -1,17 +1,12 @@
 package com.hedera.node.app.spi.fixtures;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ThresholdKey;
-import com.hedera.pbj.runtime.io.Bytes;
+
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +24,7 @@ public class TestBase {
     private static final Set<String> WORDS;
     static {
         final var words = new HashSet<String>();
-        try (final var input = StateTestBase.class.getResourceAsStream("wordlist.txt")) {
+        try (final var input = TestBase.class.getResourceAsStream("wordlist.txt")) {
             assert input != null : "Missing wordlist.txt";
             final var reader = new BufferedReader(new InputStreamReader(input));
             String word;
@@ -148,44 +143,5 @@ public class TestBase {
         }
 
         return new String(buf);
-    }
-
-    /**
-     * Creates and returns a new ed25519 {@link Key} based on the given UTF-8 string.
-     * @param utf8 A non-null string
-     * @return an ed25519 {@link Key}
-     */
-    public static Key ed25519(@NonNull final String utf8) {
-        return new Key.Builder()
-                .ed25519(Bytes.wrap(utf8.getBytes(StandardCharsets.UTF_8)))
-                .build();
-    }
-
-    /**
-     * Creates and returns a new ECDSASecP256K1 {@link Key} based on the given UTF-8 string.
-     * @param utf8 A non-null string
-     * @return an ECDSA {@link Key}
-     */
-    public static Key ecdsa(@NonNull final String utf8) {
-        return new Key.Builder()
-                .ecdsaSecp256k1(Bytes.wrap(utf8.getBytes(StandardCharsets.UTF_8)))
-                .build();
-    }
-
-    /**
-     * Creates and returns a threshold key based on the given threshold and keys
-     * @param threshold The threshold
-     * @param keys The set of keys
-     * @return A {@link Key} based on a threshold key list
-     */
-    public static Key thresholdKey(int threshold, Key... keys) {
-        return new Key.Builder()
-                .thresholdKey(new ThresholdKey.Builder()
-                        .threshold(threshold)
-                        .keys(new KeyList.Builder()
-                                .keys(Arrays.asList(keys))
-                                .build())
-                        .build())
-                .build();
     }
 }
