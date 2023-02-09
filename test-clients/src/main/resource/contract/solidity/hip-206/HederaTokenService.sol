@@ -446,4 +446,17 @@ abstract contract HederaTokenService is HederaResponseCodes {
             abi.encodeWithSelector(IHederaTokenService.updateTokenExpiryInfo.selector, token, expiryInfo));
         (responseCode) = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
+
+    /// @param token the token's address
+    /// @param data the input data for the original ERC function call
+    function redirectForToken(address token, bytes memory data) internal
+    returns (int responseCode, bytes memory result) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(
+                IHederaTokenService.redirectForToken.selector,
+                token,
+                data)
+        );
+        return success ? ( HederaResponseCodes.SUCCESS, result) : (HederaResponseCodes.UNKNOWN, result);
+    }
 }

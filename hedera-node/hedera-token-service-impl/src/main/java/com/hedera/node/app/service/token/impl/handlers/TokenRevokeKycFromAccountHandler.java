@@ -15,11 +15,15 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import com.hedera.node.app.service.token.impl.ReadableTokenStore;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -44,8 +48,22 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final AccountKeyLookup accountStore) {
+        Objects.requireNonNull(txBody);
+        final var op = txBody.getTokenRevokeKyc();
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
+        final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
+
+        if (!tokenMeta.failed()) {
+            tokenMeta.metadata().kycKey().ifPresent(meta::addToReqNonPayerKeys);
+        } else {
+            meta.status(tokenMeta.failureReason());
+        }
+        return meta.build();
     }
 
     /**

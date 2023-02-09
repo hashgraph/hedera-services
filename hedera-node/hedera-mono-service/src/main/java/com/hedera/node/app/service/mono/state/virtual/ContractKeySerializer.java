@@ -101,7 +101,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
             throws IOException {
         Objects.requireNonNull(data);
         Objects.requireNonNull(outputStream);
-        return data.serializeReturningByteWritten(outputStream);
+        return data.serializeReturningBytesWritten(outputStream);
     }
 
     /**
