@@ -98,11 +98,12 @@ public class BlockManager {
      * @param now the latest consensus timestamp of a user transaction
      * @return the new block number, taking this timestamp into account
      */
-    public long updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
+    public BlockNumberMeta updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
         ensureProvisionalBlockMeta(now);
-        return provisionalBlockIsNew
+        final var blockNo = provisionalBlockIsNew
                 ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
                 : provisionalBlockNo;
+        return new BlockNumberMeta(blockNo, provisionalBlockIsNew);
     }
 
     /**

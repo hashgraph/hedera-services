@@ -16,8 +16,10 @@
 package com.hedera.node.app.service.mono.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +65,14 @@ class RecordStreamObjectTest {
         SettingsCommon.maxTransactionCountPerEvent = 245760;
         SettingsCommon.maxTransactionBytesPerEvent = 245760;
         SettingsCommon.transactionMaxBytes = 6144;
+    }
+
+    @Test
+    void onlyClosesIfSetExplicitly() {
+        final var subject = new RecordStreamObject();
+        assertFalse(subject.closesCurrentFile());
+        subject.willCloseCurrentFile();
+        assertTrue(subject.closesCurrentFile());
     }
 
     @Test

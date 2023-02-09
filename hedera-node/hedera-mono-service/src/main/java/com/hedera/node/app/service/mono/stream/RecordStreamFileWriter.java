@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.stream;
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.stream.StreamAligned.NO_ALIGNMENT;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM;
 import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
@@ -105,18 +103,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private final Signer signer;
 
     /**
-     * The desired amount of time that data should be written into a file before starting a new
-     * file.
-     */
-    private final long logPeriodMs;
-
-    /** The previous object that was passed to the stream. */
-    private RecordStreamObject previousObject;
-
-    /** Tracks if the previous object was held back in the previous file due to its alignment. */
-    private boolean previousHeldBackByAlignment;
-
-    /**
      * if it is true, we don't write object stream file until the first complete window. This is
      * suitable for streaming after reconnect, so that reconnect node can generate the same stream
      * files as other nodes after reconnect.
@@ -158,7 +144,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     public RecordStreamFileWriter(
             final String dirPath,
-            final long logPeriodMs,
             final Signer signer,
             final boolean startWriteAtCompleteWindow,
             final RecordStreamType streamType,
@@ -167,7 +152,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
-        this.logPeriodMs = logPeriodMs;
         this.signer = signer;
         this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
         this.streamType = streamType;
@@ -183,7 +167,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     @Override
     public void addObject(final RecordStreamObject object) {
-        if (shouldStartNewFile(object)) {
+        if (object.closesCurrentFile()) {
             // if we are currently writing a file,
             // finish current file and generate signature file
             closeCurrentAndSign();
@@ -206,54 +190,11 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * Check whether the provided object needs to be written into a new file, or if it should be
      * written into the current file.
      *
-     * <p>Time is divided into windows determined by provided configuration. An object is chosen to
-     * start a new file if it is the first encountered object with a timestamp in the next window --
-     * as long as the object has a different stream alignment than the previous object. If an object
-     * has a matching stream alignment as the previous object then it is always placed in the same
-     * file as the previous object. Alignment is ignored for objects with {@link
-     * StreamAligned#NO_ALIGNMENT}.
-     *
-     * @param nextObject the object currently being added to the stream
      * @return whether the object should be written into a new file
      */
     private boolean shouldStartNewFile(final RecordStreamObject nextObject) {
-        try {
-            if (previousObject == null) {
-                // This is the first object. It may be the first thing in a file, but it is
-                // impossible
-                // to make that determination at this point in time.
-                return !startWriteAtCompleteWindow;
-            } else {
-                // Check if this object is in a different period than the previous object.
-                final long previousPeriod = getPeriod(previousObject.getTimestamp(), logPeriodMs);
-                final long currentPeriod = getPeriod(nextObject.getTimestamp(), logPeriodMs);
-                final boolean differentPeriod = previousPeriod != currentPeriod;
-
-                // Check if this object has a different alignment than the previous object. Objects
-                // with NO_ALIGNMENT
-                // are always considered to be unaligned with any other object.
-                final boolean differentAlignment =
-                        previousObject.getStreamAlignment() != nextObject.getStreamAlignment()
-                                || nextObject.getStreamAlignment() == NO_ALIGNMENT;
-
-                // If this object is in a new period with respect to the current file, and no
-                // objects have yet been written to the next file.
-                final boolean timestampIsEligibleForNextFile =
-                        previousHeldBackByAlignment || differentPeriod;
-
-                if (timestampIsEligibleForNextFile && !differentAlignment) {
-                    // This object has the same alignment as the one that came before it, so we must
-                    // hold it back.
-                    previousHeldBackByAlignment = true;
-                    return false;
-                }
-
-                previousHeldBackByAlignment = false;
-                return timestampIsEligibleForNextFile;
-            }
-        } finally {
-            previousObject = nextObject;
-        }
+        // TODO - the nextObject must be able to answer this question
+        throw new AssertionError("Not implemented");
     }
 
     /**

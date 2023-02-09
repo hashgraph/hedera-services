@@ -83,15 +83,26 @@ public class RecordStreaming {
      * side effect of increasing the block number.
      */
     public void streamUserTxnRecords() {
-        blockNo =
+        final var blockNoMeta =
                 blockManager.updateAndGetAlignmentBlockNumber(
                         recordsHistorian.getTopLevelRecord().getTimestamp());
+        blockNo = blockNoMeta.blockNo();
+        final var closesFile = blockNoMeta.isFirstInBlock();
         if (recordsHistorian.hasPrecedingChildRecords()) {
-            for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
-                stream(childRso.withBlockNumber(blockNo));
+            final var precedingChildren = recordsHistorian.getPrecedingChildRecords();
+            for (int i = 0, n = precedingChildren.size(); i < n; i++) {
+                final var childRso = precedingChildren.get(i).withBlockNumber(blockNo);
+                if (i == 0 && closesFile) {
+                    childRso.willCloseCurrentFile();
+                }
+                stream(childRso);
             }
         }
-        stream(recordsHistorian.getTopLevelRecord().withBlockNumber(blockNo));
+        final var topLevelRso = recordsHistorian.getTopLevelRecord().withBlockNumber(blockNo);
+        if (closesFile && !recordsHistorian.hasPrecedingChildRecords()) {
+            topLevelRso.willCloseCurrentFile();
+        }
+        stream(topLevelRso);
         if (recordsHistorian.hasFollowingChildRecords()) {
             for (final var childRso : recordsHistorian.getFollowingChildRecords()) {
                 stream(childRso.withBlockNumber(blockNo));

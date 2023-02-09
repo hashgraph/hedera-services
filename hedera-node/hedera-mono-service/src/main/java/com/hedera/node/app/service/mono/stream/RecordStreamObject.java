@@ -27,10 +27,12 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -48,8 +50,15 @@ public class RecordStreamObject extends AbstractSerializableHashable
     private static final int MAX_RECORD_LENGTH = 64 * 1024;
     private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
+    public boolean closesCurrentFile() {
+        return writeNewFile;
+    }
+
+    // Whether this is the first record in a block (i.e., .rcd file)
+    private boolean writeNewFile;
     // The number of the ETH JSON-RPC bridge block containing this record
-    private long blockNumber = StreamAligned.NO_ALIGNMENT;
+    private long blockNumber;
+
     /* The gRPC transaction and records for the record stream file */
     private Transaction transaction;
     private TransactionRecord transactionRecord;
@@ -65,7 +74,8 @@ public class RecordStreamObject extends AbstractSerializableHashable
     /* The running hash of all objects streamed up to and including this consensus time. */
     private RunningHash runningHash;
 
-    public RecordStreamObject() {}
+    public RecordStreamObject() {
+    }
 
     public RecordStreamObject(
             final ExpirableTxnRecord fcTransactionRecord,
@@ -87,6 +97,11 @@ public class RecordStreamObject extends AbstractSerializableHashable
         runningHash = new RunningHash();
     }
 
+    public RecordStreamObject willCloseCurrentFile() {
+        this.writeNewFile = true;
+        return this;
+    }
+
     public RecordStreamObject withBlockNumber(final long blockNumber) {
         this.blockNumber = blockNumber;
         return this;
@@ -94,7 +109,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
 
     @Override
     public long getStreamAlignment() {
-        return blockNumber;
+        return StreamAligned.NO_ALIGNMENT;
     }
 
     @Override
@@ -113,13 +128,17 @@ public class RecordStreamObject extends AbstractSerializableHashable
         consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getVersion() {
         return CLASS_VERSION;

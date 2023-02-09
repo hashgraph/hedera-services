@@ -21,6 +21,7 @@ import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.state.logic.RecordStreaming;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
 import com.swirlds.common.crypto.DigestType;
@@ -128,7 +129,6 @@ public class RecordStreamManager {
                 protobufStreamFileWriter =
                         new RecordStreamFileWriter(
                                 nodeScopedRecordLogDir,
-                                nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
                                 platform,
                                 startWriteAtCompleteWindow,
                                 streamType,
@@ -266,11 +266,20 @@ public class RecordStreamManager {
     }
 
     /**
-     * sets startWriteAtCompleteWindow: it should be set to be true after reconnect; it should be
-     * set to be false at restart
+     * Sets whether to close and write a new record file at the <i>next opportunity
+     * the {@link RecordStreaming} source gives us</i>. (These opportunities arise
+     * whenever we receive a {@link RecordStreamObject} that returns true from
+     * {@link RecordStreamObject#closesCurrentFile()}.)
      *
-     * @param startWriteAtCompleteWindow whether the writer should not write until the first
-     *     complete window
+     * <p>Unless this node just reconnected, we always want to take these opportunities.
+     * But if we reconnected part-way through a 2-second period, we will have probably
+     * missed some of the transactions that belong to the current period. So if we
+     * close and write a file with just those transactions, we will not match the file
+     * with the same name as written by a node that was connected throughout the whole
+     * period.
+     *
+     * @param startWriteAtCompleteWindow whether we should close and write a new file
+     *                                   at the next opportunity
      */
     public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
         if (v5StreamFileWriter != null) {

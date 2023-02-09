@@ -104,7 +104,6 @@ class RecordStreamFileWriterTest {
         subject =
                 new RecordStreamFileWriter(
                         expectedExportDir(),
-                        logPeriodMs,
                         signer,
                         false,
                         streamType,
