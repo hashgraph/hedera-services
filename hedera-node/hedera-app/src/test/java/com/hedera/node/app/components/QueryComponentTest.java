@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
-
     @Mock private Platform platform;
 
     @Test

@@ -16,6 +16,7 @@
 package com.hedera.node.app.throttle;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -37,4 +38,15 @@ public interface ThrottleAccumulator {
      * @throws IllegalArgumentException if no throttle exists for {@code functionality}
      */
     boolean shouldThrottle(@NonNull final HederaFunctionality functionality);
+
+    /**
+     * Tests whether the given query should be throttled, assuming its functionality is as
+     * specified.
+     *
+     * @param functionality the functionality of the query
+     * @param query the query to test
+     * @return true if the query should be throttled, false otherwise
+     */
+    boolean shouldThrottleQuery(
+            @NonNull final HederaFunctionality functionality, @NonNull Query query);
 }

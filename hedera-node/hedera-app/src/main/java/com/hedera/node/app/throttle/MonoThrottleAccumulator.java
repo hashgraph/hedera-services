@@ -15,23 +15,31 @@
  */
 package com.hedera.node.app.throttle;
 
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * Placeholder; once https://github.com/hashgraph/hedera-services/pull/4800 is polished and merged,
- * it should be straightforward to implement this class in terms of {@code mono-service} components
- * wired via Dagger.
- */
 @Singleton
 public class MonoThrottleAccumulator implements ThrottleAccumulator {
+    private final FunctionalityThrottling hapiThrottling;
+
     @Inject
-    public MonoThrottleAccumulator() {}
+    public MonoThrottleAccumulator(@HapiThrottle final FunctionalityThrottling hapiThrottling) {
+        this.hapiThrottling = hapiThrottling;
+    }
 
     @Override
     public boolean shouldThrottle(@NonNull HederaFunctionality functionality) {
-        return false;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean shouldThrottleQuery(
+            final @NonNull HederaFunctionality functionality, final @NonNull Query query) {
+        return hapiThrottling.shouldThrottleQuery(functionality, query);
     }
 }

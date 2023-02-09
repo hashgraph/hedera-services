@@ -26,6 +26,7 @@ import com.hedera.node.app.service.mono.fees.FeesModule;
 import com.hedera.node.app.service.mono.records.RecordsModule;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.stats.StatsModule;
+import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.services.ServiceModule;
 import com.hedera.node.app.workflows.query.QueryModule;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -47,7 +48,8 @@ import javax.inject.Singleton;
             RecordsModule.class,
             ContextModule.class,
             PlatformModule.class,
-            PropertiesModule.class
+            PropertiesModule.class,
+            ThrottlingModule.class,
         })
 public interface QueryComponent {
     QueryWorkflow queryWorkflow();

@@ -160,7 +160,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
+            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
                 throw new PreCheckException(BUSY);
             }
 

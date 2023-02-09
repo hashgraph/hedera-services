@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.query;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
+import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.txns.validation.ContextOptionValidator;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.network.impl.components.NetworkComponent;
@@ -50,6 +52,10 @@ public abstract class QueryModule {
     @Binds
     @Singleton
     abstract OptionValidator bindOptionValidator(ContextOptionValidator optionValidator);
+
+    @Binds
+    @Singleton
+    abstract ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
 
     @Provides
     @Singleton
