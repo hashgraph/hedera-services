@@ -95,11 +95,13 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
+                                .key(arKey)
+                                .exposingCreatedIdTo(
+                                        id -> autoRenewAlias.set(idAsHeadlongAddress(id))),
                         cryptoCreate(feeCollector)
-                                .exposingEvmAddressTo(feeCollectorAlias::set)
-                                .key(fcKey),
+                                .key(fcKey)
+                                .exposingCreatedIdTo(
+                                        id -> feeCollectorAlias.set(idAsHeadlongAddress(id))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -178,11 +180,13 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
+                                .key(arKey)
+                                .exposingCreatedIdTo(
+                                        id -> autoRenewAlias.set(idAsHeadlongAddress(id))),
                         cryptoCreate(feeCollector)
-                                .exposingEvmAddressTo(feeCollectorAlias::set)
-                                .key(fcKey),
+                                .key(fcKey)
+                                .exposingCreatedIdTo(
+                                        id -> feeCollectorAlias.set(idAsHeadlongAddress(id))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -330,8 +334,9 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(arKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         cryptoCreate(autoRenew)
-                                .exposingEvmAddressTo(autoRenewAlias::set)
-                                .key(arKey),
+                                .key(arKey)
+                                .exposingCreatedIdTo(
+                                        id -> autoRenewAlias.set(idAsHeadlongAddress(id))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
@@ -400,7 +405,8 @@ public class SigningReqsSuite extends HapiSuite {
                                 // HAPI behavior, so we should be consistent for now
                                 .maxAutomaticTokenAssociations(1)
                                 .key(ntKey)
-                                .exposingEvmAddressTo(newTreasuryAliasAddr::set),
+                                .exposingCreatedIdTo(
+                                        id -> newTreasuryAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
@@ -452,7 +458,8 @@ public class SigningReqsSuite extends HapiSuite {
                         cryptoCreate(newAutoRenewAccount)
                                 .maxAutomaticTokenAssociations(2)
                                 .key(narKey)
-                                .exposingEvmAddressTo(newAutoRenewAliasAddr::set),
+                                .exposingCreatedIdTo(
+                                        id -> newAutoRenewAliasAddr.set(idAsHeadlongAddress(id))),
                         cryptoCreate(CIVILIAN).balance(10L * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
