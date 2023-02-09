@@ -3,7 +3,7 @@
 All services are seperated in an api module and an implementation module.
 The name pattern for the api modules is `hedera-node/hedera-[NAME]-service` and the name pattern
 for the modules that contain the implementation is `hedera-node/hedera-[NAME]-service-impl`.
-The modules are all support the Java module system.
+All modules support the Java module system.
 In the following sample `'Foo'`/`'foo'` is used as placeholder for the service name / type.
 
 ## Service api modules
