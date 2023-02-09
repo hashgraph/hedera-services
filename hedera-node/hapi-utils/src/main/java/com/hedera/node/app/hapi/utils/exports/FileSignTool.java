@@ -102,7 +102,7 @@ public class FileSignTool {
     private static final String ALIAS_PROPERTY = "alias";
     private static final String PASSWORD_PROPERTY = "password";
     private static final String DIR_PROPERTY = "dir";
-    private static final String APP_VERSION = "appVersion";
+    private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
@@ -259,12 +259,12 @@ public class FileSignTool {
         registry.registerConstructables("com.swirlds.common");
 
         if (streamType.getExtension().equalsIgnoreCase(RECORD_STREAM_EXTENSION)) {
-            LOGGER.info(MARKER, "registering Constructables for parsing record stream files");
-            // if we are parsing new record stream files,
-            // we need to add HederaNode.jar and hedera-protobuf-java-*.jar into class path,
-            // so that we can register for parsing RecordStreamObject
-            registry.registerConstructables("com.hedera.services.stream");
-        }
+        LOGGER.info(MARKER, "registering Constructables for parsing record stream files");
+        // if we are parsing new record stream files,
+        // we need to add HederaNode.jar and hedera-protobuf-java-*.jar into class path,
+        // so that we can register for parsing RecordStreamObject
+        registry.registerConstructables("com.hedera.services.stream");
+    }
     }
 
     private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
@@ -315,7 +315,7 @@ public class FileSignTool {
         int[] fileHeader = streamType.getFileHeader();
 
         // extract latest app version from system property if available
-        final String appVersionString = System.getProperty(APP_VERSION);
+        final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         if (appVersionString != null) {
             final String[] versions =
                     appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
