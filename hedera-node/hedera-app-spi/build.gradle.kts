@@ -33,15 +33,38 @@ configurations.all {
 }
 
 dependencies {
-    implementation(libs.grpc.stub)
-    implementation(libs.swirlds.common)
-    api(libs.hapi)
-    api(libs.helidon.io.grpc)
-    api(libs.jsr305.annotation)
-    compileOnlyApi(libs.spotbugs.annotations)
+    api(libs.hapi) {
+        exclude(group = "io.grpc", module = "grpc-netty")
+        exclude(group = "io.netty", module = "netty-codec-http2")
+        exclude(group = "io.netty", module = "netty-handler-proxy")
+        exclude(group = "com.google.guava", module = "guava")
+        exclude(group = "io.grpc", module = "grpc-stub")
+        exclude(group = "net.i2p.crypto", module = "eddsa")
+        exclude(group = "com.google.api.grpc", module = "proto-google-common-protos")
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+        exclude(group = "io.grpc", module = "grpc-protobuf-lite")
+    }
+    api("com.google.protobuf:protobuf-java:3.19.2")
 
+    runtimeOnly(libs.grpc.stub)
+    api(libs.swirlds.common) {
+        exclude(group = "org.apache.commons", module = "commons-lang3")
+        exclude(group = "com.fasterxml.jackson.core", module = "jackson-databind")
+        exclude(group = "com.fasterxml.jackson.datatype", module = "jackson-datatype-jsr310")
+        exclude(group = "com.fasterxml.jackson.dataformat", module = "jackson-dataformat-yaml")
+        exclude(group = "com.goterl", module = "lazysodium-java")
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
+        exclude(group = "org.bouncycastle", module = "bcpkix-jdk15on")
+        exclude(group = "com.swirlds", module = "swirlds-cli")
+        exclude(group = "com.swirlds", module = "swirlds-logging")
+    }
+
+    compileOnlyApi(libs.spotbugs.annotations)
+    testFixturesCompileOnly(libs.spotbugs.annotations)
+
+
+    runtimeOnly(libs.helidon.io.grpc)
     testImplementation(testLibs.bundles.testing)
     testCompileOnly(libs.spotbugs.annotations)
 
-    testFixturesCompileOnly(libs.spotbugs.annotations)
 }
