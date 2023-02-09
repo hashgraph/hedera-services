@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
@@ -206,6 +207,10 @@ public class CryptoCreateChecks {
                 return NOT_SUPPORTED;
             }
 
+            if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
+                return INVALID_ALIAS_KEY;
+            }
+
             final var keyValidity = validateKey(op);
             if (keyValidity != OK) {
                 return keyValidity;
@@ -260,6 +265,10 @@ public class CryptoCreateChecks {
             }
             if (!dynamicProperties.isLazyCreationEnabled()) {
                 return NOT_SUPPORTED;
+            }
+
+            if (HederaEvmContractAliases.isMirror(op.getAlias().toByteArray())) {
+                return INVALID_ALIAS_KEY;
             }
 
             return isUsedAsAliasCheck(op.getAlias());
