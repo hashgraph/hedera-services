@@ -508,15 +508,10 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder createAccount(
             final ByteString alias,
             final Key key,
-            @Nullable final ByteString evmAddress,
             final long balance,
             final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
-
-        if (evmAddress != null) {
-            baseBuilder.setEvmAddress(evmAddress);
-        }
 
         if (maxAutoAssociations > 0) {
             baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);

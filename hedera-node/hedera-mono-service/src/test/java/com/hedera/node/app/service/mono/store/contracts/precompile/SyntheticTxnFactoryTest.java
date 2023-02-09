@@ -456,7 +456,7 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEd25519();
         final var alias = key.toByteString();
-        final var result = subject.createAccount(alias, key, null, balance, 0);
+        final var result = subject.createAccount(alias, key, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -479,7 +479,7 @@ class SyntheticTxnFactoryTest {
                 ByteString.copyFrom(
                         EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
-        final var result = subject.createAccount(alias, key, evmAddress, balance, 0);
+        final var result = subject.createAccount(alias, key, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -491,10 +491,6 @@ class SyntheticTxnFactoryTest {
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
         assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
         assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
-        assertEquals(evmAddress, txnBody.getCryptoCreateAccount().getEvmAddress());
-        assertEquals(
-                EntityIdUtils.EVM_ADDRESS_SIZE,
-                txnBody.getCryptoCreateAccount().getEvmAddress().size());
     }
 
     @Test
@@ -545,7 +541,7 @@ class SyntheticTxnFactoryTest {
         final var balance = 10L;
         final var key = KeyFactory.getDefaultInstance().newEd25519();
         final var alias = key.toByteString();
-        final var result = subject.createAccount(alias, key, null, balance, 1);
+        final var result = subject.createAccount(alias, key, balance, 1);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -574,7 +570,7 @@ class SyntheticTxnFactoryTest {
 
         final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
-        final var result = subject.createAccount(alias, key, null, balance, 1);
+        final var result = subject.createAccount(alias, key, balance, 1);
 
         final var txnBody = result.build();
 
