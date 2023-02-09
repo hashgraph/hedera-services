@@ -497,7 +497,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
@@ -509,13 +509,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
-                                    final var op4 =
-                                            cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
-                                                    .balance(100 * ONE_HBAR);
 
-                                    allRunFor(spec, op, op2, op3, op4);
+                                    allRunFor(spec, op, op2, op3);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .logged()
@@ -724,7 +719,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR)
                                                     .via("createTxn");
 
