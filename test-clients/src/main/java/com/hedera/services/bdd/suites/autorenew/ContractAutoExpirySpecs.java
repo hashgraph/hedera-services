@@ -211,7 +211,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(0L),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, new BigInteger("63"))
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -264,7 +264,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(0L),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, new BigInteger("63"))
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -350,7 +350,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
-                        contractCreate(contractToRenew, new BigInteger("63"))
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -361,8 +361,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
+                                    final var responseRecord = lookup.getResponseRecord();
+                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
@@ -444,7 +444,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance((long) autoRenewAccountBalance),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, new BigInteger("63"))
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -531,7 +531,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(renewAccountBalance),
                         getAccountBalance(autoRenewAccount).logged(),
-                        contractCreate(contractToRenew, new BigInteger("63"))
+                        contractCreate(contractToRenew, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -543,8 +543,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
+                                    final var responseRecord = lookup.getResponseRecord();
+                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
@@ -641,7 +641,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         ByteString.copyFromUtf8("As 'twere a spinning-top"))),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, new BigInteger("63"))
+                        contractCreate(contractToRemove, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -727,7 +727,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         ByteString.copyFromUtf8("As 'twere a spinning-top"))),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, new BigInteger("63"))
+                        contractCreate(contractToRemove, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
@@ -787,8 +787,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
+                                    final var responseRecord = lookup.getResponseRecord();
+                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
@@ -876,7 +876,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         ByteString.copyFromUtf8("My lovely NFT 2"))),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
-                        contractCreate(contractToRemove, new BigInteger("63"))
+                        contractCreate(contractToRemove, BigInteger.valueOf(63))
                                 .gas(2_000_000)
                                 .entityMemo("")
                                 .bytecode(initcode)
