@@ -522,7 +522,7 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setEvmAddress(alias).setMemo(LAZY_MEMO);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
