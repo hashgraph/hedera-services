@@ -77,7 +77,7 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                         item -> {
                             if (assertion.isApplicableTo(item)) {
                                 try {
-                                    if (assertion.updateAndTest(item)) {
+                                    if (assertion.test(item)) {
                                         result.pass();
                                     }
                                 } catch (final AssertionError e) {

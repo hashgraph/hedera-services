@@ -351,6 +351,17 @@ public class UtilVerbs {
         return new NoOp();
     }
 
+    /**
+     * A different name for {@link NoOp} that express the intent of a spec author to end by letting
+     * {@link HapiSpec} automatically waits for the streamMustInclude() assertions to pass, fail, or
+     * time out while ensuring enough background traffic to keep closing record stream files
+     *
+     * @return a {@link NoOp} instance
+     */
+    public static NoOp awaitStreamAssertions() {
+        return new NoOp();
+    }
+
     public static LogMessage logIt(String msg) {
         return new LogMessage(msg);
     }

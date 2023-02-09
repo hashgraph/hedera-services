@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertEventuallyPasses;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.awaitStreamAssertions;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedCryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -93,11 +94,7 @@ public class NewAccountRecordExists extends HapiSuite {
                                 recordedCryptoCreate(
                                         account, a -> a.withMemo(memo).withBalance(balance))))
                 .when(cryptoCreate(account).balance(balance).memo(memo))
-                .then(
-                        // HapiSpec automatically waits for the streamMustInclude()
-                        // assertion to pass, fail, or time out while ensuring enough
-                        // background traffic to keep closing record stream files
-                        );
+                .then(awaitStreamAssertions());
     }
 
     @Override

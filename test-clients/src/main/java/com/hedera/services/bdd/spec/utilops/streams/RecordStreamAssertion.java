@@ -32,7 +32,7 @@ import com.hedera.services.stream.proto.RecordStreamItem;
 public interface RecordStreamAssertion {
     /**
      * Returns true if this assertion is applicable to the given item. (There is no reason to call
-     * {@link #updateAndTest(RecordStreamItem)} if this method returns false.)
+     * {@link #test(RecordStreamItem)} if this method returns false.)
      *
      * @param item the item to test
      * @return true if this assertion is applicable to the given item
@@ -48,7 +48,7 @@ public interface RecordStreamAssertion {
      * @throws AssertionError if the assertion has failed
      * @return true if the assertion has succeeded
      */
-    boolean updateAndTest(RecordStreamItem item) throws AssertionError;
+    boolean test(RecordStreamItem item) throws AssertionError;
 
     /**
      * Hint to implementers to return a string that describes the assertion.

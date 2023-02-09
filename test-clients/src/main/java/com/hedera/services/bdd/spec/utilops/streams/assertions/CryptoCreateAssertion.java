@@ -67,7 +67,7 @@ public class CryptoCreateAssertion implements RecordStreamAssertion {
     }
 
     @Override
-    public boolean updateAndTest(final RecordStreamItem item) throws AssertionError {
+    public boolean test(final RecordStreamItem item) throws AssertionError {
         if (expectedMemo != null) {
             final var actualMemo = item.getRecord().getMemo();
             assertEquals(expectedMemo, actualMemo, "Wrong memo");
