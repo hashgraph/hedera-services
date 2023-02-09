@@ -32,7 +32,7 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class ServiceModule {
+public interface ServiceModule {
     @Provides
     @Singleton
     static ConsensusComponent provideConsensusComponent() {

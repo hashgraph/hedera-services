@@ -21,7 +21,7 @@ import dagger.Provides;
 import javax.inject.Singleton;
 
 @Module
-public abstract class PlatformModule {
+public interface PlatformModule {
     @Provides
     @Singleton
     static long selfId(final Platform platform) {

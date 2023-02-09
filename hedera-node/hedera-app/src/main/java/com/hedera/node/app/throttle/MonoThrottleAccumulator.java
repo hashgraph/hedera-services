@@ -24,8 +24,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * A {@link ThrottleAccumulator} that delegates to a {@link FunctionalityThrottling} instance
- * to support query throttling only.
+ * A {@link ThrottleAccumulator} that delegates to a {@link FunctionalityThrottling} instance to
+ * support query throttling only.
  */
 @Singleton
 public class MonoThrottleAccumulator implements ThrottleAccumulator {

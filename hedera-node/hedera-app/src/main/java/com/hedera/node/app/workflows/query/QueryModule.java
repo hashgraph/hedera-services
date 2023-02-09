@@ -39,23 +39,22 @@ import java.util.function.Function;
 import javax.inject.Singleton;
 
 @Module
-public abstract class QueryModule {
+public interface QueryModule {
     @Binds
     @Singleton
-    abstract QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
+    QueryWorkflow bindQueryWorkflow(QueryWorkflowImpl queryWorkflow);
 
     @Binds
     @Singleton
-    abstract ThrottleAccumulator bindThrottleAccumulator(
-            MonoThrottleAccumulator throttleAccumulator);
+    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
 
     @Binds
     @Singleton
-    abstract OptionValidator bindOptionValidator(ContextOptionValidator optionValidator);
+    OptionValidator bindOptionValidator(ContextOptionValidator optionValidator);
 
     @Binds
     @Singleton
-    abstract ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
+    ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
 
     @Provides
     @Singleton
