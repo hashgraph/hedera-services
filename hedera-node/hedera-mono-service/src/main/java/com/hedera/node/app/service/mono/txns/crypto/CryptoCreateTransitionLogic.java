@@ -144,9 +144,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             } else {
                 if (!op.getEvmAddress().isEmpty()) {
                     aliasesToLink.add(op.getEvmAddress());
-                } else if (op.hasKey()
-                        && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-                    maybeLinkEvmAddressFrom(op.getKey(), aliasesToLink);
                 }
             }
             aliasesToLink.forEach(
@@ -191,21 +188,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 .isDeclinedReward(op.getDeclineReward());
 
         if (onlyKeyProvided(op)) {
-            if (!op.getKey().getECDSASecp256K1().isEmpty()
-                    && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
-
-                final var recoveredEvmAddressFromPrimitiveKey =
-                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-
-                if (isRecoveredEvmAddress(recoveredEvmAddressFromPrimitiveKey)
-                        && aliasManager
-                                .lookupIdBy(
-                                        ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey))
-                                .equals(MISSING_NUM)) {
-                    customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
-                }
-            }
-
             final JKey key = asFcKeyUnchecked(op.getKey());
             customizer.key(key);
         } else if (onlyEvmAddressProvided(op)) {
