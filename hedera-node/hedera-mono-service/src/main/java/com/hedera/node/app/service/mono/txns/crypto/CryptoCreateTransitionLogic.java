@@ -38,7 +38,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -78,7 +77,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final HederaLedger ledger;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
-    private final GlobalDynamicProperties dynamicProperties;
     private final AliasManager aliasManager;
     private final AutoCreationLogic autoCreationLogic;
     private final TransferLogic transferLogic;
@@ -90,7 +88,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final HederaLedger ledger,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
-            final GlobalDynamicProperties dynamicProperties,
             final AliasManager aliasManager,
             final AutoCreationLogic autoCreationLogic,
             final TransferLogic transferLogic,
@@ -99,7 +96,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
         this.sigImpactHistorian = sigImpactHistorian;
-        this.dynamicProperties = dynamicProperties;
         this.aliasManager = aliasManager;
         this.autoCreationLogic = autoCreationLogic;
         this.transferLogic = transferLogic;
