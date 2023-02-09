@@ -503,11 +503,9 @@ class SyntheticTxnFactoryTest {
 
         assertTrue(txnBody.hasCryptoCreateAccount());
         assertEquals(asKeyUnchecked(EMPTY_KEY), txnBody.getCryptoCreateAccount().getKey());
-        assertEquals(ByteString.EMPTY, txnBody.getCryptoCreateAccount().getAlias());
-        assertEquals(evmAddressAlias, txnBody.getCryptoCreateAccount().getEvmAddress());
+        assertEquals(evmAddressAlias, txnBody.getCryptoCreateAccount().getAlias());
         assertEquals(
-                EntityIdUtils.EVM_ADDRESS_SIZE,
-                txnBody.getCryptoCreateAccount().getEvmAddress().size());
+                EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
         assertEquals(LAZY_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
                 THREE_MONTHS_IN_SECONDS,
