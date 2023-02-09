@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.workflows.query;
 
+import com.hedera.node.app.fees.FeeCalculator;
+import com.hedera.node.app.fees.MonoFeeCalculator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
@@ -47,6 +49,10 @@ public interface QueryModule {
     @Binds
     @Singleton
     ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
+
+    @Binds
+    @Singleton
+    FeeCalculator bindFeeCalculator(MonoFeeCalculator feeCalculator);
 
     @Binds
     @Singleton

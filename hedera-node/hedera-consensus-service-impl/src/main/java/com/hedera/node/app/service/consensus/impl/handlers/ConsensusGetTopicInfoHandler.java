@@ -17,6 +17,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;

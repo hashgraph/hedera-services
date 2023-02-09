@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -51,6 +52,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -76,6 +78,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
     private final HapiOpCounters opCounters;
+    private final FeeCalculator feeCalculator;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -97,6 +100,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Function<ResponseType, AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final ThrottleAccumulator throttleAccumulator,
+            @NonNull final FeeCalculator feeCalculator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
@@ -106,6 +110,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
+        this.feeCalculator = requireNonNull(feeCalculator);
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
         this.opCounters = requireNonNull(opCounters);
@@ -178,8 +183,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, functionality);
 
                 // 3.iii Calculate costs
-                // TODO: Integrate fee-engine (calculate fee) (#4207)
-                fee = 0L;
+                fee = feeCalculator.computePayment(functionality, query, Instant.now());
 
                 // 3.iv Check account balances
                 checker.validateAccountBalances(payer, txBody, fee);
