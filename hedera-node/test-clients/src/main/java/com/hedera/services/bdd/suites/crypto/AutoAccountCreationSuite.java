@@ -1007,7 +1007,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                                     final var cryptoCreateWithEVMAddress =
                                             cryptoCreate(PARTY)
-                                                    .evmAddress(evmAddress)
+                                                    .alias(evmAddress)
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(ONE_HBAR);
 
@@ -2523,7 +2523,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
                                     final var cryptoCreateWithEVMAddress =
                                             cryptoCreate(PARTY)
-                                                    .evmAddress(counterAlias.get())
+                                                    .alias(counterAlias.get())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(ONE_HBAR);
 
