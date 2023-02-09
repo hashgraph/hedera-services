@@ -62,6 +62,7 @@ public abstract class QueryModule {
     @SuppressWarnings({"unchecked", "rawtypes"})
     static Function<ResponseType, AutoCloseableWrapper<HederaState>> provideStateAccess(
             @NonNull final Platform platform) {
+        // Always return the latest immutable state until we support state proofs
         return responseType -> (AutoCloseableWrapper) platform.getLatestImmutableState();
     }
 
