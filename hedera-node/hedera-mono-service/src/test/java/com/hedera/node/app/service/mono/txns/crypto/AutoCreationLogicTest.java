@@ -166,7 +166,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathEDKeyAliasWithHbarChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 0))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownChange(edKeyAlias);
@@ -204,7 +204,7 @@ class AutoCreationLogicTest {
                         EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
 
-        given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
+        given(syntheticTxnFactory.createAccount(ecKeyAlias, key, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
 
         final var input = wellKnownChange(ecKeyAlias);
@@ -376,7 +376,7 @@ class AutoCreationLogicTest {
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownTokenChange(edKeyAlias);
@@ -421,7 +421,7 @@ class AutoCreationLogicTest {
         final var cryptoCreateAccount =
                 TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
         given(mockCryptoCreate.getAlias()).willReturn(edKeyAlias);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(cryptoCreateAccount);
 
         final var input = wellKnownTokenChange(edKeyAlias);
@@ -464,7 +464,7 @@ class AutoCreationLogicTest {
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownNftChange(edKeyAlias);
@@ -511,7 +511,7 @@ class AutoCreationLogicTest {
     void analyzesTokenTransfersInChangesForAutoCreation() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 2))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input1 = wellKnownTokenChange(edKeyAlias);

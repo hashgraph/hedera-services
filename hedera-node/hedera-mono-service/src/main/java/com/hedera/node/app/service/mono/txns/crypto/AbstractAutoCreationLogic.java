@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
@@ -25,8 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -185,16 +182,9 @@ public abstract class AbstractAutoCreationLogic {
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
             JKey jKey = asFcKeyUnchecked(key);
-            ByteString evmAddress = null;
-            if (jKey.hasECDSAsecp256k1Key()) {
-                evmAddress =
-                        ByteStringUtils.wrapUnsafely(
-                                tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey));
-            }
 
             syntheticCreation =
-                    syntheticTxnFactory.createAccount(
-                            alias, key, evmAddress, 0L, maxAutoAssociations);
+                    syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
             customizer.key(jKey);
             memo = AUTO_MEMO;
         }
