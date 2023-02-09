@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
@@ -43,6 +45,7 @@ import java.nio.ByteBuffer;
  * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
  * com.hederahashgraph.api.proto.java.CryptoTransfer}.
  */
+@Singleton
 public class WorkflowOnset {
 
     private final OnsetChecker checker;
@@ -53,6 +56,7 @@ public class WorkflowOnset {
      * @param checker the {@link OnsetChecker}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public WorkflowOnset(@NonNull final OnsetChecker checker) {
         this.checker = requireNonNull(checker);
     }

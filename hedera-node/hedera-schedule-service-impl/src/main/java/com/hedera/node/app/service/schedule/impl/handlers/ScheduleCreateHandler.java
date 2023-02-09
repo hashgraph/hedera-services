@@ -27,12 +27,17 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate}.
  */
+@Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
+    @Inject
+    public ScheduleCreateHandler() {}
 
     /**
      * This method is called during the pre-handle workflow.

@@ -199,6 +199,9 @@ public interface ServicesApp {
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
+    @BootstrapProps
+    PropertySource bootstrapProps();
+
     @Component.Builder
     interface Builder {
         @BindsInstance

@@ -35,12 +35,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}.
  */
+@Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    @Inject
+    public CryptoTransferHandler() {}
 
     /**
      * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a

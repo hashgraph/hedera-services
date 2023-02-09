@@ -38,6 +38,7 @@ dependencies {
     api(libs.hapi)
     api(libs.helidon.io.grpc)
     api(libs.jsr305.annotation)
+    api(libs.javax.inject)
     compileOnlyApi(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
