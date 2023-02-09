@@ -17,7 +17,6 @@ package com.hedera.node.app;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.hedera.node.app.components.DaggerQueryComponent;
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
@@ -56,10 +55,9 @@ public final class Hedera {
                         null,
                         null);
 
-        // Create the query workflow
-        // TODO Real values will be added to make this usable with #4828
+        // Create the query workflow; fully qualified import to appease javadoc Gradle task
         final var queryWorkflow =
-                DaggerQueryComponent.factory()
+                com.hedera.node.app.components.DaggerQueryComponent.factory()
                         .create(app.bootstrapProps(), MAX_SIGNED_TXN_SIZE, app.platform())
                         .queryWorkflow();
 
