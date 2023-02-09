@@ -43,6 +43,10 @@ import java.nio.ByteBuffer;
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
  * ByteBuffer} and checks it.
+ *
+ * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
+ * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
+ * com.hederahashgraph.api.proto.java.CryptoTransfer}.
  */
 public class WorkflowOnset {
 
@@ -59,7 +63,11 @@ public class WorkflowOnset {
     }
 
     /**
-     * Parse the given {@link ByteBuffer} and check its validity
+     * Parse the given {@link ByteBuffer} and check its validity.
+     *
+     * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
+     * timestamps valid).
      *
      * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
@@ -79,6 +87,10 @@ public class WorkflowOnset {
     /**
      * Parse the given {@link ByteBuffer} and check its validity
      *
+     * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
+     * timestamps valid).
+     *
      * @param ctx the {@link SessionContext}
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link OnsetResult} with the parsed and checked entities
@@ -92,6 +104,28 @@ public class WorkflowOnset {
         requireNonNull(buffer);
 
         return doParseAndCheck(ctx, buffer.length, DataBuffer.wrap(buffer));
+    }
+
+    /**
+     * Check the validity of the provided {@link Transaction}
+     *
+     * <p>The checks are very general: syntax checks, size limit checks, and some general semantic
+     * checks that apply to all transactions (e.g. does the transaction have a payer, are the
+     * timestamps valid).
+     *
+     * @param ctx the {@link SessionContext}
+     * @param transaction the {@link Transaction} that needs to be checked
+     * @return an {@link OnsetResult} with the parsed and checked entities
+     * @throws PreCheckException if the data is not valid
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public OnsetResult doParseAndCheck(
+            @NonNull final SessionContext ctx, @NonNull final Transaction transaction)
+            throws PreCheckException {
+        requireNonNull(ctx);
+        requireNonNull(transaction);
+
+        return doParseAndCheck(ctx, () -> transaction);
     }
 
     @SuppressWarnings("deprecation")

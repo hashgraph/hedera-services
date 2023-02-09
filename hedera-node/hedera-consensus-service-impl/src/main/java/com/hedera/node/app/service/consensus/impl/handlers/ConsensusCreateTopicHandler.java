@@ -34,18 +34,33 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @param txBody the {@link TransactionBody} with the transaction data
      * @param payer the {@link AccountID} of the payer
+     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
      * @return the {@link TransactionMetadata} with all information that needs to be passed to
      *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID payer,
+            @NonNull final AccountKeyLookup keyLookup) {
+        final var metaBuilder =
+                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+
+        final var op = txBody.getConsensusCreateTopic();
+        final var adminKey = asHederaKey(op.getAdminKey());
+        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        final var submitKey = asHederaKey(op.getSubmitKey());
+        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+
+        if (op.hasAutoRenewAccount()) {
+            final var autoRenewAccount = op.getAutoRenewAccount();
+            metaBuilder.addNonPayerKey(
+                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        }
+
+        return metaBuilder.build();
     }
 
     /**

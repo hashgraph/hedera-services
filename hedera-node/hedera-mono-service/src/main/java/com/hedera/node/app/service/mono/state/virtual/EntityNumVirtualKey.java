@@ -140,7 +140,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      * @param version The version of the data inside the given {@code buffer}.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *     {@code false}, otherwise.
-     * @throws IOException
+     * @throws IOException If an I/O error occurred
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;

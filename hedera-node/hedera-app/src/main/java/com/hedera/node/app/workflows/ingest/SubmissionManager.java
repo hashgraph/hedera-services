@@ -75,21 +75,21 @@ public class SubmissionManager {
      * Submit a transaction to the {@link Platform}
      *
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
-     * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
+     * @param byteArray the {@link ByteBuffer} of the data that should be submitted
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
             @NonNull final TransactionBody txBody,
-            @NonNull final ByteBuffer byteBuffer)
+            @NonNull final byte[] byteArray)
             throws PreCheckException {
         requireNonNull(txBody);
-        requireNonNull(byteBuffer);
+        requireNonNull(byteArray);
 
-        final byte[] payload;
+        byte[] payload = byteArray;
+
         // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
-        // pre-checks.
-        // This is used in tests to check the reaction to illegal input.
+        // pre-checks.This is used in tests to check the reaction to illegal input.
         final var optUncheckedSubmit = txBody.uncheckedSubmit();
         if (optUncheckedSubmit.isPresent()) {
             if (nodeLocalProperties.activeProfile() == Profile.PROD) {
@@ -101,11 +101,6 @@ public class SubmissionManager {
             WorkflowOnset.parse(BytesBuffer.wrap(txBytes), UncheckedSubmitBody.PROTOBUF, PLATFORM_TRANSACTION_NOT_CREATED);
             payload = new byte[byteBuffer.limit()];
             txBytes.getBytes(0, payload);
-        } else if (byteBuffer.hasArray()) {
-            payload = byteBuffer.array();
-        } else {
-            payload = new byte[byteBuffer.limit()];
-            byteBuffer.get(payload);
         }
 
         final var success = platform.createTransaction(payload);

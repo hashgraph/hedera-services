@@ -24,7 +24,11 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Results of the workflow onset
+ * Results of the workflow onset.
+ *
+ * <p>This is used in every workflow that deals with transactions, i.e. in all workflows except the
+ * query workflow. And even in the query workflow, it is used when dealing with the contained {@link
+ * com.hederahashgraph.api.proto.java.CryptoTransfer}.
  *
  * @param txBody the deserialized {@link TransactionBody}
  * @param signatureMap the contained {@link SignatureMap}
@@ -32,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record OnsetResult(
         @NonNull TransactionBody txBody,
+        @NonNull byte[] bodyBytes,
         @NonNull ResponseCodeEnum errorCode,
         @NonNull SignatureMap signatureMap,
         @NonNull HederaFunctionality functionality) {
@@ -40,6 +45,7 @@ public record OnsetResult(
      * The constructor of {@code OnsetResult}
      *
      * @param txBody the deserialized {@link TransactionBody}
+     * @param bodyBytes the raw byte-array that contains the body
      * @param errorCode the {@link ResponseCodeEnum}, if a validation failed, {@link
      *     ResponseCodeEnum#OK} otherwise
      * @param signatureMap the contained {@link SignatureMap}
@@ -48,10 +54,12 @@ public record OnsetResult(
      */
     public OnsetResult(
             @NonNull final TransactionBody txBody,
+            @NonNull final byte[] bodyBytes,
             @NonNull final ResponseCodeEnum errorCode,
             @NonNull final SignatureMap signatureMap,
             @NonNull final HederaFunctionality functionality) {
         this.txBody = requireNonNull(txBody);
+        this.bodyBytes = requireNonNull(bodyBytes);
         this.errorCode = requireNonNull(errorCode);
         this.signatureMap = requireNonNull(signatureMap);
         this.functionality = requireNonNull(functionality);

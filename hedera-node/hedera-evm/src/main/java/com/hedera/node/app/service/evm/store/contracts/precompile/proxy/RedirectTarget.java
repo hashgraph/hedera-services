@@ -15,6 +15,16 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public record RedirectTarget(int descriptor, Address token) {}
+/**
+ * А wrapper around the info of explicit and implicit token redirect calls.
+ *
+ * @param descriptor the 4 bytes hash representation of the targeted function
+ * @param token the targeted token address.
+ * @param massagedInput Populated only for explicit redirect calls --- contains the input in the
+ *     implicit redirect form (packed encoding). See @code{DescriptorUtils.massageInputIfNeeded()}
+ *     for more.
+ */
+public record RedirectTarget(int descriptor, Address token, Bytes massagedInput) {}

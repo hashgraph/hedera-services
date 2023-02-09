@@ -27,7 +27,7 @@ import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.dispatcher.Dispatcher;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.hapi.node.base.AccountID;
@@ -64,7 +64,7 @@ class PreHandleWorkflowImplTest {
 //    private SwirldTransaction transaction;
 //
 //    @Mock(strictness = Mock.Strictness.LENIENT)
-//    private Dispatcher dispatcher;
+//    private TransactionDispatcher dispatcher;
 //
 //    @Mock(strictness = Mock.Strictness.LENIENT)
 //    private WorkflowOnset onset;
@@ -93,7 +93,8 @@ class PreHandleWorkflowImplTest {
 //                        .build();
 //        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
 //        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
-//        final OnsetResult onsetResult = new OnsetResult(txBody, OK, signatureMap, functionality);
+//        final OnsetResult onsetResult =
+//                new OnsetResult(txBody, txBody.toByteArray(), OK, signatureMap, functionality);
 //        when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 //
 //        when(dispatcher.dispatchPreHandle(state, txBody, payerID)).thenReturn(metadata);
@@ -205,7 +206,12 @@ class PreHandleWorkflowImplTest {
 //        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
 //        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
 //        final OnsetResult onsetResult =
-//                new OnsetResult(txBody, DUPLICATE_TRANSACTION, signatureMap, functionality);
+//                new OnsetResult(
+//                        txBody,
+//                        txBody.toByteArray(),
+//                        DUPLICATE_TRANSACTION,
+//                        signatureMap,
+//                        functionality);
 //        when(localOnset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 //
 //        workflow = new PreHandleWorkflowImpl(dispatcher, localOnset, RUN_INSTANTLY);

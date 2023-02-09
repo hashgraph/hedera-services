@@ -27,17 +27,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Default implementation of {@link CallContext} */
 public class CallContextImpl implements CallContext {
 
-    private final Dispatcher dispatcher;
+    private final TransactionDispatcher dispatcher;
     private final HederaState state;
 
     /**
      * Constructor of {@code CallContextImpl}
      *
-     * @param dispatcher the {@link Dispatcher} that will be used to forward requests
+     * @param dispatcher the {@link TransactionDispatcher} that will be used to forward requests
      * @param state the {@link HederaState} of this {@code CallContext}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public CallContextImpl(@NonNull final Dispatcher dispatcher, @NonNull final HederaState state) {
+    public CallContextImpl(
+            @NonNull final TransactionDispatcher dispatcher, @NonNull final HederaState state) {
         this.dispatcher = requireNonNull(dispatcher);
         this.state = requireNonNull(state);
     }

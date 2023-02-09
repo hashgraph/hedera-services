@@ -43,7 +43,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
-/** Default implementation of {@link IngestWorkflow} */
+/** Implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
     private final NodeInfo nodeInfo;
@@ -67,10 +67,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param storeCache the {@link StoreCache} that caches stores for all active states
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
-     * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
+     * @param checker the {@link IngestChecker} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
      * @param metrics the {@link Metrics} to use for tracking metrics
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
     public IngestWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
@@ -147,7 +148,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                submissionManager.submit(txBody, requestBuffer);
+                final byte[] byteArray;
+                if (requestBuffer.hasArray()) {
+                    byteArray = requestBuffer.array();
+                } else {
+                    byteArray = new byte[requestBuffer.limit()];
+                    requestBuffer.get(byteArray);
+                }
+                submissionManager.submit(txBody, byteArray);
                 countSubmitted.increment();
             } catch (InsufficientBalanceException e) {
                 estimatedFee = e.getEstimatedFee();

@@ -31,8 +31,6 @@ import com.hedera.node.app.state.RecordCache;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.swirlds.common.system.Platform;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,19 +38,23 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SubmissionManagerTest extends AppTestBase {
+class SubmissionManagerTest {
 
 //    @Mock private Platform platform;
 //    @Mock private RecordCache recordCache;
 //    @Mock private NodeLocalProperties nodeLocalProperties;
-//    @Mock private ByteBuffer byteBuffer;
+//    @Mock private MiscSpeedometers speedometers;
+//    @Mock private Parser<TransactionBody> parser;
+//
+//    private byte[] bytes;
 //
 //    private SubmissionManager submissionManager;
 //
 //    @BeforeEach
 //    void setup() {
+//        bytes = new byte[] {1, 2, 3};
 //        submissionManager =
-//                new SubmissionManager(platform, recordCache, nodeLocalProperties, metrics);
+//                new SubmissionManager(platform, recordCache, nodeLocalProperties, speedometers);
 //    }
 //
 //    @SuppressWarnings("ConstantConditions")
@@ -61,14 +63,14 @@ class SubmissionManagerTest extends AppTestBase {
 //        assertThatThrownBy(
 //                        () ->
 //                                new SubmissionManager(
-//                                        null, recordCache, nodeLocalProperties, metrics))
+//                                        null, recordCache, nodeLocalProperties, speedometers))
 //                .isInstanceOf(NullPointerException.class);
 //        assertThatThrownBy(
 //                        () ->
 //                                new SubmissionManager(
-//                                        platform, null, nodeLocalProperties, metrics))
+//                                        platform, null, nodeLocalProperties, speedometers))
 //                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, null, metrics))
+//        assertThatThrownBy(() -> new SubmissionManager(platform, recordCache, null, speedometers))
 //                .isInstanceOf(NullPointerException.class);
 //        assertThatThrownBy(
 //                        () ->
@@ -84,9 +86,11 @@ class SubmissionManagerTest extends AppTestBase {
 //        final var txBody = TransactionBody.newBuilder().build();
 //
 //        // then
-//        assertThatThrownBy(() -> submissionManager.submit(null, byteBuffer))
+//        assertThatThrownBy(() -> submissionManager.submit(null, bytes, parser))
 //                .isInstanceOf(NullPointerException.class);
-//        assertThatThrownBy(() -> submissionManager.submit(txBody, null))
+//        assertThatThrownBy(() -> submissionManager.submit(txBody, null, parser))
+//                .isInstanceOf(NullPointerException.class);
+//        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, null))
 //                .isInstanceOf(NullPointerException.class);
 //    }
 //
@@ -95,33 +99,15 @@ class SubmissionManagerTest extends AppTestBase {
 //        // given
 //        final TransactionID transactionID = TransactionID.newBuilder().build();
 //        final TransactionBody txBody =
-//                TransactionBody.newBuilder().transactionID(transactionID).build();
+//                TransactionBody.newBuilder().setTransactionID(transactionID).build();
 //        when(platform.createTransaction(any())).thenReturn(true);
 //
 //        // when
-//        submissionManager.submit(txBody, byteBuffer);
+//        submissionManager.submit(txBody, bytes, parser);
 //
 //        // then
 //        verify(recordCache).addPreConsensus(transactionID);
-//        verify(metrics, never()).cyclePlatformTxnRejections();
-//    }
-//
-//    @Test
-//    void testSuccessWithByteBufferBackedArray() throws PreCheckException {
-//        // given
-//        final TransactionID transactionID = TransactionID.newBuilder().build();
-//        final TransactionBody txBody =
-//                TransactionBody.newBuilder().transactionID(transactionID).build();
-//        final byte[] payload = new byte[] {0, 1, 2, 3};
-//        final ByteBuffer directByteBuffer = ByteBuffer.wrap(payload);
-//        when(platform.createTransaction(payload)).thenReturn(true);
-//
-//        // when
-//        submissionManager.submit(txBody, directByteBuffer);
-//
-//        // then
-//        verify(recordCache).addPreConsensus(transactionID);
-//        verify(metrics, never()).cyclePlatformTxnRejections();
+//        verify(speedometers, never()).cyclePlatformTxnRejections();
 //    }
 //
 //    @Test
@@ -129,20 +115,20 @@ class SubmissionManagerTest extends AppTestBase {
 //        // given
 //        final TransactionID transactionID = TransactionID.newBuilder().build();
 //        final TransactionBody txBody =
-//                TransactionBody.newBuilder().transactionID(transactionID).build();
+//                TransactionBody.newBuilder().setTransactionID(transactionID).build();
 //
 //        // when
-//        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+//        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
 //                .isInstanceOf(PreCheckException.class)
 //                .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 //
 //        // then
 //        verify(recordCache, never()).addPreConsensus(any());
-//        verify(metrics).cyclePlatformTxnRejections();
+//        verify(speedometers).cyclePlatformTxnRejections();
 //    }
 //
 //    @Test
-//    void testSuccessWithUncheckedSubmit() throws PreCheckException, IOException {
+//    void testSuccessWithUncheckedSubmit() throws PreCheckException, InvalidProtocolBufferException {
 //        // given
 //        final ByteString payload = ByteString.copyFrom(new byte[] {0, 1, 2, 3});
 //        final UncheckedSubmitBody uncheckedSubmit =
@@ -159,11 +145,11 @@ class SubmissionManagerTest extends AppTestBase {
 //        when(platform.createTransaction(uncheckedSubmitParsed.toByteArray())).thenReturn(true);
 //
 //        // when
-//        submissionManager.submit(txBody, byteBuffer, parser);
+//        submissionManager.submit(txBody, bytes, parser);
 //
 //        // then
 //        verify(recordCache).addPreConsensus(transactionID);
-//        verify(metrics, never()).cyclePlatformTxnRejections();
+//        verify(speedometers, never()).cyclePlatformTxnRejections();
 //    }
 //
 //    @Test
@@ -181,13 +167,13 @@ class SubmissionManagerTest extends AppTestBase {
 //        when(nodeLocalProperties.activeProfile()).thenReturn(Profile.PROD);
 //
 //        // when
-//        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+//        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
 //                .isInstanceOf(PreCheckException.class)
 //                .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 //
 //        // then
 //        verify(recordCache, never()).addPreConsensus(transactionID);
-//        verify(metrics, never()).cyclePlatformTxnRejections();
+//        verify(speedometers, never()).cyclePlatformTxnRejections();
 //    }
 //
 //    @Test
@@ -207,12 +193,12 @@ class SubmissionManagerTest extends AppTestBase {
 //                .thenThrow(new InvalidProtocolBufferException("Expected exception"));
 //
 //        // when
-//        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+//        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
 //                .isInstanceOf(PreCheckException.class)
 //                .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 //
 //        // then
 //        verify(recordCache, never()).addPreConsensus(transactionID);
-//        verify(metrics, never()).cyclePlatformTxnRejections();
+//        verify(speedometers, never()).cyclePlatformTxnRejections();
 //    }
 }

@@ -22,12 +22,43 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface QueryHandler {
 
     /**
-     * This method is called during the query-workflow. It does pre-checks that are specific to the
-     * operation.
+     * Extract the {@link QueryHeader} from a given {@link Query}
      *
-     * @param txBody the {@link TransactionBody} that needs to be validated
-     * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws PreCheckException if validation fails
+     * @param query the {@link Query} that contains the header
+     * @return the {@link QueryHeader} that was specified in the query
+     * @throws NullPointerException if {@code query} is {@code null}
      */
-    void preCheck(@NonNull TransactionBody txBody) throws PreCheckException;
+    QueryHeader extractHeader(@NonNull Query query);
+
+    /**
+     * Creates an empty {@link Response} with a provided header. This is typically used, if an error
+     * occurred. The {@code header} contains a {@link
+     * com.hederahashgraph.api.proto.java.ResponseCodeEnum} with the error code.
+     *
+     * @param header the {@link ResponseHeader} that needs to be included
+     * @return the created {@link Response}
+     * @throws NullPointerException if {@code header} is {@code null}
+     */
+    Response createEmptyResponse(@NonNull ResponseHeader header);
+
+    /**
+     * Returns {@code true}, if the query associated with this handler is only requesting the cost
+     * of this query alone (i.e. the query won't be executed)
+     *
+     * @param responseType the {@link ResponseType} of a query, because payment can depend on the
+     *     response type
+     * @return {@code true} if payment is required, {@code false} otherwise
+     * @throws NullPointerException if {@code responseType} is {@code null}
+     */
+    boolean requiresNodePayment(@NonNull final ResponseType responseType);
+
+    /**
+     * Returns {@code true}, if a query associated with this handler returns only the costs
+     *
+     * @param responseType the {@link ResponseType} of a query, because the result can depend on the
+     *     response type
+     * @return {@code true} if only costs need to returned, {@code false} otherwise
+     * @throws NullPointerException if {@code responseType} is {@code null}
+     */
+    boolean needsAnswerOnlyCost(@NonNull final ResponseType responseType);
 }

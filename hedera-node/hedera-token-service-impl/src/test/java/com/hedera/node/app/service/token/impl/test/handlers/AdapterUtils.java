@@ -80,4 +80,12 @@ public class AdapterUtils {
                                 fromAccountId(FIRST_TOKEN_SENDER).longValue()));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
+
+    public static TransactionBody txnFrom(final TxnHandlingScenario scenario) {
+        try {
+            return scenario.platformTxn().getTxn();
+        } catch (final Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
