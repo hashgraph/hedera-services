@@ -94,6 +94,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import org.apache.commons.codec.DecoderException;
@@ -431,6 +432,39 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void rejectsECKeyAndEvmAddressAliasWhenCryptoCreateWithAliasIsDisabled() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(ByteStringUtils.wrapUnsafely(EVM_ADDRESS_BYTES))
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(false);
+
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsECKeyAndLongZeroAddressAlias() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setAlias(
+                                ByteString.copyFrom(
+                                        CommonUtils.unhex(
+                                                "0000000000000000000000000000000fffffffff")))
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
     void rejectsEmptyECKeyAndEmptyECKeyAlias() {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
@@ -493,6 +527,24 @@ class CryptoCreateTransitionLogicTest {
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
         given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
+
+        assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
+    void rejectsLongZeroAddressAlias() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAlias(
+                                ByteString.copyFrom(
+                                        CommonUtils.unhex(
+                                                "0000000000000000000000000000000fffffffff")))
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         assertEquals(INVALID_ALIAS_KEY, subject.semanticCheck().apply(cryptoCreateTxn));
     }
