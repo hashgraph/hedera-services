@@ -362,7 +362,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
                                     final var responseRecord = lookup.getResponseRecord();
-                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
+                                    final var birth =
+                                            responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
@@ -544,7 +545,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
                                     final var responseRecord = lookup.getResponseRecord();
-                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
+                                    final var birth =
+                                            responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
@@ -663,14 +665,19 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         .between(TOKEN_TREASURY, contractToRemove),
                                 movingUnique(nonFungibleToken, 1L, 2L)
                                         .between(TOKEN_TREASURY, contractToRemove)),
-                        sleepFor(minimalLifetime * 1_000L + 500L),
 
                         // verify that token move was successful
                         getAccountBalance(contractToRemove)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(bFungibleToken, bFungibleAmount)
-                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount))
+                                .hasTokenBalance(cFungibleTokenWithCustomFees, cFungibleAmount),
+
+                        /* sleep past the contract expiration:
+                         * (minimalLifetimeMillis * 1 second) + 500 ms (500 ms for extra time)
+                         */
+                        sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
+                        // run transactions so the contract can be deleted
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
@@ -788,7 +795,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     final var lookup = getTxnRecord(creation);
                                     allRunFor(spec, lookup);
                                     final var responseRecord = lookup.getResponseRecord();
-                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
+                                    final var birth =
+                                            responseRecord.getConsensusTimestamp().getSeconds();
                                     expectedExpiryPostRenew.set(
                                             birth + minimalLifetime + standardLifetime);
                                     opLog.info(
