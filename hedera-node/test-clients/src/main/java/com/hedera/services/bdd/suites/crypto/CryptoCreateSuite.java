@@ -71,6 +71,13 @@ public class CryptoCreateSuite extends HapiSuite {
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
+    public static final String STAKED_ACC_ID = "0.0.10";
+    public static final String CIVILIAN = "civilian";
+    public static final String NO_KEYS_ACC = "noKeys";
+    public static final String SHORT_KEY_ACC = "shortKey";
+    public static final String SHORT_KEY_NAME = "shortKey";
+    public static final String EMPTY_KEY_ACC = "emptyKey";
+    public static final String EMPTY_KEY_NAME = "emptyKey";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteAsync();
@@ -124,13 +131,13 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("civilianWORewardStakingAcc")
                                 .balance(ONE_HUNDRED_HBARS)
                                 .declinedReward(true)
-                                .stakedAccountId("0.0.10"),
+                                .stakedAccountId(STAKED_ACC_ID),
                         getAccountInfo("civilianWORewardStakingAcc")
                                 .has(
                                         accountWith()
                                                 .isDeclinedReward(true)
                                                 .noStakingNodeId()
-                                                .stakedAccountId("0.0.10")))
+                                                .stakedAccountId(STAKED_ACC_ID)))
                 .then(
                         cryptoCreate("civilianWRewardStakingNode")
                                 .balance(ONE_HUNDRED_HBARS)
@@ -145,13 +152,13 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("civilianWRewardStakingAcc")
                                 .balance(ONE_HUNDRED_HBARS)
                                 .declinedReward(false)
-                                .stakedAccountId("0.0.10"),
+                                .stakedAccountId(STAKED_ACC_ID),
                         getAccountInfo("civilianWRewardStakingAcc")
                                 .has(
                                         accountWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .stakedAccountId("0.0.10")),
+                                                .stakedAccountId(STAKED_ACC_ID)),
                         /* --- sentiel values throw */
                         cryptoCreate("invalidStakedAccount")
                                 .balance(ONE_HUNDRED_HBARS)
@@ -180,8 +187,8 @@ public class CryptoCreateSuite extends HapiSuite {
 
         return defaultHapiSpec("usdFeeAsExpected")
                 .given(
-                        cryptoCreate("civilian").balance(ONE_HUNDRED_HBARS),
-                        getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS))
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
                 .when(
                         tokenCreate(token).autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
                         cryptoCreate("neverToBe")
@@ -189,36 +196,36 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .memo("")
                                 .entityMemo("")
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .payingWith("civilian")
+                                .payingWith(CIVILIAN)
                                 .feeUsd(preV13PriceUsd)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE),
-                        getAccountBalance("civilian").hasTinyBars(ONE_HUNDRED_HBARS),
+                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS),
                         cryptoCreate("noAutoAssoc")
-                                .key("civilian")
+                                .key(CIVILIAN)
                                 .balance(0L)
                                 .via(noAutoAssocSlots)
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy("civilian")
-                                .payingWith("civilian"),
+                                .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN),
                         cryptoCreate("oneAutoAssoc")
-                                .key("civilian")
+                                .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(1)
                                 .via(oneAutoAssocSlot)
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy("civilian")
-                                .payingWith("civilian"),
+                                .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN),
                         cryptoCreate("tenAutoAssoc")
-                                .key("civilian")
+                                .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(10)
                                 .via(tenAutoAssocSlots)
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy("civilian")
-                                .payingWith("civilian"),
+                                .signedBy(CIVILIAN)
+                                .payingWith(CIVILIAN),
                         getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
@@ -247,7 +254,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -262,7 +269,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -279,7 +286,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -296,7 +303,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -313,7 +320,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -391,12 +398,12 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape0)
                                 .balance(initialBalance)
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
-                        cryptoCreate("noKeys")
+                        cryptoCreate(NO_KEYS_ACC)
                                 .keyShape(shape4)
                                 .balance(initialBalance)
                                 .logged()
@@ -435,17 +442,17 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    spec.registry().saveKey("shortKey", shortKey);
-                                    spec.registry().saveKey("emptyKey", emptyKey);
+                                    spec.registry().saveKey(SHORT_KEY_NAME, shortKey);
+                                    spec.registry().saveKey(EMPTY_KEY_NAME, emptyKey);
                                 }),
-                        cryptoCreate("shortKey")
-                                .key("shortKey")
+                        cryptoCreate(SHORT_KEY_ACC)
+                                .key(SHORT_KEY_NAME)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
-                        cryptoCreate("emptyKey")
-                                .key("emptyKey")
+                        cryptoCreate(EMPTY_KEY_ACC)
+                                .key(EMPTY_KEY_NAME)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
