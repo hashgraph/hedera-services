@@ -128,7 +128,7 @@ public abstract class TestBase {
     public static void assertValidatorsPass(
             final String loc, final List<RecordStreamValidator> validators) throws IOException {
         final var access = new RecordStreamAccess();
-        final var streamFiles = access.readStreamFilesFrom(loc, "sidecar");
+        final var streamData = access.readStreamDataFrom(loc, "sidecar");
         final var errorsIfAny =
                 validators.stream()
                         .flatMap(
@@ -136,7 +136,8 @@ public abstract class TestBase {
                                     try {
                                         // The validator will complete silently if no errors are
                                         // found
-                                        v.validate(streamFiles);
+                                        v.validateFiles(streamData.files());
+                                        v.validateRecordsAndSidecars(streamData.records());
                                         return Stream.empty();
                                     } catch (final Throwable t) {
                                         return Stream.of(t);

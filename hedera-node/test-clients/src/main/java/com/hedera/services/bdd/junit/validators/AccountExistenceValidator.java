@@ -39,7 +39,7 @@ public class AccountExistenceValidator implements RecordStreamValidator {
     }
 
     @Override
-    public void validate(final List<RecordWithSidecars> recordFiles) {
+    public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordFiles) {
         final var accountExists = new AtomicBoolean();
         streamOfItemsFrom(recordFiles)
                 .filter(this::isAtConsensusTime)

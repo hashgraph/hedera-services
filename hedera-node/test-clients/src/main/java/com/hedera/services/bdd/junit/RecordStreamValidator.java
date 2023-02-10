@@ -15,8 +15,15 @@
  */
 package com.hedera.services.bdd.junit;
 
+import com.hedera.services.stream.proto.RecordStreamFile;
 import java.util.List;
 
 public interface RecordStreamValidator {
-    void validate(List<RecordWithSidecars> records);
+    default void validateFiles(List<RecordStreamFile> files) {
+        // No-op
+    }
+
+    default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
+        // No-op
+    }
 }
