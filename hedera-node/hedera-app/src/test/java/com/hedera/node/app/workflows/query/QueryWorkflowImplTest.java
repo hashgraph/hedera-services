@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -163,7 +164,7 @@ class QueryWorkflowImplTest {
         final var response = Response.newBuilder().setFileGetInfo(fileGetInfo).build();
 
         when(dispatcher.getHandler(query)).thenReturn(handler);
-        when(dispatcher.getResponse(state, query, responseHeader)).thenReturn(response);
+        when(dispatcher.getResponse(any(), eq(query), eq(responseHeader))).thenReturn(response);
 
         workflow =
                 new QueryWorkflowImpl(
@@ -604,7 +605,7 @@ class QueryWorkflowImplTest {
         // given
         doThrow(new PreCheckException(ACCOUNT_FROZEN_FOR_TOKEN))
                 .when(dispatcher)
-                .validate(state, query);
+                .validate(any(), eq(query));
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when

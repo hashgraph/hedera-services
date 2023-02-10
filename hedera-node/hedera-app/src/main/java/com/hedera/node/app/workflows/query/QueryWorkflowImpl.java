@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -188,7 +189,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            dispatcher.validate(state, query);
+            final var storeFactory = new StoreFactory(state);
+            dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -205,7 +207,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.getResponse(state, query, header);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
 
             opCounters.countAnswered(functionality);

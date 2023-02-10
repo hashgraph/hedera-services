@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
@@ -96,13 +96,14 @@ public class QueryDispatcher {
     /**
      * Validates the query by dispatching the query to its specific handlers.
      *
-     * @param state the {@link HederaState} of this request
+     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     *     needed
      * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validate(@NonNull final HederaState state, @NonNull final Query query)
+    public void validate(@NonNull final StoreFactory storeFactory, @NonNull final Query query)
             throws PreCheckException {
-        requireNonNull(state);
+        requireNonNull(storeFactory);
         requireNonNull(query);
 
         switch (query.getQueryCase()) {
@@ -155,17 +156,18 @@ public class QueryDispatcher {
     /**
      * Gets the response for a given query by dispatching its respective handlers.
      *
-     * @param state the {@link HederaState} that should be used for the request
+     * @param storeFactory the {@link StoreFactory} that keeps all stores which are eventually
+     *     needed
      * @param query the actual {@link Query}
      * @param header the {@link ResponseHeader} that should be used in the response, if it is
      *     successful
      * @return the {@link Response} with the requested answer
      */
     public Response getResponse(
-            @NonNull final HederaState state,
+            @NonNull final StoreFactory storeFactory,
             @NonNull final Query query,
             @NonNull final ResponseHeader header) {
-        requireNonNull(state);
+        requireNonNull(storeFactory);
         requireNonNull(query);
         requireNonNull(header);
 

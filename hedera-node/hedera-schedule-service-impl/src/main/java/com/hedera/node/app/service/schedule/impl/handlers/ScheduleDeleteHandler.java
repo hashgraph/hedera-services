@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,13 +40,13 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final PrehandleHandlerContext context,
+            @NonNull final PreHandleContext context,
             @NonNull final ReadableScheduleStore scheduleStore) {
         requireNonNull(context);
         final var op = context.getTxn().getScheduleDelete();

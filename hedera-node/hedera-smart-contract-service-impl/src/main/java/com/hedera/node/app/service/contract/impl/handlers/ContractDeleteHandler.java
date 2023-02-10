@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -40,11 +40,11 @@ public class ContractDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.getTxn().getContractDeleteInstance();
 

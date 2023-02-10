@@ -26,12 +26,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -58,24 +55,20 @@ public class CryptoHandlerTestBase {
     @Mock protected ReadableKVState<Long, MerkleAccount> accounts;
     @Mock protected MerkleAccount payerAccount;
     @Mock protected ReadableStates states;
-    @Mock protected HederaAccountNumbers accountNumbers;
-    @Mock protected HederaFileNumbers fileNumbers;
     @Mock protected CryptoSignatureWaiversImpl waivers;
     @Mock protected TransactionMetadata metaToHandle;
     protected ReadableAccountStore store;
-    protected PreHandleContext context;
 
     @BeforeEach
     void commonSetUp() {
         given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
         given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
         store = new ReadableAccountStore(states);
-        context = new PreHandleContext(accountNumbers, fileNumbers, store);
         setUpPayer();
     }
 
     protected void basicMetaAssertions(
-            final PrehandleHandlerContext context,
+            final PreHandleContext context,
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {

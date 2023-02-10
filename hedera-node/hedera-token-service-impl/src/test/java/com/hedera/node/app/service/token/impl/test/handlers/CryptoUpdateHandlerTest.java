@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -52,7 +52,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 2, false, OK);
         assertEquals(payerKey, context.getPayerKey());
@@ -67,7 +67,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1, false, OK);
         assertEquals(payerKey, context.getPayerKey());
@@ -80,7 +80,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 1, false, OK);
         assertEquals(payerKey, context.getPayerKey());
@@ -95,7 +95,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var context = new PrehandleHandlerContext(store, txn, updateAccountId);
+        final var context = new PreHandleContext(store, txn, updateAccountId);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context.getPayerKey());
@@ -109,7 +109,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        final var context = new PrehandleHandlerContext(store, txn, updateAccountId);
+        final var context = new PreHandleContext(store, txn, updateAccountId);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context.getPayerKey());
@@ -123,7 +123,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context, waivers);
         basicMetaAssertions(context, 0, true, INVALID_ACCOUNT_ID);
         assertEquals(payerKey, context.getPayerKey());
