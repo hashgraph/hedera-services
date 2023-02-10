@@ -41,7 +41,7 @@ RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
-COPY test-clients /opt/hedera/services/test-clients
+COPY hedera-node/test-clients /opt/hedera/services/test-clients
 RUN mkdir /opt/hedera/services/buildSrc
 COPY buildSrc /opt/hedera/services/buildSrc
 RUN mkdir /opt/hedera/services/gradle
@@ -55,7 +55,7 @@ RUN ./gradlew assemble copyLib copyApp
 
 ## Finishes by copying the Services JAR to the base runtime
 FROM base-runtime AS final-image
-COPY docker/start-services.sh /opt/hedera/services/start-services.sh
+COPY hedera-node/docker/start-services.sh /opt/hedera/services/start-services.sh
 COPY --from=services-builder /opt/hedera/services/.VERSION /opt/hedera/services
 COPY --from=services-builder /opt/hedera/services/hedera-node/data/lib /opt/hedera/services/data/lib
 RUN ls -al /opt/hedera/services/data/lib

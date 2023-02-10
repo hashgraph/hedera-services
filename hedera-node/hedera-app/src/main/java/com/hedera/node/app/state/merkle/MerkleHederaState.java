@@ -39,7 +39,6 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
-import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
@@ -216,13 +215,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         throwIfDestroyed();
         setImmutable(true);
         return new MerkleHederaState(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public AddressBook getAddressBookCopy() {
-        // To be implemented by Issue #4200
-        throw new RuntimeException("Not yet implemented");
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@ package com.hedera.node.app.spi.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -29,25 +30,85 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
- * Base abstract class for constructing {@link TransactionMetadata} by collecting information that
- * is needed when transactions are handled as part of "pre-handle" needed for signature
- * verification.
- *
- * <p>NOTE : This class is designed to be subclassed
+ * Interface for constructing {@link TransactionMetadata} by collecting information that is needed
+ * when transactions are handled as part of "pre-handle" needed for signature verification.
  */
-public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBuilder<T>> {
-    protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
-    protected HederaKey payerKey;
-    protected ResponseCodeEnum status = OK;
-    protected TransactionBody txn;
-    protected final AccountKeyLookup keyLookup;
-    protected AccountID payer;
+public class PrehandleHandlerContext {
 
-    protected TransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
-        this.keyLookup = Objects.requireNonNull(keyLookup);
+    private final AccountKeyLookup keyLookup;
+
+    private final TransactionBody txn;
+    private final AccountID payer;
+    private final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
+
+    private ResponseCodeEnum status = OK;
+    private HederaKey payerKey;
+    private Object handlerMetadata;
+
+    public PrehandleHandlerContext(
+            @NonNull final AccountKeyLookup keyLookup,
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer) {
+        this.keyLookup = requireNonNull(keyLookup);
+        this.txn = requireNonNull(txn);
+        this.payer = requireNonNull(payer);
+
+        final var lookedUpPayerKey = keyLookup.getKey(payer);
+        addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
+    }
+
+    public PrehandleHandlerContext(
+            @NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
+        this(keyLookup, txn, txn.getTransactionID().getAccountID());
+    }
+
+    /**
+     * Getter for the {@link TransactionBody}
+     *
+     * @return the {@link TransactionBody} in this context
+     */
+    @NonNull
+    public TransactionBody getTxn() {
+        return txn;
+    }
+
+    /**
+     * Getter for the payer
+     *
+     * @return the {@link AccountID} of the payer in this context
+     */
+    @NonNull
+    public AccountID getPayer() {
+        return payer;
+    }
+
+    /**
+     * Returns an immutable copy of the list of required non-payer keys.
+     *
+     * @return the {@link List} with the required non-payer keys
+     */
+    public List<HederaKey> getRequiredNonPayerKeys() {
+        return List.copyOf(requiredNonPayerKeys);
+    }
+
+    /**
+     * Getter for the status
+     *
+     * @return the {@code status} that was previously set
+     */
+    public ResponseCodeEnum getStatus() {
+        return status;
+    }
+
+    /**
+     * Checks the failure by validating the status is not {@link ResponseCodeEnum OK}
+     *
+     * @return returns true if status is not OK
+     */
+    public boolean failed() {
+        return !getStatus().equals(ResponseCodeEnum.OK);
     }
 
     /**
@@ -55,37 +116,55 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * is no failure.
      *
      * @param status status to be set on {@link TransactionMetadata}
+     * @return {@code this} object
+     */
+    @NonNull
+    public PrehandleHandlerContext status(@NonNull final ResponseCodeEnum status) {
+        this.status = requireNonNull(status);
+        return this;
+    }
+
+    /**
+     * Getter for the payer key
+     *
+     * @return the payer key
+     */
+    @Nullable
+    public HederaKey getPayerKey() {
+        return payerKey;
+    }
+
+    /**
+     * Getter for the metadata set by the handler
+     *
+     * @return the metadata set by the handler
+     */
+    public Object getHandlerMetadata() {
+        return handlerMetadata;
+    }
+
+    /**
+     * Sets the handler specific metadata
+     *
+     * @param handlerMetadata an arbitrary object that gets passed to the handler method
      * @return builder object
      */
     @NonNull
-    public T status(@NonNull final ResponseCodeEnum status) {
-        this.status = Objects.requireNonNull(status);
-        return self();
+    public PrehandleHandlerContext handlerMetadata(@NonNull final Object handlerMetadata) {
+        this.handlerMetadata = handlerMetadata;
+        return this;
     }
 
     /**
      * Add a keys to required keys list
      *
      * @param keys list of keys to add
-     * @return builder object
+     * @return {@code this} object
      */
     @NonNull
-    public T addAllReqKeys(@NonNull final List<HederaKey> keys) {
-        requiredNonPayerKeys.addAll(Objects.requireNonNull(keys));
-        return self();
-    }
-
-    /**
-     * Fetches the payer key and add to required keys in {@link TransactionMetadata}.
-     *
-     * @param payer payer for the transaction
-     * @return builder object
-     */
-    @NonNull
-    public T payerKeyFor(@NonNull AccountID payer) {
-        this.payer = Objects.requireNonNull(payer);
-        addPayerKey();
-        return self();
+    public PrehandleHandlerContext addAllReqKeys(@NonNull final List<HederaKey> keys) {
+        requiredNonPayerKeys.addAll(requireNonNull(keys));
+        return this;
     }
 
     /**
@@ -95,27 +174,14 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * we want to add other keys from {@link TransactionBody} to required keys to sign.
      *
      * @param key key to be added
-     * @return builder object
+     * @return {@code this} object
      */
     @NonNull
-    public T addToReqNonPayerKeys(@NonNull HederaKey key) {
-        if (status != OK || payerKey == null) {
-            return self();
+    public PrehandleHandlerContext addToReqNonPayerKeys(@NonNull final HederaKey key) {
+        if (status == OK && payerKey != null) {
+            requiredNonPayerKeys.add(requireNonNull(key));
         }
-        requiredNonPayerKeys.add(Objects.requireNonNull(key));
-        return self();
-    }
-
-    /**
-     * Adds the {@link TransactionBody} of the transaction on {@link TransactionMetadata}.
-     *
-     * @param txn transaction body of the transaction
-     * @return builder object
-     */
-    @NonNull
-    public T txnBody(@NonNull TransactionBody txn) {
-        this.txn = Objects.requireNonNull(txn);
-        return self();
+        return this;
     }
 
     /**
@@ -124,9 +190,10 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * keys for account. If the lookup fails, sets the default failureReason given in the result.
      *
      * @param id given accountId
+     * @return {@code this} object
      */
     @NonNull
-    public T addNonPayerKey(@NonNull final AccountID id) {
+    public PrehandleHandlerContext addNonPayerKey(@NonNull final AccountID id) {
         return addNonPayerKey(id, null);
     }
 
@@ -138,26 +205,27 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      *
      * @param id given accountId
      * @param failureStatusToUse failure status to be set if there is failure
+     * @return {@code this} object
      */
     @NonNull
-    public T addNonPayerKey(
+    public PrehandleHandlerContext addNonPayerKey(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        if (isNotNeeded(Objects.requireNonNull(id))) {
-            return self();
+        if (isNotNeeded(requireNonNull(id))) {
+            return this;
         }
         final var result = keyLookup.getKey(id);
         addToKeysOrFail(result, failureStatusToUse, false);
-        return self();
+        return this;
     }
 
     @NonNull
-    public T addNonPayerKey(@NonNull final ContractID id) {
-        if (isNotNeeded(Objects.requireNonNull(id))) {
-            return self();
+    public PrehandleHandlerContext addNonPayerKey(@NonNull final ContractID id) {
+        if (isNotNeeded(requireNonNull(id))) {
+            return this;
         }
         final var result = keyLookup.getKey(id);
         addToKeysOrFail(result, null, false);
-        return self();
+        return this;
     }
 
     /**
@@ -171,36 +239,46 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      * @param failureStatusToUse failure status to be set if there is failure
      */
     @NonNull
-    public T addNonPayerKeyIfReceiverSigRequired(
+    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        if (isNotNeeded(Objects.requireNonNull(id))) {
-            return self();
+        if (isNotNeeded(requireNonNull(id))) {
+            return this;
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, failureStatusToUse, false);
-        return self();
+        return this;
     }
 
     @NonNull
-    public T addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
-        if (isNotNeeded(Objects.requireNonNull(id))) {
-            return self();
+    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(
+            @NonNull final ContractID id) {
+        if (isNotNeeded(requireNonNull(id))) {
+            return this;
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         addToKeysOrFail(result, null, false);
-        return self();
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionMetadataBuilder{"
+                + "requiredNonPayerKeys="
+                + requiredNonPayerKeys
+                + ", txn="
+                + txn
+                + ", payer="
+                + payer
+                + ", status="
+                + status
+                + ", payerKey="
+                + payerKey
+                + ", handlerMetadata="
+                + handlerMetadata
+                + '}';
     }
 
     /* ---------- Helper methods ---------- */
-
-    /**
-     * Look up the keys for payer account and add payer key to the required keys list. If the lookup
-     * fails adds failure status {@code INVALID_PAYER_ACCOUNT_ID} to the metadata.
-     */
-    private void addPayerKey() {
-        final var result = keyLookup.getKey(payer);
-        addToKeysOrFail(result, INVALID_PAYER_ACCOUNT_ID, true);
-    }
 
     /**
      * Checks if the account given is same as payer or if the metadata is already failed. In either
@@ -260,7 +338,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
 
     /**
      * Given a successful key lookup, adds its key to the required signers. Given a failed key
-     * lookup, sets this {@link SigTransactionMetadata}'s status to either the failure reason of the
+     * lookup, sets this {@link TransactionMetadata}'s status to either the failure reason of the
      * lookup; or (if it is non-null), the requested failureStatus parameter.
      *
      * @param result key lookup result
@@ -280,19 +358,4 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
             }
         }
     }
-
-    /**
-     * Creates and returns a new {@link TransactionMetadata} based on the values configured in this
-     * builder.
-     *
-     * @return a new {@link SigTransactionMetadata}
-     */
-    protected abstract TransactionMetadata build();
-
-    /**
-     * Returns the builder object.
-     *
-     * @return builder object
-     */
-    protected abstract T self();
 }

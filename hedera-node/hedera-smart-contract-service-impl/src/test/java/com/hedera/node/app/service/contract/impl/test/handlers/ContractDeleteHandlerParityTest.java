@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,59 +47,61 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteImmutable() {
         final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, meta.status());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+        assertEquals(MODIFYING_IMMUTABLE_CONTRACT, context.getStatus());
     }
 
     @Test
     void getsContractDelete() {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
     void getsContractDeleteMissingAccountBeneficiary() {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, meta.status());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
     }
 
     @Test
     void getsContractDeleteMissingContractBeneficiary() {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
-        assertEquals(INVALID_CONTRACT_ID, meta.status());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        assertThat(
+                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertEquals(INVALID_CONTRACT_ID, context.getStatus());
     }
 
     @Test
     void getsContractDeleteContractXfer() {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
-        final var meta =
-                subject.preHandle(theTxn, theTxn.getTransactionID().getAccountID(), keyLookup);
+        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(MISC_ADMIN_KT.asKey(), DILIGENT_SIGNING_PAYER_KT.asKey()));
-        assertEquals(OK, meta.status());
+        assertEquals(OK, context.getStatus());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
