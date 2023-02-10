@@ -76,20 +76,18 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    renewsUsingContractFundsIfNoAutoRenewAccount(),
-                    renewalFeeDistributedToStakingAccounts(),
-                    renewsUsingAutoRenewAccountIfSet(),
-                    chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
-                    storageExpiryWorksAtTheExpectedInterval(),
-                    autoRenewWorksAsExpected(),
-                    autoRenewInGracePeriodIfEnoughBalance(),
-                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
-                    renewalWithCustomFeesWorks(),
-                    receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
-                    // This spec should be at the end of this suite
-                    validateStreams()
-                });
+                renewsUsingContractFundsIfNoAutoRenewAccount(),
+                renewalFeeDistributedToStakingAccounts(),
+                renewsUsingAutoRenewAccountIfSet(),
+                chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
+                storageExpiryWorksAtTheExpectedInterval(),
+                autoRenewWorksAsExpected(),
+                autoRenewInGracePeriodIfEnoughBalance(),
+                storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
+                renewalWithCustomFeesWorks(),
+                receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
+                // This spec should be at the end of this suite
+                validateStreams());
     }
 
     private HapiSpec renewalWithCustomFeesWorks() {
@@ -200,8 +198,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         mintToken(
                                 nonFungibleToken,
                                 List.of(
-                                        ByteString.copyFromUtf8("Time moved, yet seemed to stop"),
-                                        ByteString.copyFromUtf8("As 'twere a spinning-top"))),
+                                        ByteString.copyFromUtf8("My lovely NFT 1"),
+                                        ByteString.copyFromUtf8("My lovely NFT 2"))),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         contractCreate(contractToRemove, new BigInteger("63"))
@@ -216,12 +214,20 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                         .between(TOKEN_TREASURY, contractToRemove),
                                 movingUnique(nonFungibleToken, 1L, 2L)
                                         .between(TOKEN_TREASURY, contractToRemove)),
+                        getAccountBalance(contractToRemove)
+                                .hasTokenBalance(aFungibleToken, aFungibleAmount)
+                                .hasTokenBalance(nonFungibleToken, 2),
+                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(aFungibleToken, 0),
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0),
+                        /* sleep past the expiration:
+                         * (minimalLifetimeMillis * 1 second) + 500 ms (500 ms for extra time)
+                         */
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        sleepFor(2_000L),
+                        sleepFor(2_000L), // wait for the record stream file to close
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         // Now the contract is gone
@@ -231,10 +237,11 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         // And the fungible units were returned to the treasury
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(nonFungibleToken, 2)
                                 .logged(),
+                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2),
                         getAccountInfo(TOKEN_TREASURY).logged(),
-                        // And the NFTs are now owned by the treasury
+                        // And the NFTs now list the treasury as the owner
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));
     }
