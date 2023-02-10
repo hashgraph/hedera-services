@@ -2904,8 +2904,8 @@ public class ContractCallSuite extends HapiSuite {
             final byte[] jurisdictionInitcode, final String addressBookMirror) {
         return ByteString.copyFrom(
                 new String(jurisdictionInitcode)
-                        .replaceAll(
-                                "_+AddressBook.sol:AddressBook_+",
+                        .replaceAll( // NOSONAR
+                                "_+AddressBook.sol:AddressBook_+", // NOSONAR
                                 addressBookMirror) // NOSONAR ignoring security hotspot in tests
                         .getBytes());
     }
