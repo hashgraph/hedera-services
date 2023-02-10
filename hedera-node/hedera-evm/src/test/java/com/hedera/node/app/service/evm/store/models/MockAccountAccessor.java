@@ -19,8 +19,7 @@ import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import org.hyperledger.besu.datatypes.Address;
 
 public class MockAccountAccessor implements AccountAccessor {
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
+    private Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
@@ -30,5 +29,9 @@ public class MockAccountAccessor implements AccountAccessor {
     @Override
     public boolean isTokenAddress(Address address) {
         return false;
+    }
+
+    public void changeAddress(Address address) {
+        this.address = address;
     }
 }
