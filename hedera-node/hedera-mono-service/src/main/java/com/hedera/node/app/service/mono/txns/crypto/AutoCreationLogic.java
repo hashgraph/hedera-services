@@ -100,6 +100,8 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
                     if (alias.size() != EVM_ADDRESS_SIZE) {
+                        // if this is an alias of type ECDSA public key
+                        // we should also unlink the EVM address derived from that key
                         aliasManager.forgetEvmAddress(alias);
                     }
                 }
