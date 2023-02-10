@@ -93,14 +93,14 @@ public class RecordStreaming {
             for (int i = 0, n = precedingChildren.size(); i < n; i++) {
                 final var childRso = precedingChildren.get(i).withBlockNumber(blockNo);
                 if (i == 0 && closesFile) {
-                    childRso.willCloseCurrentFile();
+                    childRso.setWriteNewFile();
                 }
                 stream(childRso);
             }
         }
         final var topLevelRso = recordsHistorian.getTopLevelRecord().withBlockNumber(blockNo);
         if (closesFile && !recordsHistorian.hasPrecedingChildRecords()) {
-            topLevelRso.willCloseCurrentFile();
+            topLevelRso.setWriteNewFile();
         }
         stream(topLevelRso);
         if (recordsHistorian.hasFollowingChildRecords()) {

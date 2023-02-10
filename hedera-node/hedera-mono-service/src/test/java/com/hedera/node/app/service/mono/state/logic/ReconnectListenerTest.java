@@ -72,7 +72,6 @@ class ReconnectListenerTest {
                             + " 1970-01-15T06:56:07.000000890Z, roundNumber: 234, sequence: 123"));
         // and:
         verify(servicesState).logSummary();
-        verify(recordStreamManager).setStartWriteAtCompleteWindow(true);
         verify(upgradeActions).catchUpOnMissedSideEffects();
     }
 }

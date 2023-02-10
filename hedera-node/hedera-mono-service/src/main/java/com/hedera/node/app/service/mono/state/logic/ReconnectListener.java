@@ -49,7 +49,6 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 notification.getSequence());
         final ServicesState state = (ServicesState) notification.getState();
         state.logSummary();
-        recordStreamManager.setStartWriteAtCompleteWindow(true);
         upgradeActions.catchUpOnMissedSideEffects();
     }
 }

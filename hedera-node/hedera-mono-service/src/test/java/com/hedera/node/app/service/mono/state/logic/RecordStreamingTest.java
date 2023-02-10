@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.mono.state.logic.RecordStreaming.PENDI
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -160,7 +159,7 @@ class RecordStreamingTest {
         subject.streamUserTxnRecords();
         subject.streamSystemRecord(systemRso);
 
-        verify(firstPrecedingChildRso).willCloseCurrentFile();
+        verify(firstPrecedingChildRso).setWriteNewFile();
         verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
         verify(nonBlockingHandoff).offer(firstFollowingChildRso);
         verify(nonBlockingHandoff).offer(topLevelRso);
@@ -183,7 +182,7 @@ class RecordStreamingTest {
 
         verify(nonBlockingHandoff, times(2)).offer(topLevelRso);
         verify(blockManager).updateCurrentBlockHash(mockUserHash);
-        verify(topLevelRso).willCloseCurrentFile();
+        verify(topLevelRso).setWriteNewFile();
 
         subject.resetBlockNo();
 

@@ -71,7 +71,7 @@ class RecordStreamObjectTest {
     void onlyClosesIfSetExplicitly() {
         final var subject = new RecordStreamObject();
         assertFalse(subject.closesCurrentFile());
-        subject.willCloseCurrentFile();
+        subject.setWriteNewFile();
         assertTrue(subject.closesCurrentFile());
     }
 

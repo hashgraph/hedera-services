@@ -27,12 +27,10 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -74,8 +72,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
     /* The running hash of all objects streamed up to and including this consensus time. */
     private RunningHash runningHash;
 
-    public RecordStreamObject() {
-    }
+    public RecordStreamObject() {}
 
     public RecordStreamObject(
             final ExpirableTxnRecord fcTransactionRecord,
@@ -97,7 +94,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
         runningHash = new RunningHash();
     }
 
-    public RecordStreamObject willCloseCurrentFile() {
+    public RecordStreamObject setWriteNewFile() {
         this.writeNewFile = true;
         return this;
     }
@@ -109,7 +106,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
 
     @Override
     public long getStreamAlignment() {
-        return StreamAligned.NO_ALIGNMENT;
+        return blockNumber;
     }
 
     @Override
@@ -128,17 +125,13 @@ public class RecordStreamObject extends AbstractSerializableHashable
         consensusTimestamp = Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public int getVersion() {
         return CLASS_VERSION;

@@ -100,9 +100,10 @@ public class BlockManager {
      */
     public BlockNumberMeta updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
         ensureProvisionalBlockMeta(now);
-        final var blockNo = provisionalBlockIsNew
-                ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
-                : provisionalBlockNo;
+        final var blockNo =
+                provisionalBlockIsNew
+                        ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
+                        : provisionalBlockNo;
         return new BlockNumberMeta(blockNo, provisionalBlockIsNew);
     }
 

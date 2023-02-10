@@ -17,11 +17,9 @@ package com.hedera.node.app.service.mono.stream;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.service.mono.state.logic.RecordStreaming;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
 import com.swirlds.common.crypto.DigestType;
@@ -32,7 +30,6 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.system.Platform;
 import java.io.File;
 import java.io.IOException;
@@ -70,26 +67,12 @@ public class RecordStreamManager {
 
     /**
      * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link
-     * RecordStreamObject}s to record stream files. <b>Should be deleted after migration to V6 is
-     * done</b>.
-     */
-    private TimestampStreamFileWriter<RecordStreamObject> v5StreamFileWriter;
-
-    /**
-     * receives {@link RecordStreamObject}s from writeQueueThread, serializes {@link
      * RecordStreamObject}s to record stream files. Will be used from V6 onwards.
      */
     private RecordStreamFileWriter protobufStreamFileWriter;
 
     /** initial running Hash of records */
     private Hash initialHash = new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]);
-
-    /**
-     * when record streaming is started after reconnect, or at state recovering,
-     * startWriteAtCompleteWindow should be set to be true; when record streaming is started after
-     * restart, it should be set to be false
-     */
-    private boolean startWriteAtCompleteWindow = false;
 
     /** whether the platform is in freeze period */
     private volatile boolean inFreeze = false;
@@ -125,34 +108,20 @@ public class RecordStreamManager {
             // the directory to which record stream files are written
             Files.createDirectories(Paths.get(nodeScopedRecordLogDir));
             Files.createDirectories(Paths.get(nodeScopedSidecarDir));
-            if (globalDynamicProperties.recordFileVersion() >= 6) {
-                protobufStreamFileWriter =
-                        new RecordStreamFileWriter(
-                                nodeScopedRecordLogDir,
-                                platform,
-                                startWriteAtCompleteWindow,
-                                streamType,
-                                nodeScopedSidecarDir,
-                                globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,
-                                globalDynamicProperties);
-            } else {
-                v5StreamFileWriter =
-                        new TimestampStreamFileWriter<>(
-                                nodeScopedRecordLogDir,
-                                nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS,
-                                platform,
-                                startWriteAtCompleteWindow,
-                                streamType);
-            }
+            protobufStreamFileWriter =
+                    new RecordStreamFileWriter(
+                            nodeScopedRecordLogDir,
+                            platform,
+                            streamType,
+                            nodeScopedSidecarDir,
+                            globalDynamicProperties.getSidecarMaxSizeMb() * MB_TO_BYTES,
+                            globalDynamicProperties);
             writeQueueThread =
                     new QueueThreadObjectStreamConfiguration<RecordStreamObject>(
                                     getStaticThreadManager())
                             .setNodeId(platform.getSelfId().getId())
                             .setCapacity(nodeLocalProperties.recordStreamQueueCapacity())
-                            .setForwardTo(
-                                    protobufStreamFileWriter == null
-                                            ? v5StreamFileWriter
-                                            : protobufStreamFileWriter)
+                            .setForwardTo(protobufStreamFileWriter)
                             .setThreadName("writeQueueThread")
                             .setComponent("recordStream")
                             .build();
@@ -265,36 +234,6 @@ public class RecordStreamManager {
         multiStream.setRunningHash(initialHash);
     }
 
-    /**
-     * Sets whether to close and write a new record file at the <i>next opportunity
-     * the {@link RecordStreaming} source gives us</i>. (These opportunities arise
-     * whenever we receive a {@link RecordStreamObject} that returns true from
-     * {@link RecordStreamObject#closesCurrentFile()}.)
-     *
-     * <p>Unless this node just reconnected, we always want to take these opportunities.
-     * But if we reconnected part-way through a 2-second period, we will have probably
-     * missed some of the transactions that belong to the current period. So if we
-     * close and write a file with just those transactions, we will not match the file
-     * with the same name as written by a node that was connected throughout the whole
-     * period.
-     *
-     * @param startWriteAtCompleteWindow whether we should close and write a new file
-     *                                   at the next opportunity
-     */
-    public void setStartWriteAtCompleteWindow(boolean startWriteAtCompleteWindow) {
-        if (v5StreamFileWriter != null) {
-            v5StreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
-            log.info(
-                    "RecordStreamManager::setStartWriteAtCompleteWindow: {}",
-                    startWriteAtCompleteWindow);
-        } else if (protobufStreamFileWriter != null) {
-            protobufStreamFileWriter.setStartWriteAtCompleteWindow(startWriteAtCompleteWindow);
-            log.info(
-                    "RecordStreamManager::setStartWriteAtCompleteWindow: {}",
-                    startWriteAtCompleteWindow);
-        }
-    }
-
     public static String effectiveLogDir(String baseDir, final String accountMemo) {
         if (!baseDir.endsWith(File.separator)) {
             baseDir += File.separator;
@@ -334,15 +273,6 @@ public class RecordStreamManager {
      */
     MultiStream<RecordStreamObject> getMultiStream() {
         return multiStream;
-    }
-
-    /**
-     * for unit testing
-     *
-     * @return current TimestampStreamFileWriter instance
-     */
-    TimestampStreamFileWriter<RecordStreamObject> getV5StreamFileWriter() {
-        return v5StreamFileWriter;
     }
 
     /**

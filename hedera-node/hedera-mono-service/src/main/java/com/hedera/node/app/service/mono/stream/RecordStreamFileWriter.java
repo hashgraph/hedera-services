@@ -47,7 +47,6 @@ import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
-import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
 import java.io.BufferedOutputStream;
@@ -103,16 +102,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private final Signer signer;
 
     /**
-     * if it is true, we don't write object stream file until the first complete window. This is
-     * suitable for streaming after reconnect, so that reconnect node can generate the same stream
-     * files as other nodes after reconnect.
-     *
-     * <p>if it is false, we start to write object stream file immediately. This is suitable for
-     * streaming after restart, so that no object would be missing in the nodes' stream files
-     */
-    private boolean startWriteAtCompleteWindow;
-
-    /**
      * The id that the next sidecar file of the current period will have. Initialized to 1 at the
      * start of each period. Incremented by 1 with each new sidecar file.
      */
@@ -145,7 +134,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     public RecordStreamFileWriter(
             final String dirPath,
             final Signer signer,
-            final boolean startWriteAtCompleteWindow,
             final RecordStreamType streamType,
             final String sidecarDirPath,
             final int maxSidecarFileSize,
@@ -153,7 +141,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.signer = signer;
-        this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
         this.streamType = streamType;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -184,17 +171,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
         // update runningHash
         this.runningHash = object.getRunningHash();
-    }
-
-    /**
-     * Check whether the provided object needs to be written into a new file, or if it should be
-     * written into the current file.
-     *
-     * @return whether the object should be written into a new file
-     */
-    private boolean shouldStartNewFile(final RecordStreamObject nextObject) {
-        // TODO - the nextObject must be able to answer this question
-        throw new AssertionError("Not implemented");
     }
 
     /**
@@ -505,18 +481,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
         LOG.debug(
                 LogMarker.FREEZE.getMarker(),
                 "RecordStreamFileWriter finished writing the last object, is stopped");
-    }
-
-    public void setStartWriteAtCompleteWindow(final boolean startWriteAtCompleteWindow) {
-        this.startWriteAtCompleteWindow = startWriteAtCompleteWindow;
-        LOG.debug(
-                OBJECT_STREAM.getMarker(),
-                "RecordStreamFileWriter::setStartWriteAtCompleteWindow: {}",
-                startWriteAtCompleteWindow);
-    }
-
-    public boolean getStartWriteAtCompleteWindow() {
-        return this.startWriteAtCompleteWindow;
     }
 
     private void assertFirstTxnInstantIsKnown() {
