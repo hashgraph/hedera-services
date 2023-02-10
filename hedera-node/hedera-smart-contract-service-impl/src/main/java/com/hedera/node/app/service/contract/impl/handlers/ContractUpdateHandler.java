@@ -17,9 +17,9 @@ package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,32 +43,25 @@ public class ContractUpdateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var op = txBody.getContractUpdateInstance();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
+    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getContractUpdateInstance();
 
         if (isAdminSigRequired(op)) {
-            meta.addNonPayerKey(op.getContractID());
+            context.addNonPayerKey(op.getContractID());
         }
         if (hasCryptoAdminKey(op)) {
             final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqNonPayerKeys);
+            key.ifPresent(context::addToReqNonPayerKeys);
         }
         if (op.hasAutoRenewAccountId()
                 && !op.getAutoRenewAccountId().equals(AccountID.getDefaultInstance())) {
-            meta.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
+            context.addNonPayerKey(op.getAutoRenewAccountId(), INVALID_AUTORENEW_ACCOUNT);
         }
-        return meta.build();
     }
 
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
@@ -94,6 +87,7 @@ public class ContractUpdateHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

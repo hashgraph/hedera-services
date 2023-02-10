@@ -508,15 +508,10 @@ public class SyntheticTxnFactory {
     public TransactionBody.Builder createAccount(
             final ByteString alias,
             final Key key,
-            @Nullable final ByteString evmAddress,
             final long balance,
             final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
-
-        if (evmAddress != null) {
-            baseBuilder.setEvmAddress(evmAddress);
-        }
 
         if (maxAutoAssociations > 0) {
             baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
@@ -527,7 +522,7 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
         final var baseBuilder = createAccountBase(balance);
-        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setEvmAddress(alias).setMemo(LAZY_MEMO);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setAlias(alias).setMemo(LAZY_MEMO);
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 

@@ -30,4 +30,17 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
                             .get());
         }
     },
+    UNFREEZE_WITH_MISSING_FREEZE_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(newSignedTokenUnfreeze().get());
+        }
+    },
+    UNFREEZE_WITH_INVALID_TOKEN {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    newSignedTokenUnfreeze().unfreezing(MISSING_TOKEN).get());
+        }
+    },
 }
