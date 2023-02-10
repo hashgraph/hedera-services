@@ -89,7 +89,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // The HAPI API version to use, this need to match the tag set on gitRepositories above
-            version("hapi-version", "0.34.0")
+            version("hapi-version", "0.35.0")
 
             // Definition of version numbers for all libraries
             version("pbj-version", "0.3.0")
