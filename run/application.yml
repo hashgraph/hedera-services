@@ -1,7 +1,0 @@
-changelog:
-  repository: hashgraph/hedera-services
-  sections:
-  - title: "Enhancements"
-    labels: ["enhancement"]
-  - title: "Fixes"
-    labels: ["bug"]

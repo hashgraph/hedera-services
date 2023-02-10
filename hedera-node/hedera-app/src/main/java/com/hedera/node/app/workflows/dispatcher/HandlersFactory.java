@@ -35,7 +35,7 @@ import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
-import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
+import com.hedera.node.app.service.network.impl.handlers.NetworkUncheckedSubmitHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
@@ -67,28 +67,28 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** A factory that creates all handlers and bundles them in a {@link Handlers} */
+/** A factory that creates all handlers and bundles them in a {@link TransactionHandlers} */
 public final class HandlersFactory {
 
     private HandlersFactory() {}
 
     /**
      * This method creates all handlers with the provided arguments and bundles them in a {@link
-     * Handlers} record.
+     * TransactionHandlers} record.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
      * @return the created handlers
      */
-    public static Handlers createHandlers(
+    public static TransactionHandlers createHandlers(
             @NonNull final HederaAccountNumbers hederaAccountNumbers,
             @NonNull final HederaFileNumbers hederaFileNumbers) {
         requireNonNull(hederaAccountNumbers);
         requireNonNull(hederaFileNumbers);
 
         // TODO - provide DI, c.f. https://github.com/hashgraph/hedera-services/issues/4317
-        return new Handlers(
+        return new TransactionHandlers(
                 new ConsensusCreateTopicHandler(),
                 new ConsensusUpdateTopicHandler(),
                 new ConsensusDeleteTopicHandler(),
@@ -115,7 +115,7 @@ public final class HandlersFactory {
                 new FileSystemDeleteHandler(),
                 new FileSystemUndeleteHandler(),
                 new FreezeHandler(),
-                new UncheckedSubmitHandler(),
+                new NetworkUncheckedSubmitHandler(),
                 new ScheduleCreateHandler(),
                 new ScheduleSignHandler(),
                 new ScheduleDeleteHandler(),

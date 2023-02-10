@@ -23,9 +23,9 @@ import java.util.Objects;
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
  * for signing requirements using {@link HederaAccountNumbers} and {@link HederaFileNumbers} to
- * validate if any account's signature can be waived. Any {@link PreTransactionHandler} will need to
- * construct its own {@link SigWaivers} to check for signature waivers using the information
- * provided in this class.
+ * validate if any account's signature can be waived. Any {@link
+ * com.hedera.node.app.spi.workflows.TransactionHandler} will need to construct its own {@link
+ * SigWaivers} to check for signature waivers using the information provided in this class.
  *
  * @param accountNumbers provides information about system account numbers
  * @param fileNumbers provides information about system file numbers
