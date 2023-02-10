@@ -15,18 +15,19 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
+import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Optional;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -61,7 +62,17 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws PreCheckException if validation fails
      */
     public void validate(@NonNull final Query query) throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
+        final MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
+        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
+        if (op.hasTopicID()) {
+            MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
+
+            return Optional.ofNullable(merkleTopic)
+                    .map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
+                    .orElse(INVALID_TOPIC_ID);
+        } else {
+            return INVALID_TOPIC_ID;
+        }
     }
 
     /**
