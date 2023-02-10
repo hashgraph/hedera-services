@@ -259,12 +259,12 @@ public class FileSignTool {
         registry.registerConstructables("com.swirlds.common");
 
         if (streamType.getExtension().equalsIgnoreCase(RECORD_STREAM_EXTENSION)) {
-        LOGGER.info(MARKER, "registering Constructables for parsing record stream files");
-        // if we are parsing new record stream files,
-        // we need to add HederaNode.jar and hedera-protobuf-java-*.jar into class path,
-        // so that we can register for parsing RecordStreamObject
-        registry.registerConstructables("com.hedera.services.stream");
-    }
+            LOGGER.info(MARKER, "registering Constructables for parsing record stream files");
+            // if we are parsing new record stream files,
+            // we need to add HederaNode.jar and hedera-protobuf-java-*.jar into class path,
+            // so that we can register for parsing RecordStreamObject
+            registry.registerConstructables("com.hedera.services.stream");
+        }
     }
 
     private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
