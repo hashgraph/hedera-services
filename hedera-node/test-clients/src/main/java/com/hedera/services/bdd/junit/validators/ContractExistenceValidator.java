@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Assertions;
 
-/** A simple validator that asserts a contract that was created appears in the record stream  */
+/**
+ * A simple validator that asserts a contract that was created appears in the record stream
+ */
 public class ContractExistenceValidator implements RecordStreamValidator {
     private final String name;
     private final Instant consensusTimestamp;
