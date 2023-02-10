@@ -277,7 +277,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                                             keyName.ifPresent(
                                                     s -> b.setKey(spec.registry().getKey(s)));
                                             alias.ifPresent(b::setAlias);
-                                            evmAddress.ifPresent(b::setEvmAddress);
+                                            evmAddress.ifPresent(b::setAlias);
                                         } else {
                                             b.setKey(key);
                                         }
