@@ -99,10 +99,6 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
                 }
-                final var evmAddress = syntheticTxnBody.getEvmAddress();
-                if (!evmAddress.isEmpty()) {
-                    aliasManager.unlink(evmAddress);
-                }
             }
             return true;
         } else {
