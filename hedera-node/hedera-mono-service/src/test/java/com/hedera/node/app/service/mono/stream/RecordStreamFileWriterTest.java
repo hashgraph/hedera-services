@@ -70,7 +70,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -104,9 +103,7 @@ class RecordStreamFileWriterTest {
         subject =
                 new RecordStreamFileWriter(
                         expectedExportDir(),
-                        logPeriodMs,
                         signer,
-                        false,
                         streamType,
                         expectedExportDir(),
                         maxSidecarFileSize,
@@ -195,68 +192,8 @@ class RecordStreamFileWriterTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void objectsFromFirstPeriodAreNotExternalizedWhenStartWriteAtCompleteWindowIsTrue(
-            final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
-        // given
-        given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
-        given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
-        given(streamType.getExtension()).willReturn(RecordStreamType.RECORD_EXTENSION);
-        given(globalDynamicProperties.shouldCompressRecordFilesOnCreation())
-                .willReturn(isCompressed);
-        final var secondBlockEntireFileSignature =
-                "entireSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        final var secondBlockMetadataSignature =
-                "metadataSignatureBlock2".getBytes(StandardCharsets.UTF_8);
-        given(signer.sign(any()))
-                .willReturn(new Signature(RSA, secondBlockEntireFileSignature))
-                .willReturn(new Signature(RSA, secondBlockMetadataSignature));
-        final var firstTransactionInstant =
-                LocalDateTime.of(2022, 5, 24, 11, 2, 55).toInstant(ZoneOffset.UTC);
-        // set initial running hash
-        messageDigest.digest("yumyum".getBytes(StandardCharsets.UTF_8));
-        final var startRunningHash = new Hash(messageDigest.digest());
-        subject.setRunningHash(startRunningHash);
-        subject.setStartWriteAtCompleteWindow(true);
-
-        // when
-        final var firstBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1, 1, firstTransactionInstant, allSidecarTypes);
-        final int numberOfRSOsInSecondBlock = 5;
-        final var secondBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        numberOfRSOsInSecondBlock,
-                        2,
-                        firstTransactionInstant.plusSeconds(logPeriodMs / 1000),
-                        allSidecarTypes);
-        final var thirdBlockRSOs =
-                generateNRecordStreamObjectsForBlockMStartingFromT(
-                        1,
-                        3,
-                        firstTransactionInstant.plusSeconds(2 * logPeriodMs / 1000),
-                        allSidecarTypes);
-        Stream.of(firstBlockRSOs, secondBlockRSOs, thirdBlockRSOs)
-                .flatMap(Collection::stream)
-                .forEach(subject::addObject);
-
-        // then
-        assertFalse(
-                Path.of(subject.generateRecordFilePath(firstTransactionInstant)).toFile().exists());
-        assertRecordStreamFiles(
-                2L,
-                secondBlockRSOs,
-                firstBlockRSOs.get(firstBlockRSOs.size() - 1).getRunningHash().getHash(),
-                secondBlockEntireFileSignature,
-                secondBlockMetadataSignature,
-                Map.of(1, allSidecarTypesEnum),
-                Map.of(1, transformToExpectedSidecars(allSidecarTypes, numberOfRSOsInSecondBlock)),
-                isCompressed);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void objectsFromDifferentPeriodsButWithSameAlignmentAreExternalizedInSameFile(
-            final boolean isCompressed) throws IOException, NoSuchAlgorithmException {
+    void currentFileOnlyClosedWhenRsoHasMark(final boolean isCompressed)
+            throws IOException, NoSuchAlgorithmException {
         // given
         given(streamType.getFileHeader()).willReturn(FILE_HEADER_VALUES);
         given(streamType.getSigFileHeader()).willReturn(SIG_FILE_HEADER_VALUES);
@@ -289,7 +226,8 @@ class RecordStreamFileWriterTest {
                         1,
                         1,
                         firstTransactionInstant.plusSeconds(2 * (logPeriodMs / 1000)),
-                        allSidecarTypes));
+                        allSidecarTypes,
+                        false));
         // RSOs for second block to trigger externalization of first block
         final var secondBlockRSOs =
                 generateNRecordStreamObjectsForBlockMStartingFromT(
@@ -459,6 +397,16 @@ class RecordStreamFileWriterTest {
             final long blockNumber,
             final Instant firstBlockTransactionInstant,
             final List<TransactionSidecarRecord.Builder> sidecarRecords) {
+        return generateNRecordStreamObjectsForBlockMStartingFromT(
+                numberOfRSOs, blockNumber, firstBlockTransactionInstant, sidecarRecords, true);
+    }
+
+    private List<RecordStreamObject> generateNRecordStreamObjectsForBlockMStartingFromT(
+            final int numberOfRSOs,
+            final long blockNumber,
+            final Instant firstBlockTransactionInstant,
+            final List<TransactionSidecarRecord.Builder> sidecarRecords,
+            final boolean firstRsoClosesFile) {
         final var recordStreamObjects = new ArrayList<RecordStreamObject>();
         for (int i = 0; i < numberOfRSOs; i++) {
             final var timestamp =
@@ -486,6 +434,9 @@ class RecordStreamFileWriterTest {
             final var hashInput = recordStreamObject.toString().getBytes(StandardCharsets.UTF_8);
             recordStreamObject.getRunningHash().setHash(new Hash(messageDigest.digest(hashInput)));
             recordStreamObject.withBlockNumber(blockNumber);
+            if (i == 0 && firstRsoClosesFile) {
+                recordStreamObject.setWriteNewFile();
+            }
             recordStreamObjects.add(recordStreamObject);
         }
         return recordStreamObjects;
@@ -1108,6 +1059,7 @@ class RecordStreamFileWriterTest {
                         Transaction.getDefaultInstance(),
                         firstTransactionInstant,
                         List.of(TransactionSidecarRecord.newBuilder()));
+        faultyRSO.setWriteNewFile();
         subject.addObject(faultyRSO);
 
         // then
