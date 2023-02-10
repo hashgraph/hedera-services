@@ -83,7 +83,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
@@ -173,7 +172,7 @@ public interface StateModule {
     @Provides
     @Singleton
     static VirtualMapFactory provideVirtualMapFactory() {
-        return new VirtualMapFactory(JasperDbBuilder::new);
+        return new VirtualMapFactory();
     }
 
     @Provides

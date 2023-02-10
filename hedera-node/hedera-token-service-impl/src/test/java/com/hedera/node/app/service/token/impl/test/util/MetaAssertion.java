@@ -17,18 +17,18 @@ package com.hedera.node.app.service.token.impl.test.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class MetaAssertion {
 
-    public static void basicMetaAssertions(
-            final TransactionMetadata meta,
+    public static void basicContextAssertions(
+            final PrehandleHandlerContext context,
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.requiredNonPayerKeys().size());
-        assertEquals(failed, meta.failed());
-        assertEquals(failureStatus, meta.status());
+        assertEquals(keysSize, context.getRequiredNonPayerKeys().size());
+        assertEquals(failed, context.failed());
+        assertEquals(failureStatus, context.getStatus());
     }
 }

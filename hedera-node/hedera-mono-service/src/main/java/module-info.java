@@ -98,6 +98,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.migration;
     exports com.hedera.node.app.service.mono.sigs.order;
     exports com.hedera.node.app.service.mono.ledger.accounts;
+    exports com.hedera.node.app.service.mono.context.domain.security;
+    exports com.hedera.node.app.service.mono.queries.validation;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;

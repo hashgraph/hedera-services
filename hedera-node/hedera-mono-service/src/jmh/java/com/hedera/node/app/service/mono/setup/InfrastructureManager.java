@@ -19,10 +19,6 @@ import static com.hedera.node.app.service.mono.setup.InfrastructureBundle.allImp
 import static com.hedera.node.app.service.mono.setup.InfrastructureInitializer.initializeBundle;
 
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
-import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualValue;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -95,16 +91,7 @@ public class InfrastructureManager {
     }
 
     public static VirtualMapFactory newVmFactory(final String storageLoc) {
-        final var jdbBuilderFactory =
-                new JasperDbBuilderFactory() {
-                    @Override
-                    @SuppressWarnings({"rawtypes", "unchecked"})
-                    public <K extends VirtualKey<? super K>, V extends VirtualValue>
-                            JasperDbBuilder<K, V> newJdbBuilder() {
-                        return new JasperDbBuilder().storageDir(Paths.get(storageLoc));
-                    }
-                };
-        return new VirtualMapFactory(jdbBuilderFactory);
+        return new VirtualMapFactory(Paths.get(storageLoc));
     }
 
     private static String bundleDirFor(

@@ -17,15 +17,12 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -41,29 +38,22 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleCreate} transaction, returning
      * the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key resolution
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public ScheduleTransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final PreHandleDispatcher dispatcher) {
+        requireNonNull(context);
+        final var txn = context.getTxn();
         final var op = txn.getScheduleCreate();
-        final var meta =
-                new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                        .txnBody(txn)
-                        .payerKeyFor(payer);
 
         if (op.hasAdminKey()) {
             final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqNonPayerKeys);
+            key.ifPresent(context::addToReqNonPayerKeys);
         }
 
         final var scheduledTxn =
@@ -84,8 +74,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         // if provided payer is same as payer in the inner transaction.
 
         final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
-        meta.scheduledMeta(innerMeta);
-        return meta.build();
+        context.handlerMetadata(innerMeta);
     }
 
     /**
@@ -98,6 +87,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }
