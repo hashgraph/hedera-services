@@ -88,17 +88,28 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     @Override
     public HederaEvmWorldUpdater updater() {
-        return new Updater(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+        return new Updater(
+                this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
     }
 
-    public static class Updater extends HederaEvmStackedWorldStateUpdater
+    public static class Updater
+            extends AbstractLedgerEvmWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
 
+        private final HederaEvmEntityAccess hederaEvmEntityAccess;
+        private final TokenAccessor tokenAccessor;
+        private final EvmProperties evmProperties;
+
         protected Updater(
+                final HederaEvmWorldState world,
                 final AccountAccessor accountAccessor,
                 final HederaEvmEntityAccess hederaEvmEntityAccess,
-                final TokenAccessor tokenAccessor) {
-            super(accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+                final TokenAccessor tokenAccessor,
+                final EvmProperties evmProperties) {
+            super(world, accountAccessor);
+            this.tokenAccessor = tokenAccessor;
+            this.hederaEvmEntityAccess = hederaEvmEntityAccess;
+            this.evmProperties = evmProperties;
         }
 
         @Override
@@ -107,9 +118,15 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         }
 
         @Override
+        public Account getForMutation(final Address address) {
+            final HederaEvmWorldState wrapped = (HederaEvmWorldState) wrappedWorldView();
+            return wrapped.get(address);
+        }
+
+        @Override
         public WorldUpdater updater() {
             return new HederaEvmStackedWorldStateUpdater(
-                    accountAccessor, hederaEvmEntityAccess, tokenAccessor);
+                    this, accountAccessor, hederaEvmEntityAccess, tokenAccessor, evmProperties);
         }
     }
 }

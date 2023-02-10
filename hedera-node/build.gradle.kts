@@ -28,7 +28,11 @@ var removeTempDockerFilesTask = tasks.register<Delete>("removeTempDockerFiles") 
     description = "Deletes all temp docker files that are copied in the root folder to create the docker image"
     group = "docker"
 
-    delete(".env", ".dockerignore", "Dockerfile")
+    delete(
+        "${rootProject.projectDir}/.env",
+        "${rootProject.projectDir}/.dockerignore",
+        "${rootProject.projectDir}/Dockerfile"
+    )
 }
 
 tasks.clean {
