@@ -41,7 +41,7 @@ RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
-COPY test-clients /opt/hedera/services/test-clients
+COPY hedera-node/test-clients /opt/hedera/services/test-clients
 RUN mkdir /opt/hedera/services/buildSrc
 COPY buildSrc /opt/hedera/services/buildSrc
 RUN mkdir /opt/hedera/services/gradle
