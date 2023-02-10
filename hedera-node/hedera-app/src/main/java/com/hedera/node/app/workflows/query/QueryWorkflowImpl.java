@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.workflows.query;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -29,6 +30,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -51,6 +54,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -76,6 +80,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryChecker checker;
     private final QueryDispatcher dispatcher;
     private final HapiOpCounters opCounters;
+    private final FeeAccumulator feeAccumulator;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -100,7 +105,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final SubmissionManager submissionManager,
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final HapiOpCounters opCounters) {
+            @NonNull final HapiOpCounters opCounters,
+            @NonNull final FeeAccumulator feeAccumulator) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -109,6 +115,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.checker = requireNonNull(checker);
         this.dispatcher = requireNonNull(dispatcher);
         this.opCounters = requireNonNull(opCounters);
+        this.feeAccumulator = requireNonNull(feeAccumulator);
     }
 
     @Override
@@ -178,8 +185,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, functionality);
 
                 // 3.iii Calculate costs
-                // TODO: Integrate fee-engine (calculate fee) (#4207)
-                fee = 0L;
+                final var feeData = feeAccumulator.computePayment(functionality, query, asTimestamp(Instant.now()));
+                fee = totalFee(feeData);
 
                 // 3.iv Check account balances
                 checker.validateAccountBalances(payer, txBody, fee);
@@ -200,8 +207,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                // TODO: Integrate fee-engine (estimate fee) (#4207)
-                fee = 0L;
+                final var feeData = feeAccumulator.computePayment(functionality, query, asTimestamp(Instant.now()));
+                fee = totalFee(feeData);
+
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
             } else {
@@ -222,6 +230,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         }
 
         responseBuffer.put(response.toByteArray());
+    }
+
+    private long totalFee(final FeeObject costs) {
+        return costs.getNetworkFee() + costs.getServiceFee() + costs.getNodeFee();
     }
 
     private static ResponseHeader createResponseHeader(

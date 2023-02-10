@@ -114,6 +114,8 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.txns.auth;
     exports com.hedera.node.app.service.mono.state.expiry;
     exports com.hedera.node.app.service.mono.throttling.annotations;
+    exports com.hedera.node.app.service.mono.fees.calculation;
+    exports com.hedera.node.app.service.mono.context.primitives;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
