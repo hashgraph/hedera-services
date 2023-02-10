@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -88,10 +89,12 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 3, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, ownerKey), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(store, txn, payer);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 3, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertIterableEquals(
+                List.of(ownerKey, ownerKey, ownerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -99,10 +102,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(owner.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(store, txn, payer);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0, true, INVALID_ALLOWANCE_OWNER_ID);
+        assertEquals(payerKey, context.getPayerKey());
+        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -111,10 +115,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var meta = subject.preHandle(txn, owner, store);
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(ownerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(store, txn, owner);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0, false, OK);
+        assertEquals(ownerKey, context.getPayerKey());
+        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -124,10 +129,12 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(payerAccount);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 3, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(ownerKey, ownerKey, payerKey), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(store, txn, payer);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 3, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertIterableEquals(
+                List.of(ownerKey, ownerKey, payerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
@@ -137,10 +144,11 @@ class CryptoApproveAllowanceHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(delegatingSpender.getAccountNum())).willReturn(null);
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
-        final var meta = subject.preHandle(txn, payer, store);
-        assertEquals(payerKey, meta.payerKey());
-        basicMetaAssertions(meta, 2, true, INVALID_DELEGATING_SPENDER);
-        assertIterableEquals(List.of(ownerKey, ownerKey), meta.requiredNonPayerKeys());
+        final var context = new PrehandleHandlerContext(store, txn, payer);
+        subject.preHandle(context);
+        assertEquals(payerKey, context.getPayerKey());
+        basicMetaAssertions(context, 2, true, INVALID_DELEGATING_SPENDER);
+        assertIterableEquals(List.of(ownerKey, ownerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test

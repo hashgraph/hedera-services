@@ -15,11 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 class TokenUnfreezeAccountHandlerTest {
 
@@ -28,15 +25,5 @@ class TokenUnfreezeAccountHandlerTest {
     @BeforeEach
     void setUp() {
         subject = new TokenUnfreezeAccountHandler();
-    }
-
-    @Test
-    void handleFunctionalityTest() {
-        final var notImplemented = "Not implemented";
-        try {
-            subject.handle(null);
-        } catch (final UnsupportedOperationException e) {
-            assertEquals(e.getMessage(), notImplemented);
-        }
     }
 }
