@@ -872,11 +872,11 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "15 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -895,11 +895,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "20 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -918,11 +918,11 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "15 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -941,11 +941,11 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "15 19 * * *"
+          cron: "30 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -987,11 +987,11 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "10 19 * * *"
+          cron: "26 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1010,11 +1010,11 @@ workflows:
   GCP-Daily-Services-Update-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "25 19 * * *"
+          cron: "26 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1033,11 +1033,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "15 19 * * *"
+          cron: "35 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1056,11 +1056,11 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "45 18 * * *"
+          cron: "26 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1079,11 +1079,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "0 19 * * *"
+          cron: "35 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1102,11 +1102,11 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "5 19 * * *"
+          cron: "40 19 * * *"
           filters:
             branches:
               only:
-                - develop
+                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
