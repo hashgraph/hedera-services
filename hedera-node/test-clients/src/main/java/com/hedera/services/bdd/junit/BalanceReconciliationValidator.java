@@ -43,7 +43,7 @@ public class BalanceReconciliationValidator implements RecordStreamValidator {
 
     @Override
     @SuppressWarnings("java:S106")
-    public void validate(final List<RecordWithSidecars> recordsWithSidecars) {
+    public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         getExpectedBalanceFrom(recordsWithSidecars);
         System.out.println("Expected balances: " + expectedBalances);
 

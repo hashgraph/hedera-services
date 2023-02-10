@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
+import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
+import com.hedera.services.bdd.junit.validators.BlockNoValidator;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -73,6 +76,7 @@ class AllIntegrationTests extends IntegrationTestBase {
                 recordStreamValidation(
                         "build/network/itest/records/node_0",
                         new BalanceReconciliationValidator(),
-                        new ExpiryRecordsValidator()));
+                        new ExpiryRecordsValidator(),
+                        new BlockNoValidator()));
     }
 }
