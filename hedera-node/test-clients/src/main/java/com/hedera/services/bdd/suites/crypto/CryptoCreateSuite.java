@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -107,7 +108,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
-                hollowAccountCompletionAfterCryptoCreate());
+                hollowAccountCompletionAfterCryptoCreate(),
+                cannotCreateAnAccountWithLongZeroKey());
     }
 
     private HapiSpec createAnAccountWithStakingFields() {
@@ -166,6 +168,18 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .declinedReward(false)
                                 .stakedNodeId(-1L)
                                 .hasPrecheck(INVALID_STAKING_ID));
+    }
+
+    private HapiSpec cannotCreateAnAccountWithLongZeroKey() {
+        final var longZeroAddress =
+                ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
+        return defaultHapiSpec("CannotCreateAnAccountWithLongZeroKey")
+                .given()
+                .when()
+                .then(
+                        cryptoCreate(ACCOUNT)
+                                .evmAddress(longZeroAddress)
+                                .hasPrecheck(INVALID_ALIAS_KEY));
     }
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
