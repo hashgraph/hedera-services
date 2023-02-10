@@ -126,6 +126,70 @@ class RecordStreamingTest {
     }
 
     @Test
+    void withNewBlockAndNumberGreaterThanOneSetsFirstChildRsoToCloseFile() {
+        givenCollabSetup(true);
+        givenAlignable(
+                firstPrecedingChildRso,
+                topLevelRso,
+                firstFollowingChildRso,
+                secondFollowingChildRso,
+                systemRso);
+        givenForTxLogging(
+                false,
+                firstPrecedingChildRso,
+                topLevelRso,
+                firstFollowingChildRso,
+                secondFollowingChildRso,
+                systemRso);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+
+        given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
+        given(recordsHistorian.getPrecedingChildRecords())
+                .willReturn(List.of(firstPrecedingChildRso));
+        given(recordsHistorian.hasFollowingChildRecords()).willReturn(true);
+        given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
+        given(nonBlockingHandoff.offer(topLevelRso)).willReturn(true);
+        given(recordsHistorian.getFollowingChildRecords())
+                .willReturn(List.of(firstFollowingChildRso, secondFollowingChildRso));
+        given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
+
+        subject.streamUserTxnRecords();
+        subject.streamSystemRecord(systemRso);
+
+        verify(firstPrecedingChildRso).setWriteNewFile();
+        verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
+        verify(nonBlockingHandoff).offer(firstFollowingChildRso);
+        verify(nonBlockingHandoff).offer(topLevelRso);
+        verify(nonBlockingHandoff).offer(secondFollowingChildRso);
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
+    }
+
+    @Test
+    void withNewBlockAndNumberGreaterThanOneAndNoChildrenSetsTopLevelToClose() {
+        givenCollabSetup(true);
+        givenAlignable(topLevelRso);
+        givenForTxLogging(false, topLevelRso);
+
+        given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
+        given(nonBlockingHandoff.offer(topLevelRso)).willReturn(false).willReturn(true);
+
+        subject.streamUserTxnRecords();
+
+        verify(nonBlockingHandoff, times(2)).offer(topLevelRso);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+        verify(topLevelRso).setWriteNewFile();
+
+        subject.resetBlockNo();
+
+        assertEquals(PENDING_USER_TXN_BLOCK_NO, subject.getBlockNo());
+    }
+
+    @Test
     void streamsJustTopLevelWithNoChildrenAvail() {
         givenCollabSetup();
         givenAlignable(topLevelRso);
@@ -187,9 +251,18 @@ class RecordStreamingTest {
     }
 
     private void givenCollabSetup() {
+        givenCollabSetup(false);
+    }
+
+    private void givenCollabSetup(final boolean isFirstInBlock) {
+        givenCollabSetup(isFirstInBlock, someBlockNo);
+    }
+
+    private void givenCollabSetup(final boolean isFirstInBlock, final long blockNo) {
         given(recordsHistorian.getTopLevelRecord()).willReturn(topLevelRso);
         given(topLevelRso.getTimestamp()).willReturn(aTime);
-        given(blockManager.updateAndGetAlignmentBlockNumber(aTime)).willReturn(someBlockNo);
+        given(blockManager.updateAndGetAlignmentBlockNumber(aTime))
+                .willReturn(new BlockNumberMeta(blockNo, isFirstInBlock));
         given(recordsHistorian.lastRunningHash()).willReturn(mockUserHash);
     }
 
