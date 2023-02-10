@@ -188,7 +188,8 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_1_INFO = "receiver1Info";
     private static final String RECEIVER_2_INFO = "receiver2Info";
     private static final String RECEIVER_3_INFO = "receiver3Info";
-    public static final String STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION = " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+    public static final String STATE_MUTABILITY_NONPAYABLE_TYPE_FUNCTION =
+            " \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
     public static void main(String... args) {
         new ContractCallSuite().runSuiteAsync();
