@@ -1177,7 +1177,7 @@ class CryptoCreateTransitionLogicTest {
         given(aliasManager.lookupIdBy(ByteString.copyFrom(EVM_ADDRESS_BYTES)))
                 .willReturn(MISSING_NUM);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
-        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(true);
+        given(dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()).willReturn(false);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
@@ -1194,11 +1194,11 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
+        assertEquals(7, changes.size());
         assertEquals(ECDSA_KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
         assertEquals(0L, (long) changes.get(AUTO_RENEW_PERIOD));
         assertEquals(consensusTime.getEpochSecond(), (long) changes.get(EXPIRY));
-        assertEquals(ByteString.copyFrom(EVM_ADDRESS_BYTES), changes.get(AccountProperty.ALIAS));
+        assertNull(changes.get(AccountProperty.ALIAS));
         assertEquals(false, changes.get(IS_RECEIVER_SIG_REQUIRED));
         assertEquals(false, changes.get(DECLINE_REWARD));
         assertEquals("", changes.get(AccountProperty.MEMO));
