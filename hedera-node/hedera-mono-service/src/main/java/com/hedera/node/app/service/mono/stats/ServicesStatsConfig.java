@@ -26,9 +26,9 @@ import java.util.Set;
 public final class ServicesStatsConfig {
     static final Set<HederaFunctionality> IGNORED_FUNCTIONS =
             EnumSet.of(NONE, UNRECOGNIZED, GetByKey);
-
     static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
     static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
+    static final String COUNTER_HANDLED_RESPONSE_CODE_NAME = "%sResponseCode";
     static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
     static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";
@@ -39,6 +39,7 @@ public final class ServicesStatsConfig {
     static final String SPEEDOMETER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv/sec";
 
     static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
+    static final String COUNTER_HANDLED_RESPONSE_CODE_DESC = "number of response %s handled";
     static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
     static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
     static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
