@@ -466,8 +466,6 @@ public class FileSignTool {
             } catch (final IOException e) {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
-        } else {
-            System.out.println("No log4j configuration file found!");
         }
     }
 
