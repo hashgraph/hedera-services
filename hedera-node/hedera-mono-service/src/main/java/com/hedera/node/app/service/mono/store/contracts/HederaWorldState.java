@@ -203,7 +203,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         }
 
         @Override
-        protected Account getForMutation(final Address address) {
+        public Account getForMutation(final Address address) {
             final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
             return wrapped.get(address);
         }
