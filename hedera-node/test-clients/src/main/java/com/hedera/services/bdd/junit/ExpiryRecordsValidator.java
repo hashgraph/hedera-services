@@ -32,7 +32,7 @@ public class ExpiryRecordsValidator implements RecordStreamValidator {
 
     @Override
     @SuppressWarnings("java:S106")
-    public void validate(final List<RecordWithSidecars> recordsWithSidecars) {
+    public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordsWithSidecars) {
         final var renewalRecords = new ArrayList<TransactionRecord>();
         final var expiredRecords = new ArrayList<TransactionRecord>();
         // gets expiry and renewal records from record stream based on the memo
