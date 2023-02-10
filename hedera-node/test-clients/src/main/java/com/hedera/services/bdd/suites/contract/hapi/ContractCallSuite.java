@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -1524,7 +1525,8 @@ public class ContractCallSuite extends HapiSuite {
                         cryptoCreate(spender)
                                 .balance(123 * ONE_HUNDRED_HBARS)
                                 .keyShape(SigControl.SECP256K1_ON)
-                                .exposingEvmAddressTo(spenderAddress::set),
+                                .exposingCreatedIdTo(
+                                        id -> spenderAddress.set(idAsHeadlongAddress(id))),
                         tokenCreate(token)
                                 .initialSupply(1000)
                                 .treasury(spender)
