@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -34,7 +35,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.stream.StreamAligned;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -76,10 +76,10 @@ class RecordStreamObjectTest {
     }
 
     @Test
-    void defaultAlignmentIsNewAlignment() {
+    void defaultAlignmentIsUnknownBlockNumber() {
         final var subject = new RecordStreamObject();
 
-        assertEquals(StreamAligned.NO_ALIGNMENT, subject.getStreamAlignment());
+        assertEquals(BlockManager.UNKNOWN_BLOCK_NO, subject.getStreamAlignment());
     }
 
     @Test

@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BlockManager {
-    private static final int UNKNOWN_BLOCK_NO = 0;
+    public static final int UNKNOWN_BLOCK_NO = 0;
     private static final Logger log = LogManager.getLogger(BlockManager.class);
 
     private final long blockPeriodMs;

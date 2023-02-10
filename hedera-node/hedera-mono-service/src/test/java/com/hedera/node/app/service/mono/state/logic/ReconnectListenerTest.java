@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -44,14 +43,13 @@ class ReconnectListenerTest {
     @Mock private ReconnectCompleteNotification notification;
     @Mock private ServicesState servicesState;
     @Mock private UpgradeActions upgradeActions;
-    @Mock private RecordStreamManager recordStreamManager;
 
     @LoggingTarget private LogCaptor logCaptor;
     @LoggingSubject private ReconnectListener subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ReconnectListener(upgradeActions, recordStreamManager);
+        subject = new ReconnectListener(upgradeActions);
     }
 
     @Test
