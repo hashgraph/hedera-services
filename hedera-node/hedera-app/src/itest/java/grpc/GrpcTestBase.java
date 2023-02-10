@@ -20,6 +20,8 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.system.NodeId;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
@@ -46,7 +48,12 @@ abstract class GrpcTestBase {
     @BeforeEach
     void setUp() throws InterruptedException, UnknownHostException {
         final var latch = new CountDownLatch(1);
-        metrics = new DefaultMetrics(METRIC_EXECUTOR, new DefaultMetricsFactory());
+        metrics =
+                new DefaultMetrics(
+                        new NodeId(false, 0),
+                        new MetricKeyRegistry(),
+                        METRIC_EXECUTOR,
+                        new DefaultMetricsFactory());
         final var config = GrpcServerConfiguration.builder().port(0).build();
         final var routingBuilder = GrpcRouting.builder();
         configureRouting(routingBuilder);

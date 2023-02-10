@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicMetaAssertions;
+import static com.hedera.node.app.service.token.impl.test.util.MetaAssertion.basicContextAssertions;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_MISSING_ADMIN;
 import static com.hedera.test.factories.scenarios.TokenCreateScenarios.TOKEN_CREATE_WITH_ADMIN_AND_FREEZE;
@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,168 +77,174 @@ class TokenCreateHandleParityTest {
     void tokenCreateWithAdminKey() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateWithAdminKeyAndFreeze() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateMissingAdminKey() {
         final var txn = txnFrom(TOKEN_CREATE_MISSING_ADMIN);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateMissingTreasuryKey() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        basicMetaAssertions(meta, 0, true, ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        basicContextAssertions(
+                context, 0, true, ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
     }
 
     @Test
     void tokenCreateTreasuryAsPayer() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        basicMetaAssertions(meta, 0, false, ResponseCodeEnum.OK);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        basicContextAssertions(context, 0, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateMissingAutoRenew() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
-        basicMetaAssertions(meta, 1, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
+        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
     }
 
     @Test
     void tokenCreateWithAutoRenew() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateWithAutoRenewAsPayer() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateWithAutoRenewAsCustomPayer() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), CUSTOM_PAYER_ACCOUNT_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFeeAndCollectorMissing() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
     }
 
     @Test
     void tokenCreateCustomFixedFeeNoCollectorSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedFeeInvalidCollector() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_INVALID_COLLECTOR);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        basicMetaAssertions(meta, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        basicContextAssertions(context, 1, true, ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR);
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
     }
 
     @Test
     void tokenCreateCustomFixedFeeAndCollectorSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -245,42 +252,42 @@ class TokenCreateHandleParityTest {
         final var txn =
                 txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedFeeCollectorSigReqAndDenomWildcard() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_USING_WILDCARD_DENOM);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFractionalFeeNoCollectorSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -288,14 +295,14 @@ class TokenCreateHandleParityTest {
         final var txn =
                 txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -303,14 +310,14 @@ class TokenCreateHandleParityTest {
         final var txn =
                 txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
@@ -318,130 +325,125 @@ class TokenCreateHandleParityTest {
         final var txn =
                 txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomRoyaltyFeeNoFallbackButSigReq() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateTreasuryAsCustomPayer() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayer() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedFeeNoSigRequiredWithPositiveDenom() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_DENOMINATION_AND_NO_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedNoDenomWithSigRequired() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()),
+                sanityRestored(context.getRequiredNonPayerKeys()),
                 contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        basicMetaAssertions(meta, 2, false, ResponseCodeEnum.OK);
+        basicContextAssertions(context, 2, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomFixedNoDenomNoSigRequired() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_FIXED_FEE_NO_DENOM_AND_NO_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 
     @Test
     void tokenCreateCustomRoyaltyFeeNoSigRequiredWithPositiveDenom() {
         final var txn = txnFrom(TOKEN_CREATE_WITH_ROYALTY_FEE_NO_FALLBACK_AND_NO_SIG_REQ);
 
-        final var meta =
-                subject.preHandle(txn, txn.getTransactionID().getAccountID(), accountStore);
+        final var context = new PrehandleHandlerContext(accountStore, txn);
+        subject.preHandle(context);
 
-        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.requiredNonPayerKeys()), contains(TOKEN_TREASURY_KT.asKey()));
-        basicMetaAssertions(meta, 1, false, ResponseCodeEnum.OK);
-    }
-
-    @Test
-    void handleFunctionalityTest() {
-        final var notImplemented = "Not implemented";
-        try {
-            subject.handle(null);
-        } catch (final UnsupportedOperationException e) {
-            assertEquals(e.getMessage(), notImplemented);
-        }
+                sanityRestored(context.getRequiredNonPayerKeys()),
+                contains(TOKEN_TREASURY_KT.asKey()));
+        basicContextAssertions(context, 1, false, ResponseCodeEnum.OK);
     }
 }
