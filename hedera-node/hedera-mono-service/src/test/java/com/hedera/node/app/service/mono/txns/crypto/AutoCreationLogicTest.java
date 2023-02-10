@@ -25,7 +25,6 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,10 +102,6 @@ class AutoCreationLogicTest {
 
     private AutoCreationLogic subject;
     private final HashMap<ByteString, Integer> tokenAliasMap = new HashMap<>();
-    private static final byte[] ECDSA_KEY_BYTES =
-            unhex("03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
-    private static final byte[] EVM_ADDRESS_BYTES =
-            unhex("627306090abaB3A6e1400e9345bC60c78a8BEf57");
 
     @BeforeEach
     void setUp() {
