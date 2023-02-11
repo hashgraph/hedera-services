@@ -985,13 +985,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-4N-2C:
-    triggers:
-      - schedule:
-          cron: "26 19 * * *"
-          filters:
-            branches:
-              only:
-                - test-block-nums-on-develop
     jobs:
       - build-platform-and-services
       - jrs-regression:

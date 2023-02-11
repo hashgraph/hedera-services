@@ -117,6 +117,8 @@ public class FileSignTool {
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
+    private static long prevBlockNumber = 0;
+
     /**
      * a messageDigest object for digesting entire stream file and generating entire record stream
      * file hash
@@ -304,6 +306,19 @@ public class FileSignTool {
                 .build();
     }
 
+    private static void trackBlockNumber(final long currentBlockNumber) {
+        if (currentBlockNumber <= prevBlockNumber) {
+            LOGGER.error(
+                    MARKER,
+                    "Found new block number is equal or less than the prevous one, current {} vs"
+                            + " prev {}",
+                    currentBlockNumber,
+                    prevBlockNumber);
+        }
+        LOGGER.info(MARKER, "Block number = {}", currentBlockNumber);
+        prevBlockNumber = currentBlockNumber;
+    }
+
     private static void createSignatureFileForRecordFile(
             final String recordFile,
             final StreamType streamType,
@@ -349,6 +364,9 @@ public class FileSignTool {
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
                     readUncompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
+
+            trackBlockNumber(blockNumber);
+
             final byte[] startRunningHash =
                     recordResult
                             .getValue()
