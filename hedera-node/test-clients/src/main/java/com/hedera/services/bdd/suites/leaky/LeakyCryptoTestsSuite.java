@@ -586,7 +586,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
-                                FALSE_VALUE,
+                                TRUE_VALUE,
                                 CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
@@ -602,7 +602,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR)
                                                     .via("createTxn");
                                     final var op2 =
@@ -855,7 +855,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
                                                     .balance(ONE_HUNDRED_HBARS);
@@ -865,7 +865,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
                                     final var op3 =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .payingWith(payer)
                                                     .hasKnownStatus(SUCCESS)
                                                     .balance(ONE_HUNDRED_HBARS);

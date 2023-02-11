@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.bdd.junit;
+package com.hedera.node.app.service.mono.state.logic;
 
-import com.hedera.services.stream.proto.RecordStreamFile;
-import java.util.List;
-
-public interface RecordStreamValidator {
-    default void validateFiles(List<RecordStreamFile> files) {
-        // No-op
-    }
-
-    default void validateRecordsAndSidecars(List<RecordWithSidecars> records) {
-        // No-op
-    }
-}
+public record BlockNumberMeta(long blockNo, boolean isFirstInBlock) {}

@@ -98,7 +98,7 @@ public record InitialAccountIdentifiers(
             op.setAlias(ByteStringUtils.wrapUnsafely(alias));
         }
         if (address != null) {
-            op.setEvmAddress(ByteStringUtils.wrapUnsafely(address));
+            op.setAlias(ByteStringUtils.wrapUnsafely(address));
         }
     }
 
