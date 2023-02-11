@@ -315,7 +315,7 @@ public class FileSignTool {
                     currentBlockNumber,
                     prevBlockNumber);
         }
-        LOGGER.info(MARKER, "Block number = {}", currentBlockNumber);
+        LOGGER.error(MARKER, "Block number = {}", currentBlockNumber);
         prevBlockNumber = currentBlockNumber;
     }
 
