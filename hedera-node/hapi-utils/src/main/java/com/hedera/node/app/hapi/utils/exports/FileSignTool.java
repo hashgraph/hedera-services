@@ -319,6 +319,7 @@ public class FileSignTool {
         prevBlockNumber = currentBlockNumber;
     }
 
+    
     private static void createSignatureFileForRecordFile(
             final String recordFile,
             final StreamType streamType,
