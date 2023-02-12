@@ -1537,6 +1537,7 @@ jobs:
             cd /swirlds-platform/regression; git checkout test-block-numbers;
             ./gradlew assemble --scan --parallel
 
+
       - run:
           name: Save PEM file to keys folder
           command: |
