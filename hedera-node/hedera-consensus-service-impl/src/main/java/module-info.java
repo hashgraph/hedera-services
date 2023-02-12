@@ -6,6 +6,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires com.hedera.node.app.service.mono;
     requires dagger;
     requires javax.inject;
+    requires com.google.protobuf;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with
             ConsensusServiceImpl;

@@ -278,7 +278,7 @@ class QueryDispatcherTest {
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::consensusGetTopicInfoHandler,
                         (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any()),
+                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any(), any()),
                         (Verification)
                                 h ->
                                         verify(h.consensusGetTopicInfoHandler())

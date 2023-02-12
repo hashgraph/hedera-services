@@ -15,19 +15,24 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
+
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -35,8 +40,11 @@ import java.util.Optional;
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
+    private final NetworkInfo networkInfo;
     @Inject
-    public ConsensusGetTopicInfoHandler() {}
+    public ConsensusGetTopicInfoHandler(final NetworkInfo networkInfo) {
+        this.networkInfo = networkInfo;
+    }
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -61,18 +69,15 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public void validate(@NonNull final Query query) throws PreCheckException {
-        final MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
+    public ResponseCodeEnum validate(@NonNull final Query query, final ReadableTopicStore topicStore) throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         if (op.hasTopicID()) {
-            MerkleTopic merkleTopic = topics.get(EntityNum.fromTopicId(id));
-
-            return Optional.ofNullable(merkleTopic)
-                    .map(t -> t.isDeleted() ? INVALID_TOPIC_ID : OK)
-                    .orElse(INVALID_TOPIC_ID);
-        } else {
-            return INVALID_TOPIC_ID;
+            final var topicMetadata = topicStore.getTopicMetadata(op.getTopicID());
+            if(topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+                return INVALID_TOPIC_ID;
+            }
         }
+        return OK;
     }
 
     /**
@@ -87,7 +92,57 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Response findResponse(@NonNull final Query query, @NonNull final ResponseHeader header) {
-        throw new UnsupportedOperationException("Not implemented");
+    public Response findResponse(@NonNull final Query query,
+                                 @NonNull final ResponseHeader header,
+                                 @NonNull final ReadableTopicStore topicStore) {
+        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
+        final ConsensusGetTopicInfoResponse.Builder response =
+                ConsensusGetTopicInfoResponse.newBuilder();
+        response.setTopicID(op.getTopicID());
+
+        final var responseType = op.getHeader().getResponseType();
+        response.setHeader(header);
+        if (header.getNodeTransactionPrecheckCode() == OK) {
+            if (responseType != COST_ANSWER) {
+                final var optionalInfo = infoForTopic(op.getTopicID(), topicStore);
+                if (optionalInfo.isPresent()) {
+                    response.setTopicInfo(optionalInfo.get());
+                }
+            }
+        }
+
+        return Response.newBuilder().setConsensusGetTopicInfo(response).build();
     }
+
+    @Override
+    public boolean requiresNodePayment(@NonNull ResponseType responseType) {
+        return responseType == ANSWER_ONLY || responseType == ANSWER_STATE_PROOF;
+    }
+
+    @Override
+    public boolean needsAnswerOnlyCost(@NonNull ResponseType responseType) {
+        return COST_ANSWER == responseType;
+    }
+
+    private Optional<ConsensusTopicInfo> infoForTopic(@NonNull final TopicID topicID,
+                                                      @NonNull final ReadableTopicStore topicStore){
+        final var metaOrFailure = topicStore.getTopicMetadata(topicID);
+        if(metaOrFailure.failed()) {
+            return Optional.empty();
+        } else {
+                final var info = ConsensusTopicInfo.newBuilder();
+                final var meta = metaOrFailure.metadata();
+                meta.memo().ifPresent(memo -> info.setMemo(memo));
+                info.setRunningHash(ByteString.copyFrom(meta.runningHash()));
+                info.setSequenceNumber(meta.sequenceNumber());
+                info.setExpirationTime(meta.expirationTimestamp());
+                meta.adminKey().ifPresent(key -> info.setAdminKey(asKeyUnchecked((JKey) key)));
+                meta.submitKey().ifPresent(key -> info.setSubmitKey(asKeyUnchecked((JKey) key)));
+                info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
+                meta.autoRenewAccountId().ifPresent(account -> info.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(account)));
+
+                info.setLedgerId(networkInfo.ledgerId());
+                return Optional.of(info.build());
+            }
+        }
 }

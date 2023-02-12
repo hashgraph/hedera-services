@@ -139,10 +139,10 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var functionality =
+        final var function =
                 MiscUtils.functionalityOfQuery(query)
                         .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
-        opCounters.countReceived(functionality);
+        opCounters.countReceived(function);
 
         final var handler = dispatcher.getHandler(query);
         final var queryHeader = handler.extractHeader(query);
@@ -167,7 +167,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
+            if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
 
@@ -182,22 +182,22 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 final var payer = txBody.getTransactionID().getAccountID();
 
                 // 3.ii Check permissions
-                checker.checkPermissions(payer, functionality);
+                checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(functionality, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
                 checker.validateAccountBalances(payer, txBody, fee);
             } else {
-                if (RESTRICTED_FUNCTIONALITIES.contains(functionality)) {
+                if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
             }
 
             // 4. Check validity
-            dispatcher.validate(state, query);
+            final var validity = dispatcher.validate(state, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -207,18 +207,18 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(functionality, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
-                final var header = createResponseHeader(responseType, OK, fee);
+                final var header = createResponseHeader(responseType, validity, fee);
                 response = handler.createEmptyResponse(header);
             } else {
                 // 6.ii Find response
-                final var header = createResponseHeader(responseType, OK, fee);
+                final var header = createResponseHeader(responseType, validity, fee);
                 response = dispatcher.getResponse(state, query, header);
             }
 
-            opCounters.countAnswered(functionality);
+            opCounters.countAnswered(function);
 
         } catch (InsufficientBalanceException e) {
             final var header =

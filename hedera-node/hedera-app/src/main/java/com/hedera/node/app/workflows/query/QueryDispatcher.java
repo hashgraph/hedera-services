@@ -17,11 +17,13 @@ package com.hedera.node.app.workflows.query;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -104,13 +106,14 @@ public class QueryDispatcher {
      * @param query the {@link Query} of the request
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void validate(@NonNull final HederaState state, @NonNull final Query query)
+    public ResponseCodeEnum validate(@NonNull final HederaState state, @NonNull final Query query)
             throws PreCheckException {
         requireNonNull(state);
         requireNonNull(query);
 
-        switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler().validate(query);
+        return switch (query.getQueryCase()) {
+            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler().validate(query,
+                    new ReadableTopicStore(state.createReadableStates("TOPICS")));
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -153,7 +156,7 @@ public class QueryDispatcher {
 
             default -> throw new UnsupportedOperationException(
                     "This type of query is not supported: " + query.getQueryCase());
-        }
+        };
     }
 
     /**
@@ -175,7 +178,7 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header);
+                    .findResponse(query, header, new ReadableTopicStore(state.createReadableStates("TOPICS")));
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler()
                     .findResponse(query, header);
