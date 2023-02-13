@@ -30,11 +30,12 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdatedHederaEvmAccount implements MutableAccount, EvmAccount {
+public class UpdatedHederaEvmAccount<A extends Account> implements MutableAccount, EvmAccount {
     protected Hash addressHash;
     private Address address;
     private long nonce;
@@ -42,21 +43,28 @@ public class UpdatedHederaEvmAccount implements MutableAccount, EvmAccount {
     private HederaEvmEntityAccess hederaEvmEntityAccess;
     protected final NavigableMap<UInt256, UInt256> updatedStorage;
 
+    @Nullable protected final A account;
     @Nullable protected Bytes updatedCode;
     @Nullable private Hash updatedCodeHash;
 
     public UpdatedHederaEvmAccount(Address address) {
-        this(address, 0L, Wei.ZERO);
-        this.updatedCode = Bytes.EMPTY;
+        this.address = address;
+        addressHash = Hash.hash(address);
+        account = null;
+        balance = Wei.ZERO;
+        nonce = 0L;
+        updatedCode = Bytes.EMPTY;
+        updatedStorage = new TreeMap<>();
     }
 
-    public UpdatedHederaEvmAccount(Address address, long nonce, Wei balance) {
-        this.address = address;
-        this.addressHash = Hash.hash(address);
-        this.nonce = nonce;
-        this.balance = balance;
-        this.updatedStorage = new TreeMap<>();
-        this.updatedCode = null;
+    public UpdatedHederaEvmAccount(final A account) {
+        this.account = account;
+        address = account.getAddress();
+        addressHash = Hash.hash(address);
+        balance = account.getBalance();
+        nonce = account.getNonce();
+        updatedCode = null;
+        updatedStorage = new TreeMap<>();
     }
 
     @Override

@@ -164,26 +164,35 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        serializeReturningByteWritten(out);
+        serializeReturningBytesWritten(out);
     }
 
-    public int serializeReturningByteWritten(final SerializableDataOutputStream out)
+    public int serializeReturningBytesWritten(final SerializableDataOutputStream out)
             throws IOException {
         out.write(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             out.write((byte) (contractId >> (b * 8)));
         }
         serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
-        return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override
-    public void serialize(final ByteBuffer byteBuffer) throws IOException {
-        byteBuffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        serializeReturningBytesWritten(buffer);
+    }
+
+    public int serializeReturningBytesWritten(final ByteBuffer buffer) {
+        buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
-            byteBuffer.put((byte) (contractId >> (b * 8)));
+            buffer.put((byte) (contractId >> (b * 8)));
         }
-        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, byteBuffer);
+        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
     }
 
     @Override

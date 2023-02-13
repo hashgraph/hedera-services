@@ -15,21 +15,27 @@
  */
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.*;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete}.
  */
+@Singleton
 public class ScheduleDeleteHandler implements TransactionHandler {
+    @Inject
+    public ScheduleDeleteHandler() {}
+
     /**
      * This method is called during the pre-handle workflow.
      *
@@ -37,28 +43,27 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete} transaction, returning
      * the metadata required to, at minimum, validate the signatures of all required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key resolution
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param scheduleStore the {@link ReadableScheduleStore} that contains all scheduled-data
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final ReadableScheduleStore scheduleStore) {
-        final var metaBuilder =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txn).payerKeyFor(payer);
-        final var op = txn.getScheduleDelete();
+        requireNonNull(context);
+        final var op = context.getTxn().getScheduleDelete();
         final var id = op.getScheduleID();
 
         // check for a missing schedule. A schedule with this id could have never existed,
         // or it could have already been executed or deleted
         final var scheduleLookupResult = scheduleStore.get(id);
         if (scheduleLookupResult.isEmpty()) {
-            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
+            context.status(INVALID_SCHEDULE_ID);
+            return;
         }
 
         // No need to check for SCHEDULE_PENDING_EXPIRATION, SCHEDULE_ALREADY_DELETED,
@@ -69,14 +74,13 @@ public class ScheduleDeleteHandler implements TransactionHandler {
         // if it wasn't, the schedule can't be deleted
         final var adminKey = scheduleLookupResult.get().adminKey();
         if (adminKey.isEmpty()) {
-            return new InvalidTransactionMetadata(txn, payer, SCHEDULE_IS_IMMUTABLE);
+            context.status(SCHEDULE_IS_IMMUTABLE);
+            return;
         }
 
         // add admin key of the original ScheduleCreate tx
         // to the list of keys required to execute this ScheduleDelete tx
-        metaBuilder.addToReqNonPayerKeys(adminKey.get());
-
-        return metaBuilder.build();
+        context.addToReqNonPayerKeys(adminKey.get());
     }
 
     /**
@@ -89,6 +93,7 @@ public class ScheduleDeleteHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }
