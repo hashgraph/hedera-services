@@ -19,13 +19,10 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.aliasAndEvmAddressProvided;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasAndEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndAliasProvided;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.keyAndEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyAliasProvided;
-import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyEvmAddressProvided;
 import static com.hedera.node.app.service.mono.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
@@ -115,7 +112,10 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
-            final var isLazyCreation = !op.getEvmAddress().isEmpty() && !op.hasKey();
+            final var isLazyCreation =
+                    !op.getAlias().isEmpty()
+                            && op.getAlias().size() == EVM_ADDRESS_SIZE
+                            && !op.hasKey();
             final var lazyCreationFinalizationFee =
                     autoCreationLogic.getLazyCreationFinalizationFee();
             final var minPayerBalanceRequired =
@@ -134,14 +134,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             final List<ByteString> aliasesToLink = new ArrayList<>();
             if (!op.getAlias().isEmpty()) {
-                aliasesToLink.add(op.getAlias());
-                final var key = asPrimitiveKeyUnchecked(op.getAlias());
-                maybeLinkEvmAddressFrom(key, aliasesToLink);
-            } else {
-                if (!op.getEvmAddress().isEmpty()) {
-                    aliasesToLink.add(op.getEvmAddress());
+                if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
+                    aliasesToLink.add(op.getAlias());
+                } else {
+                    aliasesToLink.add(op.getAlias());
+                    final var key = asPrimitiveKeyUnchecked(op.getAlias());
+                    maybeLinkEvmAddressFrom(key, aliasesToLink);
                 }
             }
+
             aliasesToLink.forEach(
                     alias -> {
                         aliasManager.link(alias, EntityNum.fromAccountId(created));
@@ -186,18 +187,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (onlyKeyProvided(op)) {
             final JKey key = asFcKeyUnchecked(op.getKey());
             customizer.key(key);
-        } else if (onlyEvmAddressProvided(op)) {
-            customizer.alias(op.getEvmAddress());
-            customizer.key(EMPTY_KEY);
         } else if (onlyAliasProvided(op)) {
-            populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
+            populateKeyAndAliasInCaseOfAliasProvided(op, customizer);
         } else if (keyAndAliasProvided(op)) {
-            customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
-        } else if (keyAndEvmAddressProvided(op)) {
-            customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getEvmAddress());
-        } else if (aliasAndEvmAddressProvided(op)) {
-            populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
-        } else if (keyAndAliasAndEvmAddressProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         }
 
@@ -222,10 +214,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return cryptoCreateChecks.cryptoCreateValidation(cryptoCreateTxn.getCryptoCreateAccount());
     }
 
-    private void populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(
+    private void populateKeyAndAliasInCaseOfAliasProvided(
             final CryptoCreateTransactionBody op, final HederaAccountCustomizer customizer) {
-        final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
-        final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
-        customizer.key(jKeyFromAlias).alias(op.getAlias());
+        if (op.getAlias().size() != EVM_ADDRESS_SIZE) {
+            final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+            final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
+            customizer.key(jKeyFromAlias).alias(op.getAlias());
+        } else if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
+            customizer.alias(op.getAlias());
+            customizer.key(EMPTY_KEY);
+        }
     }
 }

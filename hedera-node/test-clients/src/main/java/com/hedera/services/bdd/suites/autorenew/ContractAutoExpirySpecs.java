@@ -90,7 +90,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                     storageExpiryWorksAtTheExpectedInterval(),
                     autoRenewWorksAsExpected(),
                     autoRenewInGracePeriodIfEnoughBalance(),
-                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete()
+                    storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
                 });
     }
 
@@ -658,7 +658,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(bFungibleToken, bFungibleAmount)
-                                .hasTokenBalance(nonFungibleToken, 0),
+                                .hasTokenBalance(nonFungibleToken, 2),
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY));

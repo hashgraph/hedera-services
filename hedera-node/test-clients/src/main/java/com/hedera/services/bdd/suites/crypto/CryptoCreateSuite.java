@@ -18,9 +18,11 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -33,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
@@ -59,7 +62,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,13 +76,11 @@ public class CryptoCreateSuite extends HapiSuite {
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String STAKED_ACC_ID = "0.0.10";
+    public static final String ACCOUNT_ID = "0.0.10";
     public static final String CIVILIAN = "civilian";
-    public static final String NO_KEYS_ACC = "noKeys";
-    public static final String SHORT_KEY_ACC = "shortKey";
-    public static final String SHORT_KEY_NAME = "shortKey";
-    public static final String EMPTY_KEY_ACC = "emptyKey";
-    public static final String EMPTY_KEY_NAME = "emptyKey";
+    public static final String NO_KEYS = "noKeys";
+    public static final String SHORT_KEY = "shortKey";
+    public static final String EMPTY_KEY_STRING = "emptyKey";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteAsync();
@@ -111,7 +114,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
-                hollowAccountCompletionAfterCryptoCreate());
+                hollowAccountCompletionAfterCryptoCreate(),
+                cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
 
     private HapiSpec createAnAccountWithStakingFields() {
@@ -131,13 +135,13 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("civilianWORewardStakingAcc")
                                 .balance(ONE_HUNDRED_HBARS)
                                 .declinedReward(true)
-                                .stakedAccountId(STAKED_ACC_ID),
+                                .stakedAccountId(ACCOUNT_ID),
                         getAccountInfo("civilianWORewardStakingAcc")
                                 .has(
                                         accountWith()
                                                 .isDeclinedReward(true)
                                                 .noStakingNodeId()
-                                                .stakedAccountId(STAKED_ACC_ID)))
+                                                .stakedAccountId(ACCOUNT_ID)))
                 .then(
                         cryptoCreate("civilianWRewardStakingNode")
                                 .balance(ONE_HUNDRED_HBARS)
@@ -152,13 +156,13 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("civilianWRewardStakingAcc")
                                 .balance(ONE_HUNDRED_HBARS)
                                 .declinedReward(false)
-                                .stakedAccountId(STAKED_ACC_ID),
+                                .stakedAccountId(ACCOUNT_ID),
                         getAccountInfo("civilianWRewardStakingAcc")
                                 .has(
                                         accountWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .stakedAccountId(STAKED_ACC_ID)),
+                                                .stakedAccountId(ACCOUNT_ID)),
                         /* --- sentiel values throw */
                         cryptoCreate("invalidStakedAccount")
                                 .balance(ONE_HUNDRED_HBARS)
@@ -170,6 +174,46 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .declinedReward(false)
                                 .stakedNodeId(-1L)
                                 .hasPrecheck(INVALID_STAKING_ID));
+    }
+
+    private HapiSpec cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress() {
+        final AtomicReference<ByteString> secp256k1Key = new AtomicReference<>();
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
+        final var ecdsaKey = "ecdsaKey";
+        final var longZeroAddress =
+                ByteString.copyFrom(CommonUtils.unhex("0000000000000000000000000000000fffffffff"));
+        final var creation = "creation";
+        return defaultHapiSpec("CannotCreateAnAccountWithLongZeroKey")
+                .given(
+                        cryptoCreate(ACCOUNT)
+                                .evmAddress(longZeroAddress)
+                                .hasPrecheck(INVALID_ALIAS_KEY),
+                        newKeyNamed(ecdsaKey).shape(SECP256K1_ON))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    secp256k1Key.set(
+                                            spec.registry().getKey(ecdsaKey).toByteString());
+                                    final var rawAddress =
+                                            recoverAddressFromPubKey(
+                                                    spec.registry()
+                                                            .getKey(ecdsaKey)
+                                                            .getECDSASecp256K1()
+                                                            .toByteArray());
+                                    evmAddress.set(ByteString.copyFrom(rawAddress));
+                                }))
+                .then(
+                        sourcing(
+                                () ->
+                                        cryptoCreate(ACCOUNT)
+                                                .alias(secp256k1Key.get())
+                                                .via(creation)),
+                        sourcing(
+                                () ->
+                                        getTxnRecord(creation)
+                                                .hasPriority(
+                                                        recordWith()
+                                                                .evmAddress(evmAddress.get()))));
     }
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
@@ -254,7 +298,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -269,7 +313,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -286,7 +330,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -303,7 +347,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -320,7 +364,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
                                 .logged()
@@ -398,12 +442,12 @@ public class CryptoCreateSuite extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape0)
                                 .balance(initialBalance)
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
-                        cryptoCreate(NO_KEYS_ACC)
+                        cryptoCreate(NO_KEYS)
                                 .keyShape(shape4)
                                 .balance(initialBalance)
                                 .logged()
@@ -442,17 +486,17 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    spec.registry().saveKey(SHORT_KEY_NAME, shortKey);
-                                    spec.registry().saveKey(EMPTY_KEY_NAME, emptyKey);
+                                    spec.registry().saveKey(SHORT_KEY, shortKey);
+                                    spec.registry().saveKey(EMPTY_KEY_STRING, emptyKey);
                                 }),
-                        cryptoCreate(SHORT_KEY_ACC)
-                                .key(SHORT_KEY_NAME)
+                        cryptoCreate(SHORT_KEY)
+                                .key(SHORT_KEY)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
-                        cryptoCreate(EMPTY_KEY_ACC)
-                                .key(EMPTY_KEY_NAME)
+                        cryptoCreate(EMPTY_KEY_STRING)
+                                .key(EMPTY_KEY_STRING)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
                                 .logged()
@@ -506,7 +550,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
@@ -518,13 +562,8 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
-                                    final var op4 =
-                                            cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
-                                                    .hasPrecheck(INVALID_ALIAS_KEY)
-                                                    .balance(100 * ONE_HBAR);
 
-                                    allRunFor(spec, op, op2, op3, op4);
+                                    allRunFor(spec, op, op2, op3);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .logged()
@@ -740,7 +779,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .evmAddress(evmAddressBytes)
+                                                    .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR)
                                                     .via("createTxn");
 

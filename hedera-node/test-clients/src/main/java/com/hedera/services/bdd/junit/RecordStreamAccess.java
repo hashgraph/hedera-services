@@ -27,11 +27,14 @@ import com.hedera.services.stream.proto.SidecarFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class RecordStreamAccess {
+    record Data(List<RecordWithSidecars> records, List<RecordStreamFile> files) {}
+
     /**
      * Reads the record and sidecar stream files from a given directory.
      *
@@ -40,8 +43,8 @@ public class RecordStreamAccess {
      * @return the list of record and sidecar files
      * @throws IOException if there is an error reading the files
      */
-    public List<RecordWithSidecars> readStreamFilesFrom(
-            final String loc, final String relativeSidecarLoc) throws IOException {
+    public Data readStreamDataFrom(final String loc, final String relativeSidecarLoc)
+            throws IOException {
         final var recordFiles = orderedRecordFilesFrom(loc);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
         final List<String> sidecarFiles;
@@ -58,19 +61,25 @@ public class RecordStreamAccess {
                                                 parseSidecarFileConsensusTimeAndSequenceNo(f)
                                                         .getLeft(),
                                         Collectors.toList()));
-        return recordFiles.stream()
-                .map(
-                        f ->
-                                new RecordWithSidecars(
-                                        ensurePresentRecordFile(f),
-                                        sidecarFilesByRecordFile
-                                                .getOrDefault(
-                                                        parseRecordFileConsensusTime(f),
-                                                        Collections.emptyList())
-                                                .stream()
-                                                .map(this::ensurePresentSidecarFile)
-                                                .toList()))
-                .toList();
+        final List<RecordStreamFile> fullRecordFiles = new ArrayList<>();
+        final var recordsWithSideCars =
+                recordFiles.stream()
+                        .map(
+                                f -> {
+                                    final var recordFile = ensurePresentRecordFile(f);
+                                    fullRecordFiles.add(recordFile);
+                                    return new RecordWithSidecars(
+                                            recordFile,
+                                            sidecarFilesByRecordFile
+                                                    .getOrDefault(
+                                                            parseRecordFileConsensusTime(f),
+                                                            Collections.emptyList())
+                                                    .stream()
+                                                    .map(this::ensurePresentSidecarFile)
+                                                    .toList());
+                                })
+                        .toList();
+        return new Data(recordsWithSideCars, fullRecordFiles);
     }
 
     private RecordStreamFile ensurePresentRecordFile(final String f) {
