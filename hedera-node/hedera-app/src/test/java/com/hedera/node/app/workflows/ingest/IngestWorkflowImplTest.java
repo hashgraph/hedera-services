@@ -48,14 +48,15 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -73,10 +74,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
 
-    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().build();
+    private static final AccountID ACCOUNT_ID = AccountID.newBuilder().setAccountNum(42L).build();
+    private static final TransactionID TRANSACTION_ID =
+            TransactionID.newBuilder().setAccountID(ACCOUNT_ID).build();
+    private static final TransactionBody TRANSACTION_BODY =
+            TransactionBody.newBuilder().setTransactionID(TRANSACTION_ID).build();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
-            new OnsetResult(TRANSACTION_BODY, OK, SIGNATURE_MAP, ConsensusCreateTopic);
+            new OnsetResult(
+                    TRANSACTION_BODY,
+                    TRANSACTION_BODY.toByteArray(),
+                    OK,
+                    SIGNATURE_MAP,
+                    ConsensusCreateTopic);
 
     @Mock private NodeInfo nodeInfo;
 
@@ -87,18 +97,18 @@ class IngestWorkflowImplTest {
     private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
 
     @Mock(strictness = LENIENT)
-    private StoreCache storeCache;
+    private WorkflowOnset onset;
 
     @Mock(strictness = LENIENT)
-    private WorkflowOnset onset;
+    ReadableAccountStore accountStore;
+
+    @Mock Account account;
 
     @Mock private IngestChecker checker;
 
     @Mock private ThrottleAccumulator throttleAccumulator;
     @Mock private SubmissionManager submissionManager;
     @Mock private HapiOpCounters opCounters;
-
-    @Mock private ByteBuffer requestBuffer;
 
     @Mock private Parser<Query> queryParser;
     @Mock private Parser<Transaction> txParser;
@@ -107,27 +117,23 @@ class IngestWorkflowImplTest {
 
     private SessionContext ctx;
     private IngestWorkflowImpl workflow;
+    private ByteBuffer requestBuffer;
 
-    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
-    void setup(
-            @Mock(strictness = LENIENT) HederaState state,
-            @Mock(strictness = LENIENT) ReadableAccountStore accountStore,
-            @Mock Account account)
-            throws PreCheckException {
+    void setup(@Mock(strictness = LENIENT) HederaState state) throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-        when(storeCache.getAccountStore(state)).thenReturn(accountStore);
-        when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
+        when(accountStore.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
+        requestBuffer = ByteBuffer.wrap(new byte[] {1, 2, 3});
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
+        when(onset.parseAndCheck(ctx, requestBuffer)).thenReturn(ONSET_RESULT);
+
         workflow =
                 new IngestWorkflowImpl(
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        storeCache,
                         onset,
                         checker,
                         throttleAccumulator,
@@ -144,7 +150,6 @@ class IngestWorkflowImplTest {
                                         null,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         checker,
                                         throttleAccumulator,
@@ -157,7 +162,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         null,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         checker,
                                         throttleAccumulator,
@@ -169,20 +173,6 @@ class IngestWorkflowImplTest {
                                 new IngestWorkflowImpl(
                                         nodeInfo,
                                         currentPlatformStatus,
-                                        null,
-                                        storeCache,
-                                        onset,
-                                        checker,
-                                        throttleAccumulator,
-                                        submissionManager,
-                                        opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        nodeInfo,
-                                        currentPlatformStatus,
-                                        stateAccessor,
                                         null,
                                         onset,
                                         checker,
@@ -196,7 +186,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         null,
                                         checker,
                                         throttleAccumulator,
@@ -209,7 +198,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         null,
                                         throttleAccumulator,
@@ -222,7 +210,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         checker,
                                         null,
@@ -235,7 +222,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         checker,
                                         throttleAccumulator,
@@ -248,7 +234,6 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        storeCache,
                                         onset,
                                         checker,
                                         throttleAccumulator,
@@ -263,14 +248,33 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
+        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer.array(), txBodyParser);
+        verify(opCounters).countSubmitted(ConsensusCreateTopic);
+    }
+
+    @Test
+    void testSuccessWithNonDirectByteBuffer(@Mock ByteBuffer localRequestBuffer)
+            throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+        when(onset.parseAndCheck(ctx, localRequestBuffer)).thenReturn(ONSET_RESULT);
+
+        // when
+        workflow.submitTransaction(ctx, localRequestBuffer, responseBuffer, states -> accountStore);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager).submit(eq(TRANSACTION_BODY), any(), eq(txBodyParser));
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -307,7 +311,6 @@ class IngestWorkflowImplTest {
                             nodeInfo,
                             inactivePlatformStatus,
                             stateAccessor,
-                            storeCache,
                             onset,
                             checker,
                             throttleAccumulator,
@@ -338,7 +341,6 @@ class IngestWorkflowImplTest {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        storeCache,
                         localOnset,
                         checker,
                         throttleAccumulator,
@@ -376,20 +378,16 @@ class IngestWorkflowImplTest {
         verify(opCounters, never()).countSubmitted(any());
     }
 
-    @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
-    void testPayerAccountNotFoundFails(
-            @Mock StoreCache localStoreCache, @Mock ReadableAccountStore localAccountStore)
+    void testPayerAccountNotFoundFails(@Mock ReadableAccountStore localAccountStore)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(localStoreCache.getAccountStore(any())).thenReturn(localAccountStore);
         when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
         workflow =
                 new IngestWorkflowImpl(
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
-                        localStoreCache,
                         onset,
                         checker,
                         throttleAccumulator,
@@ -398,14 +396,14 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> localAccountStore);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
+        verify(submissionManager, never()).submit(any(), any(), any());
         verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -418,7 +416,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -438,7 +436,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -455,11 +453,11 @@ class IngestWorkflowImplTest {
         // given
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
-                .submit(eq(TRANSACTION_BODY), eq(requestBuffer), any());
+                .submit(eq(TRANSACTION_BODY), eq(requestBuffer.array()), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer, states -> accountStore);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);

@@ -15,9 +15,12 @@
  */
 package com.hedera.node.app.service.contract.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -37,15 +40,22 @@ public class ContractDeleteHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody, @NonNull final AccountID payer) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getContractDeleteInstance();
+
+        context.addNonPayerKey(op.getContractID());
+
+        if (op.hasTransferAccountID()) {
+            context.addNonPayerKeyIfReceiverSigRequired(
+                    op.getTransferAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+        } else if (op.hasTransferContractID()) {
+            context.addNonPayerKeyIfReceiverSigRequired(op.getTransferContractID());
+        }
     }
 
     /**
@@ -58,6 +68,7 @@ public class ContractDeleteHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

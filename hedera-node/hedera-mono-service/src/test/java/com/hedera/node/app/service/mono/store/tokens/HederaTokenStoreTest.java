@@ -83,6 +83,7 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.StringValue;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
@@ -95,7 +96,6 @@ import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;

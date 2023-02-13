@@ -23,7 +23,6 @@ import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +38,7 @@ public class UniqueTokensMigrator {
      * @param initializingState the ServicesState containing the MerkleMap to migrate.
      */
     public static void migrateFromUniqueTokenMerkleMap(final ServicesState initializingState) {
-        final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
+        final var virtualMapFactory = new VirtualMapFactory();
         final var currentData = initializingState.uniqueTokens();
         if (currentData.isVirtual()) {
             // Already done here

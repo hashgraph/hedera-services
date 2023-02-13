@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asContract;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
@@ -203,7 +203,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
         }
 
         @Override
-        protected Account getForMutation(final Address address) {
+        public Account getForMutation(final Address address) {
             final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
             return wrapped.get(address);
         }

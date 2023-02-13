@@ -89,10 +89,9 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
  * @param <W> the most specialized world updater to be used
  */
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerEvmWorldUpdater {
+        extends AbstractLedgerEvmWorldUpdater<W, A> {
     protected static final int UNKNOWN_RECORD_SOURCE_ID = -1;
 
-    private final W world;
     private final WorldLedgers trackingLedgers;
 
     // All the record source ids of our committed child updaters
@@ -104,20 +103,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final WorldLedgers trackingLedgers) {
-        super(new AccountAccessorImpl(trackingLedgers));
-        this.world = world;
+        super(world, new AccountAccessorImpl(trackingLedgers));
         this.trackingLedgers = trackingLedgers;
     }
-
-    /**
-     * Given an address, returns an account that can be mutated <b>with the assurance</b> that these
-     * mutations will be tracked in the change-set represented by this {@link WorldUpdater}; and
-     * either committed or reverted atomically with all other mutations in the change-set.
-     *
-     * @param address the address of interest
-     * @return a tracked mutable account for the given address
-     */
-    protected abstract A getForMutation(Address address);
 
     /**
      * Returns the {@link ContractCustomizer} to use for the pending creation.
@@ -350,10 +338,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     public void trackLazilyCreatedAccount(final Address address) {
         final var newMutable = new UpdateTrackingLedgerAccount<A>(address, trackingAccounts());
         track(newMutable);
-    }
-
-    protected W wrappedWorldView() {
-        return world;
     }
 
     protected Collection<Address> getDeletedAccounts() {

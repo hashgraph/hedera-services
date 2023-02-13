@@ -209,8 +209,7 @@ class StateUtilsTest extends MerkleTestBase {
                         new StateMetadata<>(
                                 serviceName,
                                 new TestSchema(1),
-                                new StateDefinition<>(
-                                        stateKey, STRING_SERDES, STRING_SERDES, 100, false));
+                                StateDefinition.inMemory(stateKey, STRING_SERDES, STRING_SERDES));
                 final var hash = StateUtils.computeClassId(md, "extra string");
                 hashes.add(hash);
             }

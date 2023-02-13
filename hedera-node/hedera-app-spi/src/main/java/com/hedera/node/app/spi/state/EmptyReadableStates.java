@@ -26,7 +26,14 @@ public final class EmptyReadableStates implements ReadableStates {
     @Override
     public <K extends Comparable<K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
-        throw new IllegalArgumentException("There are no states");
+        throw new IllegalArgumentException("There are no k/v states");
+    }
+
+    @NonNull
+    @Override
+    public <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        throw new IllegalArgumentException("There are no singleton states");
     }
 
     @Override

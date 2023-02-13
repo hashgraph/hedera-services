@@ -193,11 +193,12 @@ public class DecodingFacade {
     }
 
     public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
-        final var address =
-                Address.wrap(
-                        Bytes.wrap(addressBytes)
-                                .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+        final var address = Address.wrap(getSlicedAddressBytes(addressBytes));
         return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
+    }
+
+    public static Bytes getSlicedAddressBytes(byte[] addressBytes) {
+        return Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
     }
 
     public static List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(

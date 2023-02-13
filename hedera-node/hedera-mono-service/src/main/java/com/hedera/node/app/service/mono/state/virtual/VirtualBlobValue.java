@@ -66,7 +66,8 @@ public class VirtualBlobValue implements VirtualValue {
 
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
-        out.writeByteArray(data);
+        out.writeInt(data.length);
+        out.write(data);
     }
 
     @Override

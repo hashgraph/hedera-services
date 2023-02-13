@@ -25,13 +25,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -67,12 +71,15 @@ class HederaEvmMessageCallProcessorTest {
     private static final long GAS_ONE_K = 1_000L;
     private static final long GAS_ONE_M = 1_000_000L;
     HederaEvmMessageCallProcessor subject;
+    HederaEvmMessageCallProcessor subject2;
     @Mock private EVM evm;
     @Mock private PrecompileContractRegistry precompiles;
     @Mock private MessageFrame frame;
     @Mock private DefaultHederaTracer hederaEvmOperationTracer;
     @Mock private WorldUpdater worldUpdater;
     @Mock private PrecompiledContract nonHtsPrecompile;
+    @Mock private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
+    @Mock private HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater;
     @Mock private AbstractLedgerEvmWorldUpdater updater;
 
     @BeforeEach
@@ -82,6 +89,12 @@ class HederaEvmMessageCallProcessorTest {
                         evm,
                         precompiles,
                         Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
+
+        subject2 =
+                new HederaEvmMessageCallProcessor(
+                        evm,
+                        precompiles,
+                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, evmHTSPrecompiledContract));
     }
 
     @Test
@@ -100,6 +113,21 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
         verify(frame).getState();
+    }
+
+    @Test
+    void callsEvmPrecompile() {
+        given(frame.getRemainingGas()).willReturn(1337L);
+        given(frame.getInputData()).willReturn(Bytes.of(1));
+        given(frame.getContractAddress()).willReturn(HEDERA_PRECOMPILE_ADDRESS);
+        given(frame.getWorldUpdater()).willReturn(hederaEvmStackedWorldStateUpdater);
+        given(evmHTSPrecompiledContract.getName()).willReturn("EvmHTS");
+        given(evmHTSPrecompiledContract.computeCosted(any(), any(), any(), any()))
+                .willReturn(Pair.of(1L, Bytes.EMPTY));
+
+        subject2.start(frame, hederaEvmOperationTracer);
+
+        verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
     }
 
     @Test
@@ -196,7 +224,7 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame).decrementRemainingGas(GAS_ONE_K);
         verify(nonHtsPrecompile).computePrecompile(Bytes.EMPTY, frame);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE_M, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
@@ -212,7 +240,7 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(frame).setState(EXCEPTIONAL_HALT);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
@@ -227,7 +255,7 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
-        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile, times(2)).getName();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
 

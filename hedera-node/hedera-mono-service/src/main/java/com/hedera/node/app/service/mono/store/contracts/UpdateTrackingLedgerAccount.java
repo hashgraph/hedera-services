@@ -38,12 +38,11 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount {
+public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHederaEvmAccount<A> {
     private final AccountID accountId;
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
-    @Nullable private final A account;
     private boolean storageWasCleared = false;
 
     public UpdateTrackingLedgerAccount(
@@ -54,8 +53,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
         super(address);
         Preconditions.checkNotNull(address);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(address);
-        this.addressHash = Hash.hash(super.getAddress());
-        this.account = null;
         this.trackingAccounts = trackingAccounts;
     }
 
@@ -65,14 +62,13 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
             @Nullable
                     final TransactionalLedger<AccountID, AccountProperty, HederaAccount>
                             trackingAccounts) {
-        super(account.getAddress(), account.getNonce(), account.getBalance());
+        super(account);
         Preconditions.checkNotNull(account);
         this.accountId = EntityIdUtils.accountIdFromEvmAddress(account.getAddress());
         this.addressHash =
                 account instanceof UpdateTrackingLedgerAccount
                         ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
                         : Hash.hash(account.getAddress());
-        this.account = account;
         this.trackingAccounts = trackingAccounts;
     }
 
