@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -46,29 +46,23 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param tokenStore the {@link ReadableTokenStore}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final AccountKeyLookup accountStore) {
-        Objects.requireNonNull(txBody);
-        final var op = txBody.getTokenUnfreeze();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txBody);
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
+            @NonNull final ReadableTokenStore tokenStore) {
+        requireNonNull(context);
+        final var op = context.getTxn().getTokenUnfreeze();
         final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
 
         if (!tokenMeta.failed()) {
-            tokenMeta.metadata().freezeKey().ifPresent(meta::addToReqNonPayerKeys);
+            tokenMeta.metadata().freezeKey().ifPresent(context::addToReqNonPayerKeys);
         } else {
-            meta.status(tokenMeta.failureReason());
+            context.status(tokenMeta.failureReason());
         }
-        return meta.build();
     }
 
     /**
@@ -81,6 +75,7 @@ public class TokenUnfreezeAccountHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

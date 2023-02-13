@@ -16,12 +16,11 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,33 +43,25 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
      * the handle stage.
      *
-     * @param txBody the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use for key lookups
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txBody,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup) {
-        final var metaBuilder =
-                new SigTransactionMetadataBuilder(keyLookup).txnBody(txBody).payerKeyFor(payer);
-
-        final var op = txBody.getConsensusCreateTopic();
+    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getConsensusCreateTopic();
         final var adminKey = asHederaKey(op.getAdminKey());
-        adminKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        adminKey.ifPresent(context::addToReqNonPayerKeys);
         final var submitKey = asHederaKey(op.getSubmitKey());
-        submitKey.ifPresent(metaBuilder::addToReqNonPayerKeys);
+        submitKey.ifPresent(context::addToReqNonPayerKeys);
 
         if (op.hasAutoRenewAccount()) {
             final var autoRenewAccount = op.getAutoRenewAccount();
-            metaBuilder.addNonPayerKey(
-                    autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+            context.addNonPayerKey(autoRenewAccount, ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
         }
-
-        return metaBuilder.build();
     }
 
     /**
@@ -83,6 +74,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

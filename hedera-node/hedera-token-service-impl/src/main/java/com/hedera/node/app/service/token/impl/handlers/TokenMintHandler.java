@@ -15,13 +15,12 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,32 +39,28 @@ public class TokenMintHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @param context the {@link PrehandleHandlerContext} which collects all information that will
+     *     be passed to {@link #handle(TransactionMetadata)}
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final AccountKeyLookup keyLookup,
+    public void preHandle(
+            @NonNull final PrehandleHandlerContext context,
             @NonNull final ReadableTokenStore tokenStore) {
-
-        final var op = txn.getTokenMint();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+        requireNonNull(context);
+        final var op = context.getTxn().getTokenMint();
 
         final var tokenMeta = tokenStore.getTokenMeta(op.getToken());
 
         if (tokenMeta.failed()) {
-            return meta.status(tokenMeta.failureReason()).build();
+            context.status(tokenMeta.failureReason());
+            return;
         }
 
-        tokenMeta.metadata().supplyKey().ifPresent(meta::addToReqNonPayerKeys);
-        return meta.build();
+        tokenMeta.metadata().supplyKey().ifPresent(context::addToReqNonPayerKeys);
     }
 
     /**
@@ -78,6 +73,7 @@ public class TokenMintHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

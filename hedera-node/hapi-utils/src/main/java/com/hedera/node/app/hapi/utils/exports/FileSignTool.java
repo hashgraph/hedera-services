@@ -102,7 +102,7 @@ public class FileSignTool {
     private static final String ALIAS_PROPERTY = "alias";
     private static final String PASSWORD_PROPERTY = "password";
     private static final String DIR_PROPERTY = "dir";
-    private static final String APP_VERSION = "appVersion";
+    private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
@@ -315,7 +315,7 @@ public class FileSignTool {
         int[] fileHeader = streamType.getFileHeader();
 
         // extract latest app version from system property if available
-        final String appVersionString = System.getProperty(APP_VERSION);
+        final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         if (appVersionString != null) {
             final String[] versions =
                     appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
