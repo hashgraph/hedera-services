@@ -105,10 +105,8 @@ public class RecordBlockNumberTool {
     }
 
     private static void readRecordFile(final String recordFile) {
-
         // extract latest app version from system property if available
         final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
-
         try {
             // parse record file
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
@@ -123,7 +121,6 @@ public class RecordBlockNumberTool {
     }
 
     public static void main(final String[] args) {
-
         // register constructables and set settings
         try {
             prepare();
@@ -157,7 +154,7 @@ public class RecordBlockNumberTool {
     }
 
     /**
-     * Sign all files in the provided directory
+     * read all files in the provided directory
      *
      * @param sourceDir the directory where the files to read are located
      */
