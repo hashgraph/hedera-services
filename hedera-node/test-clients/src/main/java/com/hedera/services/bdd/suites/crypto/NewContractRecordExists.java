@@ -51,24 +51,24 @@ public class NewContractRecordExists extends HapiSuite {
         final var creation = "creation";
         final AtomicReference<Instant> consensusTime = new AtomicReference<>();
         return defaultHapiSpec(EMPTY_CONTRACT)
-            .given(uploadInitCode(EMPTY_CONTRACT))
-            .when(
-                contractCreate(EMPTY_CONTRACT).hasKnownStatus(SUCCESS).via(creation),
-                getTxnRecord(creation)
-                    .exposingTo(
-                        protoRecord ->
-                            consensusTime.set(
-                                asInstant(
-                                    protoRecord
-                                        .getConsensusTimestamp())
-                                    .plusNanos(0))))
-            .then(
-                sourcing(
-                    () ->
-                        assertEventuallyPasses(
-                            new ContractExistenceValidator(
-                                EMPTY_CONTRACT, consensusTime.get()),
-                            Duration.ofMillis(2_100))));
+                .given(uploadInitCode(EMPTY_CONTRACT))
+                .when(
+                        contractCreate(EMPTY_CONTRACT).hasKnownStatus(SUCCESS).via(creation),
+                        getTxnRecord(creation)
+                                .exposingTo(
+                                        protoRecord ->
+                                                consensusTime.set(
+                                                        asInstant(
+                                                                        protoRecord
+                                                                                .getConsensusTimestamp())
+                                                                .plusNanos(0))))
+                .then(
+                        sourcing(
+                                () ->
+                                        assertEventuallyPasses(
+                                                new ContractExistenceValidator(
+                                                        EMPTY_CONTRACT, consensusTime.get()),
+                                                Duration.ofMillis(2_100))));
     }
 
     @Override
