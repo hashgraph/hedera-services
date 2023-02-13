@@ -9,6 +9,8 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
@@ -17,10 +19,12 @@ import java.util.function.Supplier;
  * This class is currently calling mono-service code and will be replaced with a
  * new implementation as per design.
  */
+@Singleton
 public class MonoFeeAccumulator implements FeeAccumulator {
     private final UsageBasedFeeCalculator feeCalculator;
     private final UsagePricesProvider resourceCosts;
     private final Supplier<StateView> stateView;
+    @Inject
     public MonoFeeAccumulator(final UsageBasedFeeCalculator feeCalculator,
                               final UsagePricesProvider resourceCosts,
                               final Supplier<StateView> stateView) {

@@ -20,15 +20,19 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
+import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
+import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import dagger.BindsInstance;
 import dagger.Component;
 import javax.inject.Singleton;
 
 @Singleton
-@Component
+@Component(modules = PropertiesModule.class)
 public interface ConsensusComponent {
     @Component.Factory
     interface Factory {
-        ConsensusComponent create();
+        ConsensusComponent create(@BindsInstance @BootstrapProps PropertySource bootstrapProperties);
     }
 
     ConsensusCreateTopicHandler consensusCreateTopicHandler();

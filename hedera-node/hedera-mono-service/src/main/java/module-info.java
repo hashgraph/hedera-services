@@ -9,7 +9,9 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.schedule.impl,
             com.hedera.node.app.service.schedule.impl.test,
             com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test;
+            com.hedera.node.app.service.token.impl.test,
+            com.hedera.node.app.service.consensus.impl,
+            com.hedera.node.app.service.consensus.impl.test;
     exports com.hedera.node.app.service.mono.exceptions to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -31,7 +33,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.token.impl,
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app.service.contract.impl.test,
-            com.hedera.node.app.service.consensus.impl.test, com.hedera.node.app.service.consensus.impl;
+            com.hedera.node.app.service.consensus.impl.test,
+            com.hedera.node.app.service.consensus.impl;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app;
@@ -88,7 +91,8 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.state.merkle.internals to
             com.swirlds.common;
     opens com.hedera.node.app.service.mono.state.submerkle to
-            com.swirlds.common;
+            com.swirlds.common,
+            com.hedera.node.app.service.consensus.impl;
     opens com.hedera.node.app.service.mono.state.virtual to
             com.swirlds.common;
     opens com.hedera.node.app.service.mono.state.virtual.entities to
@@ -116,6 +120,7 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.throttling.annotations;
     exports com.hedera.node.app.service.mono.fees.calculation;
     exports com.hedera.node.app.service.mono.context.primitives;
+    exports com.hedera.node.app.service.mono.queries;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;

@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.fees.FeesModule;
+import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.node.app.service.mono.records.RecordsModule;
 import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.stats.StatsModule;

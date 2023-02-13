@@ -74,7 +74,7 @@ public class ReadableTopicStore {
                 Optional.ofNullable(topic.getAdminKey()),
                 Optional.ofNullable(topic.getSubmitKey()),
                 topic.getAutoRenewDurationSeconds(),
-                Optional.ofNullable(topic.getAutoRenewAccountId().num()),
+                topic.getAutoRenewAccountId().num() == 0 ? Optional.empty() : Optional.of(topic.getAutoRenewAccountId().num()),
                 topic.getExpirationTimestamp().toGrpc(),
                 topic.getSequenceNumber(),
                 topic.getRunningHash(),
