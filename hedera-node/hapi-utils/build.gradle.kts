@@ -32,14 +32,23 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     api(project(":hedera-node:hedera-evm"))
-
-    implementation(libs.jackson)
-    implementation(libs.bundles.bouncycastle)
-    implementation(libs.bundles.logging)
+    implementation(group = "net.i2p.crypto", name = "eddsa", version = "0.3.0")
+    implementation(libs.jackson) {
+        exclude("com.fasterxml.jackson", "jackson-bom")
+    }
+    implementation(group = "org.bouncycastle", name = "bcpkix-jdk15on", version = "1.70")
+    implementation(libs.guava) {
+        exclude(group = "com.google.guava", module = "failureaccess")
+        exclude(group = "com.google.guava", module = "listenablefuture")
+        exclude(group = "com.google.code.findbugs", module = "jsr305")
+        exclude(group = "org.checkerframework", module = "checker-qual")
+        exclude(group = "com.google.errorprone", module = "error_prone_annotations")
+        exclude(group = "com.google.j2objc", module = "j2objc-annotations")
+    }
+    implementation(group = "org.apache.logging.log4j", name = "log4j-core", version = "2.17.2")
     implementation(libs.headlong)
     implementation(libs.commons.codec)
     implementation(libs.jna)
-    implementation(libs.javax.inject)
     implementation(libs.dagger.api)
 
     testImplementation(testLibs.bundles.testing)

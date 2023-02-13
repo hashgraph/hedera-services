@@ -33,6 +33,7 @@ configurations.all {
 }
 
 dependencies {
+    
     api(libs.hapi) {
         exclude(group = "io.grpc", module = "grpc-netty")
         exclude(group = "io.netty", module = "netty-codec-http2")
@@ -45,8 +46,6 @@ dependencies {
         exclude(group = "io.grpc", module = "grpc-protobuf-lite")
     }
     api("com.google.protobuf:protobuf-java:3.19.2")
-
-    runtimeOnly(libs.grpc.stub)
     api(libs.swirlds.common) {
         exclude(group = "org.apache.commons", module = "commons-lang3")
         exclude(group = "com.fasterxml.jackson.core", module = "jackson-databind")
@@ -58,13 +57,11 @@ dependencies {
         exclude(group = "com.swirlds", module = "swirlds-cli")
         exclude(group = "com.swirlds", module = "swirlds-logging")
     }
-
     compileOnlyApi(libs.spotbugs.annotations)
-    testFixturesCompileOnly(libs.spotbugs.annotations)
-
-
+    runtimeOnly(libs.grpc.stub)
     runtimeOnly(libs.helidon.io.grpc)
-    testImplementation(testLibs.bundles.testing)
-    testCompileOnly(libs.spotbugs.annotations)
 
+    testImplementation(testLibs.bundles.testing)
+    testFixturesCompileOnly(libs.spotbugs.annotations)
+    testCompileOnly(libs.spotbugs.annotations)
 }

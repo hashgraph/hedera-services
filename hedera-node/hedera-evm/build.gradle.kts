@@ -39,23 +39,52 @@ configurations.all {
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
-    compileOnlyApi(libs.spotbugs.annotations)
+    api(libs.swirlds.common) {
+        exclude(group = "org.apache.commons", module = "commons-lang3")
+        exclude(group = "com.fasterxml.jackson.core", module = "jackson-databind")
+        exclude(group = "com.fasterxml.jackson.datatype", module = "jackson-datatype-jsr310")
+        exclude(group = "com.fasterxml.jackson.dataformat", module = "jackson-dataformat-yaml")
+        exclude(group = "com.goterl", module = "lazysodium-java")
+        exclude(group = "org.bouncycastle", module = "bcpkix-jdk15on")
+        exclude(group = "com.swirlds", module = "swirlds-cli")
+        exclude(group = "com.swirlds", module = "swirlds-logging")
+    }
+    api(libs.besu.evm) {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
     api(libs.slf4j.api)
-    api(libs.besu.evm)
     api(libs.besu.secp256k1)
-    api(libs.swirlds.common)
-    api(libs.besu.datatypes)
+    api(libs.besu.datatypes) {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib-jdk8")
+        exclude(group = "org.connid", module = "framework")
+        exclude(group = "org.connid", module = "framework-internal")
+    }
+    compileOnlyApi(libs.spotbugs.annotations)
     api(libs.hapi) {
         // this is an android version, not a jre version
         exclude("com.google.guava", "guava")
+        exclude(group = "io.grpc", module = "grpc-netty")
+        exclude(group = "io.netty", module = "netty-codec-http2")
+        exclude(group = "io.netty", module = "netty-handler-proxy")
+        exclude(group = "com.google.guava", module = "guava")
+        exclude(group = "io.grpc", module = "grpc-stub")
+        exclude(group = "net.i2p.crypto", module = "eddsa")
+        exclude(group = "com.google.api.grpc", module = "proto-google-common-protos")
+        exclude(group = "io.grpc", module = "grpc-protobuf-lite")
     }
-    api(libs.guava) // TODO: we should remove the internal usage of guava
 
+    implementation(group = "com.google.dagger", name = "dagger", version = "2.42") {
+        exclude(group = "javax.inject", module = "javax.inject")
+    }
     implementation(libs.jna)
     implementation(libs.caffeine)
     implementation(libs.headlong)
-    implementation(libs.dagger.compiler)
     implementation(libs.javax.inject)
+    implementation(libs.guava) {
+        exclude(group = "com.google.guava", module = "failureaccess")
+        exclude(group = "com.google.guava", module = "listenablefuture")
+    }
+
 
     testImplementation(testLibs.mockito.jupiter)
     testImplementation(testLibs.mockito.inline)
