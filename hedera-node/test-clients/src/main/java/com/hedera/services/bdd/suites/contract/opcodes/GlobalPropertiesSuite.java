@@ -76,7 +76,6 @@ public class GlobalPropertiesSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, GET_CHAIN_ID).via("chainId"))
                 .then(
                         getTxnRecord("chainId")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -104,7 +103,6 @@ public class GlobalPropertiesSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, GET_BASE_FEE).via("baseFee"))
                 .then(
                         getTxnRecord("baseFee")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -169,7 +167,6 @@ public class GlobalPropertiesSuite extends HapiSuite {
                 .when(contractCall(CONTRACT, GET_GAS_LIMIT).via("gasLimit").gas(gasLimit))
                 .then(
                         getTxnRecord("gasLimit")
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(

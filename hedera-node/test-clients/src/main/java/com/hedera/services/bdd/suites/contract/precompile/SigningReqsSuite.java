@@ -143,7 +143,6 @@ public class SigningReqsSuite extends HapiSuite {
                                 () ->
                                         getTokenInfo(asTokenString(createdToken.get()))
                                                 .hasAutoRenewAccount(autoRenew)
-                                                .logged()
                                                 .hasCustom(
                                                         (spec, fees) -> {
                                                             assertEquals(1, fees.size());
@@ -226,7 +225,6 @@ public class SigningReqsSuite extends HapiSuite {
                                 () ->
                                         getTokenInfo(asTokenString(createdToken.get()))
                                                 .hasAutoRenewAccount(autoRenew)
-                                                .logged()
                                                 .hasCustom(
                                                         (spec, fees) -> {
                                                             assertEquals(1, fees.size());
@@ -274,7 +272,7 @@ public class SigningReqsSuite extends HapiSuite {
                                                 .payingWith(CIVILIAN)
                                                 .refusingEthConversion()
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();

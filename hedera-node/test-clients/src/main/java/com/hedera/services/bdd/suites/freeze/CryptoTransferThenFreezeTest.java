@@ -17,7 +17,6 @@ package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -48,8 +47,8 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
         return defaultHapiSpec("FreezeAfterTransfers")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(freezeOnly().startingIn(30).seconds().payingWith(GENESIS))
                 .then(
                         // sleep for a while to wait for this freeze transaction be handled

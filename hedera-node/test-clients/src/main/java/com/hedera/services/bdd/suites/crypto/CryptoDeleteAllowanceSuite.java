@@ -803,15 +803,13 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .addCryptoAllowance(payer, spender, 100L)
                                 .addTokenAllowance(payer, token, spender, 100L)
                                 .addNftAllowance(payer, nft, spender, true, List.of(1L))
-                                .blankMemo()
-                                .logged(),
+                                .blankMemo(),
                         cryptoDeleteAllowance()
                                 .payingWith(payer)
                                 .addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
                                 .via("deleteTxn")
-                                .blankMemo()
-                                .logged(),
-                        getTxnRecord("deleteTxn").logged())
+                                .blankMemo(),
+                        getTxnRecord("deleteTxn"))
                 .then(
                         getAccountDetails(payer)
                                 .payingWith(GENESIS)
@@ -883,9 +881,8 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .payingWith(owner)
                                 .addNftDeleteAllowance(owner, nft, List.of(1L))
                                 .blankMemo()
-                                .via("cryptoDeleteAllowanceTxn")
-                                .logged(),
-                        getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
+                                .via("cryptoDeleteAllowanceTxn"),
+                        getTxnRecord("cryptoDeleteAllowanceTxn"),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(
@@ -893,8 +890,7 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                                 .cryptoAllowancesCount(1)
                                                 .tokenAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(1)
-                                                .nftApprovedAllowancesContaining(nft, spender))
-                                .logged(),
+                                                .nftApprovedAllowancesContaining(nft, spender)),
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
@@ -963,9 +959,8 @@ public class CryptoDeleteAllowanceSuite extends HapiSuite {
                                 .payingWith(owner)
                                 .addNftDeleteAllowance(owner, nft, List.of(3L))
                                 .blankMemo()
-                                .via("cryptoDeleteAllowanceTxn")
-                                .logged(),
-                        getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
+                                .via("cryptoDeleteAllowanceTxn"),
+                        getTxnRecord("cryptoDeleteAllowanceTxn"),
                         validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.05, 0.01),
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)

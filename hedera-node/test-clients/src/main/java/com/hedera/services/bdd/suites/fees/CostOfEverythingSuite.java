@@ -150,7 +150,6 @@ public class CostOfEverythingSuite extends HapiSuite {
                         contractCall(multipurposeContract, "believeIn", 256).payingWith("civilian"),
                         contractCallLocal(multipurposeContract, "pick")
                                 .payingWith("civilian")
-                                .logged()
                                 .has(
                                         resultWith()
                                                 .resultThruAbi(
@@ -173,8 +172,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                                                             .getAccountID("civilian")
                                                             .getAccountNum()
                                                 })
-                                .payingWith("civilian")
-                                .logged());
+                                .payingWith("civilian"));
     }
 
     HapiSpec txnGetCreateRecord() {
@@ -182,7 +180,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                 .withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
                 .given(cryptoCreate("hairTriggerPayer").balance(99_999_999_999L).sendThreshold(1L))
                 .when(cryptoCreate("somebodyElse").payingWith("hairTriggerPayer").via("txn"))
-                .then(getTxnRecord("txn").logged());
+                .then(getTxnRecord("txn"));
     }
 
     HapiSpec txnGetSmallTransferRecord() {
@@ -193,7 +191,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L))
                                 .payingWith("hairTriggerPayer")
                                 .via("txn"))
-                .then(getTxnRecord("txn").logged());
+                .then(getTxnRecord("txn"));
     }
 
     HapiSpec txnGetLargeTransferRecord() {
@@ -217,7 +215,7 @@ public class CostOfEverythingSuite extends HapiSuite {
                                                         .build())
                                 .payingWith("hairTriggerPayer")
                                 .via("txn"))
-                .then(getTxnRecord("txn").logged());
+                .then(getTxnRecord("txn"));
     }
 
     private AccountAmount aa(HapiSpec spec, String id, long amount) {

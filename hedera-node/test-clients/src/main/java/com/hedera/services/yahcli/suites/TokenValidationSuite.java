@@ -28,13 +28,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOKEN;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TREASURY;
-import static com.hedera.services.yahcli.commands.validation.ValidationCommand.checkBoxed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -86,8 +84,8 @@ public class TokenValidationSuite extends HapiSuite {
                                 .hasKycKey(TOKEN),
                         getAccountBalance(TREASURY)
                                 .payingWith(PAYER)
-                                .savingTokenBalance(TOKEN, initialTreasuryBalance::set),
-                        logIt(checkBoxed("Token entities look good")))
+                                .savingTokenBalance(TOKEN, initialTreasuryBalance::set)
+                        /*logIt(checkBoxed("Token entities look good"))*/ )
                 .when(
                         tokenDissociate(RECEIVER, TOKEN)
                                 .payingWith(PAYER)
@@ -104,8 +102,8 @@ public class TokenValidationSuite extends HapiSuite {
                         grantTokenKyc(TOKEN, RECEIVER).payingWith(PAYER),
                         mintToken(TOKEN, 2).payingWith(PAYER),
                         cryptoTransfer(moving(1, TOKEN).between(TREASURY, RECEIVER))
-                                .payingWith(PAYER),
-                        logIt(checkBoxed("Token management looks good")))
+                                .payingWith(PAYER)
+                        /*logIt(checkBoxed("Token management looks good"))*/ )
                 .then(
                         getAccountBalance(RECEIVER).payingWith(PAYER).hasTokenBalance(TOKEN, 1L),
                         sourcing(
@@ -122,8 +120,8 @@ public class TokenValidationSuite extends HapiSuite {
                                         getAccountBalance(TREASURY)
                                                 .payingWith(PAYER)
                                                 .hasTokenBalance(
-                                                        TOKEN, initialTreasuryBalance.get())),
-                        logIt(checkBoxed("Token balance changes looks good")));
+                                                        TOKEN, initialTreasuryBalance.get()))
+                        /*logIt(checkBoxed("Token balance changes looks good"))*/ );
     }
 
     @Override

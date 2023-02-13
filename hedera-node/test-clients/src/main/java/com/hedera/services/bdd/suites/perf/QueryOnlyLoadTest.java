@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.perf;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
@@ -102,8 +101,8 @@ public class QueryOnlyLoadTest extends LoadTest {
         return defaultHapiSpec("runQueryLoadTest")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when()
                 .then(defaultLoadTest(mixedQueries, settings));
     }

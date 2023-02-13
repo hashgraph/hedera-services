@@ -134,8 +134,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var lookup =
                                             getTxnRecord(maliciousAutoCreation)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                                    .andAllChildRecords();
                                     allRunFor(spec, lookup);
                                     final var childCreation = lookup.getChildRecord(0);
                                     maliciousEOAId.set(
@@ -182,7 +181,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                                 .gasLimit(1_000_000L)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
-                        getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
+                        getTxnRecord(maliciousTxn).andAllChildRecords(),
                         childRecordsCheck(
                                 maliciousTxn,
                                 CONTRACT_REVERT_EXECUTED,
@@ -240,8 +239,7 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0.0001, 0.5))
-                                .logged());
+                                                        ONE_HUNDRED_HBARS, 0.0001, 0.5)));
     }
 
     HapiSpec depositSuccess() {
@@ -310,7 +308,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCallResult(
@@ -357,7 +354,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCallResult(
@@ -418,7 +414,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCreateResult(
@@ -478,7 +473,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCreateResult(
@@ -544,7 +538,6 @@ public class HelloWorldEthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCreateResult(

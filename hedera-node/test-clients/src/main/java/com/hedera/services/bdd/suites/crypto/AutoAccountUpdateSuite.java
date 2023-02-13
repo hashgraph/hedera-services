@@ -85,8 +85,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
-                                .hasNoAliasInChildRecord(0)
-                                .logged(),
+                                .hasNoAliasInChildRecord(0),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
                                         accountWith()
@@ -147,7 +146,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                 .payingWith(PAYER)
                                 .via(TRANSFER_TXN),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
                                         accountWith()

@@ -93,7 +93,7 @@ public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .balance(ONE_MILLION_HBARS),
                         uploadInitCode(oneContract),
-                        contractCreate(oneContract).payingWith(GENESIS).logging(),
+                        contractCreate(oneContract).payingWith(GENESIS),
                         contractCall(oneContract)
                                 .payingWith(civilianAccount)
                                 .fee(ONE_HUNDRED_HBARS)

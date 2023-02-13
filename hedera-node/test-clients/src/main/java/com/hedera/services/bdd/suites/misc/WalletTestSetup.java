@@ -167,7 +167,6 @@ public class WalletTestSetup extends HapiSuite {
                                 .payingWith(DETERMINISTIC_WALLET))
                 .then(
                         QueryVerbs.getAccountInfo("0.0.1113")
-                                .logged()
                                 .plusCustomLog(
                                         (info, opLog) ->
                                                 opLog.info(

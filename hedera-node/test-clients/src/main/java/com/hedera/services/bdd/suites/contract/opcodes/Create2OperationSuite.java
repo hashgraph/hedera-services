@@ -55,7 +55,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -228,8 +227,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                                             idOfLastTwoLogs),
                                                                                             logWith()
                                                                                                     .contract(
-                                                                                                            idOfLastTwoLogs)))))
-                                            .logged();
+                                                                                                            idOfLastTwoLogs)))));
                                 }));
     }
 
@@ -409,7 +407,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .via(CREATION)))
                 .then(
                         //						tokenDissociate(contract, token)
-                        getContractInfo(contract).logged());
+                        getContractInfo(contract));
     }
 
     private HapiSpec payableCreate2WorksAsExpected() {
@@ -476,8 +474,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 factoryEvmAddress.set(
                                                         asHexedSolidityAddress(0, 0, num))),
                         getContractInfo(contract)
-                                .has(contractWith().autoRenewAccountId(autoRenewAccountID))
-                                .logged())
+                                .has(contractWith().autoRenewAccountId(autoRenewAccountID)))
                 .when(
                         sourcing(
                                 () ->
@@ -555,7 +552,8 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractDelete(expectedCreate2Address.get())
                                                 .signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        //                        logIt("Deleted the deployed CREATE2 contract using
+                        // HAPI"),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -567,7 +565,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .gas(4_000_000L)
                                                 .sending(tcValue)
                                                 .via(CREATE_2_TXN)),
-                        logIt("Re-deployed the CREATE2 contract"),
+                        //                        logIt("Re-deployed the CREATE2 contract"),
                         sourcing(
                                 () ->
                                         childRecordsCheck(
@@ -633,8 +631,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                         expectedCreate2Address
                                                                                 .get())
                                                                 .autoRenewAccountId(
-                                                                        autoRenewAccountID))
-                                                .logged()),
+                                                                        autoRenewAccountID))),
                         sourcing(
                                 () ->
                                         contractCallLocalWithFunctionAbi(
@@ -668,8 +665,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                         expectedCreate2Address
                                                                                 .get())
                                                                 .autoRenewAccountId(
-                                                                        autoRenewAccountID))
-                                                .logged()),
+                                                                        autoRenewAccountID))),
                         sourcing(
                                 () ->
                                         contractCallWithFunctionAbi(
@@ -812,7 +808,8 @@ public class Create2OperationSuite extends HapiSuite {
                                 () ->
                                         contractDelete(expectedCreate2Address.get())
                                                 .signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        //                        logIt("Deleted the deployed CREATE2 contract using
+                        // HAPI"),
                         // Now create a hollow account at the desired address
                         cryptoTransfer(
                                         (spec, b) -> {
@@ -873,7 +870,7 @@ public class Create2OperationSuite extends HapiSuite {
                         getTxnRecord(creation)
                                 .andAllChildRecords()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
-                        sourcing(() -> getAccountInfo(hollowCreationAddress.get()).logged()))
+                        sourcing(() -> getAccountInfo(hollowCreationAddress.get())))
                 .then(
                         sourcing(
                                 () ->
@@ -930,8 +927,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .hasToken(relationshipWith(A_TOKEN).balance(500))
                                                 .hasToken(
                                                         relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)
-                                                                .balance(1))
-                                                .logged()),
+                                                                .balance(1))),
                         sourcing(() -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
                         sourcing(
                                 () ->
@@ -1019,7 +1015,7 @@ public class Create2OperationSuite extends HapiSuite {
                                     final var nftType = spec.registry().getTokenID(nft);
                                     nftAddress.set(asSolidityAddress(nftType));
                                 }),
-                        sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
+                        sourcing(() -> getContractInfo(userLiteralId.get())),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -1085,7 +1081,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .exposingNumTo(
                                                         n -> childMirrorAddr.set("0.0." + (n + 1)))
                                                 .via(creationAndAssociation)))
-                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
+                .then(sourcing(() -> getContractInfo(childMirrorAddr.get())));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1312,7 +1308,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                         new byte[][] {"WoRtHlEsS...NOT".getBytes()})
                                                 .via(helperMintSuccess)
                                                 .gas(4_000_000L)),
-                        getTxnRecord(helperMintSuccess).andAllChildRecords().logged(),
+                        getTxnRecord(helperMintSuccess).andAllChildRecords(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 2),
                         cryptoTransfer(
                                         (spec, b) -> {
@@ -1351,7 +1347,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                                             .get()))));
                                         })
                                 .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
-                        sourcing(() -> getContractInfo(userLiteralId.get()).logged()));
+                        sourcing(() -> getContractInfo(userLiteralId.get())));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2874
@@ -1418,8 +1414,7 @@ public class Create2OperationSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getContractInfo(mDonorAliasAddr.get())
-                                                .has(contractWith().balance(100))
-                                                .logged()));
+                                                .has(contractWith().balance(100))));
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2874
@@ -1611,8 +1606,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                                                             logWith()
                                                                                                     .contract(
                                                                                                             emitterId)))))
-                                            .andAllChildRecords()
-                                            .logged();
+                                            .andAllChildRecords();
                                 }),
                         captureOneChildCreate2MetaFor(
                                 "Test contract create2'd via mirror address",

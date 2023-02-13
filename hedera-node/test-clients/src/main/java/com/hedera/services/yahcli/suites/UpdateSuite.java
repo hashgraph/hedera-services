@@ -65,7 +65,7 @@ public class UpdateSuite extends HapiSuite {
 
         // flag that transferred as parameter to schedule a key change or to execute right away
         if (schedule) {
-            update = scheduleCreate("update", update).logged();
+            update = scheduleCreate("update", update);
         }
 
         return HapiSpec.customHapiSpec("DoUpdate")

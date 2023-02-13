@@ -116,7 +116,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                                 .shape(
                                         newShape.signedWith(
                                                 sigs(extantKey, sigs(newKey1, newKey2, newKey3)))),
-                        getAccountInfo(target).logged().loggingHexedKeys())
+                        getAccountInfo(target).loggingHexedKeys())
                 .when(cryptoUpdate(target).key(replacementKey).signedBy(DEFAULT_PAYER, extantKey))
                 .then(
                         getAccountInfo(target).loggingHexedKeys().savingProtoTo("targetInfo.bin"),
@@ -232,7 +232,7 @@ public class GuidedTourRemoteSuite extends HapiSuite {
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, TARGET_ACCOUNT, AMOUNT)))
                 .then(
                         getAccountBalance(TARGET_ACCOUNT).hasTinyBars(AMOUNT),
-                        getAccountInfo(TARGET_ACCOUNT).logged());
+                        getAccountInfo(TARGET_ACCOUNT));
     }
 
     @Override

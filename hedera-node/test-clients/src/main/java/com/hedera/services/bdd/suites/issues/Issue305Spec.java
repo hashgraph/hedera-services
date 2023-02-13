@@ -71,8 +71,8 @@ public class Issue305Spec extends HapiSuite {
                                 }))
                 .then(
                         fileCreate("tbd").key("tbdKey").deferStatusResolution(),
-                        fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey").logged(),
-                        getFileInfo(nextFileId::get).logged());
+                        fileDelete(nextFileId::get).signedBy(GENESIS, "tbdKey"),
+                        getFileInfo(nextFileId::get));
     }
 
     @Override

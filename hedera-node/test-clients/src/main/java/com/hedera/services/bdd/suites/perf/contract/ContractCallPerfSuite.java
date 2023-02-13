@@ -64,7 +64,7 @@ public class ContractCallPerfSuite extends HapiSuite {
                         contractCreate(verboseDeposit),
                         contractCreate(balanceLookup).balance(1L))
                 .when(
-                        getContractInfo(verboseDeposit).hasExpectedInfo().logged(),
+                        getContractInfo(verboseDeposit).hasExpectedInfo(),
                         UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L))
                 .then(
                         UtilVerbs.inParallel(

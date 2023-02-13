@@ -78,7 +78,7 @@ public class TokenTransfersLoadProvider extends HapiSuite {
     private HapiSpec runTokenTransfers() {
         return HapiSpec.defaultHapiSpec("RunTokenTransfers")
                 .given(
-                        getAccountBalance(DEFAULT_PAYER).logged(),
+                        getAccountBalance(DEFAULT_PAYER),
                         stdMgmtOf(duration, unit, maxOpsPerSec),
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
@@ -93,7 +93,7 @@ public class TokenTransfersLoadProvider extends HapiSuite {
                                 .lasting(duration::get, unit::get)
                                 .maxOpsPerSec(maxOpsPerSec::get))
                 .then(
-                        getAccountBalance(DEFAULT_PAYER).logged(),
+                        getAccountBalance(DEFAULT_PAYER),
                         // The freeze and long wait after freeze means to keep the server in
                         // MAINTENANCE state till test
                         // end to prevent it from making new export files that may cause account

@@ -158,13 +158,12 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         sleepFor(3_000L),
                         contractCallLocal(CONTRACT, "getIndirect")
-                                .logged()
                                 .payingWith("payer")
                                 .nodePayment(adequateQueryPayment)
                                 .hasAnswerOnlyPrecheck(INSUFFICIENT_PAYER_BALANCE),
-                        getAccountBalance("payer").logged(),
+                        getAccountBalance("payer"),
                         sleepFor(1_000L),
-                        getAccountBalance("payer").logged());
+                        getAccountBalance("payer"));
     }
 
     private HapiSpec erc20Query() {

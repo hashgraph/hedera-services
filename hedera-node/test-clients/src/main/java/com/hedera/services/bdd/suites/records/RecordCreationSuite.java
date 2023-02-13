@@ -100,8 +100,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 + feeObs.get().getNodeFee())
                                                 .payingWith("payer")
                                                 .via("txnId")
-                                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                                .logged()))
+                                                .hasKnownStatus(INSUFFICIENT_TX_FEE)))
                 .then(
                         sourcing(
                                 () ->
@@ -109,8 +108,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                 .hasTinyBars(
                                                         changeFromSnapshot(
                                                                 "before",
-                                                                +feeObs.get().getNodeFee()))
-                                                .logged()),
+                                                                +feeObs.get().getNodeFee()))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.98")
@@ -121,8 +119,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                         (+feeObs.get()
                                                                                                 .getNetworkFee()
                                                                                         * 0.8
-                                                                                + 1)))
-                                                .logged()),
+                                                                                + 1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.800")
@@ -132,8 +129,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.801")
@@ -143,8 +139,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getTxnRecord("txnId")
@@ -158,8 +153,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                                                 .getNetworkFee()
                                                                                         + feeObs.get()
                                                                                                 .getNodeFee()))
-                                                                .status(INSUFFICIENT_TX_FEE))
-                                                .logged()));
+                                                                .status(INSUFFICIENT_TX_FEE))));
     }
 
     private HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
@@ -207,8 +201,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                         (+feeObs.get()
                                                                                                 .getNetworkFee()
                                                                                         * 0.8
-                                                                                + 1)))
-                                                .logged()),
+                                                                                + 1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.800")
@@ -218,8 +211,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.801")
@@ -229,8 +221,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getTxnRecord("txnId")
@@ -243,8 +234,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                                 feeObs.get()
                                                                                         .getNetworkFee()))
                                                                 .status(
-                                                                        INVALID_ZERO_BYTE_IN_STRING))
-                                                .logged()));
+                                                                        INVALID_ZERO_BYTE_IN_STRING))));
     }
 
     private HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
@@ -299,8 +289,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                         (+feeObs.get()
                                                                                                 .getNetworkFee()
                                                                                         * 0.8
-                                                                                + 1)))
-                                                .logged()),
+                                                                                + 1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.800")
@@ -310,8 +299,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getAccountBalance("0.0.801")
@@ -321,8 +309,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.1)))
-                                                .logged()),
+                                                                                * 0.1)))),
                         sourcing(
                                 () ->
                                         getTxnRecord("txnId")
@@ -334,8 +321,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                                 () -> 3L,
                                                                                 feeObs.get()
                                                                                         .getNetworkFee()))
-                                                                .status(INSUFFICIENT_TX_FEE))
-                                                .logged()));
+                                                                .status(INSUFFICIENT_TX_FEE))));
     }
 
     private HapiSpec payerRecordCreationSanityChecks() {
@@ -350,7 +336,7 @@ public class RecordCreationSuite extends HapiSuite {
                         assertionsHold(
                                 (spec, opLog) -> {
                                     final var payerId = spec.registry().getAccountID("payer");
-                                    final var subOp = getAccountRecords("payer").logged();
+                                    final var subOp = getAccountRecords("payer");
                                     allRunFor(spec, subOp);
                                     final var records =
                                             subOp.getResponse()

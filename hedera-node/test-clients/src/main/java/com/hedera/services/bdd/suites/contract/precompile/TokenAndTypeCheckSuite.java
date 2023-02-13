@@ -103,7 +103,6 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .logged()
                                                         .has(
                                                                 resultWith()
                                                                         .resultViaFunctionName(
@@ -122,7 +121,6 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                                                         asAddress(
                                                                                 vanillaTokenID
                                                                                         .get())))
-                                                        .logged()
                                                         .has(
                                                                 resultWith()
                                                                         .resultViaFunctionName(
@@ -175,8 +173,7 @@ public class TokenAndTypeCheckSuite extends HapiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .via("FakeAddressTokenTypeCheckTx")
                                                         .payingWith(ACCOUNT)
-                                                        .gas(GAS_TO_OFFER)
-                                                        .logged())))
+                                                        .gas(GAS_TO_OFFER))))
                 .then(
                         childRecordsCheck(
                                 "FakeAddressTokenCheckTx",

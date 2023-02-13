@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.initialBalance;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
@@ -95,7 +94,7 @@ public class CreateSchedulesBeforeReconnect extends HapiSuite {
         return defaultHapiSpec("RunCreateSchedules")
                 .given(
                         scheduleOpsEnablement(),
-                        logIt(ignore -> settings.toString()),
+                        /*logIt(ignore -> settings.toString())*/
                         cryptoCreate("scheduleSender")
                                 .balance(initialBalance.getAsLong())
                                 .key(GENESIS)

@@ -27,7 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -168,7 +167,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()),
+                        /*logIt(ignore -> settings.toString())*/
                         tokenOpsEnablement())
                 .when(
                         fileUpdate(APP_PROPERTIES)
@@ -187,36 +186,28 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
                                                 "10000000")),
                         sleepFor(5000),
                         newKeyNamed("adminKey"),
-                        logIt(ignore -> settings.toString()),
+                        /*logIt(ignore -> settings.toString())*/
                         cryptoCreate(TARGET_ACCOUNT)
                                 .fee(100_000_000L)
                                 .payingWith(GENESIS)
-                                .entityMemo("Memo Length :" + settings.getMemoLength())
-                                .logged(),
-                        getAccountInfo(TARGET_ACCOUNT).logged(),
+                                .entityMemo("Memo Length :" + settings.getMemoLength()),
+                        getAccountInfo(TARGET_ACCOUNT),
                         cryptoCreate(TARGET_ACCOUNT + "Info")
                                 .fee(100_000_000L)
                                 .payingWith(GENESIS)
-                                .entityMemo(ACCOUNT_MEMO)
-                                .logged(),
+                                .entityMemo(ACCOUNT_MEMO),
                         createTopic(TARGET_TOPIC)
                                 .topicMemo(TOPIC_MEMO)
                                 .adminKeyName("adminKey")
-                                .payingWith(GENESIS)
-                                .logged(),
+                                .payingWith(GENESIS),
                         createTopic(TARGET_TOPIC + "Info")
                                 .payingWith(GENESIS)
                                 .adminKeyName("adminKey")
-                                .topicMemo(TOPIC_MEMO)
-                                .logged(),
-                        tokenCreate(TARGET_TOKEN)
-                                .entityMemo(TOKEN_MEMO)
-                                .payingWith(GENESIS)
-                                .logged(),
+                                .topicMemo(TOPIC_MEMO),
+                        tokenCreate(TARGET_TOKEN).entityMemo(TOKEN_MEMO).payingWith(GENESIS),
                         tokenCreate(TARGET_TOKEN + "Info")
                                 .entityMemo(TOKEN_MEMO)
-                                .payingWith(GENESIS)
-                                .logged())
+                                .payingWith(GENESIS))
                 .then(defaultLoadTest(mixedOpsBurst, settings));
     }
 

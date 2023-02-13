@@ -52,15 +52,14 @@ public class Issue310Suite extends HapiSuite {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
                 .given(
-                        cryptoCreate("acct1").balance(initialBalance).logged().via("txnId1"),
+                        cryptoCreate("acct1").balance(initialBalance).via("txnId1"),
                         UtilVerbs.sleepFor(1000),
                         cryptoCreate("acctWithDuplicateTxnId")
                                 .balance(initialBalance)
-                                .logged()
                                 .txnId("txnId1")
                                 .hasPrecheck(DUPLICATE_TRANSACTION))
                 .when()
-                .then(getTxnRecord("txnId1").logged());
+                .then(getTxnRecord("txnId1"));
     }
 
     private HapiSpec duplicatedTxnsDifferentTypesDetected() {
@@ -75,7 +74,7 @@ public class Issue310Suite extends HapiSuite {
                                 .payingWith("acct2")
                                 .txnId("txnId2")
                                 .hasPrecheck(DUPLICATE_TRANSACTION))
-                .then(getTxnRecord("txnId2").logged());
+                .then(getTxnRecord("txnId2"));
     }
 
     private HapiSpec duplicatedTxnsSameTypeDifferntNodesDetected() {
@@ -89,7 +88,7 @@ public class Issue310Suite extends HapiSuite {
                                 .txnId("txnId1")
                                 .hasPrecheck(DUPLICATE_TRANSACTION))
                 .when()
-                .then(getTxnRecord("txnId1").logged());
+                .then(getTxnRecord("txnId1"));
     }
 
     private HapiSpec duplicatedTxnsDiffrentTypesDifferentNodesDetected() {
@@ -104,7 +103,7 @@ public class Issue310Suite extends HapiSuite {
                                 .payingWith("acct4")
                                 .txnId("txnId4")
                                 .hasPrecheck(DUPLICATE_TRANSACTION))
-                .then(getTxnRecord("txnId4").logged());
+                .then(getTxnRecord("txnId4"));
     }
 
     @Override

@@ -219,7 +219,6 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                                                 initialTxnId
                                                                                         .get())))
                                                 .txnId("begin")
-                                                .logged()
                                                 .signedBy("payingSender")),
                         getTxnRecord("begin")
                                 .hasPriority(
@@ -240,8 +239,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 "payingSender")))))
-                                .assertingOnlyPriority()
-                                .logged(),
+                                .assertingOnlyPriority(),
                         getTxnRecord("begin")
                                 .scheduled()
                                 .hasPriority(
@@ -259,15 +257,13 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                                                         .nodeRewardAccount(),
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                "payingSender")))))
-                                .logged())
+                                                                                                "payingSender"))))))
                 .then(
                         scheduleCreate(
                                         "secondChunk",
                                         submitMessageTo(ofGeneralInterest)
                                                 .chunkInfo(3, 2, "payingSender"))
                                 .via("end")
-                                .logged()
                                 .payingWith("payingSender"),
                         getTxnRecord("end")
                                 .scheduled()
@@ -286,9 +282,8 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                                                         .nodeRewardAccount(),
                                                                                 spec.registry()
                                                                                         .getAccountID(
-                                                                                                "payingSender")))))
-                                .logged(),
-                        getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L),
+                                                                                                "payingSender"))))),
+                        getTopicInfo(ofGeneralInterest).hasSeqNo(2L),
                         overridingAllOf(
                                 Map.of(
                                         "staking.fees.nodeRewardPercentage",
@@ -328,7 +323,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                 .payingWith("payer")
                                 .via("creation"),
                         scheduleSign("tb").via("trigger").alsoSigningWith("receiver"))
-                .then(getScheduleInfo("tb").logged().wasExecutedBy("trigger"));
+                .then(getScheduleInfo("tb").wasExecutedBy("trigger"));
     }
 
     public HapiSpec deletionTimeIsAvailable() {
@@ -359,7 +354,6 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                         "twoSigXfer",
                                         cryptoTransfer(tinyBarsFromTo("payer", "receiver", 1))
                                                 .fee(ONE_HBAR))
-                                .logged()
                                 .savingExpectedScheduledTxnId()
                                 .payingWith("payer")
                                 .via("creation"),

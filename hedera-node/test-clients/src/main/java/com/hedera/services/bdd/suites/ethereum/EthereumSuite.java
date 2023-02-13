@@ -349,8 +349,7 @@ public class EthereumSuite extends HapiSuite {
                                                     .gasPrice(10L)
                                                     .gasLimit(1_000_000L)
                                                     .via("ercIsApprovedForAllBeforeTxn")
-                                                    .hasKnownStatusFrom(SUCCESS)
-                                                    .logged();
+                                                    .hasKnownStatusFrom(SUCCESS);
 
                                     var isApprovedForAllBeforeCheck =
                                             childRecordsCheck(
@@ -389,8 +388,7 @@ public class EthereumSuite extends HapiSuite {
                                                     .gasPrice(10L)
                                                     .gasLimit(1_000_000L)
                                                     .via("ercSetApproveForAllTxn")
-                                                    .hasKnownStatusFrom(SUCCESS)
-                                                    .logged();
+                                                    .hasKnownStatusFrom(SUCCESS);
 
                                     var isApprovedForAllAfter =
                                             ethereumCall(
@@ -414,8 +412,7 @@ public class EthereumSuite extends HapiSuite {
                                                     .gasPrice(10L)
                                                     .gasLimit(1_000_000L)
                                                     .via("ercIsApprovedForAllAfterTxn")
-                                                    .hasKnownStatusFrom(SUCCESS)
-                                                    .logged();
+                                                    .hasKnownStatusFrom(SUCCESS);
 
                                     var isApprovedForAllAfterCheck =
                                             childRecordsCheck(
@@ -479,7 +476,6 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .status(SUCCESS)
@@ -600,7 +596,7 @@ public class EthereumSuite extends HapiSuite {
                                                                             .INSUFFICIENT_TX_FEE);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord("payTxn").logged();
+                                            getTxnRecord("payTxn");
                                     allRunFor(spec, subop1, subop2, subop3, hapiGetTxnRecord);
 
                                     final long wholeTransactionFee =
@@ -700,11 +696,10 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS))
                 .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged(),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY),
                         sourcing(
                                 () ->
                                         getContractInfo(contractID.get())
-                                                .logged()
                                                 .has(
                                                         ContractInfoAsserts.contractWith()
                                                                 .defaultAdminKey()
@@ -745,7 +740,6 @@ public class EthereumSuite extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var payTxn =
                                             getTxnRecord("payTxn")
-                                                    .logged()
                                                     .hasPriority(
                                                             recordWith()
                                                                     .ethereumHash(
@@ -812,7 +806,6 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .status(SUCCESS)
@@ -881,7 +874,6 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .status(SUCCESS)
@@ -945,7 +937,6 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(mintTxn)
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCallResult(
@@ -1061,7 +1052,6 @@ public class EthereumSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord("payTxn")
-                                                        .logged()
                                                         .hasPriority(
                                                                 recordWith()
                                                                         .contractCallResult(
@@ -1200,7 +1190,7 @@ public class EthereumSuite extends HapiSuite {
                                                                                     .longValueExact());
                                                                 }))))
                 .then(
-                        getTxnRecord(firstTxn).andAllChildRecords().logged(),
+                        getTxnRecord(firstTxn).andAllChildRecords(),
                         childRecordsCheck(
                                 firstTxn,
                                 ResponseCodeEnum.SUCCESS,

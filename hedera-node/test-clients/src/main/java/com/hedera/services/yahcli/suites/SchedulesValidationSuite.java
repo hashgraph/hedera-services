@@ -26,13 +26,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.IMMUTABLE_SCHEDULE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.MUTABLE_SCHEDULE;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.SENDER;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.TOPIC;
-import static com.hedera.services.yahcli.commands.validation.ValidationCommand.checkBoxed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
@@ -86,8 +84,8 @@ public class SchedulesValidationSuite extends HapiSuite {
                         getTopicInfo(TOPIC).savingSeqNoTo(seqNo::set),
                         scheduleDelete(IMMUTABLE_SCHEDULE)
                                 .payingWith(PAYER)
-                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE),
-                        logIt(checkBoxed("Schedule creation looks good")))
+                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE)
+                        /*logIt(checkBoxed("Schedule creation looks good"))*/ )
                 .when(
                         scheduleDelete(MUTABLE_SCHEDULE)
                                 .signedBy(PAYER)
@@ -126,23 +124,18 @@ public class SchedulesValidationSuite extends HapiSuite {
                         scheduleDelete(inSpecSchedule)
                                 .signedBy(PAYER, adminKeyFor(MUTABLE_SCHEDULE))
                                 .payingWith(PAYER)
-                                .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
-                        logIt(checkBoxed("Schedule management and execution look good")))
+                                .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED)
+                        /*logIt(checkBoxed("Schedule management and execution look good"))*/ )
                 .then(
-                        getTopicInfo(TOPIC)
-                                .payingWith(PAYER)
-                                .hasSeqNo(() -> seqNo.get() + 1)
-                                .logged(),
+                        getTopicInfo(TOPIC).payingWith(PAYER).hasSeqNo(() -> seqNo.get() + 1),
                         getScheduleInfo(inSpecSchedule).payingWith(PAYER).isExecuted(),
                         getTxnRecord(correspondingScheduledTxnId(IMMUTABLE_SCHEDULE))
                                 .payingWith(PAYER)
-                                .logged()
                                 .assertingNothingAboutHashes(),
                         getTxnRecord(correspondingScheduledTxnId(inSpecSchedule))
                                 .payingWith(PAYER)
-                                .logged()
-                                .assertingNothingAboutHashes(),
-                        logIt(checkBoxed("Schedule records look good")));
+                                .assertingNothingAboutHashes()
+                        /*logIt(checkBoxed("Schedule records look good"))*/ );
     }
 
     @Override

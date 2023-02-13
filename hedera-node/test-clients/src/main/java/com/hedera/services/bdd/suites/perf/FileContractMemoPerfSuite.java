@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -135,28 +134,22 @@ public class FileContractMemoPerfSuite extends LoadTest {
         return defaultHapiSpec("RunMixedFileContractMemoOps")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(
                         fileCreate(TARGET_FILE)
                                 .payingWith(GENESIS)
                                 .path(HapiSpecSetup.getDefaultInstance().defaultContractPath())
-                                .entityMemo(FILE_MEMO)
-                                .logged(),
-                        fileCreate(TARGET_FILE + "Info")
-                                .payingWith(GENESIS)
-                                .entityMemo(FILE_MEMO)
-                                .logged(),
+                                .entityMemo(FILE_MEMO),
+                        fileCreate(TARGET_FILE + "Info").payingWith(GENESIS).entityMemo(FILE_MEMO),
                         contractCreate(CONTRACT)
                                 .payingWith(GENESIS)
                                 .bytecode(TARGET_FILE)
-                                .entityMemo(CONTRACT_MEMO)
-                                .logged(),
+                                .entityMemo(CONTRACT_MEMO),
                         contractCreate(CONTRACT + "Info")
                                 .payingWith(GENESIS)
                                 .bytecode(TARGET_FILE)
-                                .entityMemo(CONTRACT_MEMO)
-                                .logged())
+                                .entityMemo(CONTRACT_MEMO))
                 .then(defaultLoadTest(mixedOpsBurst, settings));
     }
 

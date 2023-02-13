@@ -135,17 +135,13 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(civilian, fungible, nft),
                         mintToken(nft, List.of(copyFromUtf8("Please mind the vase."))),
-                        cryptoTransfer(moving(2, fungible).between(TOKEN_TREASURY, civilian))
-                                .logged(),
-                        cryptoTransfer(movingUnique(nft, 1L).between(TOKEN_TREASURY, civilian))
-                                .logged(),
+                        cryptoTransfer(moving(2, fungible).between(TOKEN_TREASURY, civilian)),
+                        cryptoTransfer(movingUnique(nft, 1L).between(TOKEN_TREASURY, civilian)),
                         getAccountInfo(civilian)
                                 .hasToken(relationshipWith(fungible).balance(2))
-                                .hasOwnedNfts(1)
-                                .logged())
+                                .hasOwnedNfts(1))
                 .then(
-                        cryptoTransfer(moving(0, fungible).between(TOKEN_TREASURY, civilian))
-                                .logged(),
+                        cryptoTransfer(moving(0, fungible).between(TOKEN_TREASURY, civilian)),
                         mintToken(fungible, 0),
                         mintToken(nft, List.of()).hasKnownStatus(INVALID_TOKEN_MINT_METADATA),
                         burnToken(fungible, 0),
@@ -155,12 +151,10 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasKnownStatus(INVALID_WIPING_AMOUNT),
                         getAccountInfo(TOKEN_TREASURY)
                                 .hasToken(relationshipWith(fungible).balance(8))
-                                .hasOwnedNfts(0)
-                                .logged(),
+                                .hasOwnedNfts(0),
                         getAccountInfo(civilian)
                                 .hasToken(relationshipWith(fungible).balance(2))
-                                .hasOwnedNfts(1)
-                                .logged());
+                                .hasOwnedNfts(1));
     }
 
     private HapiSpec frozenTreasuryCannotBeMintedOrBurned() {
@@ -228,17 +222,17 @@ public class TokenManagementSpecs extends HapiSuite {
                         getAccountBalance("misc").hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
-                        getAccountInfo("misc").logged(),
+                        getAccountInfo("misc"),
                         burnToken(BURN_TOKEN, BURN_AMOUNT)
                                 .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE)
                                 .via("wipeTxn"),
-                        getTokenInfo(BURN_TOKEN).logged(),
-                        getAccountInfo("misc").logged())
+                        getTokenInfo(BURN_TOKEN),
+                        getAccountInfo("misc"))
                 .then(
                         getTokenInfo(BURN_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(BURN_TOKEN, TRANSFER_AMOUNT),
-                        getTxnRecord("wipeTxn").logged());
+                        getTxnRecord("wipeTxn"));
     }
 
     public HapiSpec wipeAccountSuccessCasesWork() {
@@ -258,17 +252,17 @@ public class TokenManagementSpecs extends HapiSuite {
                         cryptoTransfer(moving(500, wipeableToken).between(TOKEN_TREASURY, "misc")),
                         getAccountBalance("misc").hasTokenBalance(wipeableToken, 500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
-                        getAccountInfo("misc").logged(),
+                        getAccountInfo("misc"),
                         wipeTokenAccount(wipeableToken, "misc", 500).via("wipeTxn"),
-                        getAccountInfo("misc").logged(),
+                        getAccountInfo("misc"),
                         wipeTokenAccount(wipeableToken, "misc", 0).via("wipeWithZeroAmount"),
-                        getAccountInfo("misc").logged())
+                        getAccountInfo("misc"))
                 .then(
                         getAccountBalance("misc").hasTokenBalance(wipeableToken, 0),
                         cryptoDelete("misc"),
                         getTokenInfo(wipeableToken).hasTotalSupply(500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(wipeableToken, 500),
-                        getTxnRecord("wipeTxn").logged());
+                        getTxnRecord("wipeTxn"));
     }
 
     public HapiSpec wipeAccountFailureCasesWork() {
@@ -345,7 +339,7 @@ public class TokenManagementSpecs extends HapiSuite {
                         revokeTokenKyc(withKycKey, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
-                .then(getTokenInfo(withoutKycKey).hasRegisteredId(withoutKycKey).logged());
+                .then(getTokenInfo(withoutKycKey).hasRegisteredId(withoutKycKey));
     }
 
     public HapiSpec freezeMgmtSuccessCasesWork() {
@@ -370,11 +364,11 @@ public class TokenManagementSpecs extends HapiSuite {
                                         moving(1, withPlusDefaultFalse)
                                                 .between(TOKEN_TREASURY, "misc"))
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        getAccountInfo("misc").logged(),
+                        getAccountInfo("misc"),
                         tokenUnfreeze(withPlusDefaultFalse, "misc"),
                         cryptoTransfer(
                                 moving(1, withPlusDefaultFalse).between(TOKEN_TREASURY, "misc")))
-                .then(getAccountInfo("misc").logged());
+                .then(getAccountInfo("misc"));
     }
 
     public HapiSpec kycMgmtSuccessCasesWork() {
@@ -393,14 +387,14 @@ public class TokenManagementSpecs extends HapiSuite {
                 .when(
                         cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        getAccountInfo("misc").logged(),
+                        getAccountInfo("misc"),
                         grantTokenKyc(withKycKey, "misc"),
                         cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc")),
                         revokeTokenKyc(withKycKey, "misc"),
                         cryptoTransfer(moving(1, withKycKey).between(TOKEN_TREASURY, "misc"))
                                 .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
                         cryptoTransfer(moving(1, withoutKycKey).between(TOKEN_TREASURY, "misc")))
-                .then(getAccountInfo("misc").logged());
+                .then(getAccountInfo("misc"));
     }
 
     public HapiSpec supplyMgmtSuccessCasesWork() {
@@ -414,15 +408,15 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .decimals(1)
                                 .treasury(TOKEN_TREASURY))
                 .when(
-                        getTokenInfo("supple").logged(),
-                        getAccountBalance(TOKEN_TREASURY).logged(),
+                        getTokenInfo("supple"),
+                        getAccountBalance(TOKEN_TREASURY),
                         mintToken("supple", 100).via("mintTxn"),
                         burnToken("supple", 50).via("burnTxn"))
                 .then(
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        getTokenInfo("supple").logged(),
-                        getTxnRecord("mintTxn").logged(),
-                        getTxnRecord("burnTxn").logged());
+                        getAccountInfo(TOKEN_TREASURY),
+                        getTokenInfo("supple"),
+                        getTxnRecord("mintTxn"),
+                        getTxnRecord("burnTxn"));
     }
 
     private HapiSpec fungibleCommonMaxSupplyReachWork() {
@@ -497,8 +491,7 @@ public class TokenManagementSpecs extends HapiSuite {
                                 .hasPriority(
                                         recordWith()
                                                 .newTotalSupply(3L)
-                                                .serialNos(List.of(1L, 2L, 3L)))
-                                .logged());
+                                                .serialNos(List.of(1L, 2L, 3L))));
     }
 
     public HapiSpec supplyMgmtFailureCasesWork() {

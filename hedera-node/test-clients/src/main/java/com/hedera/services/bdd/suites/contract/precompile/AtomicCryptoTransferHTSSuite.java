@@ -147,8 +147,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -306,7 +305,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords())
                 .then(
                         getAccountBalance(SENDER).hasTinyBars(900 * ONE_HBAR),
                         getAccountBalance(RECEIVER).hasTinyBars(290 * ONE_HBAR),
@@ -392,8 +391,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -434,12 +432,12 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .via(cryptoTransferTxnForFungible)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxnForFungible).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxnForFungible).andAllChildRecords())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
-                        getTokenInfo(FUNGIBLE_TOKEN).logged(),
+                        getTokenInfo(FUNGIBLE_TOKEN),
                         childRecordsCheck(
                                 cryptoTransferTxnForFungible,
                                 SUCCESS,
@@ -518,14 +516,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .via(cryptoTransferTxnForNft)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxnForNft).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxnForNft).andAllChildRecords())
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
                         getAccountBalance(RECEIVER).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER).hasOwnedNfts(0),
                         getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
-                        getTokenInfo(NFT_TOKEN).logged(),
+                        getTokenInfo(NFT_TOKEN),
                         childRecordsCheck(
                                 cryptoTransferTxnForNft,
                                 SUCCESS,
@@ -651,18 +649,18 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .via(cryptoTransferTxnForAll)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxnForAll).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxnForAll).andAllChildRecords())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 155),
-                        getTokenInfo(FUNGIBLE_TOKEN).logged(),
+                        getTokenInfo(FUNGIBLE_TOKEN),
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER2).hasOwnedNfts(1),
                         getAccountBalance(RECEIVER2).hasTokenBalance(NFT_TOKEN, 1),
                         getAccountInfo(SENDER2).hasOwnedNfts(0),
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
-                        getTokenInfo(NFT_TOKEN).logged(),
+                        getTokenInfo(NFT_TOKEN),
                         getAccountBalance(SENDER).hasTinyBars(950 * ONE_HBAR),
                         getAccountBalance(RECEIVER).hasTinyBars(250 * ONE_HBAR),
                         childRecordsCheck(
@@ -713,14 +711,12 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .payingWith(DEFAULT_PAYER)
                                 .addCryptoAllowance(OWNER, CONTRACT, allowance)
                                 .via(BASE_APPROVAL_TXN)
-                                .signedBy(DEFAULT_PAYER, OWNER)
-                                .logged(),
+                                .signedBy(DEFAULT_PAYER, OWNER),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
                                         accountDetailsWith()
-                                                .cryptoAllowancesContaining(CONTRACT, allowance))
-                                .logged(),
+                                                .cryptoAllowancesContaining(CONTRACT, allowance)),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var owner = spec.registry().getAccountID(OWNER);
@@ -1285,8 +1281,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1334,7 +1329,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .via(cryptoTransferTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(cryptoTransferTxn).andAllChildRecords())
                 .then(
                         getAccountBalance(RECEIVER).hasTinyBars(1 * ONE_HUNDRED_HBARS),
                         childRecordsCheck(

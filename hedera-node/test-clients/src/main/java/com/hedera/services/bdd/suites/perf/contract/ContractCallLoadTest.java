@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
@@ -77,25 +76,25 @@ public class ContractCallLoadTest extends LoadTest {
                                                                     .hasRetryPrecheckFrom(
                                                                             PLATFORM_TRANSACTION_NOT_CREATED)
                                                                     .deferStatusResolution())
-                                            .toArray(n -> new HapiSpecOperation[n])),
-                            logIt(
-                                    ignore ->
-                                            String.format(
-                                                    "Now a total of %d transactions submitted.",
-                                                    submittedSoFar.addAndGet(
-                                                            settings.getBurstSize()))),
+                                            .toArray(n -> new HapiSpecOperation[n]))
+                            /*logIt(
+                            ignore ->
+                                    String.format(
+                                            "Now a total of %d transactions submitted.",
+                                            submittedSoFar.addAndGet(
+                                                    settings.getBurstSize())))*/ ,
                         };
 
         return defaultHapiSpec("runContractCalls")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(
                         uploadInitCode(VERBOSE_DEPOSIT, BALANCE_LOOKUP),
                         contractCreate(VERBOSE_DEPOSIT),
                         contractCreate(BALANCE_LOOKUP).balance(1L),
-                        getContractInfo(VERBOSE_DEPOSIT).hasExpectedInfo().logged())
+                        getContractInfo(VERBOSE_DEPOSIT).hasExpectedInfo())
                 .then(defaultLoadTest(callBurst, settings));
     }
 

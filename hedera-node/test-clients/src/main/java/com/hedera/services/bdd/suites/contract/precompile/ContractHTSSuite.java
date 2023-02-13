@@ -901,7 +901,6 @@ public class ContractHTSSuite extends HapiSuite {
                 .then(
                         getTxnRecord("distributeTx")
                                 .andAllChildRecords()
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .transfers(
@@ -950,8 +949,7 @@ public class ContractHTSSuite extends HapiSuite {
                         uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
                         contractCreate(FEE_DISTRIBUTOR).maxAutomaticTokenAssociations(2),
                         getContractInfo(FEE_DISTRIBUTOR)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2))
-                                .logged(),
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(2)),
                         withOpContext(
                                 (spec, opLog) ->
                                         allRunFor(
@@ -964,9 +962,8 @@ public class ContractHTSSuite extends HapiSuite {
                         tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
                         tokenAssociate(RECEIVER, List.of(NFT)),
                         cryptoTransfer(
-                                        TokenMovement.movingUnique(NFT, 1)
-                                                .between(TOKEN_TREASURY, ACCOUNT))
-                                .logged())
+                                TokenMovement.movingUnique(NFT, 1)
+                                        .between(TOKEN_TREASURY, ACCOUNT)))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {

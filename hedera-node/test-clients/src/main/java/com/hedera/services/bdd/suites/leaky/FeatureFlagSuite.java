@@ -106,9 +106,9 @@ public class FeatureFlagSuite extends HapiSuite {
     private HapiSpecOperation confirmUtilPrngNotSupported() {
         return UtilVerbs.blockingOrder(
                 cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                hapiPrng().payingWith(BOB).via("baseTxn").blankMemo().logged(),
+                hapiPrng().payingWith(BOB).via("baseTxn").blankMemo(),
                 getTxnRecord("baseTxn").hasNoPseudoRandomData(),
-                hapiPrng(10).payingWith(BOB).via("plusRangeTxn").blankMemo().logged(),
+                hapiPrng(10).payingWith(BOB).via("plusRangeTxn").blankMemo(),
                 getTxnRecord("plusRangeTxn").hasNoPseudoRandomData());
     }
 
@@ -173,15 +173,13 @@ public class FeatureFlagSuite extends HapiSuite {
                 cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
                         .via(fungibleTokenXfer)
                         .payingWith(CIVILIAN)
-                        .hasKnownStatus(NOT_SUPPORTED)
-                        .logged(),
+                        .hasKnownStatus(NOT_SUPPORTED),
                 cryptoTransfer(
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
                                         .between(CIVILIAN, VALID_ALIAS))
                         .via(nftXfer)
                         .payingWith(CIVILIAN)
-                        .hasKnownStatus(NOT_SUPPORTED)
-                        .logged(),
+                        .hasKnownStatus(NOT_SUPPORTED),
                 getTxnRecord(fungibleTokenXfer)
                         .andAllChildRecords()
                         .hasNonStakingChildRecordCount(0),

@@ -51,7 +51,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
         return defaultHapiSpec("CreateCryptoTxvWithUTF8Memo")
                 .given(cryptoCreate("UTF8MemoTestAccount").via("utf8MemoTxn"))
                 .when()
-                .then(getTxnRecord("utf8MemoTxn").logged());
+                .then(getTxnRecord("utf8MemoTxn"));
     }
 
     private HapiSpec cryptoCreateTxnCustomSpec() {
@@ -59,7 +59,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiSuite {
                 .withProperties(Map.of("default.useMemoUTF8", utf8Mode.toString()))
                 .given(cryptoCreate("UTF8CustomSpecTestAccount").via("utf8CustomSpecMemoTxn"))
                 .when()
-                .then(getTxnRecord("utf8CustomSpecMemoTxn").logged());
+                .then(getTxnRecord("utf8CustomSpecMemoTxn"));
     }
 
     @Override

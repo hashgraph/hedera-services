@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -64,8 +63,8 @@ public class SubmitMessagesForReconnect extends HapiSuite {
         return defaultHapiSpec("RunSubmitMessages")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when()
                 .then(defaultLoadTest(submitBurst, settings));
     }

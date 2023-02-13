@@ -278,7 +278,6 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTokenInfo(VANILLA_TOKEN)
-                                                .logged()
                                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                                 .hasSymbol(CUSTOM_SYMBOL)
                                                 .hasName(CUSTOM_NAME)
@@ -373,14 +372,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                 "noAdminKey",
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith().status(TOKEN_IS_IMMUTABLE)),
-                        getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury).logged(),
+                        getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(VANILLA_TOKEN, 0),
                         getAccountBalance(newTokenTreasury).hasTokenBalance(VANILLA_TOKEN, 1),
                         getTokenInfo(VANILLA_TOKEN)
                                 .hasTreasury(newTokenTreasury)
-                                .hasPauseStatus(TokenPauseStatus.Unpaused)
-                                .logged(),
-                        getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury).logged());
+                                .hasPauseStatus(TokenPauseStatus.Unpaused),
+                        getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury));
     }
 
     public HapiSpec updateWithTooLongNameAndSymbol() {
@@ -968,7 +966,6 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTokenInfo(VANILLA_TOKEN)
-                                                        .logged()
                                                         .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                                         .hasSupplyType(TokenSupplyType.INFINITE)
                                                         .searchKeysGlobally()
@@ -1183,7 +1180,6 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTokenInfo(NFT_TOKEN)
-                                                        .logged()
                                                         .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                                         .hasSupplyType(TokenSupplyType.INFINITE)
                                                         .searchKeysGlobally()

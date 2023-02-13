@@ -59,7 +59,6 @@ public class AutoAccountCreationValidationsAfterReconnect extends HapiSuite {
                                                         .has(
                                                                 AccountInfoAsserts.accountWith()
                                                                         .hasAlias())
-                                                        .setNode("0.0.8")
-                                                        .logged())));
+                                                        .setNode("0.0.8"))));
     }
 }

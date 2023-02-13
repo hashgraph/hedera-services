@@ -75,8 +75,8 @@ public class Issue1744Suite extends HapiSuite {
                                         .payingWith("payer")
                                         .via("txnB")
                                         .hasAnyKnownStatus()),
-                        getTxnRecord("txnA").logged(),
-                        getTxnRecord("txnB").logged());
+                        getTxnRecord("txnA"),
+                        getTxnRecord("txnB"));
     }
 
     @Override

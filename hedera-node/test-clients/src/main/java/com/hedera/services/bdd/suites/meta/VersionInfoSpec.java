@@ -63,7 +63,7 @@ public class VersionInfoSpec extends HapiSuite {
             return defaultHapiSpec("getsExpectedVersions")
                     .given()
                     .when()
-                    .then(getVersionInfo().logged().hasNoDegenerateSemvers());
+                    .then(getVersionInfo().hasNoDegenerateSemvers());
         }
     }
 

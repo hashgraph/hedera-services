@@ -64,8 +64,8 @@ public class ERC1155ContractInteractions extends HapiSuite {
                         contractCreate(CONTRACT)
                                 .via("contractCreate")
                                 .payingWith(DEFAULT_CONTRACT_SENDER),
-                        getTxnRecord("contractCreate").logged(),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+                        getTxnRecord("contractCreate"),
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER),
                         getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
                         getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .savingSnapshot(DEFAULT_CONTRACT_SENDER + "Info"),
@@ -124,9 +124,9 @@ public class ERC1155ContractInteractions extends HapiSuite {
                                     ops.add(transferCall);
                                     allRunFor(spec, ops);
                                 }),
-                        getTxnRecord("contractMintCall").logged(),
-                        getTxnRecord("acc1ApproveCall").logged(),
-                        getTxnRecord("contractTransferFromCall").logged());
+                        getTxnRecord("contractMintCall"),
+                        getTxnRecord("acc1ApproveCall"),
+                        getTxnRecord("contractTransferFromCall"));
     }
 
     @Override

@@ -303,7 +303,7 @@ public class Utils {
             final AtomicReference<String> create2Addr) {
         return withOpContext(
                 (spec, opLog) -> {
-                    final var lookup = getTxnRecord(creation2).andAllChildRecords().logged();
+                    final var lookup = getTxnRecord(creation2).andAllChildRecords();
                     allRunFor(spec, lookup);
                     final var response = lookup.getResponse().getTransactionGetRecord();
                     final var numRecords = response.getChildTransactionRecordsCount();

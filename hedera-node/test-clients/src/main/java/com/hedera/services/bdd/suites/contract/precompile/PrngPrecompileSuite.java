@@ -150,12 +150,10 @@ public class PrngPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(emptyInputCall)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                .logged()))
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         getTxnRecord(emptyInputCall)
                                 .andAllChildRecords()
-                                .logged()
                                 .saveTxnRecordToRegistry(emptyInputCall),
                         withOpContext(
                                 (spec, ignore) -> {
@@ -186,12 +184,10 @@ public class PrngPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(largeInputCall)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                .logged()))
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         getTxnRecord(largeInputCall)
                                 .andAllChildRecords()
-                                .logged()
                                 .saveTxnRecordToRegistry(largeInputCall),
                         withOpContext(
                                 (spec, ignore) -> {
@@ -216,12 +212,10 @@ public class PrngPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(failedCall)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                .logged()))
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
                 .then(
                         getTxnRecord(failedCall)
                                 .andAllChildRecords()
-                                .logged()
                                 .saveTxnRecordToRegistry(failedCall),
                         withOpContext(
                                 (spec, ignore) -> {
@@ -256,11 +250,9 @@ public class PrngPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
                                                 .via(lessThan4Bytes)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                .logged()),
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
                         getTxnRecord(lessThan4Bytes)
                                 .andAllChildRecords()
-                                .logged()
                                 .saveTxnRecordToRegistry(lessThan4Bytes))
                 .then(
                         withOpContext(
@@ -285,8 +277,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                                         contractCall(prng, GET_SEED)
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
-                                                .via(randomBits)
-                                                .logged()))
+                                                .via(randomBits)))
                 .then(
                         getTxnRecord(randomBits)
                                 .andAllChildRecords()
@@ -302,8 +293,7 @@ public class PrngPrecompileSuite extends HapiSuite {
                                                                         isRandomResult(
                                                                                 new Object[] {
                                                                                     new byte[32]
-                                                                                }))))
-                                .logged());
+                                                                                })))));
     }
 
     @Override

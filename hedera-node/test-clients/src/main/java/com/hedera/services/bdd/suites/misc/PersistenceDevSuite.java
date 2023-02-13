@@ -46,9 +46,9 @@ public class PersistenceDevSuite extends HapiSuite {
         return customHapiSpec("TestEntityLoading")
                 .withProperties(Map.of("persistentEntities.dir.path", "persistent-entities/"))
                 .given(
-                        getTokenInfo("knownToken").logged(),
-                        getTopicInfo("knownTopic").logged(),
-                        getAccountInfo("knownAccount").logged())
+                        getTokenInfo("knownToken"),
+                        getTopicInfo("knownTopic"),
+                        getAccountInfo("knownAccount"))
                 .when()
                 .then();
     }

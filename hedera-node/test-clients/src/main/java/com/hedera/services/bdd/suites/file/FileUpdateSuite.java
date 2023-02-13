@@ -228,8 +228,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 .hasToken(
                                         relationshipWith(TokenAssociationSpecs.VANILLA_TOKEN)
                                                 .kyc(KycNotApplicable)
-                                                .freeze(FreezeNotApplicable))
-                                .logged());
+                                                .freeze(FreezeNotApplicable)));
     }
 
     public HapiSpec notTooManyFeeScheduleCanBeCreated() {
@@ -277,13 +276,13 @@ public class FileUpdateSuite extends HapiSuite {
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
                         cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        getFileContents(API_PERMISSIONS).logged(),
+                        getFileContents(API_PERMISSIONS),
                         tokenCreate("poc").payingWith(civilian))
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .erasingProps(Set.of("tokenCreate")),
-                        getFileContents(API_PERMISSIONS).logged())
+                        getFileContents(API_PERMISSIONS))
                 .then(
                         tokenCreate("poc").payingWith(civilian).hasPrecheck(NOT_SUPPORTED),
                         fileUpdate(API_PERMISSIONS)
@@ -710,7 +709,6 @@ public class FileUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_BALANCES_FOR_STORAGE_RENT),
                         // All gas should be consumed
                         getTxnRecord(failedSet)
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -757,7 +755,6 @@ public class FileUpdateSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTxnRecord(aSet)
-                                                .logged()
                                                 .hasChildRecords(
                                                         recordWith()
                                                                 .transfers(

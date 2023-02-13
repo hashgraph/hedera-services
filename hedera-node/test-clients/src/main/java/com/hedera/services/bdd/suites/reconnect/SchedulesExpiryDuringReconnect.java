@@ -88,7 +88,6 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasAnyKnownStatus()
                                 .deferStatusResolution()
                                 .adminKey(DEFAULT_PAYER)
-                                .logging()
                                 .advertisingCreation()
                                 .savingExpectedScheduledTxnId())
                 .when(
@@ -105,7 +104,6 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasAnyKnownStatus()
                                 .deferStatusResolution()
                                 .adminKey(DEFAULT_PAYER)
-                                .logging()
                                 .advertisingCreation()
                                 .savingExpectedScheduledTxnId(),
                         scheduleCreate(
@@ -118,7 +116,6 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasAnyKnownStatus()
                                 .deferStatusResolution()
                                 .adminKey(DEFAULT_PAYER)
-                                .logging()
                                 .advertisingCreation()
                                 .savingExpectedScheduledTxnId(),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
@@ -152,7 +149,6 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                                 .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED)
                                 .deferStatusResolution()
                                 .adminKey(DEFAULT_PAYER)
-                                .logging()
                                 .advertisingCreation(),
                         getScheduleInfo(longLastingSchedule)
                                 .setNode(reconnectingNode)
@@ -165,7 +161,6 @@ public class SchedulesExpiryDuringReconnect extends HapiSuite {
                         getScheduleInfo(soonToBeExpiredSchedule)
                                 .setNode(reconnectingNode)
                                 .hasScheduledTxnIdSavedBy(soonToBeExpiredSchedule)
-                                .logging()
                                 .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 

@@ -191,7 +191,7 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(
                                         Map.of("tokens.maxRelsPerInfoQuery", "" + infoLimit)),
-                        getAccountInfo(account).hasTokenRelationShipCount(infoLimit).logged());
+                        getAccountInfo(account).hasTokenRelationShipCount(infoLimit));
     }
 
     private HapiSpec succeedsNormally() {
@@ -221,24 +221,21 @@ public class CryptoGetInfoRegression extends HapiSuite {
                                                 // if staked account id is present.
                                                 .noStakedAccountId()
                                                 .key("misc")
-                                                .balance(balance))
-                                .logged(),
+                                                .balance(balance)),
                         getAccountInfo("target")
                                 .has(
                                         accountWith()
                                                 .accountId("target")
                                                 .noStakingNodeId()
                                                 .key("misc")
-                                                .balance(balance))
-                                .logged(),
+                                                .balance(balance)),
                         getAccountInfo("targetWithStakedAccountId")
                                 .has(
                                         accountWith()
                                                 .accountId("targetWithStakedAccountId")
                                                 .stakedAccountId("0.0.20")
                                                 .key("misc")
-                                                .balance(balance))
-                                .logged());
+                                                .balance(balance)));
     }
 
     private HapiSpec failsForMissingAccount() {

@@ -95,14 +95,14 @@ public class CallOperationSuite extends HapiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract))
                 .when(
                         contractCall(contract, "setVar1", BigInteger.valueOf(35)),
-                        contractCallLocal(contract, "getVar1").logged(),
+                        contractCallLocal(contract, "getVar1"),
                         contractCall(
                                         contract,
                                         "callContract",
                                         asHeadlongAddress(INVALID_ADDRESS),
                                         BigInteger.valueOf(222))
                                 .hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
-                .then(contractCallLocal(contract, "getVar1").logged());
+                .then(contractCallLocal(contract, "getVar1"));
     }
 
     @Override

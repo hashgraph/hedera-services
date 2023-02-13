@@ -451,13 +451,7 @@ public class UtilVerbs {
                         .payingWith(GENESIS)
                         .nodePayment(ONE_HBAR)
                         .fee(ONE_HBAR)
-                        .addingFilteredConfigListTo(props, filter),
-                sourcing(
-                        () -> {
-                            ofInterest.forEach(
-                                    prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
-                            return logIt("Remembered props: " + props);
-                        }));
+                        .addingFilteredConfigListTo(props, filter));
     }
 
     public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
@@ -530,8 +524,7 @@ public class UtilVerbs {
                                     .andAllChildRecords()
                                     .hasPriority(
                                             recordWith().status(parentalStatus).txnId(parentId))
-                                    .hasChildRecords(parentId, childRecordAsserts)
-                                    .logged());
+                                    .hasChildRecords(parentId, childRecordAsserts));
                 });
     }
 
@@ -1111,8 +1104,7 @@ public class UtilVerbs {
                     for (long i = 0; i < contractListSize; i++) {
                         HapiSpecOperation op =
                                 getContractInfo(contractList + i)
-                                        .has(contractWith().propertiesInheritedFrom(parent))
-                                        .logged();
+                                        .has(contractWith().propertiesInheritedFrom(parent));
                         opsList.add(op);
                     }
                     CustomSpecAssert.allRunFor(spec, opsList);
@@ -1135,7 +1127,7 @@ public class UtilVerbs {
             String txn, double expectedUsd, double allowedPercentDiff) {
         return assertionsHold(
                 (spec, assertLog) -> {
-                    var subOp = getTxnRecord(txn).logged();
+                    var subOp = getTxnRecord(txn);
                     allRunFor(spec, subOp);
 
                     var rcd = subOp.getResponseRecord();
@@ -1224,7 +1216,6 @@ public class UtilVerbs {
                 (spec, assertLog) -> {
                     HapiGetTxnRecord subOp =
                             getTxnRecord(txn)
-                                    .logged()
                                     .payingWith(EXCHANGE_RATE_CONTROL)
                                     .expectStrictCostAnswer();
                     allRunFor(spec, subOp);
@@ -1290,7 +1281,7 @@ public class UtilVerbs {
 
                     for (String txn : txns) {
                         HapiGetTxnRecord subOp =
-                                getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL);
+                                getTxnRecord(txn).payingWith(EXCHANGE_RATE_CONTROL);
                         allRunFor(spec, subOp);
                         TransactionRecord rcd =
                                 subOp.getResponse()

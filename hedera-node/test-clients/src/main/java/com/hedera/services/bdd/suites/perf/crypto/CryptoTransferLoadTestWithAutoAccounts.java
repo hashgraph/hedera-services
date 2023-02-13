@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
@@ -83,7 +82,6 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                     if (receiver.startsWith("alias")) {
                         return new HapiSpecOperation[] {
                             cryptoTransfer(tinyBarsFromToWithAlias(sender, receiver, 1L))
-                                    .logging()
                                     .payingWith(sender)
                                     .signedBy(GENESIS)
                                     .suppressStats(true)
@@ -124,8 +122,8 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
         return defaultHapiSpec("RunCryptoTransfersWithAutoAccounts")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(
                         fileUpdate(THROTTLE_DEFS)
                                 .payingWith(GENESIS)
@@ -136,7 +134,6 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                                 .withRecharging()
                                 .key(GENESIS)
                                 .rechargeWindow(3)
-                                .logging()
                                 .hasRetryPrecheckFrom(
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
@@ -147,8 +144,7 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
                                         PLATFORM_TRANSACTION_NOT_CREATED)
-                                .key(GENESIS)
-                                .logging(),
+                                .key(GENESIS),
                         withOpContext(
                                 (spec, opLog) -> {
                                     List<HapiSpecOperation> ops = new ArrayList<>();
@@ -162,9 +158,7 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
                                     }
                                     allRunFor(spec, ops);
                                 }))
-                .then(
-                        defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").logged());
+                .then(defaultLoadTest(transferBurst, settings), getAccountBalance("sender"));
     }
 
     @Override

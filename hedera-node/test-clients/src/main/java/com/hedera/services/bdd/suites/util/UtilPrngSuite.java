@@ -64,12 +64,12 @@ public class UtilPrngSuite extends HapiSuite {
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
                         cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng().payingWith(BOB).via(baseTxn).blankMemo().logged(),
-                        getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes().logged(),
+                        hapiPrng().payingWith(BOB).via(baseTxn).blankMemo(),
+                        getTxnRecord(baseTxn).hasOnlyPseudoRandomBytes(),
                         validateChargedUsd(baseTxn, baseFee))
                 .when(
-                        hapiPrng(10).payingWith(BOB).via(plusRangeTxn).blankMemo().logged(),
-                        getTxnRecord(plusRangeTxn).hasOnlyPseudoRandomNumberInRange(10).logged(),
+                        hapiPrng(10).payingWith(BOB).via(plusRangeTxn).blankMemo(),
+                        getTxnRecord(plusRangeTxn).hasOnlyPseudoRandomNumberInRange(10),
                         validateChargedUsdWithin(plusRangeTxn, plusRangeFee, 0.5))
                 .then();
     }
@@ -79,12 +79,8 @@ public class UtilPrngSuite extends HapiSuite {
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
                         cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng(-10)
-                                .payingWith(BOB)
-                                .blankMemo()
-                                .hasPrecheck(INVALID_PRNG_RANGE)
-                                .logged(),
-                        hapiPrng(0).payingWith(BOB).blankMemo().hasPrecheck(OK).logged())
+                        hapiPrng(-10).payingWith(BOB).blankMemo().hasPrecheck(INVALID_PRNG_RANGE),
+                        hapiPrng(0).payingWith(BOB).blankMemo().hasPrecheck(OK))
                 .when()
                 .then();
     }
@@ -101,39 +97,37 @@ public class UtilPrngSuite extends HapiSuite {
                         // running hash is set
                         cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
                         // n-1 running hash and running has set
-                        hapiPrng().payingWith(BOB).blankMemo().via("prng").logged(),
+                        hapiPrng().payingWith(BOB).blankMemo().via("prng"),
                         // n-1, n-2 running hash and running has set
                         getTxnRecord("prng")
                                 .hasNoPseudoRandomData() // When running this suite in CI this check
-                                // will fail since it
-                                // already has n-3 running hash
-                                .logged(),
+                        // will fail since it
+                        // already has n-3 running hash
+                        ,
                         // n-1, n-2, n-3 running hash and running has set
-                        hapiPrng(10).payingWith(BOB).via(rangeTxn1).blankMemo().logged(),
+                        hapiPrng(10).payingWith(BOB).via(rangeTxn1).blankMemo(),
                         getTxnRecord(rangeTxn1)
                                 .hasNoPseudoRandomData() // When running this suite in CI this check
-                                // will fail since it
-                                // already has n-3 running hash
-                                .logged(),
-                        hapiPrng().payingWith(BOB).via("prng2").blankMemo().logged())
+                        // will fail since it
+                        // already has n-3 running hash
+                        ,
+                        hapiPrng().payingWith(BOB).via("prng2").blankMemo())
                 .when(
                         // should have pseudo random data
-                        hapiPrng(10).payingWith(BOB).via(rangeTxn).blankMemo().logged(),
-                        getTxnRecord(rangeTxn).hasOnlyPseudoRandomNumberInRange(10).logged())
+                        hapiPrng(10).payingWith(BOB).via(rangeTxn).blankMemo(),
+                        getTxnRecord(rangeTxn).hasOnlyPseudoRandomNumberInRange(10))
                 .then(
-                        hapiPrng().payingWith(BOB).via(prngWithoutRange).blankMemo().logged(),
-                        getTxnRecord(prngWithoutRange).hasOnlyPseudoRandomBytes().logged(),
-                        hapiPrng(0).payingWith(BOB).via(prngWithZeroRange).blankMemo().logged(),
-                        getTxnRecord(prngWithZeroRange).hasOnlyPseudoRandomBytes().logged(),
+                        hapiPrng().payingWith(BOB).via(prngWithoutRange).blankMemo(),
+                        getTxnRecord(prngWithoutRange).hasOnlyPseudoRandomBytes(),
+                        hapiPrng(0).payingWith(BOB).via(prngWithZeroRange).blankMemo(),
+                        getTxnRecord(prngWithZeroRange).hasOnlyPseudoRandomBytes(),
                         hapiPrng()
                                 .range(Integer.MAX_VALUE)
                                 .payingWith(BOB)
                                 .via(prngWithMaxRange)
-                                .blankMemo()
-                                .logged(),
+                                .blankMemo(),
                         getTxnRecord(prngWithMaxRange)
-                                .hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE)
-                                .logged(),
+                                .hasOnlyPseudoRandomNumberInRange(Integer.MAX_VALUE),
                         hapiPrng()
                                 .range(Integer.MIN_VALUE)
                                 .blankMemo()

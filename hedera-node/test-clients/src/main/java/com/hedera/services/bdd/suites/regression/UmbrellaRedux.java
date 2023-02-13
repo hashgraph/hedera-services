@@ -84,7 +84,7 @@ public class UmbrellaRedux extends HapiSuite {
                                 .withRecharging()
                                 .via("createUniquePayer"),
                         sleepFor(10000))
-                .when(getTxnRecord("createUniquePayer").logged())
+                .when(getTxnRecord("createUniquePayer"))
                 .then(
                         sourcing(
                                 () ->

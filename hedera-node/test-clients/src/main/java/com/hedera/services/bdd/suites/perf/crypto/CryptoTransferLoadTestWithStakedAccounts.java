@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
@@ -95,8 +94,8 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
         return defaultHapiSpec("RunCryptoTransfers")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        logIt(ignore -> settings.toString()))
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(
                         cryptoCreate("sender")
                                 .balance(ignore -> settings.getInitialBalance())
@@ -105,7 +104,6 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                 .key(GENESIS)
                                 .rechargeWindow(3)
                                 .stakedNodeId(settings.getNodeToStake())
-                                .logging()
                                 .hasRetryPrecheckFrom(
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
@@ -117,8 +115,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
                                         PLATFORM_TRANSACTION_NOT_CREATED)
-                                .key(GENESIS)
-                                .logging(),
+                                .key(GENESIS),
                         withOpContext(
                                 (spec, opLog) -> {
                                     List<HapiSpecOperation> ops = new ArrayList<>();
@@ -133,9 +130,7 @@ public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
                                     }
                                     allRunFor(spec, ops);
                                 }))
-                .then(
-                        defaultLoadTest(transferBurst, settings),
-                        getAccountBalance("sender").logged());
+                .then(defaultLoadTest(transferBurst, settings), getAccountBalance("sender"));
     }
 
     @Override

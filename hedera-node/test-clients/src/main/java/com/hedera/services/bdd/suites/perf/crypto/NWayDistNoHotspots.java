@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot.uniqueQuietCreation;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -84,13 +83,12 @@ public class NWayDistNoHotspots extends HapiSuite {
     private HapiSpec runDistributions() {
         return customHapiSpec("runCreations")
                 .withProperties(Map.of("default.keyAlgorithm", "ED25519"))
-                .given(
-                        logIt(
+                .given(/*logIt(
                                 "Creating at least "
                                         + NUM_ACCOUNTS
                                         + " accounts to avoid hotspots while doing "
                                         + DISTRIBUTIONS_PER_SEC
-                                        + (" " + NUM_BENEFICIARIES + "-way distributions/sec")))
+                                        + (" " + NUM_BENEFICIARIES + "-way distributions/sec"))*/ )
                 .when()
                 .then(
                         runWithProvider(creationsFactory())

@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileUndelete;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -175,7 +174,7 @@ public final class DiverseStateValidation extends HapiSuite {
                                                                 DiverseStateCreation
                                                                         .MEDIUM_EXPIRY_TIME)
                                                 .hasDeleted(true)),
-                        logIt("--- Now validating large file ---"),
+                        //                        logIt("--- Now validating large file ---"),
                         sourcing(
                                 () ->
                                         getFileInfo(idLiteralWith(entityNums.get().get(LARGE_FILE)))
@@ -192,7 +191,7 @@ public final class DiverseStateValidation extends HapiSuite {
                                                                 entityNums.get().get(LARGE_FILE)))
                                                 .hasContents(ignore -> LARGE_CONTENTS)),
                         /* Confirm contract code and behavior */
-                        logIt("--- Now validating contract stuff ---"),
+                        //                        logIt("--- Now validating contract stuff ---"),
                         sourcing(
                                 () ->
                                         getContractBytecode(

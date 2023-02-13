@@ -110,8 +110,7 @@ public class TargetNetworkPrep extends HapiSuite {
                             cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
                                     .signedBy(civilian)
-                                    .exposingFeesTo(feeObs)
-                                    .logged(),
+                                    .exposingFeesTo(feeObs),
                             sourcing(
                                     () ->
                                             getAccountBalance(STAKING_REWARD)
@@ -128,8 +127,7 @@ public class TargetNetworkPrep extends HapiSuite {
                             balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
-                                    .signedBy(civilian)
-                                    .logged(),
+                                    .signedBy(civilian),
                             sourcing(
                                     () ->
                                             getAccountBalance(NODE_REWARD)

@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.chunkAFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -74,8 +73,8 @@ public class HCSChunkingRealisticPerfSuite extends LoadTest {
                 .given(
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        newKeyNamed("submitKey"),
-                        logIt(ignore -> settings.toString()))
+                        newKeyNamed("submitKey")
+                        /*logIt(ignore -> settings.toString())*/ )
                 .when(
                         cryptoCreate(PAYER)
                                 .balance(initialBalance.getAsLong())

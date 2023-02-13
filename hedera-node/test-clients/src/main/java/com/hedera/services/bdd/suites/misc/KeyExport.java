@@ -68,14 +68,14 @@ public class KeyExport extends HapiSuite {
                         //						.simpleWacl()
                         )
                 .when(
-                        //				getAccountInfo(GENESIS).logged(),
+                        //				getAccountInfo(GENESIS),
                         //				cryptoUpdate(GENESIS).key("newKey")
                         fileUpdate(API_PERMISSIONS)
                                 .erasingProps(Set.of("tokenGetInfo"))
                                 .overridingProps(Map.of("getTokenInfo", "0-*")))
                 .then(
-                        getFileContents(API_PERMISSIONS).logged()
-                        //				getAccountInfo(GENESIS).signedBy("newKey").logged()
+                        getFileContents(API_PERMISSIONS)
+                        //				getAccountInfo(GENESIS).signedBy("newKey")
                         //				freeze().startingIn(60).seconds().andLasting(1).minutes()
                         );
     }

@@ -128,8 +128,8 @@ public class CreateOperationSuite extends HapiSuite {
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
                         uploadInitCode(contract),
-                        contractCreate(contract).logged().via("createRecord"),
-                        getContractInfo(contract).logged().saveToRegistry("parentInfo"))
+                        contractCreate(contract).via("createRecord"),
+                        getContractInfo(contract).saveToRegistry("parentInfo"))
                 .when(contractCall(contract, "callCreate").gas(780_000).via("callRecord"))
                 .then(
                         getTxnRecord("createRecord").saveCreatedContractListToRegistry("ctorChild"),
@@ -319,12 +319,9 @@ public class CreateOperationSuite extends HapiSuite {
                         contractCreate(contract).via("AbandoningParentTxn"))
                 .when()
                 .then(
-                        getContractInfo(contract)
-                                .saveToRegistry("AbandoningParentParentInfo")
-                                .logged(),
+                        getContractInfo(contract).saveToRegistry("AbandoningParentParentInfo"),
                         getTxnRecord("AbandoningParentTxn")
-                                .saveCreatedContractListToRegistry(contract)
-                                .logged(),
+                                .saveCreatedContractListToRegistry(contract),
                         UtilVerbs.contractListWithPropertiesInheritedFrom(
                                 "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
     }

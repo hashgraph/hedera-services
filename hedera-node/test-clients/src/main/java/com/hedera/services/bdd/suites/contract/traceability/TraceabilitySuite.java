@@ -7351,7 +7351,6 @@ public class TraceabilitySuite extends HapiSuite {
                                             new AtomicReference<>();
                                     final var lazyAccountInfoCheck =
                                             getAliasedAccountInfo(firstAliasAsByteString)
-                                                    .logged()
                                                     .has(
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
@@ -7520,7 +7519,6 @@ public class TraceabilitySuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getAccountInfo(hollowCreationAddress.get())
-                                                .logged()
                                                 .exposingIdTo(mergedAccountId::set)),
                         sourcing(
                                 () ->

@@ -108,7 +108,6 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                 .hasKnownStatus(SUCCESS)
                                 .via(MESSAGE_SUBMISSION_SIMPLE),
                         QueryVerbs.getTxnRecord(MESSAGE_SUBMISSION_SIMPLE)
-                                .logged()
                                 .hasPriority(
                                         TransactionRecordAsserts.recordWith()
                                                 .checkTopicRunningHashVersion(

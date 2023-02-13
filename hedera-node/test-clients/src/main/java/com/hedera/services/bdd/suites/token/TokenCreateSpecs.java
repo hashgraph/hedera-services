@@ -298,7 +298,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .autoRenewAccount("autoRenew")
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         tokenCreate("primary").autoRenewAccount("autoRenew"))
-                .then(getTokenInfo("primary").logged());
+                .then(getTokenInfo("primary"));
     }
 
     public HapiSpec creationYieldsExpectedToken() {
@@ -311,7 +311,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .freezeDefault(true)
                                 .freezeKey("freeze")
                                 .treasury(TOKEN_TREASURY))
-                .then(getTokenInfo("primary").logged().hasRegisteredId("primary"));
+                .then(getTokenInfo("primary").hasRegisteredId("primary"));
     }
 
     public HapiSpec creationSetsExpectedName() {
@@ -319,11 +319,7 @@ public class TokenCreateSpecs extends HapiSuite {
         return defaultHapiSpec("CreationSetsExpectedName")
                 .given(cryptoCreate(TOKEN_TREASURY).balance(0L))
                 .when(tokenCreate("primary").name(saltedName).treasury(TOKEN_TREASURY))
-                .then(
-                        getTokenInfo("primary")
-                                .logged()
-                                .hasRegisteredId("primary")
-                                .hasName(saltedName));
+                .then(getTokenInfo("primary").hasRegisteredId("primary").hasName(saltedName));
     }
 
     public HapiSpec creationWithoutKYCSetsCorrectStatus() {
@@ -477,7 +473,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .supplyKey(GENESIS)
                                 .via(secondCreation),
                         getTxnRecord(secondCreation)
-                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .autoAssociated(
@@ -501,7 +496,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                                     "primary", timestamp + THREE_MONTHS_IN_SECONDS);
                                 }),
                         getTokenInfo("primary")
-                                .logged()
                                 .hasRegisteredId("primary")
                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                 .hasSupplyType(TokenSupplyType.FINITE)
@@ -523,7 +517,6 @@ public class TokenCreateSpecs extends HapiSuite {
                                 .hasTotalSupply(500)
                                 .hasAutoRenewAccount("autoRenewAccount"),
                         getTokenInfo("non-fungible-unique-finite")
-                                .logged()
                                 .hasRegisteredId("non-fungible-unique-finite")
                                 .hasTokenType(NON_FUNGIBLE_UNIQUE)
                                 .hasSupplyType(TokenSupplyType.FINITE)
@@ -569,10 +562,7 @@ public class TokenCreateSpecs extends HapiSuite {
                                             .saveExpiry(
                                                     "primary", timestamp + THREE_MONTHS_IN_SECONDS);
                                 }),
-                        getTokenInfo("primary")
-                                .logged()
-                                .hasRegisteredId("primary")
-                                .hasValidExpiry());
+                        getTokenInfo("primary").hasRegisteredId("primary").hasValidExpiry());
     }
 
     public HapiSpec creationValidatesExpiry() {
@@ -922,10 +912,9 @@ public class TokenCreateSpecs extends HapiSuite {
                                 maxUtf8Bytes::set))
                 .when()
                 .then(
-                        tokenCreate("primary").name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
+                        tokenCreate("primary").name("").hasPrecheck(MISSING_TOKEN_NAME),
                         tokenCreate("primary")
                                 .name("T\u0000ken")
-                                .logged()
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(
                                 () ->
@@ -952,7 +941,6 @@ public class TokenCreateSpecs extends HapiSuite {
                         tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
                         tokenCreate("primary")
                                 .name("T\u0000ken")
-                                .logged()
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
                         sourcing(
                                 () ->

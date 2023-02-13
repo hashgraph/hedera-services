@@ -166,6 +166,6 @@ public class CryptoGetRecordsRegression extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo("account1", "account2", 10L))
                                 .payingWith("account1")
                                 .via("thresholdTxn"))
-                .then(getAccountRecords("account1").logged());
+                .then(getAccountRecords("account1"));
     }
 }

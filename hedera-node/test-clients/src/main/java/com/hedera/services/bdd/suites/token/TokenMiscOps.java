@@ -61,7 +61,7 @@ public class TokenMiscOps extends HapiSuite {
                         tokenAssociate("0.0.3", "second").signedBy(GENESIS),
                         cryptoTransfer(moving(aSupply / 2, "second").between(GENESIS, "0.0.3"))
                                 .signedBy(GENESIS))
-                .then(getAccountInfo(GENESIS).logged(), getAccountInfo("0.0.3").logged());
+                .then(getAccountInfo(GENESIS), getAccountInfo("0.0.3"));
     }
 
     public HapiSpec theCreation() {
@@ -73,10 +73,10 @@ public class TokenMiscOps extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        getAccountInfo("0.0.1001").logged(),
-                        getAccountInfo(SYSTEM_ADMIN).logged(),
-                        getTokenInfo("0.0.1002").logged(),
-                        getTokenInfo("0.0.1003").logged());
+                        getAccountInfo("0.0.1001"),
+                        getAccountInfo(SYSTEM_ADMIN),
+                        getTokenInfo("0.0.1002"),
+                        getTokenInfo("0.0.1003"));
     }
 
     public HapiSpec wellKnownAccountsHaveTokens() {
@@ -100,10 +100,10 @@ public class TokenMiscOps extends HapiSuite {
                                 .treasury(SYSTEM_ADMIN))
                 .when(tokenAssociate(TOKEN_TREASURY, "another"))
                 .then(
-                        getAccountInfo(TOKEN_TREASURY).logged(),
-                        getAccountInfo(SYSTEM_ADMIN).logged(),
-                        getTokenInfo("supple").logged(),
-                        getTokenInfo("another").logged());
+                        getAccountInfo(TOKEN_TREASURY),
+                        getAccountInfo(SYSTEM_ADMIN),
+                        getTokenInfo("supple"),
+                        getTokenInfo("another"));
     }
 
     @Override

@@ -145,8 +145,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(true)
                                                 .noStakedAccountId()
-                                                .stakedNodeId(0))
-                                .logged())
+                                                .stakedNodeId(0)))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
@@ -157,8 +156,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(true)
                                                 .noStakingNodeId()
-                                                .stakedAccountId("0.0.10"))
-                                .logged())
+                                                .stakedAccountId("0.0.10")))
                 .then(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
@@ -169,8 +167,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(false)
                                                 .noStakedAccountId()
-                                                .stakedNodeId(0))
-                                .logged(),
+                                                .stakedNodeId(0)),
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
                                 .declinedReward(false)
@@ -180,8 +177,7 @@ public class ContractCreateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .stakedAccountId("0.0.10"))
-                                .logged(),
+                                                .stakedAccountId("0.0.10")),
                         /* sentinel values throw */
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
@@ -228,8 +224,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getContractInfo(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .has(
                                         contractWith()
-                                                .immutableContractKey(EMPTY_CONSTRUCTOR_CONTRACT))
-                                .logged());
+                                                .immutableContractKey(EMPTY_CONSTRUCTOR_CONTRACT)));
     }
 
     private HapiSpec childCreationsHaveExpectedKeysWithOmittedAdminKey() {
@@ -268,8 +263,7 @@ public class ContractCreateSuite extends HapiSuite {
                                                                 .immutableContractKey(
                                                                         "0.0."
                                                                                 + firstStickId
-                                                                                        .get()))
-                                                .logged()),
+                                                                                        .get()))),
                         sourcing(
                                 () ->
                                         getContractInfo("0.0." + secondStickId.get())
@@ -278,9 +272,8 @@ public class ContractCreateSuite extends HapiSuite {
                                                                 .immutableContractKey(
                                                                         "0.0."
                                                                                 + secondStickId
-                                                                                        .get()))
-                                                .logged()),
-                        sourcing(() -> getContractInfo("0.0." + thirdStickId.get()).logged()),
+                                                                                        .get()))),
+                        sourcing(() -> getContractInfo("0.0." + thirdStickId.get())),
                         contractCall(contract, "light").via("lightTxn"))
                 .then(
                         sourcing(
@@ -344,9 +337,9 @@ public class ContractCreateSuite extends HapiSuite {
                                     allRunFor(spec, op);
                                 }))
                 .then(
-                        getTxnRecord(txn).logged(),
-                        getAccountBalance(aBeneficiary).logged(),
-                        getAccountBalance(bBeneficiary).logged());
+                        getTxnRecord(txn),
+                        getAccountBalance(aBeneficiary),
+                        getAccountBalance(bBeneficiary));
     }
 
     private HapiSpec createFailsIfMissingSigs() {
@@ -534,7 +527,7 @@ public class ContractCreateSuite extends HapiSuite {
                                                 .signedBy(DEFAULT_PAYER, beneficiary)
                                                 .hasKnownStatus(INVALID_SIGNATURE)),
                         /* We have to specify the full prefix so the sig can be verified async */
-                        getAccountInfo(beneficiary).logged(),
+                        getAccountInfo(beneficiary),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -546,7 +539,7 @@ public class ContractCreateSuite extends HapiSuite {
                                                                 beneficiaryAccountNum.get()),
                                                         BigInteger.valueOf(balanceToDistribute / 2))
                                                 .alsoSigningWithFullPrefix(beneficiary)),
-                        getAccountBalance(beneficiary).logged());
+                        getAccountBalance(beneficiary));
     }
 
     private HapiSpec cannotCreateTooLargeContract() {
@@ -674,7 +667,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(10),
                         getContractInfo(contract)
                                 .has(contractWith().maxAutoAssociations(10))
-                                .logged()
                                 .saveToRegistry(PARENT_INFO))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
@@ -686,8 +678,7 @@ public class ContractCreateSuite extends HapiSuite {
                                 .via("getChildAddressTxn"))
                 .then(
                         getTxnRecord("createChildTxn")
-                                .saveCreatedContractListToRegistry("createChild")
-                                .logged(),
+                                .saveCreatedContractListToRegistry("createChild"),
                         getTxnRecord("getChildResultTxn")
                                 .hasPriority(
                                         recordWith()
@@ -740,13 +731,11 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(contract)
                                 .adminKey(ADMIN_KEY)
                                 .autoRenewAccountId(autoRenewAccount)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
-                                .logged(),
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount),
                         getContractInfo(contract)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(autoRenewAccount))
-                                .logged())
+                                                .autoRenewAccountId(autoRenewAccount)))
                 .when()
                 .then();
     }

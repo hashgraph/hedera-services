@@ -96,7 +96,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                         tokenUnfreeze(freezableToken, TOKEN_TREASURY)
                                 .signedBy(GENESIS)
                                 .hasKnownStatus(INVALID_SIGNATURE))
-                .then(getTokenInfo(unfreezableToken).hasRegisteredId(unfreezableToken).logged());
+                .then(getTokenInfo(unfreezableToken).hasRegisteredId(unfreezableToken));
     }
 
     private HapiSpec nftMintingCapIsEnforced() {

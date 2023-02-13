@@ -104,8 +104,9 @@ public class CryptoDeleteSuite extends HapiSuite {
                         getAccountBalance(SUBMITTING_NODE_ACCOUNT)
                                 .hasTinyBars(
                                         approxChangeFromSnapshot(
-                                                SUBMITTING_NODE_AFTER_BALANCE_LOAD, -100000, 50000))
-                                .logged());
+                                                SUBMITTING_NODE_AFTER_BALANCE_LOAD,
+                                                -100000,
+                                                50000)));
     }
 
     private HapiSpec fundsTransferOnDelete() {

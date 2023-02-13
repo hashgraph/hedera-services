@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.reconnect;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -79,7 +78,7 @@ public class CreateTokensBeforeReconnect extends HapiSuite {
                 () -> new HapiSpecOperation[] {generateTopicCreateOperation()};
 
         return defaultHapiSpec("RunCreateTokens")
-                .given(logIt(ignore -> settings.toString()))
+                .given(/*logIt(ignore -> settings.toString())*/ )
                 .when()
                 .then(defaultLoadTest(createBurst, settings));
     }

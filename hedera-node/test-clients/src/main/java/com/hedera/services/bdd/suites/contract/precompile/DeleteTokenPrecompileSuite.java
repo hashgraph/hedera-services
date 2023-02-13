@@ -117,7 +117,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .via(DELETE_TXN),
-                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged(),
+                                                getTokenInfo(VANILLA_TOKEN).isDeleted(),
                                                 cryptoTransfer(
                                                                 moving(500, VANILLA_TOKEN)
                                                                         .between(
@@ -199,7 +199,7 @@ public class DeleteTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
-                                                getTokenInfo(VANILLA_TOKEN).isDeleted().logged())))
+                                                getTokenInfo(VANILLA_TOKEN).isDeleted())))
                 .then(
                         childRecordsCheck(
                                 notAnAdminTxn,

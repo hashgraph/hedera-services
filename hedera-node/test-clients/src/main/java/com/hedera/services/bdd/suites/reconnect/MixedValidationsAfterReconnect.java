@@ -55,31 +55,24 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                                 "lastlyCreatedAccountBalance",
                                 lastlyCreatedAccount), // from default node 0.0.3
                         getAccountBalance(sender)
-                                .logged()
                                 .setNode("0.0.4")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
                         getAccountBalance(receiver)
-                                .logged()
                                 .setNode("0.0.4")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
                         getAccountBalance(sender)
-                                .logged()
                                 .setNode("0.0.5")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
                         getAccountBalance(receiver)
-                                .logged()
                                 .setNode("0.0.5")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
                         getAccountBalance(sender)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("senderBalance", 0)),
                         getAccountBalance(receiver)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("receiverBalance", 0)),
                         getAccountBalance(lastlyCreatedAccount)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasTinyBars(changeFromSnapshot("lastlyCreatedAccountBalance", 0)));
     }
@@ -91,21 +84,18 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
         String topicIdWithMessagesSubmittedTo = "0.0.30050";
         byte[] emptyRunningHash = new byte[48];
         return defaultHapiSpec("ValidateTopicInfo")
-                .given(getTopicInfo(topicIdWithMessagesSubmittedTo).logged().saveRunningHash())
+                .given(getTopicInfo(topicIdWithMessagesSubmittedTo).saveRunningHash())
                 .when()
                 .then(
                         getTopicInfo(firstlyCreatedTopic)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(emptyRunningHash),
                         getTopicInfo(lastlyCreatedTopic)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(emptyRunningHash),
                         getTopicInfo(invalidTopicId)
                                 .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_TOPIC_ID),
                         getTopicInfo(topicIdWithMessagesSubmittedTo)
-                                .logged()
                                 .setNode("0.0.8")
                                 .hasRunningHash(topicIdWithMessagesSubmittedTo));
     }
@@ -118,8 +108,8 @@ public class MixedValidationsAfterReconnect extends HapiSuite {
                 .given()
                 .when()
                 .then(
-                        getFileInfo(firstlyCreatedFile).logged().setNode("0.0.8"),
-                        getFileInfo(lastlyCreatedFile).logged().setNode("0.0.8"),
+                        getFileInfo(firstlyCreatedFile).setNode("0.0.8"),
+                        getFileInfo(lastlyCreatedFile).setNode("0.0.8"),
                         getFileInfo(invalidFileId)
                                 .hasCostAnswerPrecheck(ResponseCodeEnum.INVALID_FILE_ID));
     }

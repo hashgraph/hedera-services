@@ -177,18 +177,15 @@ public class TopicCreateSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE))
                 .then(
                         createTopic("noAdminKeyNoAutoRenewAccount"),
-                        getTopicInfo("noAdminKeyNoAutoRenewAccount").hasNoAdminKey().logged(),
+                        getTopicInfo("noAdminKeyNoAutoRenewAccount").hasNoAdminKey(),
                         createTopic("explicitAdminKeyNoAutoRenewAccount").adminKeyName("adminKey"),
-                        getTopicInfo("explicitAdminKeyNoAutoRenewAccount")
-                                .hasAdminKey("adminKey")
-                                .logged(),
+                        getTopicInfo("explicitAdminKeyNoAutoRenewAccount").hasAdminKey("adminKey"),
                         createTopic("explicitAdminKeyExplicitAutoRenewAccount")
                                 .adminKeyName("adminKey")
                                 .autoRenewAccountId("autoRenewAccount"),
                         getTopicInfo("explicitAdminKeyExplicitAutoRenewAccount")
                                 .hasAdminKey("adminKey")
-                                .hasAutoRenewAccount("autoRenewAccount")
-                                .logged());
+                                .hasAutoRenewAccount("autoRenewAccount"));
     }
 
     private HapiSpec allFieldsSetHappyCase() {

@@ -60,7 +60,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -236,7 +235,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         moving(1, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
                                 .signedBy(DEFAULT_PAYER, CIVILIAN)
                                 .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .has(accountWith().balance(10L))
                                 .hasToken(relationshipWith(A_TOKEN)));
@@ -287,8 +286,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoTransfer(
                                 movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
                                         .between(TOKEN_TREASURY, SPONSOR)),
-                        getAccountInfo(SPONSOR).logged(),
-                        getAccountInfo(TOKEN_TREASURY).logged(),
+                        getAccountInfo(SPONSOR),
+                        getAccountInfo(TOKEN_TREASURY),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();
@@ -390,7 +389,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getAccountInfo(SPONSOR)
                                 .hasOwnedNfts(2)
                                 .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
-                        getAccountInfo(TOKEN_TREASURY).logged())
+                        getAccountInfo(TOKEN_TREASURY))
                 .then(
                         // But transferring this NFT to a known alias with hbar in it works
                         cryptoTransfer(tinyBarsFromToWithAlias(SPONSOR, VALID_ALIAS, 10 * ONE_HBAR))
@@ -409,8 +408,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 .between(SPONSOR, VALID_ALIAS))
                                 .payingWith(SPONSOR)
                                 .fee(10 * ONE_HBAR)
-                                .signedBy(SPONSOR, VALID_ALIAS)
-                                .logged(),
+                                .signedBy(SPONSOR, VALID_ALIAS),
                         getAliasedAccountInfo(VALID_ALIAS).hasOwnedNfts(2));
     }
 
@@ -482,8 +480,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS),
                         getTxnRecord(multiNftTransfer)
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .logged(),
+                                .hasNonStakingChildRecordCount(1),
                         childRecordsCheck(
                                 multiNftTransfer,
                                 SUCCESS,
@@ -491,8 +488,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         .status(SUCCESS)
                                         .fee(EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE)),
                         getAliasedAccountInfo(VALID_ALIAS)
-                                .has(accountWith().balance(0).maxAutoAssociations(2).ownedNfts(4))
-                                .logged(),
+                                .has(accountWith().balance(0).maxAutoAssociations(2).ownedNfts(4)),
                         getAccountInfo(CIVILIAN)
                                 .has(accountWith().balance((long) (civilianBal - transferFee))))
                 .then();
@@ -541,8 +537,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         moving(10, B_TOKEN).between(CIVILIAN, VALID_ALIAS))
                                 .via(multiTokenXfer)
                                 .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS)
-                                .logged(),
+                                .signedBy(CIVILIAN, VALID_ALIAS),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
                         getTxnRecord(multiTokenXfer)
                                 .andAllChildRecords()
@@ -566,8 +561,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                                 B_TOKEN),
                                                                         Pair.of(
                                                                                 VALID_ALIAS,
-                                                                                A_TOKEN)))))
-                                .logged(),
+                                                                                A_TOKEN))))),
                         childRecordsCheck(
                                 multiTokenXfer,
                                 SUCCESS,
@@ -590,8 +584,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY),
                         getTxnRecord("newXfer")
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
+                                .hasNonStakingChildRecordCount(0),
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .hasToken(relationshipWith(A_TOKEN).balance(10))
                                 .hasToken(relationshipWith(B_TOKEN).balance(20)));
@@ -626,11 +619,13 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 totalAutoCreationFees.set(
                                                         ONE_HUNDRED_HBARS - balance - 1)))
                 .when(
-                        logIt(
-                                spec ->
-                                        String.format(
-                                                "Total auto-creation fees: %d",
-                                                totalAutoCreationFees.get())),
+                        //                        logIt(
+                        //                                spec ->
+                        //                                        String.format(
+                        //                                                "Total auto-creation fees:
+                        // %d",
+                        //
+                        // totalAutoCreationFees.get())),
                         sourcing(
                                 () ->
                                         cryptoCreate(secondPayer)
@@ -709,12 +704,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         moving(10, A_TOKEN).between(TOKEN_TREASURY, VALID_ALIAS))
                                 .via(sameTokenXfer)
                                 .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY)
-                                .logged(),
+                                .signedBy(CIVILIAN, VALID_ALIAS, TOKEN_TREASURY),
                         getTxnRecord(sameTokenXfer)
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1)
-                                .logged(),
+                                .hasNonStakingChildRecordCount(1),
                         childRecordsCheck(
                                 sameTokenXfer,
                                 SUCCESS,
@@ -732,8 +725,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                             getTxnRecord(sameTokenXfer)
                                                     .andAllChildRecords()
                                                     .hasNonStakingChildRecordCount(1)
-                                                    .hasNoAliasInChildRecord(0)
-                                                    .logged();
+                                                    .hasNoAliasInChildRecord(0);
                                     allRunFor(spec, lookup);
                                     final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
                                     final var payer = spec.registry().getAccountID(CIVILIAN);
@@ -967,9 +959,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO));
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
                                     allRunFor(spec, op, op2, hapiGetTxnRecord);
 
                                     final AccountID newAccountID =
@@ -1025,9 +1015,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
                                     allRunFor(
                                             spec,
                                             op3,
@@ -1067,9 +1055,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
 
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
@@ -1099,9 +1085,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                 }));
@@ -1138,9 +1122,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
 
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
@@ -1170,9 +1152,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                 }));
@@ -1209,9 +1189,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
 
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
@@ -1240,9 +1218,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                 }));
@@ -1276,9 +1252,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
                                     final AccountID newAccountID =
@@ -1306,9 +1280,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN_2);
                                     final HapiGetTxnRecord secondHapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
                                     allRunFor(spec, op2, secondHapiGetTxnRecord);
 
                                     final AccountID anotherNewAccountID =
@@ -1381,10 +1353,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .payingWith(SECP_256K1_SOURCE_KEY)
                                                     .via(TRANSFER_TXN + "5");
 
-                                    var op6 =
-                                            getTxnRecord(TRANSFER_TXN + "5")
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                    var op6 = getTxnRecord(TRANSFER_TXN + "5").andAllChildRecords();
 
                                     allRunFor(spec, op5, op6);
                                 }));
@@ -1455,7 +1424,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
                                     allRunFor(spec, controlledOp);
                                 }),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .nodePayment(123)
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID),
@@ -1468,7 +1437,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                 ONE_HUNDRED_HBARS))
                                                 .signedBy(DEFAULT_PAYER, LAZY_CREATE_SPONSOR)
                                                 .via(secondTransferTxn)),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged());
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY));
     }
 
     private HapiSpec canGetBalanceAndInfoViaAlias() {
@@ -1501,30 +1470,23 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getTxnRecord(autoCreation)
                                 .andAllChildRecords()
                                 .hasNoAliasInChildRecord(0)
-                                .hasNoAliasInChildRecord(1)
-                                .logged(),
-                        getAutoCreatedAccountBalance(ed25519SourceKey)
-                                .hasExpectedAccountID()
-                                .logged(),
-                        getAutoCreatedAccountBalance(secp256k1SourceKey)
-                                .hasExpectedAccountID()
-                                .logged(),
+                                .hasNoAliasInChildRecord(1),
+                        getAutoCreatedAccountBalance(ed25519SourceKey).hasExpectedAccountID(),
+                        getAutoCreatedAccountBalance(secp256k1SourceKey).hasExpectedAccountID(),
                         getAliasedAccountInfo(ed25519SourceKey)
                                 .hasExpectedAliasKey()
                                 .hasExpectedAccountID()
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0, 0))
-                                .logged(),
+                                                        ONE_HUNDRED_HBARS, 0, 0)),
                         getAliasedAccountInfo(secp256k1SourceKey)
                                 .hasExpectedAliasKey()
                                 .hasExpectedAccountID()
                                 .has(
                                         accountWith()
                                                 .expectedBalanceWithChargedUsd(
-                                                        ONE_HUNDRED_HBARS, 0, 0))
-                                .logged());
+                                                        ONE_HUNDRED_HBARS, 0, 0)));
     }
 
     private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {
@@ -1579,7 +1541,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER_1, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN))
                 .then(
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAccountInfo(PAYER_1)
                                 .has(
                                         accountWith()
@@ -1595,8 +1557,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                         ONE_HUNDRED_HBARS, 0, 0)
                                                 .alias(ALIAS)
                                                 .autoRenew(THREE_MONTHS_IN_SECONDS)
-                                                .receiverSigReq(false))
-                                .logged());
+                                                .receiverSigReq(false)));
     }
 
     private HapiSpec autoAccountCreationWorksWhenUsingAliasOfDeletedAccount() {
@@ -1609,7 +1570,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged())
+                        getTxnRecord("txn").hasNonStakingChildRecordCount(1))
                 .then(
                         cryptoDeleteAliased(ALIAS)
                                 .transfer(PAYER)
@@ -1626,7 +1587,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         //								HapiCryptoTransfer.tinyBarsFromToWithAlias("payer", "alias",
                         // ONE_HUNDRED_HBARS)).via(
                         //								"txn2"),
-                        //						getTxnRecord("txn2").hasChildRecordCount(1).logged()
+                        //						getTxnRecord("txn2").hasChildRecordCount(1)
                         );
     }
 
@@ -1642,7 +1603,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
-                        getTxnRecord("txn").andAllChildRecords().logged(),
+                        getTxnRecord("txn").andAllChildRecords(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
                                         accountWith()
@@ -1652,7 +1613,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         /* transfer from an alias that was auto created to a new alias, validate account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(ALIAS, ALIAS_2, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN_2),
-                        getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN_2).andAllChildRecords(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
                                         accountWith()
@@ -1677,7 +1638,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, alias)),
-                        getTxnRecord("txn").andAllChildRecords().logged(),
+                        getTxnRecord("txn").andAllChildRecords(),
                         getAliasedAccountInfo(alias)
                                 .has(
                                         accountWith()
@@ -1710,7 +1671,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
                         withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
-                        getTxnRecord("txn").andAllChildRecords().logged())
+                        getTxnRecord("txn").andAllChildRecords())
                 .then(
                         /* get the account associated with alias and transfer */
                         withOpContext(
@@ -1731,9 +1692,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     ONE_HUNDRED_HBARS))
                                                     .via(TRANSFER_TXN_2);
                                     final var op2 =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
                                     final var op3 =
                                             getAccountInfo(PAYER)
                                                     .has(
@@ -1761,7 +1720,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAccountInfo(PAYER)
                                 .has(
                                         accountWith()
@@ -1779,8 +1738,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .via(TRANSFER_TXN_2),
                         getTxnRecord(TRANSFER_TXN_2)
                                 .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0)
-                                .logged(),
+                                .hasNonStakingChildRecordCount(0),
                         getAccountInfo(PAYER)
                                 .has(
                                         accountWith()
@@ -1901,7 +1859,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getReceipt(TRANSFER_TXN)
                                 .andAnyChildReceipts()
                                 .hasChildAutoAccountCreations(1),
-                        getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
+                        getTxnRecord(TRANSFER_TXN).andAllChildRecords(),
                         getAccountInfo(SPONSOR)
                                 .has(
                                         accountWith()
@@ -1921,8 +1879,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                             getTxnRecord(TRANSFER_TXN)
                                                     .andAllChildRecords()
                                                     .hasNonStakingChildRecordCount(1)
-                                                    .hasNoAliasInChildRecord(0)
-                                                    .logged();
+                                                    .hasNoAliasInChildRecord(0);
                                     allRunFor(spec, lookup);
                                     final var sponsor = spec.registry().getAccountID(SPONSOR);
                                     final var payer = spec.registry().getAccountID(PAYER);
@@ -1955,8 +1912,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                         creationTime.get()
                                                                                 + THREE_MONTHS_IN_SECONDS,
                                                                         0)
-                                                                .memo(AUTO_MEMO))
-                                                .logged()));
+                                                                .memo(AUTO_MEMO))));
     }
 
     @SuppressWarnings("java:S5960")
@@ -2018,9 +1974,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         tinyBarsFromToWithAlias(PAYER, ALIAS_2, ONE_HUNDRED_HBARS),
                                         tinyBarsFromToWithAlias(PAYER, "alias3", ONE_HUNDRED_HBARS))
                                 .via("multipleAutoAccountCreates"),
-                        getTxnRecord("multipleAutoAccountCreates")
-                                .hasNonStakingChildRecordCount(3)
-                                .logged(),
+                        getTxnRecord("multipleAutoAccountCreates").hasNonStakingChildRecordCount(3),
                         getAccountInfo(PAYER)
                                 .has(
                                         accountWith()
@@ -2034,7 +1988,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         tinyBarsFromToWithAlias(PAYER, "alias5", 100))
                                 .via("failedAutoCreate")
                                 .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE),
-                        getTxnRecord("failedAutoCreate").hasNonStakingChildRecordCount(0).logged(),
+                        getTxnRecord("failedAutoCreate").hasNonStakingChildRecordCount(0),
                         getAccountInfo(PAYER)
                                 .has(
                                         accountWith()
@@ -2479,7 +2433,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(FT_XFER).andAllChildRecords().logged();
+                                            getTxnRecord(FT_XFER).andAllChildRecords();
 
                                     allRunFor(
                                             spec,
