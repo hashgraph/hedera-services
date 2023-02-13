@@ -121,7 +121,7 @@ public record InitialAccountIdentifiers(
                                         : INCONGRUENT_ADDRESS));
     }
 
-    private static void throwIfNotEcdsa(final Key key) {
+    public static void throwIfNotEcdsa(final Key key) {
         if (!key.hasECDSASecp256K1()) {
             throw new IllegalArgumentException("Key must be an ECDSA key to imply an address");
         }

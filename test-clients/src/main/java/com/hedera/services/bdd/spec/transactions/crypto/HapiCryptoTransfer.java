@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions.crypto;
 
+import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.throwIfNotEcdsa;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
@@ -36,6 +37,7 @@ import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -362,6 +364,25 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             final String from, final String to, final long amount) {
         return spec -> {
             final var fromId = asId(from, spec);
+            final var toId = spec.registry().aliasIdFor(to);
+            return xFromTo(fromId, toId, amount);
+        };
+    }
+
+    public static Function<HapiSpec, TransferList> tinyBarsFromAccountToAlias(
+            final String from, final String to, final long amount, final boolean toEvmAddress) {
+        return spec -> {
+            final var fromId = asId(from, spec);
+            if (toEvmAddress) {
+                final var key = spec.registry().getKey(to);
+                throwIfNotEcdsa(key);
+                final var address =
+                        EthSigsUtils.recoverAddressFromPubKey(
+                                key.getECDSASecp256K1().toByteArray());
+                final var toAccId =
+                        AccountID.newBuilder().setAlias(ByteString.copyFrom(address)).build();
+                return xFromTo(fromId, toAccId, amount);
+            }
             final var toId = spec.registry().aliasIdFor(to);
             return xFromTo(fromId, toId, amount);
         };

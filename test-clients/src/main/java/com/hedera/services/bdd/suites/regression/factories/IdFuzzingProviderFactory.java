@@ -26,8 +26,7 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransferExperiments;
-import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -71,32 +70,21 @@ public class IdFuzzingProviderFactory {
         };
     }
 
-    public static Function<HapiSpec, OpProvider> idTransferExperimentsWith(final String resource) {
+    public static Function<HapiSpec, OpProvider> idTransferToEVMAddressWith(final String resource) {
         return spec -> {
             final var props = RegressionProviderFactory.propsFrom(resource);
 
             final var keys =
                     new RegistrySourcedNameProvider<>(
                             Key.class, spec.registry(), new RandomSelector());
-            final var accounts =
-                    new RegistrySourcedNameProvider<>(
-                            AccountID.class, spec.registry(), new RandomSelector());
-            KeyInventoryCreation keyInventory = new KeyInventoryCreation();
 
             return new BiasedDelegatingProvider()
                     /* --- <inventory> --- */
-                    .withInitialization(keyInventory.creationOps())
+                    .withInitialization(onlyEcdsaKeys())
+                    .shouldLogNormalFlow(true)
                     /* ----- CRYPTO ----- */
                     .withOp(
-                            new RandomAccount(keys, accounts)
-                                    .ceiling(
-                                            intPropOrElse(
-                                                    "randomAccount.ceilingNum",
-                                                    RandomAccount.DEFAULT_CEILING_NUM,
-                                                    props)),
-                            intPropOrElse("randomAccount.bias", 0, props))
-                    .withOp(
-                            new RandomTransferExperiments(accounts, keys),
+                            new TransferToRandomEVMAddress(keys),
                             intPropOrElse("randomTransfer.bias", 0, props));
         };
     }
