@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -186,7 +187,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     opLog.info(
                                             "Renewal fee with storage: {}",
                                             renewalFeeWithStorage.get());
-                                    assertTrue(
+                                    // TODO: this is intentionally false so a test will fail! 🔥🔥🔥
+                                    assertFalse(
                                             renewalFeeWithStorage.get()
                                                     > renewalFeeWithoutStorage.get());
                                 }));
