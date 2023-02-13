@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.workflows.query;
 
+import com.hedera.node.app.fees.FeeAccumulator;
+import com.hedera.node.app.fees.MonoFeeAccumulator;
 import com.hedera.node.app.service.consensus.impl.components.ConsensusComponent;
 import com.hedera.node.app.service.contract.impl.components.ContractComponent;
 import com.hedera.node.app.service.file.impl.components.FileComponent;
@@ -35,8 +37,9 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Function;
+
 import javax.inject.Singleton;
+import java.util.function.Function;
 
 @Module
 public interface QueryModule {
@@ -47,6 +50,10 @@ public interface QueryModule {
     @Binds
     @Singleton
     ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
+
+    @Binds
+    @Singleton
+    FeeAccumulator bindFeeAccumulator(MonoFeeAccumulator feeAccumulator);
 
     @Binds
     @Singleton
