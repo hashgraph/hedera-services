@@ -278,11 +278,13 @@ class QueryDispatcherTest {
                         (Function<QueryHandlers, QueryHandler>)
                                 QueryHandlers::consensusGetTopicInfoHandler,
                         (Verification)
-                                h -> verify(h.consensusGetTopicInfoHandler()).validate(any(), any()),
+                                h ->
+                                        verify(h.consensusGetTopicInfoHandler())
+                                                .validate(any(), any()),
                         (Verification)
                                 h ->
                                         verify(h.consensusGetTopicInfoHandler())
-                                                .findResponse(any(), any())),
+                                                .findResponse(any(), any(), any())),
                 Arguments.of(
                         Query.newBuilder()
                                 .setGetBySolidityID(GetBySolidityIDQuery.getDefaultInstance())

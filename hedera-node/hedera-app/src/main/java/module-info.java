@@ -34,6 +34,8 @@ module com.hedera.node.app {
     requires com.swirlds.platform;
     requires org.apache.logging.log4j;
     requires com.google.common;
+    requires org.apache.commons.lang3;
+    requires com.hedera.node.app.hapi.fees;
 
     exports com.hedera.node.app to
             com.swirlds.platform;

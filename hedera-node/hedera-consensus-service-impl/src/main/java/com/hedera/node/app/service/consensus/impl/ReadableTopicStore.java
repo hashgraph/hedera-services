@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -23,10 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -48,8 +47,8 @@ public class ReadableTopicStore {
     }
 
     /**
-     * Returns the topic metadata needed. If the topic doesn't exist
-     * returns failureReason. If the topic exists , the failure reason will be null.
+     * Returns the topic metadata needed. If the topic doesn't exist returns failureReason. If the
+     * topic exists , the failure reason will be null.
      *
      * @param id topic id being looked up
      * @return topic's metadata
@@ -74,7 +73,9 @@ public class ReadableTopicStore {
                 Optional.ofNullable(topic.getAdminKey()),
                 Optional.ofNullable(topic.getSubmitKey()),
                 topic.getAutoRenewDurationSeconds(),
-                topic.getAutoRenewAccountId().num() == 0 ? Optional.empty() : Optional.of(topic.getAutoRenewAccountId().num()),
+                topic.getAutoRenewAccountId().num() == 0
+                        ? Optional.empty()
+                        : Optional.of(topic.getAutoRenewAccountId().num()),
                 topic.getExpirationTimestamp().toGrpc(),
                 topic.getSequenceNumber(),
                 topic.getRunningHash(),
@@ -82,17 +83,17 @@ public class ReadableTopicStore {
                 topic.isDeleted());
     }
 
-    public record TopicMetadata(Optional<String> memo,
-                                Optional<HederaKey> adminKey,
-                                Optional<HederaKey> submitKey,
-                                long autoRenewDurationSeconds,
-                                Optional<Long> autoRenewAccountId,
-                                Timestamp expirationTimestamp,
-                                long sequenceNumber,
-                                byte[] runningHash,
-                                long key,
-                                boolean isDeleted) {
-    }
+    public record TopicMetadata(
+            Optional<String> memo,
+            Optional<HederaKey> adminKey,
+            Optional<HederaKey> submitKey,
+            long autoRenewDurationSeconds,
+            Optional<Long> autoRenewAccountId,
+            Timestamp expirationTimestamp,
+            long sequenceNumber,
+            byte[] runningHash,
+            long key,
+            boolean isDeleted) {}
 
     public record TopicMetaOrLookupFailureReason(
             TopicMetadata metadata, ResponseCodeEnum failureReason) {

@@ -15,24 +15,22 @@
  */
 package com.hedera.node.app.service.consensus.impl.handlers;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.service.mono.config.NetworkInfo;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hederahashgraph.api.proto.java.*;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Optional;
-
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.*;
 import static java.util.Objects.requireNonNull;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.workflows.PaidQueryHandler;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
@@ -40,11 +38,9 @@ import static java.util.Objects.requireNonNull;
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
-    private final NetworkInfo networkInfo;
+    //    private final NetworkInfo networkInfo;
     @Inject
-    public ConsensusGetTopicInfoHandler(final NetworkInfo networkInfo) {
-        this.networkInfo = networkInfo;
-    }
+    public ConsensusGetTopicInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {
@@ -69,11 +65,13 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public ResponseCodeEnum validate(@NonNull final Query query, final ReadableTopicStore topicStore) throws PreCheckException {
+    public ResponseCodeEnum validate(
+            @NonNull final Query query, final ReadableTopicStore topicStore)
+            throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         if (op.hasTopicID()) {
             final var topicMetadata = topicStore.getTopicMetadata(op.getTopicID());
-            if(topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
+            if (topicMetadata.failed() || topicMetadata.metadata().isDeleted()) {
                 return INVALID_TOPIC_ID;
             }
         }
@@ -92,9 +90,10 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public Response findResponse(@NonNull final Query query,
-                                 @NonNull final ResponseHeader header,
-                                 @NonNull final ReadableTopicStore topicStore) {
+    public Response findResponse(
+            @NonNull final Query query,
+            @NonNull final ResponseHeader header,
+            @NonNull final ReadableTopicStore topicStore) {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         final ConsensusGetTopicInfoResponse.Builder response =
                 ConsensusGetTopicInfoResponse.newBuilder();
@@ -124,25 +123,30 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
         return COST_ANSWER == responseType;
     }
 
-    private Optional<ConsensusTopicInfo> infoForTopic(@NonNull final TopicID topicID,
-                                                      @NonNull final ReadableTopicStore topicStore){
+    private Optional<ConsensusTopicInfo> infoForTopic(
+            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
         final var metaOrFailure = topicStore.getTopicMetadata(topicID);
-        if(metaOrFailure.failed()) {
+        if (metaOrFailure.failed()) {
             return Optional.empty();
         } else {
-                final var info = ConsensusTopicInfo.newBuilder();
-                final var meta = metaOrFailure.metadata();
-                meta.memo().ifPresent(memo -> info.setMemo(memo));
-                info.setRunningHash(ByteString.copyFrom(meta.runningHash()));
-                info.setSequenceNumber(meta.sequenceNumber());
-                info.setExpirationTime(meta.expirationTimestamp());
-                meta.adminKey().ifPresent(key -> info.setAdminKey(asKeyUnchecked((JKey) key)));
-                meta.submitKey().ifPresent(key -> info.setSubmitKey(asKeyUnchecked((JKey) key)));
-                info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
-                meta.autoRenewAccountId().ifPresent(account -> info.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(account)));
+            final var info = ConsensusTopicInfo.newBuilder();
+            final var meta = metaOrFailure.metadata();
+            meta.memo().ifPresent(memo -> info.setMemo(memo));
+            info.setRunningHash(ByteString.copyFrom(meta.runningHash()));
+            info.setSequenceNumber(meta.sequenceNumber());
+            info.setExpirationTime(meta.expirationTimestamp());
+            meta.adminKey().ifPresent(key -> info.setAdminKey(asKeyUnchecked((JKey) key)));
+            meta.submitKey().ifPresent(key -> info.setSubmitKey(asKeyUnchecked((JKey) key)));
+            info.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
+            meta.autoRenewAccountId()
+                    .ifPresent(
+                            account ->
+                                    info.setAutoRenewAccount(
+                                            AccountID.newBuilder().setAccountNum(account)));
 
-                info.setLedgerId(networkInfo.ledgerId());
-                return Optional.of(info.build());
-            }
+            //                info.setLedgerId(networkInfo.ledgerId());
+            return Optional.of(info.build());
         }
+    }
 }

@@ -17,7 +17,7 @@ package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.HederaApp;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import org.junit.jupiter.api.Test;
@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
     @Mock private Platform platform;
+    @Mock private HederaApp app;
 
     @Test
     void objectGraphRootsAreAvailable() {
@@ -36,8 +37,7 @@ class QueryComponentTest {
         BDDMockito.given(platform.getSelfId()).willReturn(selfNodeId);
 
         // given:
-        final QueryComponent subject =
-                DaggerQueryComponent.factory().create(new BootstrapProperties(), 6144, platform);
+        final QueryComponent subject = app.queryComponentFactory().get().create();
 
         // expect:
         assertNotNull(subject.queryWorkflow());

@@ -112,8 +112,8 @@ public class QueryDispatcher {
         requireNonNull(query);
 
         return switch (query.getQueryCase()) {
-            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler().validate(query,
-                    new ReadableTopicStore(state.createReadableStates("TOPICS")));
+            case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
+                    .validate(query, new ReadableTopicStore(state.createReadableStates("TOPICS")));
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler().validate(query);
             case CONTRACTCALLLOCAL -> handlers.contractCallLocalHandler().validate(query);
@@ -178,7 +178,10 @@ public class QueryDispatcher {
 
         return switch (query.getQueryCase()) {
             case CONSENSUSGETTOPICINFO -> handlers.consensusGetTopicInfoHandler()
-                    .findResponse(query, header, new ReadableTopicStore(state.createReadableStates("TOPICS")));
+                    .findResponse(
+                            query,
+                            header,
+                            new ReadableTopicStore(state.createReadableStates("TOPICS")));
 
             case GETBYSOLIDITYID -> handlers.contractGetBySolidityIDHandler()
                     .findResponse(query, header);

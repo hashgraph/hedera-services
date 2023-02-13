@@ -41,6 +41,7 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -103,6 +104,7 @@ class QueryWorkflowImplTest {
     private QueryDispatcher dispatcher;
 
     @Mock private HapiOpCounters opCounters;
+    @Mock private FeeAccumulator feeAccumulator;
 
     @Mock(strictness = LENIENT)
     private Parser<Query> queryParser;
@@ -175,7 +177,8 @@ class QueryWorkflowImplTest {
                         submissionManager,
                         checker,
                         dispatcher,
-                        opCounters);
+                        opCounters,
+                        feeAccumulator);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -191,7 +194,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -203,7 +207,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -215,7 +220,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -227,7 +233,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -239,7 +246,8 @@ class QueryWorkflowImplTest {
                                         null,
                                         checker,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -251,7 +259,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         null,
                                         dispatcher,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -263,7 +272,8 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         null,
-                                        opCounters))
+                                        opCounters,
+                                        feeAccumulator))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -275,6 +285,20 @@ class QueryWorkflowImplTest {
                                         submissionManager,
                                         checker,
                                         dispatcher,
+                                        null,
+                                        feeAccumulator))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new QueryWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
+                                        stateAccessor,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        checker,
+                                        dispatcher,
+                                        opCounters,
                                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -367,7 +391,8 @@ class QueryWorkflowImplTest {
                         submissionManager,
                         checker,
                         localDispatcher,
-                        opCounters);
+                        opCounters,
+                        feeAccumulator);
 
         // then
         assertThatThrownBy(() -> workflow.handleQuery(ctx, requestBuffer, responseBuffer))
@@ -391,7 +416,8 @@ class QueryWorkflowImplTest {
                         submissionManager,
                         checker,
                         dispatcher,
-                        opCounters);
+                        opCounters,
+                        feeAccumulator);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -422,7 +448,8 @@ class QueryWorkflowImplTest {
                         submissionManager,
                         checker,
                         dispatcher,
-                        opCounters);
+                        opCounters,
+                        feeAccumulator);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);
@@ -528,7 +555,8 @@ class QueryWorkflowImplTest {
                         submissionManager,
                         localChecker,
                         dispatcher,
-                        opCounters);
+                        opCounters,
+                        feeAccumulator);
 
         // when
         workflow.handleQuery(ctx, requestBuffer, responseBuffer);

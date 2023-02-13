@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app;
 
+import static com.hedera.node.app.HederaAppsManager.HEDERA_APPS_MANAGER;
 import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -46,6 +47,8 @@ public class ServicesMain implements SwirldMain {
     /** Stores information related to the running of services in the mono-repo */
     private ServicesApp app;
 
+    private HederaApp hederaApp;
+
     /**
      * Stores information related to the running of the Hedera application in the modular app. This
      * is unused when the "hedera.workflows.enabled" flag is false.
@@ -70,6 +73,7 @@ public class ServicesMain implements SwirldMain {
     public void init(final Platform ignore, final NodeId nodeId) {
         try {
             app = APPS.get(nodeId.getId());
+            hederaApp = HEDERA_APPS_MANAGER.get(nodeId.getId());
             initApp();
         } catch (final IllegalArgumentException iae) {
             log.error("No app present for {}", nodeId, iae);
@@ -127,7 +131,7 @@ public class ServicesMain implements SwirldMain {
         // server and workflows, or use the existing gRPC handlers in mono-service.
         final var props = app.globalStaticProperties();
         if (props.workflowsEnabled()) {
-            hedera.start(app, app.nodeLocalProperties().port());
+            hedera.start(hederaApp, app.nodeLocalProperties().port());
         } else {
             app.grpcStarter().startIfAppropriate();
         }

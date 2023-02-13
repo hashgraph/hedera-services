@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER_STATE_PROOF;
@@ -185,7 +184,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
@@ -207,7 +207,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData =
+                        feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 final var header = createResponseHeader(responseType, validity, fee);
