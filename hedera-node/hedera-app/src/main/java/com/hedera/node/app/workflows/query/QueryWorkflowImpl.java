@@ -54,6 +54,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -158,7 +160,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
+            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
                 throw new PreCheckException(BUSY);
             }
 

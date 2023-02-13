@@ -24,12 +24,18 @@ import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}.
  */
+@Singleton
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
+    @Inject
+    public ScheduleSignHandler() {}
+
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all

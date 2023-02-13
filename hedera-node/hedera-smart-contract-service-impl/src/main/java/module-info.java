@@ -6,6 +6,8 @@ module com.hedera.node.app.service.contract.impl {
     requires com.hedera.node.app.service.mono;
     requires com.google.protobuf;
     requires com.hedera.node.app.service.evm;
+    requires dagger;
+    requires javax.inject;
 
     provides com.hedera.node.app.service.contract.ContractService with
             ContractServiceImpl;
@@ -13,4 +15,5 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.handlers;
+    exports com.hedera.node.app.service.contract.impl.components;
 }

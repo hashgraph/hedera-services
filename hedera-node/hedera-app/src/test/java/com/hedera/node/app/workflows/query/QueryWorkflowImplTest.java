@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -470,7 +471,7 @@ class QueryWorkflowImplTest {
     @Test
     void testThrottleFails() throws InvalidProtocolBufferException {
         // given
-        when(throttleAccumulator.shouldThrottle(FileGetInfo)).thenReturn(true);
+        when(throttleAccumulator.shouldThrottleQuery(eq(FileGetInfo), any())).thenReturn(true);
         final var responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 
         // when

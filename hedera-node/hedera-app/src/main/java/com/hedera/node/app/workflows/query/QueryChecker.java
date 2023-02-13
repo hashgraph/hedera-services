@@ -33,11 +33,14 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all checks related to instances of {@link
  * com.hederahashgraph.api.proto.java.Query}
  */
+@Singleton
 public class QueryChecker {
 
     private final WorkflowOnset onset;
@@ -58,6 +61,7 @@ public class QueryChecker {
      *     {@link com.hederahashgraph.api.proto.java.CryptoTransfer}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryChecker(
             @NonNull final WorkflowOnset onset,
             @NonNull final HederaAccountNumbers accountNumbers,

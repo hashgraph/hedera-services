@@ -28,8 +28,12 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.schedule.impl;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.util.impl;
+    requires com.hedera.node.app.hapi.utils;
+    requires dagger;
+    requires javax.inject;
     requires com.swirlds.platform;
     requires org.apache.logging.log4j;
+    requires com.google.common;
 
     exports com.hedera.node.app to
             com.swirlds.platform;

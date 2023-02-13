@@ -24,11 +24,14 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A {@code QueryDispatcher} provides functionality to forward validate, and reply-query requests to
  * the appropriate handler
  */
+@Singleton
 public class QueryDispatcher {
 
     private static final String QUERY_NOT_SET = "Query not set";
@@ -43,6 +46,7 @@ public class QueryDispatcher {
      * @param handlers a {@link QueryHandlers} record with all available handlers
      * @throws NullPointerException if one of the parameters is {@code null}
      */
+    @Inject
     public QueryDispatcher(@NonNull final QueryHandlers handlers) {
         this.handlers = requireNonNull(handlers);
     }
