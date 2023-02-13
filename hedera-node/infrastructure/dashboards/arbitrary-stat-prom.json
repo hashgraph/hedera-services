@@ -1,0 +1,257 @@
+{
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "target": {
+            "limit": 100,
+            "matchAny": false,
+            "tags": [],
+            "type": "dashboard"
+          },
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 38,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${Datasource}"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 20,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "editorMode": "code",
+            "expr": "{__name__=\"$name\", environment=\"$network\", type=~\"$metric_type\", metrics_node_id=~\".*\"}",
+            "legendFormat": "node{{node}} {{ type }}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Results",
+        "type": "timeseries"
+      }
+    ],
+    "schemaVersion": 37,
+    "style": "dark",
+    "tags": [],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "selected": false,
+            "text": "grafanacloud-swirldslabspreproduction-prom",
+            "value": "grafanacloud-swirldslabspreproduction-prom"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "name": "Datasource",
+          "options": [],
+          "query": "prometheus",
+          "refresh": 1,
+          "regex": "/^.*-prom/",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "dev",
+            "value": "dev"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "definition": "label_values(environment)",
+          "description": "",
+          "hide": 0,
+          "includeAll": false,
+          "label": "Network",
+          "multi": false,
+          "name": "network",
+          "options": [],
+          "query": {
+            "query": "label_values(environment)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "type": "query"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "platform_secC2C",
+            "value": "platform_secC2C"
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "definition": "label_values(__name__)",
+          "hide": 0,
+          "includeAll": false,
+          "label": "Metric Name",
+          "multi": false,
+          "name": "name",
+          "options": [],
+          "query": {
+            "query": "label_values(__name__)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "/^(Reconnect.*|app.*|internal.*|virtual.*|internal.*|platform.*)/",
+          "skipUrlSync": false,
+          "sort": 1,
+          "type": "query"
+        },
+        {
+          "allValue": ".*",
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "label": "Metric Type",
+          "multi": false,
+          "name": "metric_type",
+          "options": [
+            {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            {
+              "selected": false,
+              "text": "min",
+              "value": "min"
+            },
+            {
+              "selected": false,
+              "text": "max",
+              "value": "max"
+            },
+            {
+              "selected": false,
+              "text": "stddev",
+              "value": "stddev"
+            },
+            {
+              "selected": false,
+              "text": "mean",
+              "value": "mean"
+            }
+          ],
+          "query": "min,max,stddev,mean",
+          "queryValue": "",
+          "skipUrlSync": false,
+          "type": "custom"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "Any Stat (Prom)",
+    "uid": "any-stat-prom",
+    "version": 6,
+    "weekStart": ""
+  }
