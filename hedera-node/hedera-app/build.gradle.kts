@@ -32,8 +32,12 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.dagger.compiler)
+
     implementation(project(":hedera-node:hedera-app-spi"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(project(":hedera-node:hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
     implementation(project(":hedera-node:hedera-file-service-impl"))
@@ -43,6 +47,7 @@ dependencies {
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
     implementation(project(":hedera-node:hedera-evm"))
+    implementation(libs.bundles.di)
     implementation(libs.bundles.swirlds)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)

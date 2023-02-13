@@ -78,7 +78,7 @@ class Ed25519UtilsTest {
     void triesToRelocateObviouslyMissingPath() {
         final var notPresent = Paths.get("nowhere/src/main/resources/nothing.txt");
 
-        final var expected = Paths.get("test-clients/src/main/resources/nothing.txt");
+        final var expected = Paths.get("hedera-node/test-clients/src/main/resources/nothing.txt");
 
         final var actual = relocatedIfNotPresentInWorkingDir(notPresent);
 

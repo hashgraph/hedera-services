@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
@@ -98,10 +99,11 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
                 final var alias = syntheticTxnBody.getAlias();
                 if (!alias.isEmpty()) {
                     aliasManager.unlink(alias);
-                }
-                final var evmAddress = syntheticTxnBody.getEvmAddress();
-                if (!evmAddress.isEmpty()) {
-                    aliasManager.unlink(evmAddress);
+                    if (alias.size() != EVM_ADDRESS_SIZE) {
+                        // if this is an alias of type ECDSA public key
+                        // we should also unlink the EVM address derived from that key
+                        aliasManager.forgetEvmAddress(alias);
+                    }
                 }
             }
             return true;
