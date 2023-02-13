@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToEVMAddressWith;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToRandomKeyWith;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -47,7 +48,7 @@ public class AddressAliasIdFuzzing extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(transferToEVMAddressFuzzing());
+        return List.of(transferToKeyFuzzing());
     }
 
     private HapiSpec addressAliasIdFuzzing() {
@@ -69,6 +70,18 @@ public class AddressAliasIdFuzzing extends HapiSuite {
                 .when()
                 .then(
                         runWithProvider(idTransferToEVMAddressWith(PROPERTIES))
+                                .lasting(10L, TimeUnit.SECONDS));
+    }
+
+    private HapiSpec transferToKeyFuzzing() {
+        return defaultHapiSpec("TransferToKeyFuzzing")
+                .given(
+                        cryptoCreate(UNIQUE_PAYER_ACCOUNT)
+                                .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
+                                .withRecharging())
+                .when()
+                .then(
+                        runWithProvider(idTransferToRandomKeyWith(PROPERTIES))
                                 .lasting(10L, TimeUnit.SECONDS));
     }
 

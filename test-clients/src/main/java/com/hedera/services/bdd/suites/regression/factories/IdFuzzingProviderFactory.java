@@ -27,6 +27,8 @@ import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatin
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomEVMAddress;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.TransferToRandomKey;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.inventory.KeyInventoryCreation;
 import com.hedera.services.bdd.spec.infrastructure.selectors.RandomSelector;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -85,6 +87,26 @@ public class IdFuzzingProviderFactory {
                     /* ----- CRYPTO ----- */
                     .withOp(
                             new TransferToRandomEVMAddress(keys),
+                            intPropOrElse("randomTransfer.bias", 0, props));
+        };
+    }
+
+    public static Function<HapiSpec, OpProvider> idTransferToRandomKeyWith(final String resource) {
+        return spec -> {
+            final var props = RegressionProviderFactory.propsFrom(resource);
+
+            final var keys =
+                    new RegistrySourcedNameProvider<>(
+                            Key.class, spec.registry(), new RandomSelector());
+            KeyInventoryCreation keyInventory = new KeyInventoryCreation();
+
+            return new BiasedDelegatingProvider()
+                    /* --- <inventory> --- */
+                    .withInitialization(keyInventory.creationOps())
+                    .shouldLogNormalFlow(true)
+                    /* ----- CRYPTO ----- */
+                    .withOp(
+                            new TransferToRandomKey(keys),
                             intPropOrElse("randomTransfer.bias", 0, props));
         };
     }
