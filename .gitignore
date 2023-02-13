@@ -70,6 +70,7 @@ hedera-node/test-clients/yahcli/assets/*.jar
 !hedera-node/hedera-mono-service/src/test/resources/testfiles/expiry-throttle.json
 !hedera-node/hedera-mono-service/src/test/resources/R4FeeSchedule.json
 !hedera-node/configuration/**/*.json
+!hedera-node/infrastructure/**/*.json
 !hedera-node/test-clients/src/main/resource/FeeSchedule.json
 !hedera-node/test-clients/src/main/resource/testSystemFiles/*.json
 !hedera-node/test-clients/yahcli/run/test/local/assets/*.json
