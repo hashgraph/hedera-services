@@ -144,6 +144,9 @@ public class TargetNetworkPrep extends HapiSuite {
                                                                                                             .getServiceFee())
                                                                                             * 0.1))))))
                     .then(
+                            // TODO: this statement is intentionally wrong so a test will fail!
+                            // 🔥🔥🔥
+                            getAccountDetails(STAKING_REWARD).hasExpectedLedgerId("-1"),
                             getAccountDetails(STAKING_REWARD)
                                     .payingWith(GENESIS)
                                     .has(
