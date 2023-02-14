@@ -24,6 +24,7 @@ import com.hedera.node.app.state.merkle.disk.OnDiskValue;
 import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
+import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -33,6 +34,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.utility.Labeled;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -119,10 +121,10 @@ public class MerkleTestBase extends TestBase {
     protected StateMetadata<String, String> steamMetadata;
     protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> steamMerkleMap;
 
-    // The "COUNTRY" map is part of SECOND_SERVICE
+    // The "COUNTRY" singleton is part of FIRST_SERVICE
     protected String countryLabel;
     protected StateMetadata<String, String> countryMetadata;
-    protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> countryMerkleMap;
+    protected SingletonNode<String> countrySingleton;
 
     /** Sets up the "Fruit" merkle map, label, and metadata. */
     protected void setupFruitMerkleMap() {
@@ -132,8 +134,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
@@ -143,8 +144,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, true));
+                        StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_SERDES, STRING_SERDES, 100));
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel, fruitVirtualMetadata);
     }
 
@@ -156,8 +156,7 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_SERDES, STRING_SERDES));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -168,32 +167,17 @@ public class MerkleTestBase extends TestBase {
                 new StateMetadata<>(
                         SECOND_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.inMemory(SPACE_STATE_KEY, LONG_SERDES, STRING_SERDES));
     }
 
-    /** Sets up the "Steam" merkle map, label, and metadata. */
-    protected void setupSteamMerkleMap() {
-        steamLabel = StateUtils.computeLabel(SECOND_SERVICE, STEAM_STATE_KEY);
-        steamMerkleMap = createMerkleMap(steamLabel);
-        steamMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
-                        new TestSchema(1),
-                        new StateDefinition<>(
-                                STEAM_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
-    }
-
-    /** Sets up the "Country" merkle map, label, and metadata. */
-    protected void setupCountryMerkleMap() {
-        countryLabel = StateUtils.computeLabel(SECOND_SERVICE, COUNTRY_STATE_KEY);
-        countryMerkleMap = createMerkleMap(countryLabel);
+    protected void setupSingletonCountry() {
+        countryLabel = StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
         countryMetadata =
-                new StateMetadata<>(
-                        SECOND_SERVICE,
+                new StateMetadata<String, String>(
+                        FIRST_SERVICE,
                         new TestSchema(1),
-                        new StateDefinition<>(
-                                COUNTRY_STATE_KEY, STRING_SERDES, STRING_SERDES, 100, false));
+                        StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_SERDES));
+        countrySingleton = new SingletonNode<>(countryMetadata, AUSTRALIA);
     }
 
     /** Sets up the {@link #registry}, ready to be used for serialization tests */
@@ -263,10 +247,8 @@ public class MerkleTestBase extends TestBase {
         // (which I don't want to add), this is what I'm left with!
         for (int i = 0, n = hederaMerkle.getNumberOfChildren(); i < n; i++) {
             final MerkleNode child = hederaMerkle.getChild(i);
-            if (child instanceof MerkleMap<?, ?> m && label.equals(m.getLabel())) {
-                return m;
-            } else if (child instanceof VirtualMap<?, ?> v && label.equals(v.getLabel())) {
-                return v;
+            if (child instanceof Labeled labeled && label.equals(labeled.getLabel())) {
+                return child;
             }
         }
 

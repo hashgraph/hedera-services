@@ -19,12 +19,14 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,46 +35,60 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import java.util.Objects;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}.
  */
+@Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    @Inject
+    public CryptoTransferHandler() {}
+
+    /**
+     * Validates a {@link com.hederahashgraph.api.proto.java.CryptoTransfer} that is part of a
+     * {@link com.hederahashgraph.api.proto.java.Query}.
+     *
+     * @param txn the {@link TransactionBody} of the {@code CryptoTransfer}
+     * @throws PreCheckException if validation fails
+     */
+    public void validate(@NonNull final TransactionBody txn) throws PreCheckException {
+        // TODO: Migrate validation from CryptoTransferTransistionLogic.validateSemantics()
+        throw new UnsupportedOperationException("Not implemented");
+    }
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @param keyLookup the {@link AccountKeyLookup} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
+    public void preHandle(
+            @NonNull final PreHandleContext context,
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final ReadableTokenStore tokenStore) {
-        final var op = Objects.requireNonNull(txn).getCryptoTransfer();
-        final var meta =
-                new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer).txnBody(txn);
+        requireNonNull(context);
+        requireNonNull(keyLookup);
+        requireNonNull(tokenStore);
+        final var op = context.getTxn().getCryptoTransfer();
         for (final var transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
             if (!tokenMeta.failed()) {
-                handleTokenTransfers(transfers.getTransfersList(), meta, keyLookup);
-                handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op, keyLookup);
+                handleTokenTransfers(transfers.getTransfersList(), context, keyLookup);
+                handleNftTransfers(
+                        transfers.getNftTransfersList(), context, tokenMeta, op, keyLookup);
             } else {
-                meta.status(tokenMeta.failureReason());
+                context.status(tokenMeta.failureReason());
             }
         }
-        handleHbarTransfers(op, meta, keyLookup);
-        return meta.build();
+        handleHbarTransfers(op, context, keyLookup);
     }
 
     /**
@@ -85,12 +101,13 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 
     private void handleTokenTransfers(
             final List<AccountAmount> transfers,
-            final SigTransactionMetadataBuilder meta,
+            final PreHandleContext meta,
             final AccountKeyLookup keyLookup) {
         for (AccountAmount accountAmount : transfers) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());
@@ -118,7 +135,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleNftTransfers(
             final List<NftTransfer> nftTransfersList,
-            final SigTransactionMetadataBuilder meta,
+            final PreHandleContext meta,
             final ReadableTokenStore.TokenMetaOrLookupFailureReason tokenMeta,
             final CryptoTransferTransactionBody op,
             final AccountKeyLookup keyLookup) {
@@ -163,7 +180,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleHbarTransfers(
             final CryptoTransferTransactionBody op,
-            final SigTransactionMetadataBuilder meta,
+            final PreHandleContext meta,
             final AccountKeyLookup keyLookup) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());

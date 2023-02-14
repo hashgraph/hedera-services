@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.swirlds.common.system.Platform;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,13 +48,15 @@ class SubmissionManagerTest {
     @Mock private RecordCache recordCache;
     @Mock private NodeLocalProperties nodeLocalProperties;
     @Mock private MiscSpeedometers speedometers;
-    @Mock private ByteBuffer byteBuffer;
     @Mock private Parser<TransactionBody> parser;
+
+    private byte[] bytes;
 
     private SubmissionManager submissionManager;
 
     @BeforeEach
     void setup() {
+        bytes = new byte[] {1, 2, 3};
         submissionManager =
                 new SubmissionManager(platform, recordCache, nodeLocalProperties, speedometers);
     }
@@ -89,11 +90,11 @@ class SubmissionManagerTest {
         final var txBody = TransactionBody.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> submissionManager.submit(null, byteBuffer, parser))
+        assertThatThrownBy(() -> submissionManager.submit(null, bytes, parser))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> submissionManager.submit(txBody, null, parser))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, null))
+        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -106,25 +107,7 @@ class SubmissionManagerTest {
         when(platform.createTransaction(any())).thenReturn(true);
 
         // when
-        submissionManager.submit(txBody, byteBuffer, parser);
-
-        // then
-        verify(recordCache).addPreConsensus(transactionID);
-        verify(speedometers, never()).cyclePlatformTxnRejections();
-    }
-
-    @Test
-    void testSuccessWithByteBufferBackedArray() throws PreCheckException {
-        // given
-        final TransactionID transactionID = TransactionID.newBuilder().build();
-        final TransactionBody txBody =
-                TransactionBody.newBuilder().setTransactionID(transactionID).build();
-        final byte[] payload = new byte[] {0, 1, 2, 3};
-        final ByteBuffer directByteBuffer = ByteBuffer.wrap(payload);
-        when(platform.createTransaction(payload)).thenReturn(true);
-
-        // when
-        submissionManager.submit(txBody, directByteBuffer, parser);
+        submissionManager.submit(txBody, bytes, parser);
 
         // then
         verify(recordCache).addPreConsensus(transactionID);
@@ -139,7 +122,7 @@ class SubmissionManagerTest {
                 TransactionBody.newBuilder().setTransactionID(transactionID).build();
 
         // when
-        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -166,7 +149,7 @@ class SubmissionManagerTest {
         when(platform.createTransaction(uncheckedSubmitParsed.toByteArray())).thenReturn(true);
 
         // when
-        submissionManager.submit(txBody, byteBuffer, parser);
+        submissionManager.submit(txBody, bytes, parser);
 
         // then
         verify(recordCache).addPreConsensus(transactionID);
@@ -188,7 +171,7 @@ class SubmissionManagerTest {
         when(nodeLocalProperties.activeProfile()).thenReturn(Profile.PROD);
 
         // when
-        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 
@@ -214,7 +197,7 @@ class SubmissionManagerTest {
                 .thenThrow(new InvalidProtocolBufferException("Expected exception"));
 
         // when
-        assertThatThrownBy(() -> submissionManager.submit(txBody, byteBuffer, parser))
+        assertThatThrownBy(() -> submissionManager.submit(txBody, bytes, parser))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
 

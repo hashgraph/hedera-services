@@ -16,48 +16,42 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}.
  */
+@Singleton
 public class CryptoDeleteHandler implements TransactionHandler {
+    @Inject
+    public CryptoDeleteHandler() {}
+
     /**
      * Pre-handles a {@link
      * com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDeleteAllowance} transaction,
      * returning the metadata required to, at minimum, validate the signatures of all required
      * signing keys.
      *
-     * @param txn the {@link TransactionBody} with the transaction data
-     * @param payer the {@link AccountID} of the payer
-     * @param accountStore the {@link ReadableAccountStore} with the current data
-     * @return the {@link TransactionMetadata} with all information that needs to be passed to
-     *     {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public TransactionMetadata preHandle(
-            @NonNull final TransactionBody txn,
-            @NonNull final AccountID payer,
-            @NonNull final ReadableAccountStore accountStore) {
-        final var op = txn.getCryptoDelete();
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        final var op = context.getTxn().getCryptoDelete();
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
-        final var meta =
-                new SigTransactionMetadataBuilder(accountStore)
-                        .payerKeyFor(payer)
-                        .txnBody(txn)
-                        .addNonPayerKey(deleteAccountId)
-                        .addNonPayerKeyIfReceiverSigRequired(
-                                transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
-        return meta.build();
+        context.addNonPayerKey(deleteAccountId)
+                .addNonPayerKeyIfReceiverSigRequired(
+                        transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
     }
 
     /**
@@ -70,6 +64,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void handle(@NonNull final TransactionMetadata metadata) {
+        requireNonNull(metadata);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -286,6 +286,9 @@ class ERC20PrecompilesTest {
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray()))
                 .thenReturn(token);
+        entityIdUtils
+                .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr))
+                .thenReturn(token);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         ercTransferPrecompile = Mockito.mockStatic(ERCTransferPrecompile.class);

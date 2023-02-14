@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
+
     static final int CURRENT_VERSION = 1;
     static final int BYTES_IN_SERIALIZED_FORM = 5;
     static final long CLASS_ID = 0x11b982c14217d523L;
@@ -58,18 +59,14 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
         final var packedNum =
                 BitPackUtils.codeFromNum(parseLong(path.substring(LEGACY_BLOB_CODE_INDEX + 1)));
 
-        switch (code) {
-            case 'f':
-                return new VirtualBlobKey(Type.FILE_DATA, packedNum);
-            case 'k':
-                return new VirtualBlobKey(Type.FILE_METADATA, packedNum);
-            case 's':
-                return new VirtualBlobKey(Type.CONTRACT_BYTECODE, packedNum);
-            case 'e':
-                return new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, packedNum);
-            default:
-                throw new IllegalArgumentException("Invalid code in blob path '" + path + "'");
-        }
+        return switch (code) {
+            case 'f' -> new VirtualBlobKey(Type.FILE_DATA, packedNum);
+            case 'k' -> new VirtualBlobKey(Type.FILE_METADATA, packedNum);
+            case 's' -> new VirtualBlobKey(Type.CONTRACT_BYTECODE, packedNum);
+            case 'e' -> new VirtualBlobKey(Type.SYSTEM_DELETED_ENTITY_EXPIRY, packedNum);
+            default -> throw new IllegalArgumentException(
+                    "Invalid code in blob path '" + path + "'");
+        };
     }
 
     @Override
@@ -153,5 +150,17 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     @Override
     public int getMinimumSupportedVersion() {
         return CURRENT_VERSION;
+    }
+
+    /**
+     * Verifies if the content from the buffer is equal to this virtual blob key.
+     *
+     * @param buffer The buffer with data to be compared with this key
+     * @param version The version of the data inside the buffer
+     * @return If the content from the buffer has the same data as this instance
+     * @throws IOException If an I/O error occurred
+     */
+    public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
+        return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 }

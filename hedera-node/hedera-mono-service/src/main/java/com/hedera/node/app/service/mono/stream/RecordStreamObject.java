@@ -48,8 +48,15 @@ public class RecordStreamObject extends AbstractSerializableHashable
     private static final int MAX_RECORD_LENGTH = 64 * 1024;
     private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
 
+    public boolean closesCurrentFile() {
+        return writeNewFile;
+    }
+
+    // Whether this is the first record in a block (i.e., .rcd file)
+    private boolean writeNewFile;
     // The number of the ETH JSON-RPC bridge block containing this record
-    private long blockNumber = StreamAligned.NO_ALIGNMENT;
+    private long blockNumber;
+
     /* The gRPC transaction and records for the record stream file */
     private Transaction transaction;
     private TransactionRecord transactionRecord;
@@ -85,6 +92,11 @@ public class RecordStreamObject extends AbstractSerializableHashable
         this.sidecars = sidecars;
 
         runningHash = new RunningHash();
+    }
+
+    public RecordStreamObject setWriteNewFile() {
+        this.writeNewFile = true;
+        return this;
     }
 
     public RecordStreamObject withBlockNumber(final long blockNumber) {

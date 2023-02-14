@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
+import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils;
 import com.hedera.node.app.service.mono.context.properties.PropUtils;
@@ -66,7 +67,6 @@ import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hedera.node.app.service.mono.stats.ServicesStatsConfig;
 import com.hedera.node.app.service.mono.stats.StatsModule;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.store.models.TopicConversion;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
