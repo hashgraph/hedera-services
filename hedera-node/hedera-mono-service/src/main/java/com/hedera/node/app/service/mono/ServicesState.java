@@ -35,6 +35,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -684,6 +685,41 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AccountStorageAdapter accounts,
             final TokenRelStorageAdapter associations,
             final MerkleMap<EntityNum, MerkleToken> tokens) {
+        accounts.forEach(
+                (num, account) -> {
+                    final var actualOwned = stats.totalOwned().getOrDefault(num, 0);
+                    if (actualOwned > 0) {
+                        // We'll scan this account's NFTs in the next block
+                        return;
+                    }
+                    if (account.getNftsOwned() != 0) {
+                        stats.totalOwned().put(num, 0);
+                    }
+                });
+        associations
+                .getInMemoryRels()
+                .forEach(
+                        (pair, rel) -> {
+                            final var tokenNum = pair.getLowOrderAsNum();
+                            final var token = tokens.get(tokenNum);
+                            if (token == null) {
+                                log.warn(
+                                        "Account 0.0.{} associated to missing token 0.0.{}",
+                                        pair.getHiOrderAsLong(),
+                                        pair.getLowOrderAsLong());
+                            } else if (token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+                                final var actualOwned =
+                                        stats.totalOwnedByType().getOrDefault(pair, 0);
+                                if (actualOwned > 0) {
+                                    // We'll scan this account's NFTs owned by type in the next
+                                    // block
+                                    return;
+                                }
+                                if (rel.getBalance() != 0) {
+                                    stats.totalOwnedByType.put(pair, 0);
+                                }
+                            }
+                        });
         stats.totalOwned().keySet().stream()
                 .sorted()
                 .forEach(
