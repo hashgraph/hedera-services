@@ -156,7 +156,7 @@ public class FileSignTool {
                         SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(MARKER, "data is being signed = {}", hex(data));
+            LOGGER.info(MARKER, "data is being signed = {}", hex(data));
         }
 
         signature.update(data);
@@ -374,7 +374,7 @@ public class FileSignTool {
             // update stream digest
             LOGGER.info(MARKER, "Writting version {}", version);
             dos.writeInt(version);
-            LOGGER.info(MARKER, "Writting serializedBytes {}", hex(serializedBytes));
+            LOGGER.info(MARKER, "Writting serializedBytes {}", hex(serializedBytes).substring(0, 32));
             dos.write(serializedBytes);
             dos.flush();
 
