@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -36,7 +36,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
     @DisplayName("Succeeds for valid payer account")
     void validPayer() {
         final var txn = contractCallTransaction();
-        final var context = new PrehandleHandlerContext(keyLookup, txn);
+        final var context = new PreHandleContext(keyLookup, txn);
         subject.preHandle(context);
         basicMetaAssertions(context, 0, false, OK);
         assertThat(context.getPayerKey()).isEqualTo(payerKey);

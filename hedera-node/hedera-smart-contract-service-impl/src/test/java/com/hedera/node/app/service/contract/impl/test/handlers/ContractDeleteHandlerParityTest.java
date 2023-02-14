@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +47,7 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteImmutable() {
         final var theTxn = txnFrom(CONTRACT_DELETE_IMMUTABLE_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -58,7 +58,7 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDelete() {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -70,7 +70,7 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteMissingAccountBeneficiary() {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -82,7 +82,7 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteMissingContractBeneficiary() {
         final var theTxn = txnFrom(CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -94,7 +94,7 @@ class ContractDeleteHandlerParityTest {
     @Test
     void getsContractDeleteContractXfer() {
         final var theTxn = txnFrom(CONTRACT_DELETE_XFER_CONTRACT_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());

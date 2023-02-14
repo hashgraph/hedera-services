@@ -17,13 +17,13 @@ package com.hedera.node.app.service.token.impl.test.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class MetaAssertion {
 
     public static void basicContextAssertions(
-            final PrehandleHandlerContext context,
+            final PreHandleContext context,
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
