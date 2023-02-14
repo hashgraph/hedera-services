@@ -190,7 +190,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     // TODO: this is intentionally false so a test will fail! 🔥🔥🔥
                                     assertFalse(
                                             renewalFeeWithStorage.get()
-                                                    > renewalFeeWithoutStorage.get());
+                                                    > renewalFeeWithoutStorage.get() || true);
                                 }));
     }
 
