@@ -40,7 +40,8 @@ public final class Ed25519Utils {
     private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
 
     private static final String RESOURCE_PATH_SEGMENT = "src/main/resource";
-    public static final String TEST_CLIENTS_PREFIX = "test-clients" + File.separator;
+    public static final String TEST_CLIENTS_PREFIX =
+            "hedera-node" + File.separator + "test-clients" + File.separator;
     public static final EdDSANamedCurveSpec ED25519_PARAMS =
             EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.ED_25519);
     private static final DrbgParameters.Instantiation DRBG_INSTANTIATION =

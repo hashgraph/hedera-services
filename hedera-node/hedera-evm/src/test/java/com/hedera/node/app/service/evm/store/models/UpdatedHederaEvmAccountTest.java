@@ -107,7 +107,7 @@ class UpdatedHederaEvmAccountTest {
 
     @Test
     void getOriginalStorageValue() {
-        subject = new UpdatedHederaEvmAccount(address, 0, Wei.ZERO);
+        subject = new UpdatedHederaEvmAccount(address);
         assertEquals(ZERO, subject.getOriginalStorageValue(MIN_VALUE));
     }
 

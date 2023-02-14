@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.consensus.impl.handlers.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -28,6 +27,7 @@ import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
-import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,9 +76,9 @@ class ConsensusCreateTopicHandlerTest {
                 .build();
     }
 
-    static void assertOkResponse(TransactionMetadata result) {
-        assertThat(result.status()).isEqualTo(ResponseCodeEnum.OK);
-        assertThat(result.failed()).isFalse();
+    static void assertOkResponse(PreHandleContext context) {
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
+        assertThat(context.failed()).isFalse();
     }
 
     @BeforeEach
@@ -96,15 +95,16 @@ class ConsensusCreateTopicHandlerTest {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var result =
-                subject.preHandle(newCreateTxn(adminKey, submitKey), ACCOUNT_ID_3, keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, newCreateTxn(adminKey, submitKey), ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = Utils.asHederaKey(adminKey).orElseThrow();
         final var expectedHederaSubmitKey = Utils.asHederaKey(submitKey).orElseThrow();
-        assertThat(result.requiredNonPayerKeys())
+        assertThat(context.getRequiredNonPayerKeys())
                 .containsExactly(expectedHederaAdminKey, expectedHederaSubmitKey);
     }
 
@@ -116,13 +116,15 @@ class ConsensusCreateTopicHandlerTest {
         final var adminKey = SIMPLE_KEY_A;
 
         // when:
-        final var result = subject.preHandle(newCreateTxn(adminKey, null), ACCOUNT_ID_3, keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, newCreateTxn(adminKey, null), ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
         final var expectedHederaAdminKey = Utils.asHederaKey(adminKey).orElseThrow();
-        assertThat(result.requiredNonPayerKeys()).isEqualTo(List.of(expectedHederaAdminKey));
+        assertThat(context.getRequiredNonPayerKeys()).isEqualTo(List.of(expectedHederaAdminKey));
     }
 
     @Test
@@ -133,14 +135,15 @@ class ConsensusCreateTopicHandlerTest {
         final var submitKey = SIMPLE_KEY_B;
 
         // when:
-        final var result =
-                subject.preHandle(newCreateTxn(null, submitKey), ACCOUNT_ID_3, keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, newCreateTxn(null, submitKey), ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
         final var expectedHederaSubmitKey = Utils.asHederaKey(submitKey).orElseThrow();
-        assertThat(result.requiredNonPayerKeys()).containsExactly(expectedHederaSubmitKey);
+        assertThat(context.getRequiredNonPayerKeys()).containsExactly(expectedHederaSubmitKey);
     }
 
     @Test
@@ -151,13 +154,14 @@ class ConsensusCreateTopicHandlerTest {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var result =
-                subject.preHandle(newCreateTxn(protoPayerKey, null), ACCOUNT_ID_3, keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, newCreateTxn(protoPayerKey, null), ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
-        assertThat(result.requiredNonPayerKeys()).containsExactly(payerKey);
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.getRequiredNonPayerKeys()).containsExactly(payerKey);
     }
 
     @Test
@@ -168,13 +172,14 @@ class ConsensusCreateTopicHandlerTest {
         final var payerKey = mockPayerLookup(protoPayerKey);
 
         // when:
-        final var result =
-                subject.preHandle(newCreateTxn(null, protoPayerKey), ACCOUNT_ID_3, keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, newCreateTxn(null, protoPayerKey), ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
-        assertThat(result.requiredNonPayerKeys()).containsExactly(payerKey);
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.getRequiredNonPayerKeys()).containsExactly(payerKey);
     }
 
     @Test
@@ -189,13 +194,15 @@ class ConsensusCreateTopicHandlerTest {
         final var inputTxn = newCreateTxn(null, null);
 
         // when:
-        final var result = subject.preHandle(inputTxn, IdUtils.asAccount("0.0.1234"), keyFinder);
+        final var context =
+                new PreHandleContext(keyFinder, inputTxn, IdUtils.asAccount("0.0.1234"));
+        subject.preHandle(context);
 
         // then:
-        assertThat(result.status()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
-        assertThat(result.failed()).isTrue();
-        assertThat(result.payerKey()).isNull();
-        assertThat(result.requiredNonPayerKeys()).isEmpty();
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID);
+        assertThat(context.failed()).isTrue();
+        assertThat(context.getPayerKey()).isNull();
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -220,24 +227,12 @@ class ConsensusCreateTopicHandlerTest {
                         .build();
 
         // when:
-        final var result = subject.preHandle(inputTxn, ACCOUNT_ID_3, keyFinder);
+        final var context = new PreHandleContext(keyFinder, inputTxn, ACCOUNT_ID_3);
+        subject.preHandle(context);
 
         // then:
-        assertThat(result.status()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
-        assertThat(result.failed()).isTrue();
-    }
-
-    @Test
-    @DisplayName("Fails if payer is null")
-    void nullPayer() {
-        // given:
-        final var inputTxn = newCreateTxn(SIMPLE_KEY_A, SIMPLE_KEY_B);
-
-        // when/then:
-        //noinspection DataFlowIssue : explicitly passing null as a test param
-        final ThrowableAssert.ThrowingCallable toRun =
-                () -> subject.preHandle(inputTxn, null, keyFinder);
-        assertThatThrownBy(toRun).isInstanceOf(NullPointerException.class);
+        assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT);
+        assertThat(context.failed()).isTrue();
     }
 
     @Test
@@ -245,14 +240,15 @@ class ConsensusCreateTopicHandlerTest {
     void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup();
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, null), ACCOUNT_ID_3);
 
         // when:
-        final var result = subject.preHandle(newCreateTxn(null, null), ACCOUNT_ID_3, keyFinder);
+        subject.preHandle(context);
 
         // then:
-        assertOkResponse(result);
-        assertThat(result.payerKey()).isEqualTo(payerKey);
-        assertThat(result.requiredNonPayerKeys()).isEmpty();
+        assertOkResponse(context);
+        assertThat(context.getPayerKey()).isEqualTo(payerKey);
+        assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
 
     @Test

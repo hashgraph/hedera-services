@@ -33,6 +33,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -68,13 +69,12 @@ class ScheduleDeleteHandlerParityTest {
                 AdapterUtils.mockSchedule(
                         999L,
                         ADMIN_KEY); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
-        final var meta =
-                subject.preHandle(
-                        theTxn, theTxn.getTransactionID().getAccountID(), keyLookup, scheduleStore);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        assertTrue(meta.failed());
-        assertEquals(INVALID_SCHEDULE_ID, meta.status());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+        assertTrue(context.failed());
+        assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
     }
 
     @Test
@@ -83,13 +83,12 @@ class ScheduleDeleteHandlerParityTest {
         scheduleStore =
                 AdapterUtils.mockSchedule(
                         IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null);
-        final var meta =
-                subject.preHandle(
-                        theTxn, theTxn.getTransactionID().getAccountID(), keyLookup, scheduleStore);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).isEmpty());
-        assertTrue(meta.failed());
-        assertEquals(SCHEDULE_IS_IMMUTABLE, meta.status());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
+        assertTrue(context.failed());
+        assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());
     }
 
     @Test
@@ -99,12 +98,11 @@ class ScheduleDeleteHandlerParityTest {
                 AdapterUtils.mockSchedule(
                         IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(),
                         ADMIN_KEY);
-        final var meta =
-                subject.preHandle(
-                        theTxn, theTxn.getTransactionID().getAccountID(), keyLookup, scheduleStore);
+        final var context = new PreHandleContext(keyLookup, theTxn);
+        subject.preHandle(context, scheduleStore);
 
-        assertTrue(sanityRestored(meta.requiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
-        assertEquals(OK, meta.status());
+        assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));
+        assertEquals(OK, context.getStatus());
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
@@ -133,8 +131,8 @@ class AdapterUtils {
     /**
      * Returns the {@link AccountKeyLookup} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require an
-     * {@link AccountKeyLookup}.
+     * of {@link com.hedera.node.app.spi.Tr} implementations that require an {@link
+     * AccountKeyLookup}.
      *
      * @return the well-known account store
      */

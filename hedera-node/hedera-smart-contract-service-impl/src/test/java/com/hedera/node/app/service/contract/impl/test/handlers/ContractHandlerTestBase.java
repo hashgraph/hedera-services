@@ -19,8 +19,7 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -28,7 +27,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,13 +60,13 @@ public class ContractHandlerTestBase {
     }
 
     protected void basicMetaAssertions(
-            final TransactionMetadata meta,
+            final PreHandleContext context,
             final int nonPayerKeySize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(nonPayerKeySize, meta.requiredNonPayerKeys().size());
-        assertTrue(failed ? meta.failed() : !meta.failed());
-        assertEquals(failureStatus, meta.status());
+        assertThat(context.getRequiredNonPayerKeys()).hasSize(nonPayerKeySize);
+        assertThat(context.failed()).isEqualTo(failed);
+        assertThat(context.getStatus()).isEqualTo(failureStatus);
     }
 
     protected void setUpPayer() {

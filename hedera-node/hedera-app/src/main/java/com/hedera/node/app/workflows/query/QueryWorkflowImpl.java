@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -54,6 +55,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +92,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      * @throws NullPointerException if one of the arguments is {@code null}
      */
+    @Inject
     public QueryWorkflowImpl(
             @NonNull final NodeInfo nodeInfo,
             @NonNull final CurrentPlatformStatus currentPlatformStatus,
@@ -158,7 +161,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 2. Check query throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
+            if (throttleAccumulator.shouldThrottleQuery(functionality, query)) {
                 throw new PreCheckException(BUSY);
             }
 
@@ -188,7 +191,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            dispatcher.validate(state, query);
+            final var storeFactory = new StoreFactory(state);
+            dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
@@ -205,7 +209,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, OK, fee);
-                response = dispatcher.getResponse(state, query, header);
+                response = dispatcher.getResponse(storeFactory, query, header);
             }
 
             opCounters.countAnswered(functionality);

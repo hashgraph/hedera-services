@@ -22,6 +22,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
@@ -49,6 +51,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TreasuryReturnHelperTest {
     @Mock private TokenRelStorageAdapter tokenRels;
     @Mock private UniqueTokenMapAdapter nfts;
+    @Mock private EntityLookup lookup;
+    @Mock private MerkleAccount treasury;
+    @Mock private MerkleTokenRelStatus rel;
 
     private final List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
     private final List<EntityId> tokenTypes = new ArrayList<>();
@@ -58,7 +63,7 @@ class TreasuryReturnHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TreasuryReturnHelper();
+        subject = new TreasuryReturnHelper(lookup, () -> tokenRels);
     }
 
     @Test
@@ -145,10 +150,18 @@ class TreasuryReturnHelperTest {
     }
 
     @Test
-    void justAppendsReturnIfTokenNotDeleted() {
+    void appendsAndChangedNumOwnedNftsIfTokenNotDeleted() {
         final List<EntityId> tokenTypes = new ArrayList<>();
         tokenTypes.add(nonFungibleTokenNum.toEntityId());
         returnExchanges.add(new NftAdjustments());
+        given(lookup.getMutableAccount(treasuryNum)).willReturn(treasury);
+        given(
+                        tokenRels.getForModify(
+                                EntityNumPair.fromLongs(
+                                        treasuryNum.longValue(), nonFungibleTokenNum.longValue())))
+                .willReturn(rel);
+        given(treasury.getNftsOwned()).willReturn(0L);
+        given(rel.getBalance()).willReturn(0L);
 
         final var didReturn =
                 subject.updateNftReturns(
@@ -169,6 +182,8 @@ class TreasuryReturnHelperTest {
         assertTrue(didReturn);
         assertEquals(exchangesFrom(ttls), returnExchanges);
         assertEquals(1, tokenTypes.size());
+        verify(treasury).setNftsOwned(1L);
+        verify(rel).setBalance(1L);
     }
 
     @Test

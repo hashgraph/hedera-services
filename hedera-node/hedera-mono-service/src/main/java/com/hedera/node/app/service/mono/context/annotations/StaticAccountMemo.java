@@ -22,7 +22,6 @@ import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.address.AddressBook;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -30,9 +29,9 @@ import javax.inject.Qualifier;
 
 /**
  * Distinguishes a bound {@code String} instance that represents the address book memo of the node
- * during {@link ServicesState#init(Platform, AddressBook, SwirldDualState, InitTrigger,
- * SoftwareVersion)}. The "static" qualifier is meant to emphasize the current system does not allow
- * for the possibility of the node's account changing dynamically (i.e., without a network restart).
+ * during {@link ServicesState#init(Platform, SwirldDualState, InitTrigger, SoftwareVersion)}. The
+ * "static" qualifier is meant to emphasize the current system does not allow for the possibility of
+ * the node's account changing dynamically (i.e., without a network restart).
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER})
 @Qualifier
