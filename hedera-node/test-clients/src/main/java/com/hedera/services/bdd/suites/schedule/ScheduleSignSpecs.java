@@ -621,7 +621,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
         return defaultHapiSpec("AddingSignaturesToExecutedTxFails")
                 .given(cryptoCreate("somesigner"), scheduleCreate(creation, txnBody))
-                .when(getScheduleInfo(creation).isExecuted())
+                .when(getScheduleInfo(creation).isExecuted().logged())
                 .then(
                         scheduleSign(creation)
                                 .via("signing")
@@ -689,8 +689,8 @@ public class ScheduleSignSpecs extends HapiSuite {
 
         return defaultHapiSpec("OkIfAdminKeyOverlapsWithActiveScheduleKey")
                 .given(
-                        newKeyNamed(adminKey).generator(keyGen),
-                        newKeyNamed(scheduledTxnKey).generator(keyGen),
+                        newKeyNamed(adminKey).generator(keyGen).logged(),
+                        newKeyNamed(scheduledTxnKey).generator(keyGen).logged(),
                         cryptoCreate("sender").key(scheduledTxnKey).balance(1L))
                 .when(
                         scheduleCreate(

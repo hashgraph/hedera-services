@@ -186,7 +186,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .expiry(then - 1)
                                 .hasKnownStatus(INVALID_EXPIRATION_TIME),
                         tokenUpdate(immutable).expiry(then + 1))
-                .then(getTokenInfo(immutable));
+                .then(getTokenInfo(immutable).logged());
     }
 
     private HapiSpec validatesMissingRef() {
@@ -245,7 +245,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .wipeKey("wipeThenSupplyKey")
                                 .feeScheduleKey("oldFeeScheduleKey"))
                 .when(
-                        getTokenInfo("tbu"),
+                        getTokenInfo("tbu").logged(),
                         tokenUpdate("tbu")
                                 .adminKey("newAdminKey")
                                 .kycKey("freezeThenKycKey")
@@ -255,15 +255,15 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .feeScheduleKey("newFeeScheduleKey"),
                         tokenAssociate("misc", "tbu"))
                 .then(
-                        getTokenInfo("tbu"),
+                        getTokenInfo("tbu").logged(),
                         grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
                         tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycThenFreezeKey"),
-                        getAccountInfo("misc"),
+                        getAccountInfo("misc").logged(),
                         cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
                         mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
                         burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
                         wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "supplyThenWipeKey"),
-                        getAccountInfo(TOKEN_TREASURY));
+                        getAccountInfo(TOKEN_TREASURY).logged());
     }
 
     public HapiSpec newTreasuryAutoAssociationWorks() {
@@ -319,14 +319,14 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .freezeKey("freezeKey")
                                 .treasury("oldTreasury"))
                 .when(
-                        getAccountInfo("oldTreasury"),
-                        getAccountInfo("newTreasury"),
+                        getAccountInfo("oldTreasury").logged(),
+                        getAccountInfo("newTreasury").logged(),
                         tokenAssociate("newTreasury", "tbu"),
                         tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
                 .then(
-                        getAccountInfo("oldTreasury"),
-                        getAccountInfo("newTreasury"),
-                        getTxnRecord(TREASURY_UPDATE_TXN));
+                        getAccountInfo("oldTreasury").logged(),
+                        getAccountInfo("newTreasury").logged(),
+                        getTxnRecord(TREASURY_UPDATE_TXN).logged());
     }
 
     public HapiSpec validAutoRenewWorks() {
@@ -350,7 +350,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                         tokenUpdate("tbu")
                                 .autoRenewAccount("newAutoRenew")
                                 .autoRenewPeriod(secondPeriod))
-                .then(getTokenInfo("tbu"));
+                .then(getTokenInfo("tbu").logged());
     }
 
     public HapiSpec symbolChanges() {
@@ -523,6 +523,7 @@ public class TokenUpdateSpecs extends HapiSuite {
                                                 .kyc(TokenKycStatus.Granted)
                                                 .balance(500)),
                         getTokenInfo("primary")
+                                .logged()
                                 .hasEntityMemo(updatedMemo)
                                 .hasRegisteredId("primary")
                                 .hasName(newSaltedName)
@@ -592,8 +593,9 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getTokenInfo("primary")
                                 .hasTreasury("newTokenTreasury")
                                 .hasPauseKey("primary")
-                                .hasPauseStatus(TokenPauseStatus.Unpaused),
-                        getTokenNftInfo("primary", 1).hasAccountID("newTokenTreasury"));
+                                .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                .logged(),
+                        getTokenNftInfo("primary", 1).hasAccountID("newTokenTreasury").logged());
     }
 
     private HapiSpec safeToUpdateCustomFeesWithNewFallbackWhileTransferring() {
@@ -735,8 +737,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                                 .treasury("oldTreasury"))
                 .when(
                         mintToken("tbu", List.of(ByteString.copyFromUtf8("BLAMMO"))),
-                        getAccountInfo("oldTreasury"),
-                        getAccountInfo("newTreasury"),
+                        getAccountInfo("oldTreasury").logged(),
+                        getAccountInfo("newTreasury").logged(),
                         tokenAssociate("newTreasury", "tbu"),
                         tokenUpdate("tbu").memo("newMemo"),
                         tokenUpdate("tbu").treasury("newTreasury"),
@@ -744,8 +746,8 @@ public class TokenUpdateSpecs extends HapiSuite {
                         getTokenInfo("tbu").hasTreasury("newTreasury"),
                         tokenUpdate("tbu").treasury("newTreasury").via(TREASURY_UPDATE_TXN))
                 .then(
-                        getAccountInfo("oldTreasury"),
-                        getAccountInfo("newTreasury"),
+                        getAccountInfo("oldTreasury").logged(),
+                        getAccountInfo("newTreasury").logged(),
                         getTokenInfo("tbu").hasTreasury("newTreasury"));
     }
 

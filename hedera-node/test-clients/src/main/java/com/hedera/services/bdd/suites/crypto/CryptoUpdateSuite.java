@@ -145,7 +145,8 @@ public class CryptoUpdateSuite extends HapiSuite {
                                         AccountInfoAsserts.accountWith()
                                                 .stakedAccountId("0.0.20")
                                                 .noStakingNodeId()
-                                                .isDeclinedReward(true)))
+                                                .isDeclinedReward(true))
+                                .logged())
                 .when(
                         cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
                         getAccountInfo("user")
@@ -153,14 +154,16 @@ public class CryptoUpdateSuite extends HapiSuite {
                                         AccountInfoAsserts.accountWith()
                                                 .noStakedAccountId()
                                                 .stakedNodeId(0L)
-                                                .isDeclinedReward(false)),
+                                                .isDeclinedReward(false))
+                                .logged(),
                         cryptoUpdate("user").newStakedNodeId(-1L),
                         getAccountInfo("user")
                                 .has(
                                         AccountInfoAsserts.accountWith()
                                                 .noStakedAccountId()
                                                 .noStakingNodeId()
-                                                .isDeclinedReward(false)))
+                                                .isDeclinedReward(false))
+                                .logged())
                 .then(
                         cryptoUpdate("user")
                                 .key(ADMIN_KEY)
@@ -171,14 +174,16 @@ public class CryptoUpdateSuite extends HapiSuite {
                                         AccountInfoAsserts.accountWith()
                                                 .stakedAccountId("0.0.20")
                                                 .noStakingNodeId()
-                                                .isDeclinedReward(true)),
+                                                .isDeclinedReward(true))
+                                .logged(),
                         cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
                         getAccountInfo("user")
                                 .has(
                                         AccountInfoAsserts.accountWith()
                                                 .noStakedAccountId()
                                                 .noStakingNodeId()
-                                                .isDeclinedReward(true)));
+                                                .isDeclinedReward(true))
+                                .logged());
     }
 
     private HapiSpec usdFeeAsExpected() {
@@ -261,7 +266,8 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .key(secondKey)
                                 .signedBy(GENESIS)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(SUCCESS)
+                                .logged(),
                         cryptoUpdate(randomAccount)
                                 .key(secondKey)
                                 .signedBy(firstKey)
@@ -437,7 +443,8 @@ public class CryptoUpdateSuite extends HapiSuite {
                         getContractInfo(CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .maxAutoAssociations(originalMax)))
+                                                .maxAutoAssociations(originalMax))
+                                .logged())
                 .when(
                         cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
                                 .via(transferAToC),

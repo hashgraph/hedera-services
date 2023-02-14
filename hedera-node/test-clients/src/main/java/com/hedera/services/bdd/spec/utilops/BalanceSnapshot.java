@@ -59,8 +59,8 @@ public class BalanceSnapshot extends UtilOp {
 
         HapiGetAccountBalance delegate =
                 aliased
-                        ? QueryVerbs.getAutoCreatedAccountBalance(account)
-                        : QueryVerbs.getAccountBalance(account);
+                        ? QueryVerbs.getAutoCreatedAccountBalance(account).logged()
+                        : QueryVerbs.getAccountBalance(account).logged();
         payer.ifPresent(delegate::payingWith);
         Optional<Throwable> error = delegate.execFor(spec);
         if (error.isPresent()) {

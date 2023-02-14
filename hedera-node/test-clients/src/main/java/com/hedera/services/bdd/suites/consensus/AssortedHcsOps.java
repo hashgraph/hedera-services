@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.deleteTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -76,7 +77,8 @@ public class AssortedHcsOps extends HapiSuite {
                                         id ->
                                                 cryptoCreate("child" + id)
                                                         .payingWith("rechargingPayer")
-                                                        .balance(startingBalance / 2))
+                                                        .balance(startingBalance / 2)
+                                                        .logged())
                                 .toArray(HapiSpecOperation[]::new));
     }
 
@@ -84,7 +86,7 @@ public class AssortedHcsOps extends HapiSuite {
         return defaultHapiSpec("infoLookup")
                 .given()
                 .when()
-                .then(QueryVerbs.getTopicInfo("0.0.1161"));
+                .then(QueryVerbs.getTopicInfo("0.0.1161").logged());
     }
 
     private HapiSpec runMisc() {
@@ -152,7 +154,14 @@ public class AssortedHcsOps extends HapiSuite {
                                 .hasSeqNo(10L)
                                 .hasAdminKey(GENESIS)
                                 .hasSubmitKey(GENESIS),
-                        getTopicInfo("deletedTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID));
+                        getTopicInfo("deletedTopic").hasCostAnswerPrecheck(INVALID_TOPIC_ID),
+                        logIt(
+                                spec ->
+                                        String.format(
+                                                "Vanilla: %s, Updated: %s, Deleted: %s",
+                                                vanillaTopic.get(),
+                                                updatedTopic.get(),
+                                                deletedTopic.get())));
     }
 
     private String path(String file) {

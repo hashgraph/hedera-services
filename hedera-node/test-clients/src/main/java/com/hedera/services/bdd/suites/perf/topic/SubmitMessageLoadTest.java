@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -133,8 +134,8 @@ public class SubmitMessageLoadTest extends LoadTest {
                                                 spec.keys()
                                                         .exportSimpleKey(
                                                                 "topicSubmitKey.pem", "submitKey"))
-                                : sleepFor(100)
-                        /*logIt(ignore -> settings.toString())*/ )
+                                : sleepFor(100),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(GENESIS)
@@ -162,7 +163,7 @@ public class SubmitMessageLoadTest extends LoadTest {
                                 : sleepFor(100),
                         sleepFor(10000) // wait all other thread ready
                         )
-                .then(defaultLoadTest(submitBurst, settings), getAccountBalance("sender"));
+                .then(defaultLoadTest(submitBurst, settings), getAccountBalance("sender").logged());
     }
 
     private static Supplier<HapiSpecOperation> opSupplier(PerfTestLoadSettings settings) {

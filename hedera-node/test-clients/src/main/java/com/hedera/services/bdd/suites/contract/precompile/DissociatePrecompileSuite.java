@@ -203,7 +203,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .via("dissociateZeroBalanceFrozenTxn"),
                                                 getTxnRecord("dissociateZeroBalanceFrozenTxn")
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
@@ -219,7 +220,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .via("dissociateZeroBalanceUnfrozenTxn"),
                                                 getTxnRecord("dissociateZeroBalanceUnfrozenTxn")
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
@@ -235,7 +237,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .via("dissociateNonZeroBalanceFrozenTxn"),
                                                 getTxnRecord("dissociateNonZeroBalanceFrozenTxn")
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
@@ -251,7 +254,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .via("dissociateNonZeroBalanceUnfrozenTxn"),
                                                 getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn")
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 contractCall(
                                                                 CONTRACT,
                                                                 "tokenDissociate",
@@ -359,7 +363,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(3_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                                                 getTxnRecord("nestedDissociateTxn")
-                                                        .andAllChildRecords())))
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         childRecordsCheck(
                                 "nestedDissociateTxn",
@@ -442,7 +447,8 @@ public class DissociatePrecompileSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 getTxnRecord("multipleDissociationTxn")
-                                                        .andAllChildRecords())))
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         childRecordsCheck(
                                 "multipleDissociationTxn",

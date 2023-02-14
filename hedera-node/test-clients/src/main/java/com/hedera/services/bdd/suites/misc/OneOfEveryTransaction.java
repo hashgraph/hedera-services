@@ -101,7 +101,7 @@ public class OneOfEveryTransaction extends HapiSuite {
                                 .receiveThreshold(1_000L)
                                 .balance(1_234L)
                                 .key("firstKey"),
-                        getAccountBalance("tbd"),
+                        getAccountBalance("tbd").logged(),
                         cryptoUpdate("tbd").key("secondKey"),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1_234L)),
                         cryptoDelete("tbd").via("deleteTxn").transfer(GENESIS),

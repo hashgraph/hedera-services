@@ -91,7 +91,8 @@ public class MiscCryptoSuite extends HapiSuite {
                         cryptoUpdate(sysAccount)
                                 .key(secondKey)
                                 .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS),
+                                .hasKnownStatus(SUCCESS)
+                                .logged(),
                         cryptoUpdate(randomAccountA)
                                 .key(secondKey)
                                 .signedBy(firstKey)
@@ -124,21 +125,22 @@ public class MiscCryptoSuite extends HapiSuite {
                                 .fee(ONE_HBAR)
                                 .hasPrecheck(OK),
                         getAccountBalance("sender")
-                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE));
+                                .hasTinyBars(ONE_HUNDRED_HBARS - ONE_HBAR - REDUCED_TOTAL_FEE)
+                                .logged());
     }
 
     public static HapiSpec getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
-                .then(getAccountBalance(GENESIS));
+                .then(getAccountBalance(GENESIS).logged());
     }
 
     public static HapiSpec transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
-                .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L));
+                .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged());
     }
 
     private HapiSpec updateWithOutOfDateKeyFails() {

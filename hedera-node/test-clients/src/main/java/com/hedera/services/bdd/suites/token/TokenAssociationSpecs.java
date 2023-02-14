@@ -195,7 +195,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasToken(relationshipWith("a"))
                                 .hasNoTokenRelationship("b")
                                 .hasToken(relationshipWith("c"))
-                                .hasToken(relationshipWith("tbd")));
+                                .hasToken(relationshipWith("tbd"))
+                                .logged());
     }
 
     public HapiSpec accountInfoQueriesAsExpected() {
@@ -222,7 +223,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasToken(relationshipWith("a").decimals(1))
                                 .hasNoTokenRelationship("b")
                                 .hasToken(relationshipWith("c").decimals(3))
-                                .hasToken(relationshipWith("tbd").decimals(4)));
+                                .hasToken(relationshipWith("tbd").decimals(4))
+                                .logged());
     }
 
     public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
@@ -576,7 +578,8 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .then(
                         getAccountInfo("misc")
                                 .hasToken(relationshipWith(KNOWABLE_TOKEN))
-                                .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT));
+                                .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                .logged());
     }
 
     public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
@@ -600,7 +603,7 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .supplyKey(multiKey)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
-                        getAccountInfo(TOKEN_TREASURY))
+                        getAccountInfo(TOKEN_TREASURY).logged())
                 .when(tokenAssociate(contract, uniqToken), tokenDissociate(contract, uniqToken))
                 .then(
                         cryptoTransfer(
@@ -630,17 +633,18 @@ public class TokenAssociationSpecs extends HapiSuite {
                                 .hasToken(
                                         relationshipWith(VANILLA_TOKEN)
                                                 .kyc(KycNotApplicable)
-                                                .freeze(FreezeNotApplicable)),
+                                                .freeze(FreezeNotApplicable))
+                                .logged(),
                         cryptoCreate("test"),
                         tokenAssociate("test", KNOWABLE_TOKEN),
                         tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
                         tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
                         tokenAssociate("test", VANILLA_TOKEN),
-                        getAccountInfo("test"),
+                        getAccountInfo("test").logged(),
                         tokenDissociate("test", VANILLA_TOKEN),
-                        getAccountInfo("test"),
-                        tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-                        getAccountInfo("test"));
+                        getAccountInfo("test").logged(),
+                        tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
+                        getAccountInfo("test").logged());
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {

@@ -141,7 +141,8 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(
                         getScheduleInfo("onlyBody")
                                 .hasScheduleId("onlyBody")
-                                .hasRecordedScheduledTxn());
+                                .hasRecordedScheduledTxn()
+                                .logged());
     }
 
     private HapiSpec validateSignersInInfo() {
@@ -343,7 +344,7 @@ public class ScheduleCreateSpecs extends HapiSuite {
                                 .designatingPayer("secondPayer")
                                 .via("copycat")
                                 .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
-                        getTxnRecord("copycat"),
+                        getTxnRecord("copycat").logged(),
                         getReceipt("copycat")
                                 .hasSchedule("original")
                                 .hasScheduledTxnId("original"));
@@ -394,7 +395,8 @@ public class ScheduleCreateSpecs extends HapiSuite {
                 .then(
                         getScheduleInfo("creation")
                                 .hasScheduleId("creation")
-                                .hasScheduledTxnIdSavedBy("creation"));
+                                .hasScheduledTxnIdSavedBy("creation")
+                                .logged());
     }
 
     private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {

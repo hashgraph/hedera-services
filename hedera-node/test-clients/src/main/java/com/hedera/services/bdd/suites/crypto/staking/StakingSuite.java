@@ -181,9 +181,9 @@ public class StakingSuite extends HapiSuite {
                                                 first,
                                                 second,
                                                 third,
-                                                getTxnRecord(setupTxn),
-                                                getTxnRecord(fundingTxn),
-                                                getTxnRecord(withdrawingTxn));
+                                                getTxnRecord(setupTxn).logged(),
+                                                getTxnRecord(fundingTxn).logged(),
+                                                getTxnRecord(withdrawingTxn).logged());
                                     }
                                 }));
     }
@@ -207,10 +207,12 @@ public class StakingSuite extends HapiSuite {
         final IntFunction<HapiSpecOperation> returnRecordLookup =
                 n ->
                         getTxnRecord(returnToAliceTxns.apply(n))
+                                .logged()
                                 .exposingStakingRewardsTo(rewardsPaid::add);
         final IntFunction<HapiSpecOperation> sendRecordLookup =
                 n ->
                         getTxnRecord(sendToBobTxns.apply(n))
+                                .logged()
                                 .exposingStakingRewardsTo(rewardsPaid::add);
 
         return defaultHapiSpec("StakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries")
@@ -374,13 +376,13 @@ public class StakingSuite extends HapiSuite {
                         sleepFor(INTER_PERIOD_SLEEP_MS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
                         cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1)),
-                        getAccountBalance(patientlyWaiting),
+                        getAccountBalance(patientlyWaiting).logged(),
                         // Now we should be rewardable even though node0 is far from minStake
                         overriding("staking.requireMinStakeToReward", "false"),
                         sleepFor(INTER_PERIOD_SLEEP_MS),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
                         cryptoTransfer(tinyBarsFromTo(patientlyWaiting, FUNDING, 1)))
-                .then(getAccountBalance(patientlyWaiting));
+                .then(getAccountBalance(patientlyWaiting).logged());
     }
 
     private HapiSpec secondOrderRewardSituationsWork() {
@@ -429,7 +431,8 @@ public class StakingSuite extends HapiSuite {
                                 .hasPaidStakingRewards(
                                         List.of(
                                                 Pair.of(ALICE, alicePendingRewardsCase1),
-                                                Pair.of(BOB, bobPendingRewardsCase1))));
+                                                Pair.of(BOB, bobPendingRewardsCase1)))
+                                .logged());
     }
 
     private HapiSpec evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
@@ -592,6 +595,7 @@ public class StakingSuite extends HapiSuite {
                                 .newDeclinedReward(true)
                                 .via("acceptsReward"),
                         getTxnRecord("acceptsReward")
+                                .logged()
                                 .andAllChildRecords()
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(
@@ -622,7 +626,8 @@ public class StakingSuite extends HapiSuite {
                                 .hasStakingFeesPaid()
                                 .hasChildRecords(
                                         recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
-                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 500000000L))),
+                                .hasPaidStakingRewards(List.of(Pair.of(ALICE, 500000000L)))
+                                .logged(),
                         /* Within the same period rewards are not awarded twice */
                         cryptoTransfer(tinyBarsFromTo(BOB, ALICE, ONE_HBAR))
                                 .payingWith(BOB)
@@ -631,9 +636,11 @@ public class StakingSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .hasChildRecordCount(0)
                                 .hasStakingFeesPaid()
-                                .hasPaidStakingRewards(List.of()),
+                                .hasPaidStakingRewards(List.of())
+                                .logged(),
                         cryptoUpdate(ALICE).newStakedAccountId(BOB).via("samePeriodUpdate"),
                         getTxnRecord("samePeriodUpdate")
+                                .logged()
                                 .andAllChildRecords()
                                 .hasChildRecordCount(0)
                                 .stakingFeeExempted()
@@ -652,7 +659,7 @@ public class StakingSuite extends HapiSuite {
                 .given(
                         overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
                         overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
-                        getAccountInfo(STAKING_REWARD),
+                        getAccountInfo(STAKING_REWARD).logged(),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_HBAR)))
                 .when(
                         cryptoCreate(ALICE)
@@ -669,7 +676,7 @@ public class StakingSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(
                                         0) // only end of staking period record generated
-                        ,
+                                .logged(),
 
                         /* ---
                         since rewardsSumHistory will be 0 for the first staking period after rewards
@@ -681,7 +688,8 @@ public class StakingSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .stakingFeeExempted()
                                 .hasNonStakingChildRecordCount(0)
-                                .hasPaidStakingRewards(List.of()),
+                                .hasPaidStakingRewards(List.of())
+                                .logged(),
 
                         /* --- Since rewardsSumHistory is updated during the previous staking period after rewards are
                         activated, paid_rewards will be non-empty in this record --- */
@@ -694,7 +702,8 @@ public class StakingSuite extends HapiSuite {
                                 .hasNonStakingChildRecordCount(0)
                                 .hasStakingFeesPaid()
                                 .hasPaidStakingRewards(
-                                        List.of(Pair.of(ALICE, expectedPendingRewards))));
+                                        List.of(Pair.of(ALICE, expectedPendingRewards)))
+                                .logged());
     }
 
     private HapiSpec rewardsWorkAsExpected() {
@@ -785,6 +794,7 @@ public class StakingSuite extends HapiSuite {
                 .then(
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("trigger"),
                         getTxnRecord("trigger")
+                                .logged()
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(
                                         recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
@@ -793,17 +803,18 @@ public class StakingSuite extends HapiSuite {
                         getTxnRecord("transfer")
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(
-                                        recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)),
+                                        recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+                                .logged(),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR))
                                 .via("noEndOfStakingPeriodRecord"),
-                        getTxnRecord("noEndOfStakingPeriodRecord").hasChildRecordCount(0),
+                        getTxnRecord("noEndOfStakingPeriodRecord").hasChildRecordCount(0).logged(),
                         sleepFor(INTER_PERIOD_SLEEP_MS),
                         cryptoTransfer(tinyBarsFromTo("a1", "a2", ONE_HBAR)).via("transfer1"),
                         getTxnRecord("transfer1")
                                 .hasChildRecordCount(1)
                                 .hasChildRecords(
-                                        recordWith()
-                                                .memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO)));
+                                        recordWith().memo(END_OF_STAKING_PERIOD_CALCULATIONS_MEMO))
+                                .logged());
     }
 
     private HapiSpec rewardsOfDeletedAreRedirectedToBeneficiary() {
@@ -819,6 +830,6 @@ public class StakingSuite extends HapiSuite {
                         sleepFor(150_000))
                 .then(
                         cryptoDelete(ALICE).transfer(bob).via(deletion),
-                        getTxnRecord(deletion).andAllChildRecords());
+                        getTxnRecord(deletion).andAllChildRecords().logged());
     }
 }

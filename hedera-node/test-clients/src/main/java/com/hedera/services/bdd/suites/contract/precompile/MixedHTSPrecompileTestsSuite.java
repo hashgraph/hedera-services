@@ -186,7 +186,8 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
                         getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)))
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -242,7 +243,8 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(CREATE_AND_TRANSFER_TXN)
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 getAccountBalance(RECIPIENT)
                                                         .hasTokenBalance(
                                                                 asTokenString(

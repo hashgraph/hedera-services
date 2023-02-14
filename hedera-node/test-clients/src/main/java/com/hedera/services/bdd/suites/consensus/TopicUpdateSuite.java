@@ -154,6 +154,7 @@ public class TopicUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS))
                 .then(
                         getTopicInfo("testTopic")
+                                .logged()
                                 .hasAdminKey("newAdminKey")
                                 .hasAutoRenewAccount("newAutoRenewAccount"));
     }
@@ -165,7 +166,11 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed("submitKey"),
                         createTopic("testTopic").adminKeyName("adminKey"))
                 .when(updateTopic("testTopic").submitKey("submitKey"))
-                .then(getTopicInfo("testTopic").hasSubmitKey("submitKey").hasAdminKey("adminKey"));
+                .then(
+                        getTopicInfo("testTopic")
+                                .hasSubmitKey("submitKey")
+                                .hasAdminKey("adminKey")
+                                .logged());
     }
 
     private HapiSpec updateAdminKeyToDiffKey() {
@@ -175,7 +180,7 @@ public class TopicUpdateSuite extends HapiSuite {
                         newKeyNamed("updateAdminKey"),
                         createTopic("testTopic").adminKeyName("adminKey"))
                 .when(updateTopic("testTopic").adminKey("updateAdminKey"))
-                .then(getTopicInfo("testTopic").hasAdminKey("updateAdminKey"));
+                .then(getTopicInfo("testTopic").hasAdminKey("updateAdminKey").logged());
     }
 
     private HapiSpec updateAdminKeyToEmpty() {
@@ -183,7 +188,7 @@ public class TopicUpdateSuite extends HapiSuite {
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
                 .when(updateTopic("testTopic").adminKey(EMPTY_KEY))
-                .then(getTopicInfo("testTopic").hasNoAdminKey());
+                .then(getTopicInfo("testTopic").hasNoAdminKey().logged());
     }
 
     private HapiSpec updateMultipleFields() {
@@ -218,7 +223,8 @@ public class TopicUpdateSuite extends HapiSuite {
                                 .hasAdminKey("adminKey2")
                                 .hasExpiry(expirationTimestamp)
                                 .hasAutoRenewPeriod(validAutoRenewPeriod + 5_000L)
-                                .hasAutoRenewAccount("nextAutoRenewAccount"));
+                                .hasAutoRenewAccount("nextAutoRenewAccount")
+                                .logged());
     }
 
     private HapiSpec expirationTimestampIsValidated() {

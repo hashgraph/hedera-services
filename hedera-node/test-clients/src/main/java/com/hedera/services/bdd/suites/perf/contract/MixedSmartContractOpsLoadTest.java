@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -106,8 +107,8 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
         return defaultHapiSpec("RunMixedSmartContractOps")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         /* create an account */
                         cryptoCreate(CIVILIAN_ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -128,9 +129,9 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                         contractCreate(PAYABLE_CONTRACT).adminKey(THRESHOLD),
 
                         /* get contract info on all contracts created */
-                        getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo(),
-                        getContractInfo(PAYABLE_CONTRACT).hasExpectedInfo(),
-                        getContractInfo(UPDATABLE_CONTRACT).hasExpectedInfo())
+                        getContractInfo(LOOKUP_CONTRACT).hasExpectedInfo().logged(),
+                        getContractInfo(PAYABLE_CONTRACT).hasExpectedInfo().logged(),
+                        getContractInfo(UPDATABLE_CONTRACT).hasExpectedInfo().logged())
                 .then(defaultLoadTest(mixedOpsBurst, settings));
     }
 

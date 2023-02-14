@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.reconnect;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
@@ -75,7 +76,7 @@ public class CreateTopicsBeforeReconnect extends HapiSuite {
                 () -> new HapiSpecOperation[] {generateTopicCreateOperation()};
 
         return defaultHapiSpec("RunCreateTopics")
-                .given(/*logIt(ignore -> settings.toString())*/ )
+                .given(logIt(ignore -> settings.toString()))
                 .when()
                 .then(defaultLoadTest(createBurst, settings));
     }

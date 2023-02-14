@@ -73,7 +73,8 @@ public class AutoRenewEntitiesForReconnect extends HapiSuite {
                                             new ArrayList<HapiSpecOperation>();
                                     for (int i = 0; i < 50; i++) {
                                         opsList.add(
-                                                cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
+                                                cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
+                                                        .logged());
                                     }
                                     CustomSpecAssert.allRunFor(spec, opsList);
                                 }),

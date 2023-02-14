@@ -105,7 +105,8 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                                                             getTxnRecord("txn")
                                                                     .assertingNothing()
                                                                     .saveTxnRecordToRegistry(
-                                                                            "savedTxnRcd");
+                                                                            "savedTxnRcd")
+                                                                    .logged();
                                                     allRunFor(spec, getRecordOp);
                                                     gotCreationRecord = true;
                                                 } catch (Exception ignoreAndRetry) {
@@ -130,7 +131,8 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                                         try {
                                             var payerAccountInfo =
                                                     getAccountInfo("payerAccount")
-                                                            .savingSnapshot("payerAccountInfo");
+                                                            .savingSnapshot("payerAccountInfo")
+                                                            .logged();
                                             allRunFor(spec, payerAccountInfo);
                                             gotPayerInfo = true;
                                         } catch (Exception ignoreAndRetry) {

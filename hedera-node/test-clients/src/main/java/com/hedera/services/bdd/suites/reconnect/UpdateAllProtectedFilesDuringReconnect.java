@@ -114,10 +114,12 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiSuite {
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
                         getFileContents(API_PERMISSIONS)
+                                .logged()
                                 .setNode("0.0.3")
                                 .payingWith(GENESIS)
                                 .saveToRegistry(fileInfoRegistry),
                         getFileContents(API_PERMISSIONS)
+                                .logged()
                                 .setNode("0.0.8")
                                 .payingWith(GENESIS)
                                 .hasContents(fileInfoRegistry),

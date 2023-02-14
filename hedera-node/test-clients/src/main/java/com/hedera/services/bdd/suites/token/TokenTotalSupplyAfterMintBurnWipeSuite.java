@@ -70,13 +70,16 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                                 .supplyKey("supplyKey")
                                 .via("createTxn"))
                 .then(
-                        getTxnRecord("createTxn"),
+                        getTxnRecord("createTxn").logged(),
                         mintToken(tokenName, 1000).via("mintToken"),
-                        getTxnRecord("mintToken"),
+                        getTxnRecord("mintToken").logged(),
                         getTokenInfo(tokenName).hasTreasury(TOKEN_TREASURY).hasTotalSupply(2000),
                         burnToken(tokenName, 200).via("burnToken"),
-                        getTxnRecord("burnToken"),
-                        getTokenInfo(tokenName).hasTreasury(TOKEN_TREASURY).hasTotalSupply(1800));
+                        getTxnRecord("burnToken").logged(),
+                        getTokenInfo(tokenName)
+                                .logged()
+                                .hasTreasury(TOKEN_TREASURY)
+                                .hasTotalSupply(1800));
     }
 
     public HapiSpec totalSupplyAfterWipe() {
@@ -100,12 +103,12 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
                         cryptoTransfer(moving(200, tokenToWipe).between(TOKEN_TREASURY, "assoc2")),
                         getAccountBalance("assoc1").hasTokenBalance(tokenToWipe, 500),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300),
-                        getAccountInfo("assoc1"),
-                        wipeTokenAccount(tokenToWipe, "assoc1", 200).via("wipeTxn1"),
-                        wipeTokenAccount(tokenToWipe, "assoc2", 200).via("wipeTxn2"))
+                        getAccountInfo("assoc1").logged(),
+                        wipeTokenAccount(tokenToWipe, "assoc1", 200).via("wipeTxn1").logged(),
+                        wipeTokenAccount(tokenToWipe, "assoc2", 200).via("wipeTxn2").logged())
                 .then(
                         getAccountBalance("assoc2").hasTokenBalance(tokenToWipe, 0),
-                        getTokenInfo(tokenToWipe).hasTotalSupply(600).hasName(tokenToWipe),
+                        getTokenInfo(tokenToWipe).hasTotalSupply(600).hasName(tokenToWipe).logged(),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(tokenToWipe, 300));
     }
 

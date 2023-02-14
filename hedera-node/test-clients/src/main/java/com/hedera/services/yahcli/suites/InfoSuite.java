@@ -53,7 +53,7 @@ public class InfoSuite extends HapiSuite {
                 .withProperties(specConfig)
                 .given()
                 .when()
-                .then(getAccountInfo(accountID).loggingHexedKeys());
+                .then(getAccountInfo(accountID).logged().loggingHexedKeys());
     }
 
     @Override

@@ -164,6 +164,7 @@ public class ContractPerformanceSuite extends HapiSuite {
                             .then(
                                     getExecTime(via)
                                             .payingWith(GENESIS)
+                                            .logged()
                                             .assertingNoneLongerThan(20, ChronoUnit.SECONDS),
                                     getReceipt(via).hasPriorityStatus(ResponseCodeEnum.SUCCESS),
                                     getTxnRecord(via)

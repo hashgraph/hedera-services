@@ -227,18 +227,19 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)))
                 .then(
-                        getTxnRecord(creationAttempt).andAllChildRecords(),
+                        getTxnRecord(creationAttempt).andAllChildRecords().logged(),
                         sourcing(
                                 () ->
                                         getLiteralAliasAccountInfo(
-                                                hex(
-                                                        Bytes.fromHexString(
-                                                                        nonMirrorAddrWith(
-                                                                                        civilianId
-                                                                                                        .get()
-                                                                                                + 4_000_000)
-                                                                                .toString())
-                                                                .toArray()))),
+                                                        hex(
+                                                                Bytes.fromHexString(
+                                                                                nonMirrorAddrWith(
+                                                                                                civilianId
+                                                                                                                .get()
+                                                                                                        + 4_000_000)
+                                                                                        .toString())
+                                                                        .toArray()))
+                                                .logged()),
                         // Now try to reverse the transfer and take the hollow account's NFT
                         sourcing(
                                 () ->
@@ -483,7 +484,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
                                                 .hasKnownStatus(SUCCESS)))
-                .then(getTxnRecord(creationAttempt).andAllChildRecords());
+                .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
     }
 
     HapiSpec canCreateMultipleHollows() {
@@ -535,7 +536,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                 .gas(GAS_TO_OFFER)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
                                                 .hasKnownStatus(SUCCESS)))
-                .then(getTxnRecord(creationAttempt).andAllChildRecords());
+                .then(getTxnRecord(creationAttempt).andAllChildRecords().logged());
     }
 
     private Address[] nCopiesOfSender(final int n, final Address mirrorAddr) {
@@ -595,7 +596,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT)
                                 .maxAutomaticTokenAssociations(1),
                         getContractInfo(NESTED_LAZY_PRECOMPILE_CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -770,7 +772,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             getAliasedAccountBalance(evmAddressBytes)
                                                     .hasTokenBalance(
                                                             FUNGIBLE_TOKEN, amountToBeSent * 2 + 2)
-                                                    .hasTokenBalance(NFT_TOKEN, 1));
+                                                    .hasTokenBalance(NFT_TOKEN, 1)
+                                                    .logged());
                                 }))
                 .then();
     }
@@ -809,7 +812,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                         contractCreate(NESTED_LAZY_PRECOMPILE_CONTRACT)
                                 .maxAutomaticTokenAssociations(1),
                         getContractInfo(NESTED_LAZY_PRECOMPILE_CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1001,7 +1005,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     .hasTinyBars(4 * amountToBeSent)
                                                     .hasTokenBalance(
                                                             FUNGIBLE_TOKEN, amountToBeSent * 2)
-                                                    .hasTokenBalance(NFT_TOKEN, 1));
+                                                    .hasTokenBalance(NFT_TOKEN, 1)
+                                                    .logged());
                                 }))
                 .then();
     }
@@ -1070,7 +1075,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4),
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_TOKEN_TXN,
                                                     SUCCESS,
@@ -1148,7 +1154,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4),
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 4)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_TOKENS_TXN,
                                                     SUCCESS,
@@ -1222,7 +1229,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2),
+                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_NFT_TXN,
                                                     SUCCESS,
@@ -1300,7 +1308,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2),
+                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 2)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_NFTS_TXN,
                                                     SUCCESS,
@@ -1382,7 +1391,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2),
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_THEN_REVERT_TXN,
                                                     CONTRACT_REVERT_EXECUTED,
@@ -1436,6 +1446,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                             ERC_20_CONTRACT,
                                                             2L)
                                                     .via(BASE_APPROVE_TXN)
+                                                    .logged()
                                                     .signedBy(DEFAULT_PAYER, OWNER)
                                                     .fee(ONE_HBAR),
                                             // lazy create attempt with unsufficient gas
@@ -1509,7 +1520,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2),
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, 2)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     NOT_ENOUGH_GAS_TXN,
                                                     CONTRACT_REVERT_EXECUTED,
@@ -1569,6 +1581,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                             false,
                                                             List.of(1L))
                                                     .via(BASE_APPROVE_TXN)
+                                                    .logged()
                                                     .signedBy(DEFAULT_PAYER, OWNER)
                                                     .fee(ONE_HBAR),
                                             getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
@@ -1620,7 +1633,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
+                                                    .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1)
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TRANSFER_FROM_ACCOUNT_REVERT_TXN,
                                                     CONTRACT_REVERT_EXECUTED,
@@ -1718,6 +1732,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                                             .withStatus(
                                                                                                     SUCCESS)))),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
                                                                     .key(EMPTY_KEY)
@@ -1726,8 +1741,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(
-                                                            FUNGIBLE_TOKEN, allowance / 2));
+                                                    .hasTokenBalance(FUNGIBLE_TOKEN, allowance / 2)
+                                                    .logged());
                                 }))
                 .then();
     }
@@ -1805,6 +1820,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                                             .withStatus(
                                                                                                     SUCCESS)))),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
                                                                     .key(EMPTY_KEY)
@@ -1813,7 +1829,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO)),
                                             getAliasedAccountBalance(alias)
-                                                    .hasTokenBalance(NFT_TOKEN, 1));
+                                                    .hasTokenBalance(NFT_TOKEN, 1)
+                                                    .logged());
                                 }))
                 .then();
     }

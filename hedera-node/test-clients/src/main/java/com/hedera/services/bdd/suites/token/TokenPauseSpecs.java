@@ -213,7 +213,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         tokenUnpause(token),
                         getTokenInfo(token).hasPauseStatus(Unpaused),
                         cryptoTransfer(moving(10, token).between(TOKEN_TREASURY, firstUser)),
-                        getAccountInfo(firstUser));
+                        getAccountInfo(firstUser).logged());
     }
 
     private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
@@ -267,7 +267,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 movingUnique(uniqueToken, 1L).between(TOKEN_TREASURY, firstUser)),
                         tokenPause(uniqueToken))
                 .then(
-                        getTokenInfo(uniqueToken).hasPauseKey(uniqueToken).hasPauseStatus(Paused),
+                        getTokenInfo(uniqueToken)
+                                .logged()
+                                .hasPauseKey(uniqueToken)
+                                .hasPauseStatus(Paused),
                         tokenCreate("failedTokenCreate")
                                 .treasury(TOKEN_TREASURY)
                                 .withCustom(fixedHtsFee(1, uniqueToken, firstUser))
@@ -351,7 +354,7 @@ public final class TokenPauseSpecs extends HapiSuite {
                         cryptoTransfer(moving(100, token).between(TOKEN_TREASURY, firstUser)),
                         tokenPause(token))
                 .then(
-                        getTokenInfo(token).hasPauseKey(token).hasPauseStatus(Paused),
+                        getTokenInfo(token).logged().hasPauseKey(token).hasPauseStatus(Paused),
                         tokenCreate("failedTokenCreate")
                                 .treasury(TOKEN_TREASURY)
                                 .withCustom(fixedHtsFee(1, token, firstUser))

@@ -57,11 +57,15 @@ public class QueryFailuresSpec extends HapiSuite {
                         getFileContents("1.2.3")
                                 .nodePayment(1_234L)
                                 .hasAnswerOnlyPrecheck(INVALID_FILE_ID),
-                        getFileContents("tbd").nodePayment(1_234L).hasAnswerOnlyPrecheck(OK),
+                        getFileContents("tbd")
+                                .nodePayment(1_234L)
+                                .hasAnswerOnlyPrecheck(OK)
+                                .logged(),
                         getFileInfo("tbd")
                                 .nodePayment(1_234L)
                                 .hasAnswerOnlyPrecheck(OK)
-                                .hasDeleted(true));
+                                .hasDeleted(true)
+                                .logged());
     }
 
     @Override

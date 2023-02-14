@@ -176,7 +176,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords())
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged())
                 .then(
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
@@ -221,16 +221,16 @@ public class ContractMintHTSSuite extends HapiSuite {
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                        getTokenInfo(FUNGIBLE_TOKEN),
+                        getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "brrr", BigInteger.valueOf(amount))
                                 .via(SECOND_MINT_TXN),
-                        getTxnRecord(SECOND_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(2 * amount))
                 .then(
                         childRecordsCheck(
@@ -281,20 +281,20 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .via(FIRST_MINT_TXN)
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(1),
                         /* And now make the token contract-controlled so no explicit supply sig is required */
                         newKeyNamed(CONTRACT_KEY)
                                 .shape(DELEGATE_CONTRACT.signedWith(HELLO_WORLD_MINT)),
                         tokenUpdate(NON_FUNGIBLE_TOKEN).supplyKey(CONTRACT_KEY),
-                        getTokenInfo(NON_FUNGIBLE_TOKEN),
+                        getTokenInfo(NON_FUNGIBLE_TOKEN).logged(),
                         contractCall(HELLO_WORLD_MINT, "mint")
                                 .via(SECOND_MINT_TXN)
                                 .gas(GAS_TO_OFFER),
-                        getTxnRecord(SECOND_MINT_TXN).andAllChildRecords())
+                        getTxnRecord(SECOND_MINT_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).logged(),
                         childRecordsCheck(
                                 FIRST_MINT_TXN,
                                 SUCCESS,
@@ -363,7 +363,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTxnRecord(FIRST_MINT_TXN)
                                 .hasPriority(
                                         recordWith()
@@ -439,7 +439,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTxnRecord(FIRST_MINT_TXN)
                                 .hasPriority(
                                         recordWith()
@@ -549,7 +549,8 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(SUCCESS),
                                                 getTxnRecord(nestedTransferTxn)
-                                                        .andAllChildRecords())))
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -686,7 +687,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         .payingWith(GENESIS)
                                                         .via(failedMintTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord(failedMintTxn).andAllChildRecords())))
+                                                getTxnRecord(failedMintTxn)
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 200),
                         getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 0),
@@ -767,7 +770,9 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                         .via(nestedMintTxn)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                getTxnRecord(nestedMintTxn).andAllChildRecords())))
+                                                getTxnRecord(nestedMintTxn)
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         childRecordsCheck(
@@ -829,6 +834,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                     final var baselineCostLookup =
                                             getTxnRecord(baselineMintWithEnoughGas)
                                                     .andAllChildRecords()
+                                                    .logged()
                                                     .assertingNothing();
                                     allRunFor(spec, baselineCostLookup);
                                     final var baselineGas =
@@ -850,7 +856,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                                 .gas(expectedInsufficientGas.get())
                                                 .hasKnownStatus(INSUFFICIENT_GAS)),
-                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords(),
+                        getTxnRecord(FIRST_MINT_TXN).andAllChildRecords().logged(),
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
                         childRecordsCheck(

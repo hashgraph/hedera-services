@@ -258,7 +258,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
 
                                     allRunFor(
                                             spec,
-                                            getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords(),
+                                            getTxnRecord(TOKEN_INFO_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -376,7 +378,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             getTxnRecord(UPDATE_ANG_GET_TOKEN_INFO_TXN)
-                                                    .andAllChildRecords(),
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     UPDATE_ANG_GET_TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -489,7 +492,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             getTxnRecord(FUNGIBLE_TOKEN_INFO_TXN)
-                                                    .andAllChildRecords(),
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     FUNGIBLE_TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -606,7 +610,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             getTxnRecord(UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN)
-                                                    .andAllChildRecords(),
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -699,6 +704,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         false,
                                         List.of(1L))
                                 .via(APPROVE_TXN)
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, NFT_OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -746,7 +752,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                                    .andAllChildRecords(),
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     NON_FUNGIBLE_TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -842,6 +849,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         false,
                                         List.of(1L))
                                 .via(APPROVE_TXN)
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, NFT_OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -891,7 +899,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             getTxnRecord(UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                                    .andAllChildRecords(),
+                                                    .andAllChildRecords()
+                                                    .logged(),
                                             childRecordsCheck(
                                                     UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN,
                                                     SUCCESS,
@@ -972,8 +981,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(
-                        getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords(),
-                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords());
+                        getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords().logged(),
+                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
     private HapiSpec getInfoOnInvalidFungibleTokenFails() {
@@ -1023,8 +1032,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                 ResponseCodeEnum
                                                                         .CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords(),
-                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords());
+                        getTxnRecord(TOKEN_INFO_TXN + 1).andAllChildRecords().logged(),
+                        getTxnRecord(TOKEN_INFO_TXN + 2).andAllChildRecords().logged());
     }
 
     private HapiSpec getInfoOnDeletedNonFungibleTokenFails() {
@@ -1070,7 +1079,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                         .via(NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L)
                                                         .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
-                .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords());
+                .then(getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec getInfoOnInvalidNonFungibleTokenFails() {
@@ -1129,8 +1138,10 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                                                 ResponseCodeEnum
                                                                         .CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 1).andAllChildRecords(),
-                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 2).andAllChildRecords());
+                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 1).andAllChildRecords().logged(),
+                        getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN + 2)
+                                .andAllChildRecords()
+                                .logged());
     }
 
     private HapiSpec happyPathGetTokenCustomFees() {
@@ -1185,7 +1196,9 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                 (spec, opLog) ->
                                         allRunFor(
                                                 spec,
-                                                getTxnRecord(TOKEN_INFO_TXN).andAllChildRecords(),
+                                                getTxnRecord(TOKEN_INFO_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 childRecordsCheck(
                                                         TOKEN_INFO_TXN,
                                                         SUCCESS,
@@ -1251,6 +1264,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         false,
                                         List.of(1L))
                                 .via(APPROVE_TXN)
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, NFT_OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -1282,7 +1296,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(NON_FUNGIBLE_TOKEN_INFO_TXN)
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 childRecordsCheck(
                                                         NON_FUNGIBLE_TOKEN_INFO_TXN,
                                                         SUCCESS,
@@ -1353,7 +1368,8 @@ public class TokenInfoHTSSuite extends HapiSuite {
                                         allRunFor(
                                                 spec,
                                                 getTxnRecord(UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN)
-                                                        .andAllChildRecords(),
+                                                        .andAllChildRecords()
+                                                        .logged(),
                                                 childRecordsCheck(
                                                         UPDATE_AND_GET_TOKEN_KEYS_INFO_TXN,
                                                         SUCCESS,

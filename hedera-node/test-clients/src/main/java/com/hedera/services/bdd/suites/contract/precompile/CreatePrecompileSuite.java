@@ -163,7 +163,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)))
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -233,10 +234,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                 DELEGATE_CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
@@ -249,6 +250,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getAccountInfo(ACCOUNT_TO_ASSOCIATE)
+                                                .logged()
                                                 .hasTokenRelationShipCount(1)),
                         sourcing(
                                 () ->
@@ -259,6 +261,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                                 createTokenNum
                                                                                         .get())
                                                                         .build()))
+                                                .logged()
                                                 .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                                 .hasSymbol(TOKEN_SYMBOL)
                                                 .hasName(TOKEN_NAME)
@@ -305,7 +308,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)))
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
                 .then(
                         withOpContext(
                                 (spec, ignore) -> {
@@ -362,7 +366,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                                     createdNftTokenNum
                                                                                             .get())
                                                                             .build()))
-                                                    .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT);
+                                                    .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                                    .logged();
 
                                     allRunFor(spec, nftInfo);
                                 }));
@@ -391,7 +396,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)))
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -460,6 +466,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                                 createTokenNum
                                                                                         .get())
                                                                         .build()))
+                                                .logged()
                                                 .hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
                                                 .hasPauseStatus(TokenPauseStatus.Unpaused)));
     }
@@ -588,7 +595,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                     .hasKycKey(ED25519KEY)
                                                     .hasFeeScheduleKey(ED25519KEY)
                                                     .hasWipeKey(ED25519KEY)
-                                                    .hasPauseStatus(TokenPauseStatus.Unpaused);
+                                                    .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                                    .logged();
                                     allRunFor(
                                             spec,
                                             subop4,
@@ -649,10 +657,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                 CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
@@ -705,7 +713,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 .hasAdminKey(ED25519KEY)
                                                 .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
                                                 .hasPauseKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                                .hasPauseStatus(TokenPauseStatus.Unpaused)));
+                                                .hasPauseStatus(TokenPauseStatus.Unpaused)
+                                                .logged()));
     }
 
     // TEST-006
@@ -756,10 +765,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                 CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
@@ -799,8 +808,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 .searchKeysGlobally()
                                                 .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
                                                 .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
-                                                .hasPauseStatus(
-                                                        TokenPauseStatus.PauseNotApplicable)));
+                                                .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                                .logged()));
     }
 
     // TEST-007 & TEST-016
@@ -872,8 +881,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                     ACCOUNT_BALANCE, -(delta)));
                                     allRunFor(spec, changeFromSnapshot);
                                 }),
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT));
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged());
     }
 
     // TEST-008
@@ -903,10 +912,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         emptyChildRecordsCheck(
                                 FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
     }
@@ -948,10 +957,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         emptyChildRecordsCheck(
                                 FIRST_CREATE_TXN, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
     }
@@ -1027,9 +1036,9 @@ public class CreatePrecompileSuite extends HapiSuite {
                                             getAccountBalance(TOKEN_CREATE_CONTRACT)
                                                     .hasTinyBars(0L));
                                 }),
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT));
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged());
     }
 
     // TEST-011
@@ -1060,10 +1069,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
@@ -1115,10 +1124,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -1215,8 +1224,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                                     ACCOUNT_BALANCE, -(delta)));
                                     allRunFor(spec, changeFromSnapshot);
                                 }),
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT));
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged());
     }
 
     // TEST-020
@@ -1251,10 +1260,10 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.CONTRACT_REVERT_EXECUTED,
@@ -1287,7 +1296,8 @@ public class CreatePrecompileSuite extends HapiSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)))
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1322,7 +1332,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                         .shape(
                                                                 DELEGATE_CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
-                .then(getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords());
+                .then(getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged());
     }
 
     @Override

@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -95,21 +96,21 @@ public class MixedTransferAndSubmitLoadTest extends HapiSuite {
                                                                                     DUPLICATE_TRANSACTION,
                                                                                     PLATFORM_TRANSACTION_NOT_CREATED)
                                                                             .deferStatusResolution())
-                                                    .toArray(n -> new HapiSpecOperation[n])))
-                            /*logIt(
-                            ignore ->
-                                    String.format(
-                                            "Now a 50/50 mix of %d transfers and messages"
-                                                    + " submitted in total.",
-                                            submittedSoFar.addAndGet(
-                                                    settings.getBurstSize()*/
+                                                    .toArray(n -> new HapiSpecOperation[n]))),
+                            logIt(
+                                    ignore ->
+                                            String.format(
+                                                    "Now a 50/50 mix of %d transfers and messages"
+                                                            + " submitted in total.",
+                                                    submittedSoFar.addAndGet(
+                                                            settings.getBurstSize()))),
                         };
 
         return defaultHapiSpec("RunMixedTransferAndSubmits")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         createTopic("topic"),
                         cryptoCreate("sender").balance(ignore -> settings.getInitialBalance()),

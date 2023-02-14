@@ -196,7 +196,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .via(creation),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
+                                    final var lookup = getTxnRecord(creation).logged();
                                     allRunFor(spec, lookup);
                                     final var creationRecord = lookup.getResponseRecord();
                                     final var gasUsed =
@@ -787,7 +787,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO));
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, op, op2, hapiGetTxnRecord);
 
                                     final AccountID newAccountID =
@@ -867,7 +869,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .payingWith(payer)
                                                     .hasKnownStatus(SUCCESS)
                                                     .balance(ONE_HUNDRED_HBARS);
-                                    final var op4 = getAccountBalance(payer).hasTinyBars(0);
+                                    final var op4 =
+                                            getAccountBalance(payer).hasTinyBars(0).logged();
                                     allRunFor(spec, op, op2, op3, op4);
 
                                     // crypto transfer fees check
@@ -928,7 +931,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO));
-                                    final var op9 = getAccountBalance(payer).hasTinyBars(0);
+                                    final var op9 =
+                                            getAccountBalance(payer).hasTinyBars(0).logged();
                                     allRunFor(
                                             spec,
                                             transferToPayerAgain,
@@ -975,7 +979,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
                                     final AccountID newAccountID =
@@ -1005,7 +1011,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .noAlias());
 
                                     final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords();
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
                                 }));
@@ -1075,7 +1083,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             recordWith()
                                                                     .targetedContractId(
                                                                             ContractID.newBuilder()
-                                                                                    .getDefaultInstanceForType()));
+                                                                                    .getDefaultInstanceForType()))
+                                                    .logged();
                                     final var failedLazyTxnChildRecordsCheck =
                                             emptyChildRecordsCheck(
                                                     failedLazyCreateTxn, INSUFFICIENT_GAS);
@@ -1096,6 +1105,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                             new AtomicReference<>();
                                     final var lazyAccountInfoCheck =
                                             getAliasedAccountInfo(aliasAsByteString)
+                                                    .logged()
                                                     .has(
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
@@ -1128,7 +1138,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                                     .contract(
                                                                                             asContractString(
                                                                                                     id))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     final var childRecordsCheck =
                                             childRecordsCheck(
                                                     lazyCreateTxn,
@@ -1169,7 +1180,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .via(TRANSFER_TXN);
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN).andAllChildRecords();
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
 
                                     allRunFor(spec, op, hapiGetTxnRecord);
 

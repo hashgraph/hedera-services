@@ -150,7 +150,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                         contractCall(prng, GET_SEED)
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
-                                                .via(randomBits)))
+                                                .via(randomBits)
+                                                .logged()))
                 .then(
                         getTxnRecord(randomBits)
                                 .hasPriority(
@@ -163,7 +164,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                                                         isRandomResult(
                                                                                 (new Object[] {
                                                                                     new byte[32]
-                                                                                }))))));
+                                                                                })))))
+                                .logged());
     }
 
     private HapiSpec prngPrecompileDisabledInV030() {
@@ -182,7 +184,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                         contractCall(prng, GET_SEED)
                                                 .gas(GAS_TO_OFFER)
                                                 .payingWith(BOB)
-                                                .via(randomBits)))
+                                                .via(randomBits)
+                                                .logged()))
                 .then(
                         getTxnRecord(randomBits)
                                 .hasPriority(
@@ -195,7 +198,8 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                                                         isLiteralResult(
                                                                                 (new Object[] {
                                                                                     new byte[32]
-                                                                                }))))));
+                                                                                })))))
+                                .logged());
     }
 
     @Override

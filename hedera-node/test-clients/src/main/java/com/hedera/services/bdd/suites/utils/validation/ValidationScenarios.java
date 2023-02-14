@@ -416,7 +416,7 @@ public class ValidationScenarios extends HapiSuite {
                                     .receiveThreshold(1_000L)
                                     .balance(1_234L)
                                     .key("firstKey"),
-                            getAccountBalance("tbd"),
+                            getAccountBalance("tbd").logged(),
                             cryptoUpdate("tbd")
                                     .fee(tinyBarsToOffer)
                                     .payingWith(SCENARIO_PAYER_NAME)
@@ -424,14 +424,14 @@ public class ValidationScenarios extends HapiSuite {
                             cryptoTransfer(tinyBarsFromTo(SCENARIO_PAYER_NAME, "tbd", 1_234L))
                                     .fee(tinyBarsToOffer)
                                     .payingWith(SCENARIO_PAYER_NAME),
-                            getAccountRecords("tbd"),
-                            getAccountInfo("tbd"),
+                            getAccountRecords("tbd").logged(),
+                            getAccountInfo("tbd").logged(),
                             cryptoDelete("tbd")
                                     .fee(tinyBarsToOffer)
                                     .via("deleteTxn")
                                     .payingWith(SCENARIO_PAYER_NAME)
                                     .transfer(SCENARIO_PAYER_NAME),
-                            getTxnRecord("deleteTxn"),
+                            getTxnRecord("deleteTxn").logged(),
                             /* Token ops */
                             tokenCreate("tokenTbd")
                                     .fee(tinyBarsToOffer)
@@ -914,7 +914,8 @@ public class ValidationScenarios extends HapiSuite {
                                                                                     "0.0.%d", num))
                                                                     .setNodeFrom(
                                                                             ValidationScenarios
-                                                                                    ::nextNode))
+                                                                                    ::nextNode)
+                                                                    .logged())
                                             .toArray(n -> new HapiSpecOperation[n]),
                                     Arrays.stream(files)
                                             .mapToObj(
@@ -924,7 +925,8 @@ public class ValidationScenarios extends HapiSuite {
                                                                                     "0.0.%d", num))
                                                                     .setNodeFrom(
                                                                             ValidationScenarios
-                                                                                    ::nextNode))
+                                                                                    ::nextNode)
+                                                                    .logged())
                                             .toArray(n -> new HapiSpecOperation[n])));
         } catch (Exception e) {
             log.warn("Unable to initialize fetch for system keys, skipping it!", e);
@@ -1095,7 +1097,8 @@ public class ValidationScenarios extends HapiSuite {
                                                                 .payingWith(SCENARIO_PAYER_NAME)
                                                                 .setNodeFrom(
                                                                         ValidationScenarios
-                                                                                ::nextNode);
+                                                                                ::nextNode)
+                                                                .logged();
                                                 allRunFor(spec, lookup);
                                                 var record = lookup.getResponseRecord();
                                                 transferFee.set(record.getTransactionFee());
@@ -1440,6 +1443,7 @@ public class ValidationScenarios extends HapiSuite {
                                     getTxnRecord("donation")
                                             .payingWith(SCENARIO_PAYER_NAME)
                                             .setNodeFrom(ValidationScenarios::nextNode)
+                                            .logged()
                                             .hasPriority(
                                                     recordWith()
                                                             .transfers(
@@ -1665,7 +1669,8 @@ public class ValidationScenarios extends HapiSuite {
                             getTopicInfo(PERSISTENT_TOPIC_NAME)
                                     .payingWith(SCENARIO_PAYER_NAME)
                                     .setNodeFrom(ValidationScenarios::nextNode)
-                                    .hasSeqNo(expectedSeqNo::get));
+                                    .hasSeqNo(expectedSeqNo::get)
+                                    .logged());
         } catch (Exception e) {
             log.warn("Unable to initialize consensus scenario, skipping it!", e);
             errorsOccurred.set(true);

@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -97,8 +98,8 @@ public class CryptoTransferLoadTest extends LoadTest {
         return defaultHapiSpec("RunCryptoTransfers")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         cryptoCreate("sender")
                                 .balance(ignore -> settings.getInitialBalance())
@@ -107,6 +108,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                 .key(GENESIS)
                                 .rechargeWindow(3)
                                 .stakedNodeId(settings.getNodeToStake())
+                                .logging()
                                 .hasRetryPrecheckFrom(
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
@@ -118,8 +120,11 @@ public class CryptoTransferLoadTest extends LoadTest {
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
                                         PLATFORM_TRANSACTION_NOT_CREATED)
-                                .key(GENESIS))
-                .then(defaultLoadTest(transferBurst, settings), getAccountBalance("sender"));
+                                .key(GENESIS)
+                                .logging())
+                .then(
+                        defaultLoadTest(transferBurst, settings),
+                        getAccountBalance("sender").logged());
     }
 
     @Override

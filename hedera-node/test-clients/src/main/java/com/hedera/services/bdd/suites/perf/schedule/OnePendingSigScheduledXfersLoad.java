@@ -97,8 +97,9 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
                                                                 .mapToObj(
                                                                         i ->
                                                                                 getAccountBalance(
-                                                                                        inertReceiver(
-                                                                                                i)))
+                                                                                                inertReceiver(
+                                                                                                        i))
+                                                                                        .logged())
                                                                 .toArray(HapiSpecOperation[]::new));
                                         allRunFor(spec, op);
                                     }
@@ -173,6 +174,7 @@ public class OnePendingSigScheduledXfersLoad extends HapiSuite {
                                                                         r.nextDouble())))
                                         .rememberingNothing()
                                         .designatingPayer(payer)
+                                        .logged()
                                         .alsoSigningWith(payer)
                                         .hasKnownStatusFrom(NOISY_ALLOWED_STATUSES)
                                         .hasRetryPrecheckFrom(NOISY_RETRY_PRECHECKS)

@@ -69,17 +69,18 @@ public class ValidateTokensDeleteAfterReconnect extends HapiSuite {
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(account).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS).logging(),
+                        cryptoCreate(account).balance(ONE_HUNDRED_HBARS).logging(),
                         newKeyNamed(adminKey),
                         tokenCreate(token)
                                 .initialSupply(TOKEN_INITIAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY)
-                                .adminKey(adminKey))
+                                .adminKey(adminKey)
+                                .logging())
                 .when(
                         sleepFor(30000),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
-                        tokenDelete(token),
+                        tokenDelete(token).logging(),
                         blockingOrder(
                                 IntStream.range(0, 500)
                                         .mapToObj(i -> getTokenInfo(token))

@@ -161,10 +161,11 @@ public class DuplicateManagementTest extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", 100_000_000L)))
                 .when(
                         uncheckedSubmit(
-                                cryptoCreate("nope")
-                                        .txnId("txnId")
-                                        .payingWith("civilian")
-                                        .setNode("0.0.4")),
+                                        cryptoCreate("nope")
+                                                .txnId("txnId")
+                                                .payingWith("civilian")
+                                                .setNode("0.0.4"))
+                                .logged(),
                         uncheckedSubmit(
                                 cryptoCreate("sure")
                                         .txnId("txnId")
@@ -174,6 +175,7 @@ public class DuplicateManagementTest extends HapiSuite {
                 .then(
                         getReceipt("txnId")
                                 .andAnyDuplicates()
+                                .logged()
                                 .hasPriorityStatus(SUCCESS)
                                 .hasDuplicateStatuses(INVALID_NODE_ACCOUNT),
                         getTxnRecord("txnId")

@@ -81,9 +81,11 @@ public class ERC20ContractInteractions extends HapiSuite {
         final var initialAmount = BigInteger.valueOf(5_000);
 
         return defaultHapiSpec("callsERC20ContractInteractions")
-                .given(getAccountBalance(DEFAULT_CONTRACT_SENDER), uploadInitCode(CONTRACT))
+                .given(
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
+                        uploadInitCode(CONTRACT))
                 .when(
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER),
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         contractCreate(CONTRACT, initialAmount)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
@@ -94,7 +96,7 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                     " tx - " + Bytes.wrap(tx.toByteArray()));
                                             return tx;
                                         }),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER))
+                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged())
                 .then(
                         getAccountInfo(DEFAULT_CONTRACT_SENDER)
                                 .savingSnapshot(DEFAULT_CONTRACT_SENDER),
@@ -243,7 +245,8 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                                                                                                                     asAddressInTopic(
                                                                                                                                                             unhex(
                                                                                                                                                                     ownerInfo
-                                                                                                                                                                            .getContractAccountID())))))))));
+                                                                                                                                                                            .getContractAccountID())))))))))
+                                                    .logged();
                                     final var getTransferRecord =
                                             getTxnRecord(TRANSFER_TX)
                                                     .exposingTo(
@@ -278,7 +281,8 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                                                                                                                     asAddressInTopic(
                                                                                                                                                             unhex(
                                                                                                                                                                     receiverInfo
-                                                                                                                                                                            .getContractAccountID())))))))));
+                                                                                                                                                                            .getContractAccountID())))))))))
+                                                    .logged();
                                     final var getApproveRecord =
                                             getTxnRecord(APPROVE_TX)
                                                     .exposingTo(
@@ -313,7 +317,8 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                                                                                                                     asAddressInTopic(
                                                                                                                                                             unhex(
                                                                                                                                                                     receiverInfo
-                                                                                                                                                                            .getContractAccountID())))))))));
+                                                                                                                                                                            .getContractAccountID())))))))))
+                                                    .logged();
                                     final var getTransferFromRecord =
                                             getTxnRecord(TRANSFER_FROM_TX)
                                                     .exposingTo(
@@ -368,7 +373,8 @@ public class ERC20ContractInteractions extends HapiSuite {
                                                                                                                                                     asAddressInTopic(
                                                                                                                                                             unhex(
                                                                                                                                                                     receiverInfo
-                                                                                                                                                                            .getContractAccountID())))))))));
+                                                                                                                                                                            .getContractAccountID())))))))))
+                                                    .logged();
 
                                     final var getNotEnoughBalanceTransferRecord =
                                             getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX)

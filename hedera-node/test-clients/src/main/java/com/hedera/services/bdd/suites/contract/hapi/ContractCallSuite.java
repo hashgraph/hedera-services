@@ -60,6 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -301,7 +302,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             asHeadlongAddress(receiverAddr),
                                                             BigInteger.valueOf(40_000L))
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .payingWith(ACCOUNT));
+                                                    .payingWith(ACCOUNT)
+                                                    .logged());
                                 }))
                 .then(
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L),
@@ -392,14 +394,16 @@ public class ContractCallSuite extends HapiSuite {
                                                 .contractCallResult(
                                                         resultWith()
                                                                 .contractCallResult(
-                                                                        bigIntResult(1)))),
+                                                                        bigIntResult(1))))
+                                .logged(),
                         getTxnRecord(evmWhitelistCheckTxn)
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
                                                         resultWith()
                                                                 .contractCallResult(
-                                                                        bigIntResult(1)))));
+                                                                        bigIntResult(1))))
+                                .logged());
     }
 
     private HapiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
@@ -541,7 +545,12 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingFilteredCallResultVia(
                                         getABIForContract(jurisdictions),
                                         "JurisdictionAdded",
-                                        data -> nyJurisCode.set((byte[]) data.get(0))))
+                                        data -> nyJurisCode.set((byte[]) data.get(0))),
+                        sourcing(
+                                () ->
+                                        logIt(
+                                                "NY juris code is "
+                                                        + CommonUtils.hex(nyJurisCode.get()))))
                 .then(
                         sourcing(
                                 () ->
@@ -689,8 +698,8 @@ public class ContractCallSuite extends HapiSuite {
                         getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 0L),
                         getTokenInfo(ticketToken).hasTotalSupply(1L),
                         /* Review the history */
-                        getTxnRecord(ticketTaking).andAllChildRecords(),
-                        getTxnRecord(ticketWorking).andAllChildRecords());
+                        getTxnRecord(ticketTaking).andAllChildRecords().logged(),
+                        getTxnRecord(ticketWorking).andAllChildRecords().logged());
     }
 
     private HapiSpec canMintAndTransferInSameContractOperation() {
@@ -827,7 +836,8 @@ public class ContractCallSuite extends HapiSuite {
                                                                                             .valueOf(
                                                                                                     minPriceToAccessGatedMethod
                                                                                                             * TINY_PARTS_PER_WHOLE)
-                                                                                })))),
+                                                                                }))))
+                                .logged(),
                         sourcing(
                                 () ->
                                         contractCall(rateAware, "invalidCall")
@@ -972,7 +982,8 @@ public class ContractCallSuite extends HapiSuite {
                                         "OCT")
                                 .gas(250_000L)
                                 .payingWith(TOKEN_ISSUER)
-                                .via("tokenCreateTxn"))
+                                .via("tokenCreateTxn")
+                                .logged())
                 .when(
                         assertionsHold(
                                 (spec, ctxLog) -> {
@@ -1431,7 +1442,7 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("MultipleSelfDestructsAreSafe")
                 .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
                 .when(contractCall(contract, "light").via("lightTxn").scrambleTxnBody(tx -> tx))
-                .then(getTxnRecord("lightTxn"));
+                .then(getTxnRecord("lightTxn").logged());
     }
 
     HapiSpec depositSuccess() {
@@ -1592,7 +1603,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .via("simpleStorageTxn")
                                 .gas(0L)
                                 .hasKnownStatus(INSUFFICIENT_GAS),
-                        getTxnRecord("simpleStorageTxn"));
+                        getTxnRecord("simpleStorageTxn").logged());
     }
 
     HapiSpec insufficientFee() {
@@ -1775,7 +1786,7 @@ public class ContractCallSuite extends HapiSuite {
 
         return defaultHapiSpec("payTestSelfDestructCall")
                 .given(
-                        cryptoCreate(PAYER).balance(1_000_000_000_000L),
+                        cryptoCreate(PAYER).balance(1_000_000_000_000L).logged(),
                         cryptoCreate(RECEIVER).balance(1_000L),
                         uploadInitCode(contract),
                         contractCreate(contract))
@@ -1985,7 +1996,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             TRANSFER_TO_ADDRESS,
                                                             asHeadlongAddress(receiverAddr),
                                                             BigInteger.valueOf(10))
-                                                    .payingWith(ACCOUNT);
+                                                    .payingWith(ACCOUNT)
+                                                    .logged();
                                     allRunFor(spec, transferCall);
                                 }))
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 10));
@@ -2094,7 +2106,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             TRANSFER_TO_ADDRESS,
                                                             asHeadlongAddress(cto),
                                                             BigInteger.valueOf(10))
-                                                    .payingWith(ACCOUNT);
+                                                    .payingWith(ACCOUNT)
+                                                    .logged();
                                     allRunFor(spec, transferCall);
                                 }))
                 .then(
@@ -2230,7 +2243,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             "transferToAddressMultipleTimes",
                                                             asHeadlongAddress(receiverAddr),
                                                             BigInteger.valueOf(64))
-                                                    .payingWith(ACCOUNT);
+                                                    .payingWith(ACCOUNT)
+                                                    .logged();
                                     allRunFor(spec, transferCall);
                                 }))
                 .then(
@@ -2277,7 +2291,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             asHeadlongAddress(receiver2Addr),
                                                             asHeadlongAddress(receiver3Addr),
                                                             BigInteger.valueOf(20))
-                                                    .payingWith(ACCOUNT);
+                                                    .payingWith(ACCOUNT)
+                                                    .logged();
                                     allRunFor(spec, transferCall);
                                 }))
                 .then(
@@ -2332,7 +2347,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             "transferFromDifferentAddressesToAddress",
                                                             asHeadlongAddress(receiverAddr),
                                                             BigInteger.valueOf(40L))
-                                                    .payingWith(ACCOUNT));
+                                                    .payingWith(ACCOUNT)
+                                                    .logged());
                                 }))
                 .then(
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L + 80L),
@@ -2380,7 +2396,8 @@ public class ContractCallSuite extends HapiSuite {
                                                                 NESTED_TRANSFERRING_CONTRACT,
                                                                 "transferToContractFromDifferentAddresses",
                                                                 BigInteger.valueOf(50L))
-                                                        .payingWith(ACCOUNT))))
+                                                        .payingWith(ACCOUNT)
+                                                        .logged())))
                 .then(
                         sourcing(
                                 () ->
@@ -2473,7 +2490,8 @@ public class ContractCallSuite extends HapiSuite {
                                                                 BigInteger.valueOf(100L))
                                                         .payingWith(DEFAULT_CONTRACT_RECEIVER)
                                                         .signingWith(SECP_256K1_RECEIVER_SOURCE_KEY)
-                                                        .via(TRANSFER_TXN),
+                                                        .via(TRANSFER_TXN)
+                                                        .logged(),
                                                 getTxnRecord(TRANSFER_TXN)
                                                         .saveTxnRecordToRegistry("txn")
                                                         .payingWith(GENESIS),
@@ -2571,7 +2589,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             asHeadlongAddress(receiver3Addr),
                                                             BigInteger.valueOf(40))
                                                     .payingWith(ACCOUNT)
-                                                    .gas(1_000_000L));
+                                                    .gas(1_000_000L)
+                                                    .logged());
                                 }))
                 .then(
                         getAccountBalance(RECEIVER_1).hasTinyBars(10_000 + 80L),
@@ -2652,7 +2671,8 @@ public class ContractCallSuite extends HapiSuite {
                                                             asHeadlongAddress(receiverAddr),
                                                             BigInteger.ZERO)
                                                     .payingWith(ACCOUNT)
-                                                    .via(TRANSFER_TXN);
+                                                    .via(TRANSFER_TXN)
+                                                    .logged();
 
                                     var saveContractInfo =
                                             getContractInfo(TRANSFERRING_CONTRACT)
@@ -2823,7 +2843,7 @@ public class ContractCallSuite extends HapiSuite {
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)
                                                 .via("second")),
-                        getTxnRecord("second").andAllChildRecords())
+                        getTxnRecord("second").andAllChildRecords().logged())
                 .then(
                         sourcing(
                                 () ->

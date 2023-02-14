@@ -243,7 +243,7 @@ public class SubmitMessageSuite extends HapiSuite {
                                 .chunkInfo(3, 4)
                                 .hasRetryPrecheckFrom(BUSY)
                                 .hasKnownStatus(INVALID_CHUNK_NUMBER),
-                        getTxnRecord("nonsense").hasCorrectRunningHash(topic, message2),
+                        getTxnRecord("nonsense").hasCorrectRunningHash(topic, message2).logged(),
                         submitMessageTo(topic)
                                 .message(message3)
                                 .hasRetryPrecheckFrom(BUSY)

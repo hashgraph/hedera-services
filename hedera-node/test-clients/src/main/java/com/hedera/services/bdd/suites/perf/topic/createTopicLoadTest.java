@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -73,8 +74,8 @@ public class createTopicLoadTest extends LoadTest {
         return defaultHapiSpec("runCreateTopics")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when()
                 .then(defaultLoadTest(submitBurst, settings));
     }

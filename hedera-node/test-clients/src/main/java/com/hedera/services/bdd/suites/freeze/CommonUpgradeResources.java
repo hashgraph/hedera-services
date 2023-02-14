@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.freeze;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -35,8 +36,8 @@ public final class CommonUpgradeResources {
 
     public static HapiSpecOperation[] initializeSettings() {
         final HapiSpecOperation[] ops = {
-            withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-            //            /*logIt(ignore -> settings.toString()*/)
+            withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+            logIt(ignore -> settings.toString())
         };
         return ops;
     }

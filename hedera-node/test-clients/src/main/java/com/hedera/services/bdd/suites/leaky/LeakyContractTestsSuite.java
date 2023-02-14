@@ -247,7 +247,9 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(1_000),
-                        getReceipt(uncheckedCC).hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE));
+                        getReceipt(uncheckedCC)
+                                .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
+                                .logged());
     }
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
@@ -299,10 +301,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                         .refusingEthConversion()
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -369,10 +371,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 someARAccount, feeCollector)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -451,10 +453,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 treasuryAndFeeCollectorKey)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -545,10 +547,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
@@ -562,6 +564,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             .setTokenNum(createTokenNum.get())
                                                             .build());
                                     return getTokenInfo(newToken)
+                                            .logged()
                                             .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                             .hasSymbol(TOKEN_SYMBOL)
                                             .hasName(TOKEN_NAME)
@@ -657,10 +660,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                                 CONTRACT.signedWith(
                                                                         TOKEN_CREATE_CONTRACT)))))
                 .then(
-                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords(),
-                        getAccountBalance(ACCOUNT),
-                        getAccountBalance(TOKEN_CREATE_CONTRACT),
-                        getContractInfo(TOKEN_CREATE_CONTRACT),
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 ResponseCodeEnum.SUCCESS,
@@ -674,6 +677,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             .setTokenNum(createdTokenNum.get())
                                                             .build());
                                     return getTokenInfo(newToken)
+                                            .logged()
                                             .hasTokenType(TokenType.FUNGIBLE_COMMON)
                                             .hasSymbol(TOKEN_SYMBOL)
                                             .hasName(TOKEN_NAME)
@@ -743,7 +747,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             TRANSFER_TO_CALLER,
                                                             BigInteger.valueOf(10))
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn);
+                                                    .via(transferTxn)
+                                                    .logged();
 
                                     var saveTxnRecord =
                                             getTxnRecord(transferTxn)
@@ -928,7 +933,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                             TRANSFER_TO_CALLER,
                                                             BigInteger.ZERO)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn);
+                                                    .via(transferTxn)
+                                                    .logged();
 
                                     var saveTxnRecord =
                                             getTxnRecord(transferTxn)
@@ -1083,7 +1089,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         getContractInfo(CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .maxAutoAssociations(maxAutoAssociations)),
+                                                .maxAutoAssociations(maxAutoAssociations))
+                                .logged(),
                         // Restore default
                         overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
@@ -1226,10 +1233,12 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 (spec, opLog) -> {
                                     final var subop01 =
                                             getTxnRecord("tempHoldTx")
-                                                    .saveTxnRecordToRegistry("tempHoldTxRec");
+                                                    .saveTxnRecordToRegistry("tempHoldTxRec")
+                                                    .logged();
                                     final var subop02 =
                                             getTxnRecord("permHoldTx")
-                                                    .saveTxnRecordToRegistry("permHoldTxRec");
+                                                    .saveTxnRecordToRegistry("permHoldTxRec")
+                                                    .logged();
 
                                     CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
@@ -1332,7 +1341,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
                         getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1)))
+                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                                .logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1409,7 +1419,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords())
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1451,7 +1461,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var getTxnRecord =
-                                            getTxnRecord(payTxn).andAllChildRecords();
+                                            getTxnRecord(payTxn).andAllChildRecords().logged();
                                     allRunFor(spec, getTxnRecord);
                                     final var lazyAccountId =
                                             getTxnRecord
@@ -1493,7 +1503,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
                         uploadInitCode(LAZY_CREATE_CONTRACT),
                         contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords())
+                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1517,8 +1527,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                                     .gas(6_000_000)
                                                     .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
                                             getAliasedAccountInfo(ecdsaKey.toByteString())
+                                                    .logged()
                                                     .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
                                             getAliasedAccountInfo(ecdsaKey2.toByteString())
+                                                    .logged()
                                                     .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
                                 }))
                 .then(

@@ -70,8 +70,8 @@ public class FileDeleteSuite extends HapiSuite {
 
     private HapiSpec getDeletedFileInfo() {
         return defaultHapiSpec("getDeletedFileInfo")
-                .given(fileCreate("deletedFile"))
-                .when(fileDelete("deletedFile"))
+                .given(fileCreate("deletedFile").logged())
+                .when(fileDelete("deletedFile").logged())
                 .then(getFileInfo("deletedFile").hasAnswerOnlyPrecheck(OK).hasDeleted(true));
     }
 

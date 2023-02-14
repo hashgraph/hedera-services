@@ -268,7 +268,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        getTxnRecord(tenAutoAssocSlots))
+                        getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
@@ -299,6 +299,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(KEY_REQUIRED));
     }
 
@@ -313,6 +314,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(KEY_REQUIRED));
     }
 
@@ -329,6 +331,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(KEY_REQUIRED));
     }
 
@@ -345,6 +348,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
@@ -361,6 +365,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
@@ -402,15 +407,18 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("badThresholdKeyAccount")
                                 .keyShape(thresholdShape)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         cryptoCreate("badThresholdKeyAccount2")
                                 .key("regKey1")
                                 .balance(initialBalance)
+                                .logged()
                                 .signedBy(GENESIS)
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         cryptoCreate("badThresholdKeyAccount3")
                                 .key("regKey2")
                                 .balance(initialBalance)
+                                .logged()
                                 .signedBy(GENESIS)
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
@@ -435,10 +443,12 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape0)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         cryptoCreate(NO_KEYS)
                                 .keyShape(shape4)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
@@ -455,10 +465,12 @@ public class CryptoCreateSuite extends HapiSuite {
                         cryptoCreate("badThresholdKeyAccount1")
                                 .keyShape(thresholdShape0)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         cryptoCreate("badThresholdKeyAccount2")
                                 .keyShape(thresholdShape4)
                                 .balance(initialBalance)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
@@ -479,11 +491,13 @@ public class CryptoCreateSuite extends HapiSuite {
                                 .key(SHORT_KEY)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
+                                .logged()
                                 .hasPrecheck(INVALID_ADMIN_KEY),
                         cryptoCreate(EMPTY_KEY_STRING)
                                 .key(EMPTY_KEY_STRING)
                                 .balance(initialBalance)
                                 .signedBy(GENESIS)
+                                .logged()
                                 .hasPrecheck(BAD_ENCODING));
     }
 
@@ -550,6 +564,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                     allRunFor(spec, op, op2, op3);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
+                                                    .logged()
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
@@ -760,7 +775,7 @@ public class CryptoCreateSuite extends HapiSuite {
                                                     .via("createTxn");
 
                                     final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord("createTxn").andAllChildRecords();
+                                            getTxnRecord("createTxn").andAllChildRecords().logged();
 
                                     allRunFor(spec, op, hapiGetTxnRecord);
 
@@ -787,6 +802,7 @@ public class CryptoCreateSuite extends HapiSuite {
 
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
+                                                    .logged()
                                                     .has(
                                                             accountWith()
                                                                     .evmAddress(evmAddressBytes)

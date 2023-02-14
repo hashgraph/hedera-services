@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -65,8 +66,8 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when()
                 .then(
                         runWithProvider(XfersFactory())

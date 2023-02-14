@@ -59,7 +59,7 @@ public class Issue2051Spec extends HapiSuite {
                                 .via("selfFinanced")
                                 .payingWith("tbd")
                                 .transfer("transfer"),
-                        getTxnRecord("selfFinanced"));
+                        getTxnRecord("selfFinanced").logged());
     }
 
     private HapiSpec transferAccountCannotBeDeleted() {
@@ -73,7 +73,7 @@ public class Issue2051Spec extends HapiSuite {
                                 .payingWith("payer")
                                 .transfer("transfer")
                                 .hasKnownStatus(ACCOUNT_DELETED),
-                        getTxnRecord("deleteTxn"),
+                        getTxnRecord("deleteTxn").logged(),
                         getAccountBalance("payer")
                                 .hasTinyBars(approxChangeFromSnapshot("snapshot", -9295610, 1000)));
     }
@@ -95,7 +95,7 @@ public class Issue2051Spec extends HapiSuite {
                                 .via("deleteTxn")
                                 .transferContract("transferContract")
                                 .hasKnownStatus(CONTRACT_DELETED),
-                        getTxnRecord("deleteTxn"),
+                        getTxnRecord("deleteTxn").logged(),
                         getAccountBalance(GENESIS)
                                 .hasTinyBars(
                                         approxChangeFromSnapshot("snapshot", -18985232, 1000)));

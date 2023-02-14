@@ -372,6 +372,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     public HapiGetTxnRecord loggedWith(final BiConsumer<TransactionRecord, Logger> customFormat) {
+        super.logged();
         format = Optional.of(customFormat);
         return this;
     }

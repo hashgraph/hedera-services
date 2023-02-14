@@ -411,7 +411,10 @@ public class CryptoTransferSuite extends HapiSuite {
                                                                                 +500))))
                                 .signedBy(DEFAULT_PAYER, PARTY)
                                 .via(FT_XFER))
-                .then(getTxnRecord(HBAR_XFER), getTxnRecord(NFT_XFER), getTxnRecord(FT_XFER));
+                .then(
+                        getTxnRecord(HBAR_XFER).logged(),
+                        getTxnRecord(NFT_XFER).logged(),
+                        getTxnRecord(FT_XFER).logged());
     }
 
     @SuppressWarnings("java:S5669")
@@ -495,7 +498,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                                         counterLiteral.get(),
                                                         List.of(FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN))
                                                 .signedBy(DEFAULT_PAYER, MULTI_KEY)),
-                        sourcing(() -> getContractInfo(partyLiteral.get())),
+                        sourcing(() -> getContractInfo(partyLiteral.get()).logged()),
                         sourcing(
                                 () ->
                                         cryptoTransfer(
@@ -872,7 +875,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(SPENDER)
                                 .signedBy(SPENDER, OWNER, OTHER_RECEIVER, OTHER_OWNER)
                                 .via("complexAllowanceTransfer"),
-                        getTxnRecord("complexAllowanceTransfer"),
+                        getTxnRecord("complexAllowanceTransfer").logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(925))
@@ -1229,12 +1232,15 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(5_000),
-                        getReceipt(UNCHECKED_TXN).hasPriorityStatus(UNEXPECTED_TOKEN_DECIMALS),
+                        getReceipt(UNCHECKED_TXN)
+                                .hasPriorityStatus(UNEXPECTED_TOKEN_DECIMALS)
+                                .logged(),
                         getReceipt(VALID_TXN).hasPriorityStatus(SUCCESS),
-                        getTxnRecord(VALID_TXN),
+                        getTxnRecord(VALID_TXN).logged(),
                         getAccountInfo(OWNING_PARTY)
                                 .hasAlreadyUsedAutomaticAssociations(1)
-                                .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(120)));
+                                .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(120))
+                                .logged());
     }
 
     private HapiSpec nftTransfersCannotRepeatSerialNos() {
@@ -1261,7 +1267,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .supplyKey(multipurpose)
                                 .initialSupply(0),
                         mintToken(nftType, List.of(copyFromUtf8("Hot potato!"))).via(mintTxn),
-                        getTxnRecord(mintTxn))
+                        getTxnRecord(mintTxn).logged())
                 .when(cryptoTransfer(movingUnique(nftType, 1L).between(TOKEN_TREASURY, aParty)))
                 .then(
                         cryptoTransfer(
@@ -1698,33 +1704,44 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(TREASURY)
                                 .via(tokenAcreateTxn),
-                        getTxnRecord(tokenAcreateTxn).hasNewTokenAssociation(tokenA, TREASURY),
+                        getTxnRecord(tokenAcreateTxn)
+                                .hasNewTokenAssociation(tokenA, TREASURY)
+                                .logged(),
                         tokenCreate(tokenB)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
                                 .treasury(TREASURY)
                                 .via(tokenBcreateTxn),
-                        getTxnRecord(tokenBcreateTxn).hasNewTokenAssociation(tokenB, TREASURY),
+                        getTxnRecord(tokenBcreateTxn)
+                                .hasNewTokenAssociation(tokenB, TREASURY)
+                                .logged(),
                         cryptoTransfer(moving(1, tokenA).between(TREASURY, firstUser))
                                 .via(transferToFU),
-                        getTxnRecord(transferToFU).hasNewTokenAssociation(tokenA, firstUser),
+                        getTxnRecord(transferToFU)
+                                .hasNewTokenAssociation(tokenA, firstUser)
+                                .logged(),
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, secondUser))
                                 .via(transferToSU),
-                        getTxnRecord(transferToSU).hasNewTokenAssociation(tokenB, secondUser))
+                        getTxnRecord(transferToSU)
+                                .hasNewTokenAssociation(tokenB, secondUser)
+                                .logged())
                 .then(
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
                                 .via("failedTransfer"),
                         getAccountInfo(firstUser)
                                 .hasAlreadyUsedAutomaticAssociations(1)
-                                .hasMaxAutomaticAssociations(1),
+                                .hasMaxAutomaticAssociations(1)
+                                .logged(),
                         getAccountInfo(secondUser)
                                 .hasAlreadyUsedAutomaticAssociations(1)
-                                .hasMaxAutomaticAssociations(2),
+                                .hasMaxAutomaticAssociations(2)
+                                .logged(),
                         cryptoTransfer(moving(1, tokenA).between(TREASURY, secondUser)),
                         getAccountInfo(secondUser)
                                 .hasAlreadyUsedAutomaticAssociations(2)
-                                .hasMaxAutomaticAssociations(2),
+                                .hasMaxAutomaticAssociations(2)
+                                .logged(),
                         cryptoTransfer(moving(1, tokenA).between(firstUser, TREASURY)),
                         tokenDissociate(firstUser, tokenA),
                         cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser)));
@@ -2084,7 +2101,7 @@ public class CryptoTransferSuite extends HapiSuite {
                 .when()
                 .then(
                         IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
-                                .mapToObj(i -> getAccountBalance("0.0." + i))
+                                .mapToObj(i -> getAccountBalance("0.0." + i).logged())
                                 .toArray(HapiSpecOperation[]::new));
     }
 
@@ -2118,6 +2135,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .via("transferTxn"))
                 .then(
                         getAccountInfo(PAYER)
+                                .logged()
                                 .hasExpectedLedgerId("0x03")
                                 .has(accountWith().balance(initialBalance - 3_000L)),
                         getAccountInfo(PAYEE_SIG_REQ)

@@ -145,15 +145,15 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .gas(gasToOffer),
 
                         /* Confirm the storage size didn't change */
-                        getContractInfo(contract).has(contractWith().numKvPairs(8)),
-                        getAccountBalance(autoRenewAccount).hasTinyBars(initBalance),
+                        getContractInfo(contract).has(contractWith().numKvPairs(8)).logged(),
+                        getAccountBalance(autoRenewAccount).hasTinyBars(initBalance).logged(),
                         sleepFor(minimalLifetime * 1_000L + 500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         sleepFor(2_000L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(autoRenewAccount);
+                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
                                     allRunFor(spec, lookup);
                                     renewalFeeWithoutStorage.set(
                                             initBalance
@@ -176,7 +176,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(autoRenewAccount);
+                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
                                     allRunFor(spec, lookup);
                                     renewalFeeWithStorage.set(
                                             initBalance
@@ -207,7 +207,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         enableContractAutoRenewWith(minimalLifetime, minimalLifetime),
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(0L),
-                        getAccountBalance(autoRenewAccount),
+                        getAccountBalance(autoRenewAccount).logged(),
                         contractCreate(contractToRenew, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
@@ -223,7 +223,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                          * Contract is expired and doesn't have enough to auto-renew.
                          * But it is in grace period , so not deleted
                          */
-                        getContractInfo(contractToRenew).has(contractWith().isNotDeleted()),
+                        getContractInfo(contractToRenew)
+                                .has(contractWith().isNotDeleted())
+                                .logged(),
                         /*
                          * Contract is expired and tries to auto-renew at this trigger,
                          * but no balance. So does nothing.
@@ -234,9 +236,11 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                          * Contract's grace period completed, for the next
                          * trigger contract is deleted.
                          */
-                        getContractInfo(contractToRenew).has(contractWith().isNotDeleted()),
+                        getContractInfo(contractToRenew)
+                                .has(contractWith().isNotDeleted())
+                                .logged(),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        getContractInfo(contractToRenew).has(contractWith().isDeleted()),
+                        getContractInfo(contractToRenew).has(contractWith().isDeleted()).logged(),
                         overriding(
                                 "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
@@ -256,7 +260,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         enableContractAutoRenewWith(minimalLifetime, minimalLifetime),
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(0L),
-                        getAccountBalance(autoRenewAccount),
+                        getAccountBalance(autoRenewAccount).logged(),
                         contractCreate(contractToRenew, new BigInteger("63"))
                                 .gas(2_000_000)
                                 .entityMemo("")
@@ -289,8 +293,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                             contractWith()
                                                                     .isNotDeleted()
                                                                     .approxExpiry(
-                                                                            currentExpiry.get(),
-                                                                            1));
+                                                                            currentExpiry.get(), 1))
+                                                    .logged();
 
                                     allRunFor(spec, info);
                                 }),
@@ -303,7 +307,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                          */
                         cryptoTransfer(tinyBarsFromTo(GENESIS, autoRenewAccount, 100 * ONE_HBAR)),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        getAccountBalance(autoRenewAccount),
+                        getAccountBalance(autoRenewAccount).logged(),
                         sleepFor(minimalLifetime * 1_000L + 500L),
                         assertionsHold(
                                 (spec, opLog) -> {
@@ -314,7 +318,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                                     .approxExpiry(
                                                                             expectedExpiryPostRenew
                                                                                     .get(),
-                                                                            2));
+                                                                            2))
+                                                    .logged();
 
                                     allRunFor(spec, lookup);
                                 }),
@@ -371,7 +376,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
 
                         // Any transaction will do
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("trigger"),
-                        getTxnRecord("trigger").andAllChildRecords())
+                        getTxnRecord("trigger").andAllChildRecords().logged())
                 .then(
                         assertionsHold(
                                 (spec, opLog) -> {
@@ -382,7 +387,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                                     .approxExpiry(
                                                                             expectedExpiryPostRenew
                                                                                     .get(),
-                                                                            5));
+                                                                            5))
+                                                    .logged();
 
                                     allRunFor(spec, lookup);
                                     final var balance =
@@ -400,15 +406,18 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     getAccountBalance("0.0.98")
                                             .hasTinyBars(
                                                     changeFromSnapshot(
-                                                            "fundingBefore", fundingAccountFee));
+                                                            "fundingBefore", fundingAccountFee))
+                                            .logged();
                                     getAccountBalance("0.0.800")
                                             .hasTinyBars(
                                                     changeFromSnapshot(
-                                                            "stakingReward", stakingAccountFee));
+                                                            "stakingReward", stakingAccountFee))
+                                            .logged();
                                     getAccountBalance("0.0.801")
                                             .hasTinyBars(
                                                     changeFromSnapshot(
-                                                            "nodeReward", nodeAccountFee));
+                                                            "nodeReward", nodeAccountFee))
+                                            .logged();
                                 }),
                         overriding(
                                 "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
@@ -431,7 +440,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance((long) autoRenewAccountBalance),
-                        getAccountBalance(autoRenewAccount),
+                        getAccountBalance(autoRenewAccount).logged(),
                         contractCreate(contractToRenew, 63)
                                 .gas(2_000_000)
                                 .entityMemo("")
@@ -455,7 +464,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L).via("updateTxn"),
                         sleepFor(minimalLifetime * 1_000L + 500L),
-                        getTxnRecord("updateTxn"))
+                        getTxnRecord("updateTxn").logged())
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         assertionsHold(
@@ -467,8 +476,10 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                                     .approxExpiry(
                                                                             expectedExpiryPostRenew
                                                                                     .get(),
-                                                                            5));
-                                    final var lookupAccount = getAccountBalance(autoRenewAccount);
+                                                                            5))
+                                                    .logged();
+                                    final var lookupAccount =
+                                            getAccountBalance(autoRenewAccount).logged();
                                     allRunFor(spec, lookupContract, lookupAccount);
 
                                     final var contractBalance =
@@ -516,7 +527,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
                         cryptoCreate(autoRenewAccount).balance(renewAccountBalance),
-                        getAccountBalance(autoRenewAccount),
+                        getAccountBalance(autoRenewAccount).logged(),
                         contractCreate(contractToRenew, 63)
                                 .gas(2_000_000)
                                 .entityMemo("")
@@ -539,7 +550,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L).via("updateTxn"),
                         sleepFor(minimalLifetime * 1_000L + 500L),
-                        getTxnRecord("updateTxn"))
+                        getTxnRecord("updateTxn").logged())
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         assertionsHold(
@@ -551,8 +562,10 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                                     .approxExpiry(
                                                                             expectedExpiryPostRenew
                                                                                     .get(),
-                                                                            5));
-                                    final var lookupAccount = getAccountBalance(autoRenewAccount);
+                                                                            5))
+                                                    .logged();
+                                    final var lookupAccount =
+                                            getAccountBalance(autoRenewAccount).logged();
                                     allRunFor(spec, lookupContract, lookupAccount);
 
                                     final var contractBalance =
@@ -727,7 +740,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                                                     .approxExpiry(
                                                                             expectedExpiryPostRenew
                                                                                     .get(),
-                                                                            5));
+                                                                            5))
+                                                    .logged();
                                     allRunFor(spec, lookup);
                                     final var balance =
                                             lookup.getResponse()

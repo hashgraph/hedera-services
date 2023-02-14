@@ -77,7 +77,7 @@ public class SendSuite extends HapiSuite {
 
         // flag that transferred as parameter to schedule a transaction or to execute right away
         if (schedule) {
-            transfer = scheduleCreate("original", transfer);
+            transfer = scheduleCreate("original", transfer).logged();
         }
 
         return HapiSpec.customHapiSpec("DoSend")

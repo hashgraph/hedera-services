@@ -54,7 +54,8 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("updateFile", "1-1011"))
-                                .payingWith(SYSTEM_ADMIN),
+                                .payingWith(SYSTEM_ADMIN)
+                                .logged(),
                         getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .then(
                         withLiveNode(NODE_ACCOUNT)
@@ -67,10 +68,12 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
                         getFileContents(API_PERMISSIONS)
+                                .logged()
                                 .setNode("0.0.3")
                                 .payingWith(SYSTEM_ADMIN)
                                 .saveToRegistry(fileInfoRegistry),
                         getFileContents(API_PERMISSIONS)
+                                .logged()
                                 .setNode(NODE_ACCOUNT)
                                 .payingWith(SYSTEM_ADMIN)
                                 .hasContents(fileInfoRegistry));

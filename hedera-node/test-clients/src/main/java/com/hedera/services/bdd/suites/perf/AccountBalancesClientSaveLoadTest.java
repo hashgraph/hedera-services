@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.exportAccountBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -128,7 +129,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
                         tokenOpsEnablement(),
                         withOpContext(
                                 (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
-                        /*logIt(ignore -> settings.toString())*/
+                        logIt(ignore -> settings.toString()),
                         sourcing(
                                 () ->
                                         fileUpdate(APP_PROPERTIES)

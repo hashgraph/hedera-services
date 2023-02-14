@@ -125,7 +125,8 @@ public class RandomOps extends HapiSuite {
                                 .addNftAllowance(owner, nft, spender, true, List.of(1L))
                                 .via("approveTxn")
                                 .fee(ONE_HBAR)
-                                .blankMemo())
+                                .blankMemo()
+                                .logged())
                 .then(
                         /* NetworkGetExecutionTime requires superuser payer */
                         getAccountDetails(owner)
@@ -192,7 +193,7 @@ public class RandomOps extends HapiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
                         /* Uncomment to validate failure message */
                         //								.assertingNoneLongerThan(1, ChronoUnit.MILLIS)
-                        //								,
+                        //								.logged(),
                         getExecTimeNoPayment(cryptoTransfer, submitMessage, contractCall)
                                 .payingWith(GENESIS)
                                 .hasCostAnswerPrecheck(NOT_SUPPORTED),

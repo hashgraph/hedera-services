@@ -678,7 +678,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .longValue(
                                                                                                                     2)))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }),
                         childRecordsCheck(
@@ -790,7 +791,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getContractNum())))
                                                                                                             .longValue(
                                                                                                                     2)))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }),
                         childRecordsCheck(
@@ -887,7 +889,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .longValue(
                                                                                                                     2)))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }),
                         childRecordsCheck(
@@ -1015,7 +1018,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .hasToken(
                                                         ExpectedTokenRel.relationshipWith(
                                                                         TOKEN_NAME)
-                                                                .balance(500))),
+                                                                .balance(500))
+                                                .logged()),
                         getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_NAME, 1000),
                         getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
@@ -1226,6 +1230,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, SPENDER, 2L)
                                 .via(BASE_APPROVE_TXN)
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -1255,7 +1260,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords(),
+                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 ALLOWANCE_TXN,
                                 SUCCESS,
@@ -1317,7 +1322,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        getTxnRecord(approveTxn).andAllChildRecords());
+                        getTxnRecord(approveTxn).andAllChildRecords().logged());
     }
 
     private HapiSpec getErc20TokenDecimalsFromErc721TokenFails() {
@@ -1355,7 +1360,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(invalidDecimalsTxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
                                                         .gas(GAS_TO_OFFER))))
-                .then(getTxnRecord(invalidDecimalsTxn).andAllChildRecords());
+                .then(getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged());
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
@@ -1404,7 +1409,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(TRANSFER_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(INVALID_TOKEN_ID))))
-                .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords());
+                .then(getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec getErc721TokenName() {
@@ -1504,6 +1509,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 .then(
                         getTxnRecord(NAME_TXN)
                                 .andAllChildRecords()
+                                .logged()
                                 .hasPriority(
                                         recordWith()
                                                 .contractCallResult(
@@ -1907,7 +1913,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(invalidTokenURITxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
                                                         .gas(GAS_TO_OFFER))))
-                .then(getTxnRecord(invalidTokenURITxn).andAllChildRecords());
+                .then(getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged());
     }
 
     private HapiSpec getErc721OwnerOfFromErc20TokenFails() {
@@ -1946,7 +1952,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(invalidOwnerOfTxn)
                                                         .hasKnownStatus(INVALID_TOKEN_ID)
                                                         .gas(GAS_TO_OFFER))))
-                .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords());
+                .then(getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged());
     }
 
     private HapiSpec directCallsWorkForERC20() {
@@ -2370,7 +2376,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .via(MISSING_TO)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        getTokenNftInfo(NF_TOKEN, 5L),
+                        getTokenNftInfo(NF_TOKEN, 5L).logged(),
                         childRecordsCheck(
                                 MISSING_TO,
                                 CONTRACT_REVERT_EXECUTED,
@@ -2492,7 +2498,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         BigInteger.valueOf(5))
                                                 .payingWith(B_CIVILIAN)
                                                 .via("D")),
-                        getTxnRecord("D").andAllChildRecords())
+                        getTxnRecord("D").andAllChildRecords().logged())
                 .then(
                         // Now make contract operator for bCivilian, approve aCivilian, have it grab
                         // serial number 3
@@ -2960,7 +2966,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         BigInteger.valueOf(5))
                                                 .via("APPROVE_AND_GET_ALLOWANCE_TXN")
                                                 .gas(1_000_000)
-                                                .hasKnownStatus(SUCCESS)))
+                                                .hasKnownStatus(SUCCESS)
+                                                .logged()))
                 .then(
                         childRecordsCheck(
                                 "APPROVE_AND_GET_ALLOWANCE_TXN",
@@ -3249,7 +3256,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .via("MISSING_SERIAL")
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        getTokenNftInfo(NF_TOKEN, 1L),
+                        getTokenNftInfo(NF_TOKEN, 1L).logged(),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -3270,7 +3277,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 .via(WITH_SPENDER)
                                                 .gas(1_000_000)
                                                 .hasKnownStatus(SUCCESS)),
-                        getTxnRecord(WITH_SPENDER).andAllChildRecords(),
+                        getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
                         sourcing(
                                 () ->
                                         contractCallLocal(
@@ -3278,6 +3285,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         GET_APPROVED,
                                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                                         BigInteger.ONE)
+                                                .logged()
                                                 .gas(1_000_000)
                                                 .has(
                                                         resultWith()
@@ -4086,7 +4094,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(NAME_TXN)
                                                         .hasKnownStatus(SUCCESS)
                                                         .gas(GAS_TO_OFFER))))
-                .then(getTxnRecord(NAME_TXN).andAllChildRecords());
+                .then(getTxnRecord(NAME_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec erc721GetApproved() {
@@ -4120,6 +4128,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                 .addNftAllowance(
                                         OWNER, NON_FUNGIBLE_TOKEN, SPENDER, false, List.of(1L))
                                 .via(BASE_APPROVE_TXN)
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -4161,7 +4170,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
                                                                                                                                 SPENDER)))))))),
-                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords());
+                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec erc20TransferFrom() {
@@ -4202,6 +4211,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 ERC_20_CONTRACT,
                                                                 2L)
                                                         .via(BASE_APPROVE_TXN)
+                                                        .logged()
                                                         .signedBy(DEFAULT_PAYER, OWNER)
                                                         .fee(ONE_HBAR),
                                                 // Check that ERC_20_CONTRACT has allowance of 2
@@ -4392,6 +4402,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 false,
                                                                 List.of(1L))
                                                         .via(BASE_APPROVE_TXN)
+                                                        .logged()
                                                         .signedBy(DEFAULT_PAYER, OWNER)
                                                         .fee(ONE_HBAR),
                                                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
@@ -4418,9 +4429,10 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
                                                 getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                                        .andAllChildRecords(),
-                                                getAccountDetails(RECIPIENT),
-                                                getAccountDetails(OWNER),
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                getAccountDetails(RECIPIENT).logged(),
+                                                getAccountDetails(OWNER).logged(),
                                                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
                                                         .hasNoSpender())))
                 .then(
@@ -4463,7 +4475,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum()),
                                                                                                                                     parsedToByteString(
                                                                                                                                             1L)))))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
@@ -4506,13 +4519,14 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 true,
                                                                 List.of(1L, 2L))
                                                         .via(BASE_APPROVE_TXN)
+                                                        .logged()
                                                         .signedBy(DEFAULT_PAYER, OWNER)
                                                         .fee(ONE_HBAR),
                                                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
                                                         .hasSpenderID(ERC_721_CONTRACT),
                                                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L)
                                                         .hasSpenderID(ERC_721_CONTRACT),
-                                                getAccountDetails(OWNER),
+                                                getAccountDetails(OWNER).logged(),
                                                 getAccountDetails(OWNER)
                                                         .payingWith(GENESIS)
                                                         .has(
@@ -4540,8 +4554,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 BigInteger.ONE)
                                                         .via(TRANSFER_FROM_ACCOUNT_TXN)
                                                         .hasKnownStatus(SUCCESS),
-                                                getAccountDetails(RECIPIENT),
-                                                getAccountDetails(OWNER))))
+                                                getAccountDetails(RECIPIENT).logged(),
+                                                getAccountDetails(OWNER).logged())))
                 .then();
     }
 

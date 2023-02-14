@@ -136,7 +136,7 @@ public class TokenDeleteSpecs extends HapiSuite {
                                 .payingWith(PAYER),
                         tokenAssociate(GENESIS, "tbd"))
                 .when(
-                        getAccountInfo(TOKEN_TREASURY),
+                        getAccountInfo(TOKEN_TREASURY).logged(),
                         mintToken("tbd", 1),
                         burnToken("tbd", 1),
                         revokeTokenKyc("tbd", GENESIS),
@@ -146,8 +146,8 @@ public class TokenDeleteSpecs extends HapiSuite {
                         cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS)),
                         tokenDelete("tbd").payingWith(PAYER))
                 .then(
-                        getTokenInfo("tbd"),
-                        getAccountInfo(TOKEN_TREASURY),
+                        getTokenInfo("tbd").logged(),
+                        getAccountInfo(TOKEN_TREASURY).logged(),
                         cryptoTransfer(moving(1, "tbd").between(TOKEN_TREASURY, GENESIS))
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
                         mintToken("tbd", 1).hasKnownStatus(TOKEN_WAS_DELETED),

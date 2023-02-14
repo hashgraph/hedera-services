@@ -87,8 +87,8 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                         newKeyNamed(freezeKey),
                         newKeyNamed(adminKey),
                         newKeyNamed(newAdminKey),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS))
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS).logging(),
+                        cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS).logging())
                 .when(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
                         getAccountBalance(GENESIS).setNode(reconnectingNode).unavailableNode(),
@@ -97,13 +97,15 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                                 .supplyKey(supplyKey)
                                 .initialSupply(TOKEN_INITIAL_SUPPLY)
                                 .treasury(TOKEN_TREASURY)
-                                .adminKey(adminKey),
+                                .adminKey(adminKey)
+                                .logging(),
                         tokenCreate(anotherToken)
                                 .freezeKey(freezeKey)
                                 .supplyKey(supplyKey)
                                 .initialSupply(TOKEN_INITIAL_SUPPLY)
                                 .adminKey(adminKey)
-                                .treasury(TOKEN_TREASURY),
+                                .treasury(TOKEN_TREASURY)
+                                .logging(),
 
                         /* Some token operations*/
                         getTokenInfo(tokenToBeQueried),
@@ -112,7 +114,7 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .payingWith(TOKEN_TREASURY)
                                 .adminKey(newAdminKey),
-                        tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken),
+                        tokenAssociate(anotherAccount, tokenToBeQueried, anotherToken).logging(),
                         blockingOrder(
                                 IntStream.range(0, 10)
                                         .mapToObj(
@@ -155,25 +157,29 @@ public class ValidateTokensStateAfterReconnect extends HapiSuite {
                                 .hasAdminKey(tokenToBeQueried)
                                 .hasFreezeKey(tokenToBeQueried)
                                 .hasSupplyKey(tokenToBeQueried)
-                                .hasTotalSupply(999),
+                                .hasTotalSupply(999)
+                                .logging(),
                         getTokenInfo(tokenToBeQueried)
                                 .setNode(nonReconnectingNode)
                                 .hasAdminKey(tokenToBeQueried)
                                 .hasFreezeKey(tokenToBeQueried)
                                 .hasSupplyKey(tokenToBeQueried)
-                                .hasTotalSupply(999),
+                                .hasTotalSupply(999)
+                                .logging(),
                         getTokenInfo(anotherToken)
                                 .setNode(reconnectingNode)
                                 .hasFreezeKey(anotherToken)
                                 .hasAdminKey(anotherToken)
                                 .hasSupplyKey(anotherToken)
-                                .hasTotalSupply(999),
+                                .hasTotalSupply(999)
+                                .logging(),
                         getTokenInfo(anotherToken)
                                 .setNode(nonReconnectingNode)
                                 .hasFreezeKey(anotherToken)
                                 .hasAdminKey(anotherToken)
                                 .hasSupplyKey(anotherToken)
-                                .hasTotalSupply(999),
+                                .hasTotalSupply(999)
+                                .logging(),
                         cryptoDelete(TOKEN_TREASURY)
                                 .hasKnownStatus(ACCOUNT_IS_TREASURY)
                                 .setNode(reconnectingNode),

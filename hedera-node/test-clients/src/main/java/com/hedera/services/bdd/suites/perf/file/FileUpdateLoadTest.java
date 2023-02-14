@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.perf.file;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -74,20 +75,20 @@ public class FileUpdateLoadTest extends HapiSuite {
                                                                             DUPLICATE_TRANSACTION,
                                                                             PLATFORM_TRANSACTION_NOT_CREATED)
                                                                     .deferStatusResolution())
-                                            .toArray(n -> new HapiSpecOperation[n]))
-                            /*logIt(
-                            ignore ->
-                                    String.format(
-                                            "Now a total of %d file updates submitted.",
-                                            submittedSoFar.addAndGet(
-                                                    settings.getBurstSize())))*/
+                                            .toArray(n -> new HapiSpecOperation[n])),
+                            logIt(
+                                    ignore ->
+                                            String.format(
+                                                    "Now a total of %d file updates submitted.",
+                                                    submittedSoFar.addAndGet(
+                                                            settings.getBurstSize()))),
                         };
 
         return defaultHapiSpec("RunFileUpdates")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(fileCreate("target").contents("The initial contents!"))
                 .then(
                         runLoadTest(fileUpdateBurst)

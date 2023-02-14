@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -83,8 +84,8 @@ public class SStoreOperationLoadTest extends LoadTest {
         return defaultHapiSpec("runContractCalls")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         cryptoCreate("sender")
                                 .balance(initialBalance.getAsLong())
@@ -104,7 +105,7 @@ public class SStoreOperationLoadTest extends LoadTest {
                                         BUSY,
                                         DUPLICATE_TRANSACTION,
                                         PLATFORM_TRANSACTION_NOT_CREATED),
-                        getContractInfo(contract).hasExpectedInfo(),
+                        getContractInfo(contract).hasExpectedInfo().logged(),
 
                         // Initialize storage size
                         contractCall(contract, "setSize", size)

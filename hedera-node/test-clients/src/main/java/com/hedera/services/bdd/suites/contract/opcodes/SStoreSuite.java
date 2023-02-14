@@ -83,7 +83,8 @@ public class SStoreSuite extends HapiSuite {
                                                                 contract,
                                                                 "growTo",
                                                                 BigInteger.valueOf(sizeNow))
-                                                        .gas(GAS_TO_OFFER);
+                                                        .gas(GAS_TO_OFFER)
+                                                        .logged();
                                         subOps.add(subOp1);
                                     }
                                     CustomSpecAssert.allRunFor(spec, subOps);
@@ -97,11 +98,12 @@ public class SStoreSuite extends HapiSuite {
                                     for (int i = 0; i < numberOfIterations; i++) {
                                         final var subOp1 =
                                                 contractCall(
-                                                        contract,
-                                                        "changeArray",
-                                                        BigInteger.valueOf(
-                                                                ThreadLocalRandom.current()
-                                                                        .nextInt(1000)));
+                                                                contract,
+                                                                "changeArray",
+                                                                BigInteger.valueOf(
+                                                                        ThreadLocalRandom.current()
+                                                                                .nextInt(1000)))
+                                                        .logged();
                                         subOps.add(subOp1);
                                     }
                                     CustomSpecAssert.allRunFor(spec, subOps);
@@ -140,8 +142,10 @@ public class SStoreSuite extends HapiSuite {
                                                                 BigInteger.valueOf(19))
                                                         .gas(MAX_CONTRACT_GAS)
                                                         .via("large" + childKbStorage);
-                                        final var subOp3 = getTxnRecord("small" + childKbStorage);
-                                        final var subOp4 = getTxnRecord("large" + childKbStorage);
+                                        final var subOp3 =
+                                                getTxnRecord("small" + childKbStorage).logged();
+                                        final var subOp4 =
+                                                getTxnRecord("large" + childKbStorage).logged();
                                         CustomSpecAssert.allRunFor(
                                                 spec, subOp1, subOp2, subOp3, subOp4);
                                     }
@@ -201,7 +205,7 @@ public class SStoreSuite extends HapiSuite {
                                 .gas(GAS_LIMIT),
                         contractCall(contract, "twoSSTOREs", value).gas(GAS_LIMIT).via("storageTx"))
                 .then(
-                        getTxnRecord("storageTx"),
+                        getTxnRecord("storageTx").logged(),
                         contractCallLocal(contract, "counter")
                                 .nodePayment(1_234_567)
                                 .has(

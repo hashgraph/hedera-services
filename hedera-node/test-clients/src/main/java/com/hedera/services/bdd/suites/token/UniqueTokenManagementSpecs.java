@@ -297,7 +297,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .supplyKey(SUPPLY_KEY)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(NFT, List.of(metadata("memo"))))
-                .when(burnToken(NFT, List.of(1L)).via("burnTxn"))
+                .when(burnToken(NFT, List.of(1L)).via("burnTxn").logged())
                 .then(
                         getTxnRecord("burnTxn").hasCostAnswerPrecheck(OK),
                         getTokenNftInfo(NFT, 1).hasCostAnswerPrecheck(INVALID_NFT_ID),
@@ -540,7 +540,7 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                 .treasury(TOKEN_TREASURY))
                 .when(mintToken(NFT, List.of(metadata("memo"), metadata("memo1"))).via("mintTxn"))
                 .then(
-                        getReceipt("mintTxn"),
+                        getReceipt("mintTxn").logged(),
                         getTokenNftInfo(NFT, 1)
                                 .hasSerialNum(1)
                                 .hasMetadata(metadata("memo"))
@@ -870,8 +870,8 @@ public class UniqueTokenManagementSpecs extends HapiSuite {
                                                                         });
                                                     });
                                 }),
-                        getTxnRecord("mintTransferTxn"),
-                        getReceipt("mintTransferTxn"));
+                        getTxnRecord("mintTransferTxn").logged(),
+                        getReceipt("mintTransferTxn").logged());
     }
 
     private HapiSpec tokenDissociateHappyPath() {

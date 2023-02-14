@@ -136,7 +136,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord(CREATION_TX))
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         contractCall(
                                         THE_CONTRACT,
@@ -277,7 +277,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord(CREATION_TX))
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -344,7 +344,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord(CREATION_TX))
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->

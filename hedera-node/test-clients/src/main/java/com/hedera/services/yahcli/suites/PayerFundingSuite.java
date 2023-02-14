@@ -20,8 +20,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.PAYER;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.checkBoxed;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -72,7 +74,7 @@ public class PayerFundingSuite extends HapiSuite {
                                     }
                                 }))
                 .when()
-                .then(/*logIt(checkBoxed("Payer has at least " + guaranteedBalance + " tℏ")*/ );
+                .then(logIt(checkBoxed("Payer has at least " + guaranteedBalance + " tℏ")));
     }
 
     @Override

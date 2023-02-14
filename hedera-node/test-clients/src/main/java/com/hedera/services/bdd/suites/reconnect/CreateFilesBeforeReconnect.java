@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.reconnect;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_MINS_FOR_RECONNECT_TESTS;
 import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect.DEFAULT_THREADS_FOR_RECONNECT_TESTS;
@@ -76,7 +77,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
                 () -> new HapiSpecOperation[] {generateFileCreateOperation()};
 
         return defaultHapiSpec("RunCreateFiles")
-                .given(/*logIt(ignore -> settings.toString())*/ )
+                .given(logIt(ignore -> settings.toString()))
                 .when()
                 .then(defaultLoadTest(createBurst, settings));
     }

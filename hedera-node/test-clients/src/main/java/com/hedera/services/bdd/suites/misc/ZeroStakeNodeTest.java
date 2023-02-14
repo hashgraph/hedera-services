@@ -116,19 +116,23 @@ public class ZeroStakeNodeTest extends HapiSuite {
                         getContractInfo("Multipurpose")
                                 .setNode("0.0.7")
                                 .payingWith("sponsor")
-                                .nodePayment(0L),
+                                .nodePayment(0L)
+                                .logged(),
                         getContractBytecode("Multipurpose")
                                 .setNode("0.0.8")
                                 .payingWith("sponsor")
-                                .nodePayment(0L),
+                                .nodePayment(0L)
+                                .logged(),
                         getAccountInfo("beneficiary")
                                 .setNode("0.0.7")
                                 .payingWith("sponsor")
-                                .nodePayment(0L),
+                                .nodePayment(0L)
+                                .logged(),
                         getFileInfo("bytecode")
                                 .setNode("0.0.8")
                                 .payingWith("sponsor")
-                                .nodePayment(0L),
+                                .nodePayment(0L)
+                                .logged(),
                         getAccountBalance("sponsor")
                                 .setNode("0.0.7")
                                 .hasTinyBars(changeFromSnapshot("sponsorBefore", -1L)),

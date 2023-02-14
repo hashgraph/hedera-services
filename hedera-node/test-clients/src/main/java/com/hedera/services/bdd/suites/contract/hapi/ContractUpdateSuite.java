@@ -106,7 +106,8 @@ public class ContractUpdateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(true)
                                                 .noStakedAccountId()
-                                                .stakedNodeId(0)))
+                                                .stakedNodeId(0))
+                                .logged())
                 .when(
                         contractUpdate(CONTRACT)
                                 .newDeclinedReward(false)
@@ -116,7 +117,8 @@ public class ContractUpdateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .stakedAccountId("0.0.10")),
+                                                .stakedAccountId("0.0.10"))
+                                .logged(),
 
                         /* --- reset the staking account */
                         contractUpdate(CONTRACT)
@@ -127,14 +129,16 @@ public class ContractUpdateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .noStakedAccountId()),
+                                                .noStakedAccountId())
+                                .logged(),
                         contractCreate(CONTRACT).declinedReward(true).stakedNodeId(0),
                         getContractInfo(CONTRACT)
                                 .has(
                                         contractWith()
                                                 .isDeclinedReward(true)
                                                 .noStakedAccountId()
-                                                .stakedNodeId(0)),
+                                                .stakedNodeId(0))
+                                .logged(),
 
                         /* --- reset the staking account */
                         contractUpdate(CONTRACT).newDeclinedReward(false).newStakedNodeId(-1L),
@@ -143,7 +147,8 @@ public class ContractUpdateSuite extends HapiSuite {
                                         contractWith()
                                                 .isDeclinedReward(false)
                                                 .noStakingNodeId()
-                                                .noStakedAccountId()))
+                                                .noStakedAccountId())
+                                .logged())
                 .then();
     }
 
@@ -169,6 +174,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTxnRecord(callTxn)
+                                                .logged()
                                                 .hasPriority(
                                                         recordWith()
                                                                 .contractCallResult(
@@ -189,6 +195,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTxnRecord(staticcallTxn)
+                                                .logged()
                                                 .hasPriority(
                                                         recordWith()
                                                                 .contractCallResult(
@@ -209,6 +216,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTxnRecord(delegatecallTxn)
+                                                .logged()
                                                 .hasPriority(
                                                         recordWith()
                                                                 .contractCallResult(
@@ -229,6 +237,7 @@ public class ContractUpdateSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         getTxnRecord(callcodeTxn)
+                                                .logged()
                                                 .hasPriority(
                                                         recordWith()
                                                                 .contractCallResult(
@@ -319,7 +328,8 @@ public class ContractUpdateSuite extends HapiSuite {
                         getContractInfo(CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(autoRenewAccount)))
+                                                .autoRenewAccountId(autoRenewAccount))
+                                .logged())
                 .when(
                         contractUpdate(CONTRACT)
                                 .newAutoRenewAccount(newAutoRenewAccount)
@@ -332,7 +342,8 @@ public class ContractUpdateSuite extends HapiSuite {
                         getContractInfo(CONTRACT)
                                 .has(
                                         ContractInfoAsserts.contractWith()
-                                                .autoRenewAccountId(newAutoRenewAccount)));
+                                                .autoRenewAccountId(newAutoRenewAccount))
+                                .logged());
     }
 
     private HapiSpec updateAdminKeyWorks() {
@@ -379,7 +390,7 @@ public class ContractUpdateSuite extends HapiSuite {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("GivenAdminKeyMustBeValid")
                 .given(uploadInitCode(contract), contractCreate(contract))
-                .when(getContractInfo(contract))
+                .when(getContractInfo(contract).logged())
                 .then(
                         contractUpdate(contract)
                                 .useDeprecatedAdminKey()
@@ -416,6 +427,7 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .entityMemo(INITIAL_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
+                                .logged()
                                 .has(contractWith().memo(INITIAL_MEMO).adminKey("initialAdminKey")))
                 .then(
                         contractUpdate(contract + suffix)
@@ -435,6 +447,7 @@ public class ContractUpdateSuite extends HapiSuite {
                                 .newMemo(NEW_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
+                                .logged()
                                 .has(
                                         contractWith()
                                                 .solidityAddress(contract + suffix)
@@ -443,12 +456,14 @@ public class ContractUpdateSuite extends HapiSuite {
                         contractUpdate(contract + suffix).payingWith(payer).newMemo(BETTER_MEMO),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
+                                .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(newExpiry)),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)
                                 .newExpirySecs(betterExpiry),
                         getContractInfo(contract + suffix)
                                 .payingWith(payer)
+                                .logged()
                                 .has(contractWith().memo(BETTER_MEMO).expiry(betterExpiry)),
                         contractUpdate(contract + suffix)
                                 .payingWith(payer)

@@ -206,6 +206,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
                                                         .via(ACCOUNT_HAS_NO_KEY_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -219,6 +220,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
                                                         .via(NO_KEY_FREEZE_TXN)
                                                         .gas(GAS_TO_OFFER)
@@ -246,6 +248,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(ACCOUNT)
@@ -264,6 +267,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER),
                                                 getAccountDetails(ACCOUNT)
@@ -390,6 +394,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                                         .get())),
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(accountID.get())))
+                                                        .logged()
                                                         .payingWith(ACCOUNT)
                                                         .via(IS_FROZEN_TXN)
                                                         .gas(GAS_TO_OFFER))))
@@ -456,6 +461,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
                                                                             vanillaTokenID.get())),
                                                             HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(accountID.get())))
+                                                    .logged()
                                                     .payingWith(ACCOUNT)
                                                     .gas(GAS_TO_OFFER);
                                     final var isFrozenLocalCall =

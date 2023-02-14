@@ -88,8 +88,9 @@ public class ReadyToRunScheduledXfersLoad extends HapiSuite {
                                                                 .mapToObj(
                                                                         i ->
                                                                                 getAccountBalance(
-                                                                                        inertReceiver(
-                                                                                                i)))
+                                                                                                inertReceiver(
+                                                                                                        i))
+                                                                                        .logged())
                                                                 .toArray(HapiSpecOperation[]::new));
                                         CustomSpecAssert.allRunFor(spec, op);
                                     }

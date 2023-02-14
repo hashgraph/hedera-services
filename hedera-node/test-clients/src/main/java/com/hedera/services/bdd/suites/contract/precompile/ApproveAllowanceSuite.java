@@ -124,6 +124,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(DEFAULT_PAYER)
                                 .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, theSpender, 2L)
                                 .via("baseApproveTxn")
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -153,7 +154,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .via(allowanceTxn)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(allowanceTxn).andAllChildRecords(),
+                        getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
                         childRecordsCheck(
                                 allowanceTxn,
                                 SUCCESS,
@@ -217,7 +218,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
                         childRecordsCheck(approveTxn, SUCCESS, recordWith().status(SUCCESS)),
-                        getTxnRecord(approveTxn).andAllChildRecords(),
+                        getTxnRecord(approveTxn).andAllChildRecords().logged(),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var sender =
@@ -253,7 +254,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .longValue(
                                                                                                                     10)))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
@@ -345,7 +347,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum()),
                                                                                                                                     parsedToByteString(
                                                                                                                                             2L)))))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
     }
@@ -508,6 +511,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .addNftAllowance(
                                         OWNER, NON_FUNGIBLE_TOKEN, theSpender, false, List.of(1L))
                                 .via("baseApproveTxn")
+                                .logged()
                                 .signedBy(DEFAULT_PAYER, OWNER)
                                 .fee(ONE_HBAR))
                 .when(
@@ -643,7 +647,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                                                                     .getAccountNum())))
                                                                                                             .booleanValue(
                                                                                                                     true)))))
-                                                    .andAllChildRecords();
+                                                    .andAllChildRecords()
+                                                    .logged();
                                     allRunFor(spec, txnRecord);
                                 }));
     }

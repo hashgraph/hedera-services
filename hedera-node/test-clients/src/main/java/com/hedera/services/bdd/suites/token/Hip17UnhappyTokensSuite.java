@@ -487,9 +487,9 @@ public class Hip17UnhappyTokensSuite extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, 10))
                                 .payingWith(GENESIS))
                 .then(
-                        getAccountBalance(TOKEN_TREASURY),
-                        getTokenNftInfo(NFTautoRemoved, 1).hasAnswerOnlyPrecheck(OK),
-                        getTokenNftInfo(NFTautoRemoved, 1).hasCostAnswerPrecheckFrom(OK));
+                        getAccountBalance(TOKEN_TREASURY).logged(),
+                        getTokenNftInfo(NFTautoRemoved, 1).hasAnswerOnlyPrecheck(OK).logged(),
+                        getTokenNftInfo(NFTautoRemoved, 1).hasCostAnswerPrecheckFrom(OK).logged());
     }
 
     private HapiSpec autoRemovalCasesSuiteCleanup() {

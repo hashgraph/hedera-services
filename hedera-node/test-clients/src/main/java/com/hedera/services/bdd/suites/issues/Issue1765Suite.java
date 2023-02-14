@@ -60,7 +60,10 @@ public class Issue1765Suite extends HapiSuite {
     }
 
     public static HapiSpec get950Balance() {
-        return defaultHapiSpec("Get950Balance").given().when().then(getAccountBalance("0.0.950"));
+        return defaultHapiSpec("Get950Balance")
+                .given()
+                .when()
+                .then(getAccountBalance("0.0.950").logged());
     }
 
     public static HapiSpec recordOfInvalidAccountTransferSanityChecks() {

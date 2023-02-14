@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
@@ -83,14 +84,14 @@ public class MixedFileOpsLoadTest extends LoadTest {
         return defaultHapiSpec("runMixedFileOps")
                 .given(
                         withOpContext(
-                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap()))
-                        /*logIt(ignore -> settings.toString())*/ )
+                                (spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
+                        logIt(ignore -> settings.toString()))
                 .when(
                         fileCreate(targetFile)
                                 .contents(initialContent)
                                 .hasAnyPrecheck()
                                 .payingWith(GENESIS),
-                        getFileInfo(targetFile).payingWith(GENESIS))
+                        getFileInfo(targetFile).logging().payingWith(GENESIS))
                 .then(defaultLoadTest(mixedFileOpsBurst, settings));
     }
 

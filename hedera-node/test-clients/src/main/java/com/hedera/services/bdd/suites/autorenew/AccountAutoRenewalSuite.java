@@ -85,12 +85,12 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                                         AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(
                                                 1, 0)),
                         cryptoCreate(autoRemovedAccount).autoRenewSecs(1).balance(0L),
-                        getAccountInfo(autoRemovedAccount))
+                        getAccountInfo(autoRemovedAccount).logged())
                 .when(
                         sleepFor(1_500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
                                 .via(TRIGGERING_TRANSACTION),
-                        getTxnRecord(TRIGGERING_TRANSACTION).andAllChildRecords())
+                        getTxnRecord(TRIGGERING_TRANSACTION).andAllChildRecords().logged())
                 .then(
                         getAccountBalance(autoRemovedAccount)
                                 .hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
@@ -114,7 +114,9 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                         cryptoCreate(autoRenewedAccount)
                                 .autoRenewSecs(briefAutoRenew)
                                 .balance(initialBalance),
-                        getAccountInfo(autoRenewedAccount).savingSnapshot(autoRenewedAccount))
+                        getAccountInfo(autoRenewedAccount)
+                                .savingSnapshot(autoRenewedAccount)
+                                .logged())
                 .when(
                         sleepFor(briefAutoRenew * 1_000L + 500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
@@ -124,7 +126,8 @@ public class AccountAutoRenewalSuite extends HapiSuite {
                                 .has(
                                         accountWith()
                                                 .expiry(autoRenewedAccount, briefAutoRenew)
-                                                .balanceLessThan(initialBalance)),
+                                                .balanceLessThan(initialBalance))
+                                .logged(),
                         cryptoDelete(autoRenewedAccount));
     }
 

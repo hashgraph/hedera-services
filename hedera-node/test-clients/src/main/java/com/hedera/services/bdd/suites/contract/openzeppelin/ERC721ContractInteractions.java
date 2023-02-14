@@ -64,10 +64,10 @@ public class ERC721ContractInteractions extends HapiSuite {
 
         return defaultHapiSpec("CallsERC721ContractInteractions")
                 .given(
-                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER),
+                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         uploadInitCode(CONTRACT))
                 .when(
-                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER),
+                        QueryVerbs.getAccountBalance(DEFAULT_CONTRACT_SENDER).logged(),
                         contractCreate(CONTRACT)
                                 .payingWith(DEFAULT_CONTRACT_SENDER)
                                 .hasKnownStatus(SUCCESS)
@@ -124,9 +124,9 @@ public class ERC721ContractInteractions extends HapiSuite {
                                                     .via(TRANSFER_FROM_TX);
                                     allRunFor(spec, transferFrom);
                                 }),
-                        QueryVerbs.getTxnRecord(CREATE_TX),
-                        QueryVerbs.getTxnRecord(MINT_TX),
-                        QueryVerbs.getTxnRecord(APPROVE_TX),
-                        QueryVerbs.getTxnRecord(TRANSFER_FROM_TX));
+                        QueryVerbs.getTxnRecord(CREATE_TX).logged(),
+                        QueryVerbs.getTxnRecord(MINT_TX).logged(),
+                        QueryVerbs.getTxnRecord(APPROVE_TX).logged(),
+                        QueryVerbs.getTxnRecord(TRANSFER_FROM_TX).logged());
     }
 }

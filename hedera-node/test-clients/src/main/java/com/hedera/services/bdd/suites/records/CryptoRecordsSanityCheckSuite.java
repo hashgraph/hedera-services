@@ -89,13 +89,13 @@ public class CryptoRecordsSanityCheckSuite extends HapiSuite {
                 .when(
                         tokenAssociate(secondOwner, uniqueToken),
                         mintToken(uniqueToken, List.of(metadata)).via(mintRecord),
-                        getAccountBalance(firstOwner),
+                        getAccountBalance(firstOwner).logged(),
                         cryptoTransfer(
                                         movingHbar(1_234_567L).between(secondOwner, firstOwner),
                                         movingUnique(uniqueToken, 1L)
                                                 .between(firstOwner, secondOwner))
                                 .via(xferRecord))
-                .then(getTxnRecord(mintRecord), getTxnRecord(xferRecord));
+                .then(getTxnRecord(mintRecord).logged(), getTxnRecord(xferRecord).logged());
     }
 
     private HapiSpec cryptoCreateRecordSanityChecks() {

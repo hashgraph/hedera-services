@@ -72,7 +72,10 @@ public class SubmitMessagePerfSuite extends HapiSuite {
                 .then(
                         finishThroughputObs("submitMessageThroughput")
                                 .gatedByQuery(
-                                        () -> getTopicInfo("testTopic").hasSeqNo(NUM_SUBMISSIONS))
+                                        () ->
+                                                getTopicInfo("testTopic")
+                                                        .hasSeqNo(NUM_SUBMISSIONS)
+                                                        .logged())
                                 .sleepMs(1_000L)
                                 .expiryMs(300_000L));
     }

@@ -848,7 +848,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         cryptoDelete(deadXCivilian),
                         scheduleCreate(
                                         invalidSchedule,
@@ -905,7 +908,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         tokenDelete(xToken),
                         scheduleCreate(
                                         invalidSchedule,
@@ -966,7 +972,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         tokenFreeze(xToken, xCivilian),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1023,7 +1032,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         revokeTokenKyc(xToken, xCivilian),
                         scheduleCreate(
                                         invalidSchedule,
@@ -1079,7 +1091,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(
@@ -1129,7 +1144,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(
@@ -1187,7 +1205,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(
@@ -1251,7 +1272,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(
@@ -1304,7 +1328,10 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via(successTx)
                                 .signedBy(DEFAULT_PAYER, schedulePayer),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         submitMessageTo(immutableTopic)
@@ -1361,9 +1388,13 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                                                                 initialTxnId
                                                                                         .get())))
                                                 .txnId(successTx)
+                                                .logged()
                                                 .signedBy(schedulePayer)),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         sourcing(
                                 () ->
                                         scheduleCreate(
@@ -1377,6 +1408,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                                                                         .get())))
                                                 .designatingPayer(schedulePayer)
                                                 .via(failedTx)
+                                                .logged()
                                                 .signedBy(DEFAULT_PAYER, schedulePayer)))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
@@ -1424,14 +1456,19 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                                                                 initialTxnId
                                                                                         .get())))
                                                 .txnId(successTx)
+                                                .logged()
                                                 .signedBy(schedulePayer)),
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
-                        getTxnRecord(successTx).scheduled().revealingDebitsTo(successFeesObs::set),
+                        getTxnRecord(successTx)
+                                .scheduled()
+                                .logged()
+                                .revealingDebitsTo(successFeesObs::set),
                         scheduleCreate(
                                         invalidSchedule,
                                         submitMessageTo(immutableTopic)
                                                 .chunkInfo(3, 111, schedulePayer))
                                 .via(failedTx)
+                                .logged()
                                 .payingWith(schedulePayer))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
@@ -1463,7 +1500,8 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                 .then(
                         getTxnRecord("creation").revealingDebitsTo(successFeesObs::set),
                         getTxnRecord("nothingShouldBeCreated")
-                                .revealingDebitsTo(failureFeesObs::set),
+                                .revealingDebitsTo(failureFeesObs::set)
+                                .logged(),
                         assertionsHold(
                                 (spec, opLog) ->
                                         assertBasicallyIdentical(
@@ -1572,7 +1610,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                 .via("repeatedSigning")
                                 .alsoSigningWith("weirdlyPopularKey")
                                 .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED),
-                        getTxnRecord("repeatedSigning"));
+                        getTxnRecord("repeatedSigning").logged());
     }
 
     public HapiSpec executionWithDefaultPayerWorks() {

@@ -199,14 +199,14 @@ public class Hip17UnhappyAccountsSuite extends HapiSuite {
                                         ByteString.copyFromUtf8("memo1"),
                                         ByteString.copyFromUtf8("memo2"))),
                         cryptoCreate(firstUser).autoRenewSecs(10L).balance(0L),
-                        getAccountInfo(firstUser),
+                        getAccountInfo(firstUser).logged(),
                         tokenAssociate(firstUser, uniqueTokenA),
                         grantTokenKyc(uniqueTokenA, firstUser),
                         cryptoTransfer(
                                 movingUnique(uniqueTokenA, 2L).between(tokenTreasury, firstUser)))
                 .when(sleepFor(10_500L), cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L)))
                 .then(
-                        getAccountInfo(firstUser),
+                        getAccountInfo(firstUser).logged(),
                         cryptoTransfer(
                                         movingUnique(uniqueTokenA, 2L)
                                                 .between(tokenTreasury, firstUser))
