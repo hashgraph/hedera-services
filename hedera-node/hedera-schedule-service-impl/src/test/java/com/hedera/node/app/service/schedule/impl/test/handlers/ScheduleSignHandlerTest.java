@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -66,7 +66,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final var txn = scheduleSignTransaction();
         givenSetupForScheduleSign(txn);
         given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
         assertEquals(schedulerKey, context.getPayerKey());
@@ -81,7 +81,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(null);
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
         assertEquals(null, context.getHandlerMetadata());
@@ -102,7 +102,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
 
         assertEquals(scheduler, context.getPayer());
@@ -130,7 +130,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(scheduler, context.getPayer());
         assertEquals(schedulerKey, context.getPayerKey());
@@ -149,7 +149,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     void scheduleSignNotInWhiteList() {
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         final var txn = scheduleTxnNotRecognized();
-        final var context = new PrehandleHandlerContext(keyLookup, txn, payer);
+        final var context = new PreHandleContext(keyLookup, txn, payer);
         subject.preHandle(context, scheduleStore, dispatcher);
         assertEquals(txn, context.getTxn());
         assertEquals(payer, context.getPayer());

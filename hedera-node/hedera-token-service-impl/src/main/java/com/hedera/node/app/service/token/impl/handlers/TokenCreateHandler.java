@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,11 +51,11 @@ public class TokenCreateHandler implements TransactionHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void preHandle(@NonNull final PrehandleHandlerContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var tokenCreateTxnBody = context.getTxn().getTokenCreation();
         if (tokenCreateTxnBody.hasTreasury()) {
@@ -97,7 +97,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param customFeesList list with the custom fees
      */
     private void addCustomFeeCollectorKeys(
-            @NonNull final PrehandleHandlerContext context,
+            @NonNull final PreHandleContext context,
             @NonNull final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
@@ -136,9 +136,7 @@ public class TokenCreateHandler implements TransactionHandler {
      * @param alwaysAdd if true, will always add the key
      */
     private void addAccount(
-            final PrehandleHandlerContext context,
-            final AccountID collector,
-            final boolean alwaysAdd) {
+            final PreHandleContext context, final AccountID collector, final boolean alwaysAdd) {
         if (alwaysAdd) {
             context.addNonPayerKey(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {

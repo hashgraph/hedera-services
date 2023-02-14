@@ -25,7 +25,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -65,14 +65,14 @@ public class CryptoTransferHandler implements TransactionHandler {
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @param accountStore the {@link AccountKeyLookup} to use to resolve keys
      * @param tokenStore the {@link ReadableTokenStore} to use to resolve token metadata
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final PrehandleHandlerContext context,
+            @NonNull final PreHandleContext context,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ReadableTokenStore tokenStore) {
         requireNonNull(context);
@@ -108,7 +108,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleTokenTransfers(
             final List<AccountAmount> transfers,
-            final PrehandleHandlerContext meta,
+            final PreHandleContext meta,
             final ReadableAccountStore accountStore) {
         for (AccountAmount accountAmount : transfers) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
@@ -136,7 +136,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleNftTransfers(
             final List<NftTransfer> nftTransfersList,
-            final PrehandleHandlerContext meta,
+            final PreHandleContext meta,
             final ReadableTokenStore.TokenMetaOrLookupFailureReason tokenMeta,
             final CryptoTransferTransactionBody op,
             final ReadableAccountStore accountStore) {
@@ -182,7 +182,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private void handleHbarTransfers(
             final CryptoTransferTransactionBody op,
-            final PrehandleHandlerContext meta,
+            final PreHandleContext meta,
             final AccountKeyLookup keyLookup) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = keyLookup.getKey(accountAmount.getAccountID());

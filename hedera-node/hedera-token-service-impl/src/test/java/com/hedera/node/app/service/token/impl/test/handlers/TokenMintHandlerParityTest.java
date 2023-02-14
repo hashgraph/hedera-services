@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
 class TokenMintHandlerParityTest extends ParityTestBase {
@@ -40,7 +40,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithSupplyKeyedTokenScenario() {
         final var theTxn = txnFrom(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
-        final var context = new PrehandleHandlerContext(readableAccountStore, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -56,7 +56,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithMissingTokenScenario() {
         final var theTxn = txnFrom(MINT_WITH_MISSING_TOKEN);
 
-        final var context = new PrehandleHandlerContext(readableAccountStore, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -69,7 +69,7 @@ class TokenMintHandlerParityTest extends ParityTestBase {
     void tokenMintWithoutSupplyScenario() {
         final var theTxn = txnFrom(MINT_FOR_TOKEN_WITHOUT_SUPPLY);
 
-        final var context = new PrehandleHandlerContext(readableAccountStore, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());

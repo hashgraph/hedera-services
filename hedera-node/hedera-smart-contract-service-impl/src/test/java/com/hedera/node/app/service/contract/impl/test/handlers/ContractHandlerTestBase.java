@@ -27,7 +27,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ public class ContractHandlerTestBase {
     }
 
     protected void basicMetaAssertions(
-            final PrehandleHandlerContext context,
+            final PreHandleContext context,
             final int nonPayerKeySize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {

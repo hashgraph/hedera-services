@@ -56,8 +56,7 @@ public record TransactionMetadata(
     }
 
     public TransactionMetadata(
-            @NonNull final PrehandleHandlerContext context,
-            @NonNull final List<ReadKeys> readKeys) {
+            @NonNull final PreHandleContext context, @NonNull final List<ReadKeys> readKeys) {
         this(
                 requireNonNull(context).getTxn(),
                 context.getPayer(),

@@ -47,7 +47,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetNftInfosHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
@@ -184,24 +184,24 @@ class QueryDispatcherTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testDispatchValidateWithIllegalParameters(@Mock final HederaState state) {
+    void testDispatchValidateWithIllegalParameters(@Mock final StoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
 
         // then
         assertThatThrownBy(() -> dispatcher.validate(null, query))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.validate(state, null))
+        assertThatThrownBy(() -> dispatcher.validate(storeFactory, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void testDispatchValidateWithNoQuerySet(@Mock final HederaState state) {
+    void testDispatchValidateWithNoQuerySet(@Mock final StoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.validate(state, query))
+        assertThatThrownBy(() -> dispatcher.validate(storeFactory, query))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -213,10 +213,10 @@ class QueryDispatcherTest {
             final Verification verifyValidate)
             throws PreCheckException {
         // given
-        final var state = mock(HederaState.class);
+        final var storeFactory = mock(StoreFactory.class);
 
         // when
-        dispatcher.validate(state, query);
+        dispatcher.validate(storeFactory, query);
 
         // then
         verifyValidate.verify(handlers);
@@ -224,7 +224,7 @@ class QueryDispatcherTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testDispatchFindResponseWithIllegalParameters(@Mock final HederaState state) {
+    void testDispatchFindResponseWithIllegalParameters(@Mock final StoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
         final var header = ResponseHeader.newBuilder().build();
@@ -232,20 +232,20 @@ class QueryDispatcherTest {
         // then
         assertThatThrownBy(() -> dispatcher.getResponse(null, query, header))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(state, null, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, null, header))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.getResponse(state, query, null))
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    void testDispatchFindResponseWithNoQuerySet(@Mock final HederaState state) {
+    void testDispatchFindResponseWithNoQuerySet(@Mock final StoreFactory storeFactory) {
         // given
         final var query = Query.newBuilder().build();
         final var header = ResponseHeader.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> dispatcher.getResponse(state, query, header))
+        assertThatThrownBy(() -> dispatcher.getResponse(storeFactory, query, header))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -258,11 +258,11 @@ class QueryDispatcherTest {
             final Verification verifyFindResponse)
             throws PreCheckException {
         // given
-        final var state = mock(HederaState.class);
+        final var storeFactory = mock(StoreFactory.class);
         final var header = ResponseHeader.newBuilder().build();
 
         // when
-        dispatcher.getResponse(state, query, header);
+        dispatcher.getResponse(storeFactory, query, header);
 
         // then
         verifyFindResponse.verify(handlers);
