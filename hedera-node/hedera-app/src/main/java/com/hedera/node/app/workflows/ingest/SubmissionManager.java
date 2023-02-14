@@ -29,10 +29,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
+@Singleton
 public class SubmissionManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
@@ -50,6 +53,7 @@ public class SubmissionManager {
      * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param speedometers metrics related to submissions
      */
+    @Inject
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
