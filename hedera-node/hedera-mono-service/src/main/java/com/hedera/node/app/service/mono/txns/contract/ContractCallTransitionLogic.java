@@ -176,6 +176,9 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
                 final var hollowAccountNum =
                         aliasManager.lookupIdBy(op.getContractID().getEvmAddress());
                 txnCtx.setTargetedContract(hollowAccountNum.toGrpcContractID());
+                worldState
+                        .getCreatedContractIds(); // invoke for side effect of clearing the created
+                // contract list
             }
         } else {
             // --- Persist changes into state ---

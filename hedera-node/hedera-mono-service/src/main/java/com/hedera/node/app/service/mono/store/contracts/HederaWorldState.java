@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
@@ -291,6 +292,7 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                         == HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE) {
                     continue;
                 }
+
                 final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
             }
@@ -300,7 +302,9 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final AccountID accountId,
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalContractCreations) {
-            if (!entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+            final var isSmartContract =
+                    (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
+            if (isSmartContract && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
             }
         }
