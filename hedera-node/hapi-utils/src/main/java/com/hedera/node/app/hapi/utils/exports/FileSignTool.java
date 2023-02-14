@@ -156,10 +156,7 @@ public class FileSignTool {
                         SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(
-                    MARKER,
-                    "data is being signed, publicKey={}",
-                    hex(sigKeyPair.getPublic().getEncoded()));
+            LOGGER.debug(MARKER, "data is being signed = {}", hex(data));
         }
 
         signature.update(data);
@@ -361,23 +358,34 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
+            LOGGER.info(MARKER, "Writting file header is {}", Arrays.toString(fileHeader));
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
             }
+            LOGGER.info(MARKER, "Writting start running hash {}", hex(startRunningHash));
             dosMeta.write(startRunningHash);
+            LOGGER.info(MARKER, "Writting end running hash {}", hex(endRunningHash));
             dosMeta.write(endRunningHash);
+            LOGGER.info(MARKER, "Writting block number {}", blockNumber);
             dosMeta.writeLong(blockNumber);
             dosMeta.flush();
 
             // update stream digest
+            LOGGER.info(MARKER, "Writting version {}", version);
             dos.writeInt(version);
+            LOGGER.info(MARKER, "Writting serializedBytes {}", hex(serializedBytes));
             dos.write(serializedBytes);
             dos.flush();
 
         } catch (final IOException e) {
+            final String message =
+                    String.format(
+                            "Got IOException when reading record file %s, error = %s",
+                            recordFile, e);
             Thread.currentThread().interrupt();
-            LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            LOGGER.error(MARKER, message);
+            throw new RuntimeException(message);
         }
 
         final SignatureObject metadataSignature =
