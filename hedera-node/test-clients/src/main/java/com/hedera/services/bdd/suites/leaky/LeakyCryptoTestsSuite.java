@@ -151,6 +151,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
     private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
 
+    private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
+
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
     }
@@ -170,7 +172,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 hollowAccountCompletionWithEthereumTransaction(),
                 hollowAccountCreationChargesExpectedFees(),
                 lazyCreateViaEthereumCryptoTransfer(),
-                hollowAccountCompletionWithSimultaniousPropertiesUpdate());
+                hollowAccountCompletionWithSimultaniousPropertiesUpdate(),
+                contractDeployAfterEthereumTransferLazyCreate());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -1016,6 +1019,70 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
+                                }));
+    }
+
+    private HapiSpec contractDeployAfterEthereumTransferLazyCreate() {
+        final var RECIPIENT_KEY = "lazyAccountRecipient";
+        final var lazyCreateTxn = "payTxn";
+        return propertyPreservingHapiSpec("contractDeployAfterEthereumTransferLazyCreate")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROP,
+                                "298",
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "true",
+                                "contracts.evm.version",
+                                "v0.34"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(FACTORY_MIRROR_CONTRACT))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(0L)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(2_000_000L)
+                                                        .via(lazyCreateTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var contractCreateTxn =
+                                            contractCreate(FACTORY_MIRROR_CONTRACT)
+                                                    .via("createTX")
+                                                    .balance(20);
+
+                                    final var expectedTxnRecord =
+                                            getTxnRecord("createTX")
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCreateResult(
+                                                                            ContractFnResultAsserts
+                                                                                    .resultWith()
+                                                                                    .createdContractIdsCount(
+                                                                                            2)))
+                                                    .logged();
+
+                                    allRunFor(spec, contractCreateTxn, expectedTxnRecord);
                                 }));
     }
 

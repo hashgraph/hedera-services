@@ -238,6 +238,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return this;
     }
 
+    public ContractFnResultAsserts createdContractIdsCount(int n) {
+        registerProvider(
+                (spec, o) -> {
+                    ContractFunctionResult result = (ContractFunctionResult) o;
+                    Assertions.assertEquals(
+                            n,
+                            result.getCreatedContractIDsCount(),
+                            "Wrong number of createdContractIds!");
+                });
+        return this;
+    }
+
     /* Helpers to create the provider for #resultThruAbi. */
     public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
             ContractInfoAsserts theExpectedInfo) {
