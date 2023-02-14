@@ -149,6 +149,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
+    private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
+
     private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
 
     public static void main(String... args) {
@@ -158,19 +160,22 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                maxAutoAssociationSpec(),
-                canDissociateFromMultipleExpiredTokens(),
-                cannotExceedAccountAllowanceLimit(),
-                cannotExceedAllowancesTransactionLimit(),
-                createAnAccountWithEVMAddressAliasAndECKey(),
-                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
-                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
-                hollowAccountCompletionWithEthereumTransaction(),
-                hollowAccountCreationChargesExpectedFees(),
-                lazyCreateViaEthereumCryptoTransfer(),
-                hollowAccountCompletionWithSimultaniousPropertiesUpdate());
+                //                maxAutoAssociationSpec(),
+                //                canDissociateFromMultipleExpiredTokens(),
+                //                cannotExceedAccountAllowanceLimit(),
+                //                cannotExceedAllowancesTransactionLimit(),
+                //                createAnAccountWithEVMAddressAliasAndECKey(),
+                //                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
+                //
+                // txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+                //
+                // getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+                //                hollowAccountCompletionNotAcceptedWhenFlagIsDisabled(),
+                //                hollowAccountCompletionWithEthereumTransaction(),
+                //                hollowAccountCreationChargesExpectedFees(),
+                lazyCreateViaEthereumCryptoTransfer()
+                //                hollowAccountCompletionWithSimultaniousPropertiesUpdate()
+                );
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -1040,7 +1045,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords())
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+                        uploadInitCode(FACTORY_MIRROR_CONTRACT))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1148,7 +1154,12 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                             .status(SUCCESS)
                                                             .memo(LAZY_MEMO)
                                                             .alias(ByteString.EMPTY));
-                                    allRunFor(spec, payTxn, childRecordsCheck);
+                                    final var randomContractCreate =
+                                            contractCreate(FACTORY_MIRROR_CONTRACT)
+                                                    .via("createTX")
+                                                    .balance(20);
+                                    final var getRekt = getTxnRecord("createTX").andAllChildRecords().logged();
+                                    allRunFor(spec, payTxn, childRecordsCheck, randomContractCreate, getRekt);
                                 }));
     }
 

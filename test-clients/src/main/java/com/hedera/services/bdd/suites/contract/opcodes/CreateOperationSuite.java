@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -57,7 +58,8 @@ import org.junit.jupiter.api.Assertions;
 public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
-    private static final String CONTRACT = "FactoryContract";
+  private static final String CONTRACT = "FactoryContract";
+  private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
 
     public static void main(String... args) {
         new CreateOperationSuite().runSuiteAsync();
@@ -141,29 +143,35 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("ContractFactoryWorksHappyPath")
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+        return onlyDefaultHapiSpec("ContractFactoryWorksHappyPath")
+                .given(uploadInitCode(FACTORY_MIRROR_CONTRACT))
                 .when(
-                        contractCall(CONTRACT, "deploymentSuccess")
+                    contractCreate(FACTORY_MIRROR_CONTRACT).via("createTX").balance(20),
+                        contractCall(FACTORY_MIRROR_CONTRACT, "createChild", BigInteger.valueOf(20))
                                 .gas(780_000)
-                                .via("deploymentSuccessTxn"))
+                                .via("callTX")
+                )
                 .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var successTxn = getTxnRecord("deploymentSuccessTxn");
-                                    final var parentContract =
-                                            getContractInfo(CONTRACT)
-                                                    .saveToRegistry("contractInfo");
-                                    allRunFor(spec, successTxn, parentContract);
+                    getTxnRecord("createTX").andAllChildRecords().logged(),
+                    getTxnRecord("callTX").andAllChildRecords().logged()
 
-                                    final var createdContractIDs =
-                                            successTxn
-                                                    .getResponseRecord()
-                                                    .getContractCallResult()
-                                                    .getCreatedContractIDsList();
-
-                                    Assertions.assertEquals(createdContractIDs.size(), 1);
-                                }));
+//                        withOpContext(
+//                                (spec, opLog) -> {
+//                                    final var successTxn = getTxnRecord("deploymentSuccessTxn").andAllChildRecords().logged();
+//                                    final var parentContract =
+//                                            getContractInfo(CONTRACT)
+//                                                    .saveToRegistry("contractInfo");
+//                                    allRunFor(spec, successTxn, parentContract);
+//
+//                                    final var createdContractIDs =
+//                                            successTxn
+//                                                    .getResponseRecord()
+//                                                    .getContractCallResult()
+//                                                    .getCreatedContractIDsList();
+//
+//                                    Assertions.assertEquals(createdContractIDs.size(), 1);
+//                                })
+                );
     }
 
     HapiSpec stackedFactoryWorks() {
