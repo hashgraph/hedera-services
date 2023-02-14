@@ -44,4 +44,5 @@ dependencies {
     testCompileOnly(libs.spotbugs.annotations)
 
     testFixturesCompileOnly(libs.spotbugs.annotations)
+    testFixturesCompileOnly(testLibs.assertj.core)
 }

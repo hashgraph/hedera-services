@@ -17,18 +17,12 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.workflows.prehandle.ReadableStatesTracker;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,9 +34,6 @@ import java.util.List;
  */
 public class TransactionDispatcher {
 
-    // TODO: Intermediate solution until we find a better way to get the service-key
-    private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
-    private static final String SCHEDULE_SERVICE_KEY = new ScheduleServiceImpl().getServiceName();
     public static final String TYPE_NOT_SUPPORTED = "This transaction type is not supported";
 
     private final TransactionHandlers handlers;
@@ -57,10 +48,10 @@ public class TransactionDispatcher {
      */
     public TransactionDispatcher(
             @NonNull final TransactionHandlers handlers,
-            @NonNull final PreHandleContext preHandleContext) {
+            @NonNull final HederaAccountNumbers accountNumbers) {
         this.handlers = requireNonNull(handlers);
         this.cryptoSignatureWaivers =
-                new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
+                new CryptoSignatureWaiversImpl(requireNonNull(accountNumbers));
     }
 
     /**
@@ -71,9 +62,9 @@ public class TransactionDispatcher {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void dispatchPreHandle(
-            @NonNull final ReadableStatesTracker statesTracker,
-            @NonNull final PrehandleHandlerContext handlerContext) {
-        requireNonNull(statesTracker);
+            @NonNull final StoreFactory storeFactory,
+            @NonNull final PreHandleContext handlerContext) {
+        requireNonNull(storeFactory);
         requireNonNull(handlerContext);
 
         final var txBody = handlerContext.getTxn();
@@ -103,8 +94,8 @@ public class TransactionDispatcher {
             case CRYPTOTRANSFER -> handlers.cryptoTransferHandler()
                     .preHandle(
                             handlerContext,
-                            setupAccountStore(statesTracker),
-                            setupTokenStore(statesTracker));
+                            storeFactory.getAccountStore(),
+                            storeFactory.getTokenStore());
             case CRYPTODELETE -> handlers.cryptoDeleteHandler().preHandle(handlerContext);
             case CRYPTOAPPROVEALLOWANCE -> handlers.cryptoApproveAllowanceHandler()
                     .preHandle(handlerContext);
@@ -125,35 +116,35 @@ public class TransactionDispatcher {
                     .preHandle(handlerContext);
 
             case SCHEDULECREATE -> handlers.scheduleCreateHandler()
-                    .preHandle(handlerContext, setupPreHandleDispatcher(statesTracker));
+                    .preHandle(handlerContext, setupPreHandleDispatcher(storeFactory));
             case SCHEDULESIGN -> handlers.scheduleSignHandler()
                     .preHandle(
                             handlerContext,
-                            setupScheduleStore(statesTracker),
-                            setupPreHandleDispatcher(statesTracker));
+                            storeFactory.getScheduleStore(),
+                            setupPreHandleDispatcher(storeFactory));
             case SCHEDULEDELETE -> handlers.scheduleDeleteHandler()
-                    .preHandle(handlerContext, setupScheduleStore(statesTracker));
+                    .preHandle(handlerContext, storeFactory.getScheduleStore());
 
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(handlerContext);
             case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(handlerContext);
             case TOKENMINT -> handlers.tokenMintHandler()
-                    .preHandle(handlerContext, setupTokenStore(statesTracker));
+                    .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENBURN -> handlers.tokenBurnHandler().preHandle(handlerContext);
             case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(handlerContext);
             case TOKENWIPE -> handlers.tokenAccountWipeHandler().preHandle(handlerContext);
             case TOKENFREEZE -> handlers.tokenFreezeAccountHandler().preHandle(handlerContext);
             case TOKENUNFREEZE -> handlers.tokenUnfreezeAccountHandler()
-                    .preHandle(handlerContext, setupTokenStore(statesTracker));
+                    .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENGRANTKYC -> handlers.tokenGrantKycToAccountHandler()
                     .preHandle(handlerContext);
             case TOKENREVOKEKYC -> handlers.tokenRevokeKycFromAccountHandler()
-                    .preHandle(handlerContext, setupTokenStore(statesTracker));
+                    .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENASSOCIATE -> handlers.tokenAssociateToAccountHandler()
                     .preHandle(handlerContext);
             case TOKENDISSOCIATE -> handlers.tokenDissociateFromAccountHandler()
                     .preHandle(handlerContext);
             case TOKEN_FEE_SCHEDULE_UPDATE -> handlers.tokenFeeScheduleUpdateHandler()
-                    .preHandle(handlerContext, setupTokenStore(statesTracker));
+                    .preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKEN_PAUSE -> handlers.tokenPauseHandler().preHandle(handlerContext);
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler().preHandle(handlerContext);
 
@@ -182,30 +173,11 @@ public class TransactionDispatcher {
         }
     }
 
-    private static ReadableAccountStore setupAccountStore(
-            @NonNull final ReadableStatesTracker statesTracker) {
-        final var tokenStates = statesTracker.getReadableStates(TOKEN_SERVICE_KEY);
-        return new ReadableAccountStore(tokenStates);
-    }
-
-    private static ReadableScheduleStore setupScheduleStore(
-            @NonNull final ReadableStatesTracker statesTracker) {
-        final var scheduleStates = statesTracker.getReadableStates(SCHEDULE_SERVICE_KEY);
-        return new ReadableScheduleStore(scheduleStates);
-    }
-
-    private ReadableTokenStore setupTokenStore(@NonNull final ReadableStatesTracker statesTracker) {
-        final var tokenStates = statesTracker.getReadableStates(TOKEN_SERVICE_KEY);
-        return new ReadableTokenStore(tokenStates);
-    }
-
-    private PreHandleDispatcher setupPreHandleDispatcher(
-            @NonNull final ReadableStatesTracker statesTracker) {
+    private PreHandleDispatcher setupPreHandleDispatcher(@NonNull final StoreFactory storeFactory) {
         return (TransactionBody innerTxn, AccountID innerPayer) -> {
-            final var accountStore = setupAccountStore(statesTracker);
-            final var handlerContext =
-                    new PrehandleHandlerContext(accountStore, innerTxn, innerPayer);
-            dispatchPreHandle(statesTracker, handlerContext);
+            final var accountStore = storeFactory.getAccountStore();
+            final var handlerContext = new PreHandleContext(accountStore, innerTxn, innerPayer);
+            dispatchPreHandle(storeFactory, handlerContext);
             return new TransactionMetadata(handlerContext, List.of());
         };
     }

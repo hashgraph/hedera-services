@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleCreateHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -69,7 +69,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 1, false, OK);
@@ -109,7 +109,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 0, false, OK);
@@ -138,7 +138,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         List.of());
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 0, true, INVALID_PAYER_ACCOUNT_ID);
@@ -165,7 +165,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 1, false, OK);
@@ -198,7 +198,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 0, false, OK);
@@ -233,7 +233,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         List.of());
         given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduler);
+        final var context = new PreHandleContext(keyLookup, txn, scheduler);
         subject.preHandle(context, dispatcher);
 
         basicContextAssertions(context, 1, false, OK);

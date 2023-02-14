@@ -17,7 +17,7 @@ package com.hedera.node.app.service.schedule.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -25,7 +25,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hederahashgraph.api.proto.java.*;
@@ -61,7 +61,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduleDeleter);
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
         assertEquals(scheduleDeleter, context.getPayer());
         assertEquals(List.of(adminKey), context.getRequiredNonPayerKeys());
@@ -76,7 +76,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
         given(keyLookup.getKey(scheduleDeleter))
                 .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduleDeleter);
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
         assertEquals(scheduleDeleter, context.getPayer());
         assertEquals(INVALID_SCHEDULE_ID, context.getStatus());
@@ -91,7 +91,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                 .willReturn(KeyOrLookupFailureReason.withKey(adminKey));
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
 
-        final var context = new PrehandleHandlerContext(keyLookup, txn, scheduleDeleter);
+        final var context = new PreHandleContext(keyLookup, txn, scheduleDeleter);
         subject.preHandle(context, scheduleStore);
         assertEquals(scheduleDeleter, context.getPayer());
         assertEquals(SCHEDULE_IS_IMMUTABLE, context.getStatus());

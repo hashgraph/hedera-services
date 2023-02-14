@@ -23,7 +23,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -65,7 +65,7 @@ class ScheduleHandlerTestBase {
     }
 
     protected void basicContextAssertions(
-            final PrehandleHandlerContext context,
+            final PreHandleContext context,
             final int nonPayerKeysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
