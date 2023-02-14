@@ -150,6 +150,8 @@ public class RecordBlockNumberTool {
             } catch (final IOException e) {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
+        } else {
+            System.out.println("Log4j2 configuratoin file did not exist : " + logConfigFile);
         }
     }
 
