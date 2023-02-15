@@ -29,8 +29,10 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.dagger.compiler)
     api(project(":hedera-node:hedera-token-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    implementation(libs.bundles.di)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))

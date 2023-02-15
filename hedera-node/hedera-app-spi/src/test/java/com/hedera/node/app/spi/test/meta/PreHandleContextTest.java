@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
-import static com.hedera.node.app.spi.test.meta.PrehandleHandlerContextListUpdatesTest.A_COMPLEX_KEY;
+import static com.hedera.node.app.spi.test.meta.PreHandleContextListUpdatesTest.A_COMPLEX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,18 +39,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PrehandleHandlerContextTest {
+class PreHandleContextTest {
     private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(3L).build();
     @Mock private HederaKey payerKey;
     @Mock private HederaKey otherKey;
     @Mock AccountKeyLookup lookup;
-    private PrehandleHandlerContext subject;
+    private PreHandleContext subject;
 
     @Test
     void gettersWork() {
         given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject = new PrehandleHandlerContext(lookup, txn, PAYER).addToReqNonPayerKeys(otherKey);
+        subject = new PreHandleContext(lookup, txn, PAYER).addToReqNonPayerKeys(otherKey);
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -64,7 +64,7 @@ class PrehandleHandlerContextTest {
         given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
         subject =
-                new PrehandleHandlerContext(lookup, txn, PAYER)
+                new PreHandleContext(lookup, txn, PAYER)
                         .status(INVALID_ACCOUNT_ID)
                         .addToReqNonPayerKeys(otherKey);
 

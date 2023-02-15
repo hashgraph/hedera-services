@@ -27,7 +27,7 @@ import com.hedera.node.app.service.mono.Utils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.KeyUtils;
@@ -76,7 +76,7 @@ class ConsensusCreateTopicHandlerTest {
                 .build();
     }
 
-    static void assertOkResponse(PrehandleHandlerContext context) {
+    static void assertOkResponse(PreHandleContext context) {
         assertThat(context.getStatus()).isEqualTo(ResponseCodeEnum.OK);
         assertThat(context.failed()).isFalse();
     }
@@ -96,8 +96,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(
-                        keyFinder, newCreateTxn(adminKey, submitKey), ACCOUNT_ID_3);
+                new PreHandleContext(keyFinder, newCreateTxn(adminKey, submitKey), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -118,7 +117,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(keyFinder, newCreateTxn(adminKey, null), ACCOUNT_ID_3);
+                new PreHandleContext(keyFinder, newCreateTxn(adminKey, null), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -137,7 +136,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(keyFinder, newCreateTxn(null, submitKey), ACCOUNT_ID_3);
+                new PreHandleContext(keyFinder, newCreateTxn(null, submitKey), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -156,8 +155,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(
-                        keyFinder, newCreateTxn(protoPayerKey, null), ACCOUNT_ID_3);
+                new PreHandleContext(keyFinder, newCreateTxn(protoPayerKey, null), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -175,8 +173,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(
-                        keyFinder, newCreateTxn(null, protoPayerKey), ACCOUNT_ID_3);
+                new PreHandleContext(keyFinder, newCreateTxn(null, protoPayerKey), ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -198,7 +195,7 @@ class ConsensusCreateTopicHandlerTest {
 
         // when:
         final var context =
-                new PrehandleHandlerContext(keyFinder, inputTxn, IdUtils.asAccount("0.0.1234"));
+                new PreHandleContext(keyFinder, inputTxn, IdUtils.asAccount("0.0.1234"));
         subject.preHandle(context);
 
         // then:
@@ -230,7 +227,7 @@ class ConsensusCreateTopicHandlerTest {
                         .build();
 
         // when:
-        final var context = new PrehandleHandlerContext(keyFinder, inputTxn, ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, inputTxn, ACCOUNT_ID_3);
         subject.preHandle(context);
 
         // then:
@@ -243,8 +240,7 @@ class ConsensusCreateTopicHandlerTest {
     void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup();
-        final var context =
-                new PrehandleHandlerContext(keyFinder, newCreateTxn(null, null), ACCOUNT_ID_3);
+        final var context = new PreHandleContext(keyFinder, newCreateTxn(null, null), ACCOUNT_ID_3);
 
         // when:
         subject.preHandle(context);

@@ -33,7 +33,7 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -69,7 +69,7 @@ class ScheduleDeleteHandlerParityTest {
                 AdapterUtils.mockSchedule(
                         999L,
                         ADMIN_KEY); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
         assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
@@ -83,7 +83,7 @@ class ScheduleDeleteHandlerParityTest {
         scheduleStore =
                 AdapterUtils.mockSchedule(
                         IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
         assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).isEmpty());
@@ -98,7 +98,7 @@ class ScheduleDeleteHandlerParityTest {
                 AdapterUtils.mockSchedule(
                         IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(),
                         ADMIN_KEY);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, scheduleStore);
 
         assertTrue(sanityRestored(context.getRequiredNonPayerKeys()).contains(ADMIN_KEY.asKey()));

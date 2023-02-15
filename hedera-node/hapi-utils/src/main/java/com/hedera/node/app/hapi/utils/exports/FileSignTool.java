@@ -245,9 +245,7 @@ public class FileSignTool {
      */
     public static StreamType loadStreamTypeFromJson(final String jsonPath) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
-
         final File file = new File(jsonPath);
-
         return objectMapper.readValue(file, StreamTypeFromJson.class);
     }
 
@@ -374,7 +372,8 @@ public class FileSignTool {
             // update stream digest
             LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
-            LOGGER.info(MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
+            LOGGER.info(
+                    MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
             dos.write(serializedBytes);
             dos.flush();
 

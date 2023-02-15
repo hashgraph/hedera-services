@@ -20,7 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
-import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
@@ -34,6 +33,7 @@ import java.util.concurrent.Executors;
 
 /** Main class for the Hedera Consensus Node. */
 public final class Hedera {
+    private static final int MAX_SIGNED_TXN_SIZE = 6144;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
     public Hedera() {}
@@ -49,10 +49,11 @@ public final class Hedera {
                 new IngestWorkflowImpl(
                         app.nodeInfo(), app.platformStatus(), null, null, null, null, null, null);
 
-        // Create the query workflow
-        // TODO Real values will be added to make this usable with #4828
+        // Create the query workflow; fully qualified import to appease javadoc Gradle task
         final var queryWorkflow =
-                new QueryWorkflowImpl(null, null, null, null, null, null, null, null);
+                com.hedera.node.app.components.DaggerQueryComponent.factory()
+                        .create(app.bootstrapProps(), MAX_SIGNED_TXN_SIZE, app.platform())
+                        .queryWorkflow();
 
         // Setup and start the grpc server.
         // At some point I'd like to somehow move the metadata for which transactions are supported

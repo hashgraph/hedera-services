@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -80,7 +80,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(context.getRequiredNonPayerKeys().isEmpty());
@@ -89,7 +89,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferReceiverIsMissingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -102,7 +102,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn =
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -113,7 +113,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferSenderIsMissingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(context, INVALID_ACCOUNT_ID);
     }
@@ -121,7 +121,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNoReceiverSigUsingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(context.getRequiredNonPayerKeys().isEmpty());
@@ -130,7 +130,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -141,7 +141,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferTokenToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -152,7 +152,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNftFromMissingSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
@@ -163,7 +163,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNftToMissingReceiverAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -174,7 +174,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNftFromImmutableSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -185,7 +185,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNftToImmutableReceiverScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         // THEN
@@ -198,7 +198,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferFromImmutableSenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
@@ -209,7 +209,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferNoReceiverSigScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
     }
@@ -217,7 +217,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferReceiverSigScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -228,7 +228,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferReceiverSigUsingAliasScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -239,7 +239,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferMissingAccountScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(context, INVALID_ACCOUNT_ID);
     }
@@ -247,7 +247,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithExtantSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -258,7 +258,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactMovingHbarsWithExtantSender() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -270,7 +270,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() {
         final var theTxn =
                 txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -281,7 +281,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithReceiverSigReqAndExtantSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -295,7 +295,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithMissingSenders() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(
                 context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
@@ -304,7 +304,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChange() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -315,7 +315,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChangeUsingAlias() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -326,7 +326,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChangeReceiverSigReq() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -340,7 +340,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReq() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -353,7 +353,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn =
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -369,7 +369,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn =
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -382,7 +382,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn =
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -395,7 +395,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn =
                 txnFrom(
                         TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
@@ -407,7 +407,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() {
         final var theTxn =
                 txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(context, INVALID_TOKEN_ID);
     }
@@ -415,7 +415,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChangeMissingSender() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(context, INVALID_ACCOUNT_ID);
     }
@@ -423,7 +423,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransactWithOwnershipChangeMissingReceiver() {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(
                 context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
@@ -432,7 +432,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void cryptoTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -442,7 +442,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void tokenTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertTrue(context.getRequiredNonPayerKeys().isEmpty());
@@ -451,7 +451,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     @Test
     void nftTransferAllowanceSpenderScenario() {
         final var theTxn = txnFrom(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -466,7 +466,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     }
 
     private void assertContextFailedWithReqPayerKeyAnd(
-            final PrehandleHandlerContext context, final ResponseCodeEnum expectedFailure) {
+            final PreHandleContext context, final ResponseCodeEnum expectedFailure) {
         assertTrue(context.failed());
         assertEquals(expectedFailure, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -474,7 +474,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     }
 
     private void assertContextFailedWithReqPayerKeyAnd(
-            final PrehandleHandlerContext context,
+            final PreHandleContext context,
             final ResponseCodeEnum expectedFailure,
             final Key aNonPayerKey) {
         assertTrue(context.failed());

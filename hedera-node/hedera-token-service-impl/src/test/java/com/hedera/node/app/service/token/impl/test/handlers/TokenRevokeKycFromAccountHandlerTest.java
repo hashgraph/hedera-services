@@ -33,7 +33,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeKycWithExtant() {
         final var txn = txnFrom(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
-        final var context = new PrehandleHandlerContext(accountStore, txn);
+        final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -68,7 +68,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenUnfreezeMissingToken() {
         final var txn = txnFrom(REVOKE_WITH_MISSING_TOKEN);
 
-        final var context = new PrehandleHandlerContext(accountStore, txn);
+        final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -79,7 +79,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeKycWithInvalidToken() {
         final var txn = txnFrom(REVOKE_WITH_INVALID_TOKEN);
 
-        final var context = new PrehandleHandlerContext(accountStore, txn);
+        final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -91,7 +91,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     void tokenRevokeKycWithoutKyc() {
         final var txn = txnFrom(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
-        final var context = new PrehandleHandlerContext(accountStore, txn);
+        final var context = new PreHandleContext(accountStore, txn);
         subject.preHandle(context, tokenStore);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());

@@ -25,12 +25,17 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link
  * com.hederahashgraph.api.proto.java.HederaFunctionality#FileGetInfo}.
  */
+@Singleton
 public class FileGetInfoHandler extends PaidQueryHandler {
+    @Inject
+    public FileGetInfoHandler() {}
 
     @Override
     public QueryHeader extractHeader(@NonNull final Query query) {

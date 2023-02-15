@@ -142,6 +142,7 @@ class ServicesAppTest {
         assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
+        assertThat(subject.bootstrapProps(), instanceOf(ChainedSources.class));
         assertSame(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());

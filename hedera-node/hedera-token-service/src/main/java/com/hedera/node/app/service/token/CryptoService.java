@@ -36,10 +36,12 @@ import java.util.ServiceLoader;
  */
 public interface CryptoService extends Service {
 
+    String NAME = "CryptoService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return CryptoService.class.getSimpleName();
+        return NAME;
     }
 
     /**
