@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS 
             cd /swirlds-platform/regression
-            git checkout 03132-disable-freeze-bug-test
+            git checkout 03034-reduce-crypto-restart-failure
 
             ./gradlew assemble --scan --parallel
 
