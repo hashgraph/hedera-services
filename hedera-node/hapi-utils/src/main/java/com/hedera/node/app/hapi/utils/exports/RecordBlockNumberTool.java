@@ -169,7 +169,7 @@ public class RecordBlockNumberTool {
         final List<File> totalList = new ArrayList<>();
         totalList.addAll(Arrays.asList(Optional.ofNullable(streamFiles).orElse(new File[0])));
         for (final File item : totalList) {
-            readRecordFile(item.getName());
+            readRecordFile(item.getAbsolutePath());
         }
     }
 }
