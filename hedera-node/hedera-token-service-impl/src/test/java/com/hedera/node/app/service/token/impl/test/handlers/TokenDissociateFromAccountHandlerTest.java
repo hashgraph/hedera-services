@@ -58,7 +58,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
     void tokenDissociateWithSelfPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
-final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -70,7 +70,7 @@ final var context = new PreHandleContext(keyLookup, theTxn);
     void tokenDissociateWithCustomPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
-final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -85,7 +85,7 @@ final var context = new PreHandleContext(keyLookup, theTxn);
     void tokenDissociateWithMissingTargetScenario() {
         final var theTxn = txnFrom(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
-final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertTrue(context.failed());
