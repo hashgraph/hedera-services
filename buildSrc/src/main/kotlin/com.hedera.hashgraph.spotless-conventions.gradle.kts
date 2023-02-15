@@ -19,6 +19,9 @@ plugins {
 }
 
 spotless {
+    // Disable the automatic application of Spotless to all source sets when the check task is run.
+    isEnforceCheck = false
+    
     // optional: limit format enforcement to just the files changed by this feature branch
     ratchetFrom("origin/develop")
 
@@ -64,7 +67,7 @@ spotless {
             # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
             # See the License for the specific language governing permissions and
             # limitations under the License.
-            ##
+            ##${"\n\n"}
         """.trimIndent(), "(name)"
         ).updateYearWithLatest(true)
     })
