@@ -35,9 +35,10 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
     public TokenGrantKycToAccountHandler() {}
 
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Pre-handles a {@link
+     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenGrantKycToAccount} transaction,
+     * returning the metadata required to, at minimum, validate the signatures of all required
+     * signing keys.
      *
      * @param context the {@link PreHandleContext} which collects all information that will be
      *     passed to {@link #handle(TransactionMetadata)}

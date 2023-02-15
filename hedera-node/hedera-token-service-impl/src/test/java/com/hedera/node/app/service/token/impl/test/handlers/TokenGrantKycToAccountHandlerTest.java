@@ -41,6 +41,7 @@ class TokenGrantKycToAccountHandlerTest extends ParityTestBase {
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
+        assertThat(
+                sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
     }
 }
