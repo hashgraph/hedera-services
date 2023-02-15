@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
+
 name: "ZComponent: Build Release Artifact"
 on:
   workflow_call:
@@ -79,7 +80,7 @@ permissions:
 jobs:
   Artifact:
     name: ${{ inputs.custom-job-label || 'Artifact' }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Install Semantic Version Tools
         run: |
