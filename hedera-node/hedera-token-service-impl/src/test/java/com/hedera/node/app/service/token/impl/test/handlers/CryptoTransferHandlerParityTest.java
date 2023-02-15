@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.txnFrom;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
@@ -72,11 +73,9 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.AdapterUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -629,13 +628,5 @@ class CryptoTransferHandlerParityTest {
         assertEquals(expectedFailure, meta.status());
         assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(aNonPayerKey));
-    }
-
-    private TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return scenario.platformTxn().getTxn();
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
     }
 }

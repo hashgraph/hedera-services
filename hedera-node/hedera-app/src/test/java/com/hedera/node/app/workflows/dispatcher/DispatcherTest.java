@@ -501,7 +501,9 @@ class DispatcherTest {
                                 .setTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<Handlers>)
-                                h -> verify(h.tokenBurnHandler()).preHandle(any(), any())),
+                                h ->
+                                        verify(h.tokenBurnHandler())
+                                                .preHandle(any(), any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
