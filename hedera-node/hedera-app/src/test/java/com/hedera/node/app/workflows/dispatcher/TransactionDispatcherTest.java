@@ -625,7 +625,7 @@ class TransactionDispatcherTest {
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.tokenDeleteHandler()).preHandle(meta)),
+                                        verify(handlers.tokenDeleteHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
