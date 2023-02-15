@@ -32,6 +32,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -39,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -53,43 +53,47 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     void cryptoDeleteAllowanceVanilla() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
-        final var meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(ownerKey), meta.requiredNonPayerKeys());
+        final var context = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 1, false, OK);
+        assertEquals(payerKey, context.getPayerKey());
+        assertIterableEquals(List.of(ownerKey), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(accounts.get(owner.getAccountNum())).willReturn(ownerAccount);
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var meta = subject.preHandle(txn, owner, store);
-        basicMetaAssertions(meta, 0, false, OK);
-        assertEquals(ownerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context = new PreHandleContext(store, txn, owner);
+        subject.preHandle(context);
+        basicMetaAssertions(context, 0, false, OK);
+        assertEquals(ownerKey, context.getPayerKey());
+        assertIterableEquals(List.of(), context.getRequiredNonPayerKeys());
     }
 
     @Test
     void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
         var txn = cryptoDeleteAllowanceTransaction(owner);
-        given(accounts.get(owner.getAccountNum())).willReturn(Optional.empty());
+        given(accounts.get(owner.getAccountNum())).willReturn(null);
 
-        var meta = subject.preHandle(txn, owner, store);
-        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertNull(meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context1 = new PreHandleContext(store, txn, owner);
+        subject.preHandle(context1);
+        basicMetaAssertions(context1, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertNull(context1.getPayerKey());
+        assertIterableEquals(List.of(), context1.getRequiredNonPayerKeys());
 
         txn = cryptoDeleteAllowanceTransaction(payer);
-        meta = subject.preHandle(txn, payer, store);
-        basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        final var context2 = new PreHandleContext(store, txn, payer);
+        subject.preHandle(context2);
+        basicMetaAssertions(context2, 0, true, INVALID_ALLOWANCE_OWNER_ID);
+        assertEquals(payerKey, context2.getPayerKey());
+        assertIterableEquals(List.of(), context2.getRequiredNonPayerKeys());
     }
 
     @Test

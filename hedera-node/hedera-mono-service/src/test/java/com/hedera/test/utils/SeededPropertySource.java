@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.com
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
@@ -34,7 +35,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
-import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleEntityId;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;

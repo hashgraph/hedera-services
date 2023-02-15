@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.context.annotations.BootstrapProps;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -82,6 +83,7 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
@@ -133,6 +135,8 @@ public interface ServicesApp {
 
     GlobalDynamicProperties globalDynamicProperties();
 
+    GlobalStaticProperties globalStaticProperties();
+
     MutableStateChildren workingState();
 
     PrefetchProcessor prefetchProcessor();
@@ -144,6 +148,7 @@ public interface ServicesApp {
 
     NodeId nodeId();
 
+    @NonNull
     Platform platform();
 
     NodeInfo nodeInfo();
@@ -196,6 +201,9 @@ public interface ServicesApp {
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
+    @BootstrapProps
+    PropertySource bootstrapProps();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -205,7 +213,7 @@ public interface ServicesApp {
         Builder initialHash(Hash initialHash);
 
         @BindsInstance
-        Builder platform(Platform platform);
+        Builder platform(@NonNull Platform platform);
 
         @BindsInstance
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);

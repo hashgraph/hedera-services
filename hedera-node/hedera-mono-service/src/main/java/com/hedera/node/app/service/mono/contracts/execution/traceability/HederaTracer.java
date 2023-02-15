@@ -182,7 +182,14 @@ public class HederaTracer implements HederaOperationTracer {
             if (exceptionalHaltReasonOptional.isPresent()) {
                 final var exceptionalHaltReason = exceptionalHaltReasonOptional.get();
                 action.setError(exceptionalHaltReason.name().getBytes(StandardCharsets.UTF_8));
-                if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
+                // when a contract tries to call a non-existing address (resulting in a
+                // INVALID_SOLIDITY_ADDRESS failure),
+                // we have to create a synthetic action recording this, otherwise the details of the
+                // intended call
+                // (e.g. the targeted invalid address) and sequence of events leading to the failure
+                // are lost
+                if (action.getCallType().equals(CALL)
+                        && exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
                     final var syntheticInvalidAction =
                             new SolidityAction(
                                     CALL,

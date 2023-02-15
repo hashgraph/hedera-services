@@ -1,8 +1,8 @@
-[![Continuous Build](https://github.com/hashgraph/hedera-services/actions/workflows/continuous.yml/badge.svg)](.github/workflows/continuous.yml)
+[![Build Application](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml/badge.svg?branch=develop)](https://github.com/hashgraph/hedera-services/actions/workflows/flow-build-application.yaml)
 [![codecov](https://codecov.io/github/hashgraph/hedera-services/coverage.svg?branch=master&token=ZPMV8C93DV)](README.md)
 [![Latest Version](https://img.shields.io/github/v/tag/hashgraph/hedera-services?sort=semver&label=version)](README.md)
 [![Made With](https://img.shields.io/badge/made_with-java-blue)](https://github.com/hashgraph/hedera-services/)
-[![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](docs/gradle-quickstart.md)
+[![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](hedera-node/docs/gradle-quickstart.md)
 [![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 # Hedera Services
@@ -24,12 +24,12 @@ Hedera Contracts support `pragma solidity <=0.8.9`.
 
 ## Docker Compose quickstart
 
-The [Docker quickstart](docs/docker-quickstart.md) covers how to
+The [Docker quickstart](hedera-node/docs/docker-quickstart.md) covers how to
 start a local network of Hedera Services nodes using Docker Compose.
 
 ## Developer IntelliJ quickstart
 
-The [IntelliJ quickstart](docs/intellij-quickstart.md) covers how to
+The [IntelliJ quickstart](hedera-node/docs/intellij-quickstart.md) covers how to
 start a local network of Services nodes from IntelliJ for testing and
 development.
 

@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.validation;
 
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateResourceLimit;
+import static com.hedera.node.app.service.mono.utils.ResourceValidationUtils.validateResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;

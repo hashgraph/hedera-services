@@ -23,8 +23,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
@@ -36,8 +36,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableScheduleStoreTest {
-    @Mock States states;
-    @Mock State state;
+    @Mock ReadableStates states;
+    @Mock ReadableKVState state;
     @Mock ScheduleVirtualValue schedule;
     @Mock JKey adminKey;
     private ReadableScheduleStore subject;
@@ -55,7 +55,7 @@ class ReadableScheduleStoreTest {
 
     @Test
     void returnsEmptyIfMissingSchedule() {
-        given(state.get(1L)).willReturn(Optional.empty());
+        given(state.get(1L)).willReturn(null);
 
         assertEquals(
                 Optional.empty(), subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
@@ -63,7 +63,7 @@ class ReadableScheduleStoreTest {
 
     @Test
     void getsScheduleMetaFromFetchedSchedule() {
-        given(state.get(1L)).willReturn(Optional.of(schedule));
+        given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
                 .willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
@@ -80,7 +80,7 @@ class ReadableScheduleStoreTest {
 
     @Test
     void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
-        given(state.get(1L)).willReturn(Optional.of(schedule));
+        given(state.get(1L)).willReturn(schedule);
         given(schedule.ordinaryViewOfScheduledTxn())
                 .willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));

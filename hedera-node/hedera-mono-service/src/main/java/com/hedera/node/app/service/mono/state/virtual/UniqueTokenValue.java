@@ -134,6 +134,20 @@ public class UniqueTokenValue implements VirtualValue {
         return copy;
     }
 
+    // Keep it in sync with serializeTo()
+    int getSerializedSize() {
+        return Long.BYTES // owner account num
+                + Long.BYTES // spender account num
+                + Long.BYTES // packed creation time
+                + 1 // metadata length
+                + Math.min(metadata.length, MAX_METADATA_BYTES) // metadata bytes
+                + Long.BYTES // prev NFT token num
+                + Long.BYTES // prev NFT serial num
+                + Long.BYTES // next NFT token num
+                + Long.BYTES; // next NFT serial num
+    }
+
+    // Keep it in sync with getSerializedSize()
     /* package */ void serializeTo(
             final CheckedConsumer<Byte> writeByteFn,
             final CheckedConsumer<Long> writeLongFn,

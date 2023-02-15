@@ -108,14 +108,16 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
@@ -150,7 +152,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Mock private VirtualMapFactory virtualMapFactory;
     @Mock private ServicesState.StakingInfoBuilder stakingInfoBuilder;
     @Mock private ServicesState.MapToDiskMigration mapToDiskMigration;
-    @Mock private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
+    @Mock private Supplier<VirtualMapFactory> vmf;
     @Mock private BootstrapProperties bootstrapProperties;
     @Mock private SystemAccountsCreator accountsCreator;
     @Mock private SystemFilesManager systemFilesManager;
@@ -175,6 +177,11 @@ class ServicesStateTest extends ResponsibleVMapUser {
         if (APPS.includes(selfId.getId())) {
             APPS.clear(selfId.getId());
         }
+    }
+
+    @AfterAll
+    static void clearMocks() {
+        Mockito.framework().clearInlineMocks();
     }
 
     @Test
@@ -244,7 +251,9 @@ class ServicesStateTest extends ResponsibleVMapUser {
     @Test
     void getsAccountIdAsExpected() {
         // setup:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.getAddress(selfId.getId())).willReturn(address);
         given(address.getMemo()).willReturn("0.0.3");
@@ -323,20 +332,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
-    void addressBookCopyWorks() {
-        given(addressBook.copy()).willReturn(addressBook);
-        // and:
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-
-        // when:
-        final var bookCopy = subject.getAddressBookCopy();
-
-        // then:
-        assertSame(addressBook, bookCopy);
-        verify(addressBook).copy();
-    }
-
-    @Test
     void minimumVersionIsRelease030() {
         // expect:
         assertEquals(StateVersions.RELEASE_030X_VERSION, subject.getMinimumSupportedVersion());
@@ -369,8 +364,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         APPS.save(selfId.getId(), app);
 
-        assertDoesNotThrow(
-                () -> subject.init(platform, addressBook, null, RESTART, currentVersion));
+        assertDoesNotThrow(() -> subject.init(platform, null, RESTART, currentVersion));
     }
 
     @Test
@@ -394,13 +388,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
-        subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
+        subject.init(platform, dualState, InitTrigger.GENESIS, null);
 
         // then:
         assertFalse(subject.isImmutable());
@@ -461,13 +456,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
-        subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
+        subject.init(platform, dualState, InitTrigger.GENESIS, null);
         setAllChildren();
 
         // then:
@@ -487,11 +483,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+        subject.init(platform, dualState, RECONNECT, currentVersion);
 
         // then:
         assertSame(addressBook, subject.addressBook());
@@ -516,7 +513,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, futureVersion);
+        subject.init(platform, dualState, RESTART, futureVersion);
 
         verify(mockExit).fail(1);
     }
@@ -541,7 +538,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
         verify(dualState, never()).setFreezeTime(null);
@@ -569,7 +566,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+        subject.init(platform, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(dualState).setFreezeTime(null);
@@ -601,7 +598,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
+        subject.init(platform, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
         verify(networkContext).markMigrationRecordsNotYetStreamed();
@@ -616,7 +613,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.init(platform, addressBook, dualState, RESTART, null));
+                () -> subject.init(platform, dualState, RESTART, null));
     }
 
     @Test
@@ -633,7 +630,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
+        subject.init(platform, dualState, RECONNECT, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
     }
@@ -649,7 +646,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(false);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
+        given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
         mockAllMaps(mock(MerkleMap.class), vmap);
@@ -665,13 +662,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
         assertTrue(subject.uniqueTokens().isVirtual());
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
@@ -682,8 +680,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
 
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 
     @Test
@@ -697,7 +695,7 @@ class ServicesStateTest extends ResponsibleVMapUser {
                 .willReturn(true);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
         ServicesState.setVmFactory(vmf);
-        given(vmf.apply(any())).willReturn(virtualMapFactory);
+        given(vmf.get()).willReturn(virtualMapFactory);
 
         final var vmap = mock(VirtualMap.class);
         mockAllMaps(mock(MerkleMap.class), vmap);
@@ -713,13 +711,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
         given(app.initializationFlow()).willReturn(initFlow);
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
+        given(platform.getAddressBook()).willReturn(addressBook);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
         // when:
-        subject.init(platform, addressBook, dualState, RESTART, currentVersion);
+        subject.init(platform, dualState, RESTART, currentVersion);
         verify(mapToDiskMigration)
                 .migrateToDiskAsApropos(
                         INSERTIONS_PER_COPY,
@@ -729,8 +728,8 @@ class ServicesStateTest extends ResponsibleVMapUser {
                         ServicesState.accountMigrator,
                         ServicesState.tokenRelMigrator);
 
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 
     @Test
@@ -760,12 +759,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     @Test
     void copiesNonNullChildren() {
-        subject.setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+        subject.setChild(StateChildIndices.LEGACY_ADDRESS_BOOK, addressBook);
         subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
         subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
         // and:
         subject.setMetadata(metadata);
         subject.setDeserializedStateVersion(10);
+        subject.setPlatform(platform);
+        given(platform.getAddressBook()).willReturn(addressBook);
 
         given(addressBook.copy()).willReturn(addressBook);
         given(networkContext.copy()).willReturn(networkContext);
@@ -794,10 +795,12 @@ class ServicesStateTest extends ResponsibleVMapUser {
         assertDoesNotThrow(
                 () -> ref.set(loadSignedState(signedStateDir + "v0.30.5/SignedState.swh")));
         final var mockPlatform = createMockPlatformWithCrypto();
-        tracked((ServicesState) ref.get().getSwirldState())
+        given(mockPlatform.getAddressBook()).willReturn(addressBook);
+        ServicesState swirldState = (ServicesState) ref.get().getSwirldState();
+        final var pretendAddressBook = createPretendBookFrom(mockPlatform, false);
+        tracked(swirldState)
                 .init(
                         mockPlatform,
-                        createPretendBookFrom(mockPlatform, false),
                         new DualStateImpl(),
                         RESTART,
                         forHapiAndHedera("0.30.0", "0.30.5"));
@@ -807,22 +810,18 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void testGenesisState() {
         ClassLoaderHelper.loadClassPathDependencies();
         final var servicesState = tracked(new ServicesState());
+        final var platform = createMockPlatformWithCrypto();
+        final var addressBook = createPretendBookFrom(platform, true);
+        given(platform.getAddressBook()).willReturn(addressBook);
         final var recordsRunningHashLeaf = new RecordsRunningHashLeaf();
         recordsRunningHashLeaf.setRunningHash(new RunningHash(EMPTY_HASH));
         servicesState.setChild(
                 StateChildIndices.RECORD_STREAM_RUNNING_HASH, recordsRunningHashLeaf);
-        final var platform = createMockPlatformWithCrypto();
         final var app = createApp(platform);
 
         APPS.save(platform.getSelfId().getId(), app);
         assertDoesNotThrow(
-                () ->
-                        servicesState.init(
-                                platform,
-                                createPretendBookFrom(platform, true),
-                                new DualStateImpl(),
-                                InitTrigger.GENESIS,
-                                null));
+                () -> servicesState.init(platform, new DualStateImpl(), InitTrigger.GENESIS, null));
     }
 
     @Test
@@ -939,14 +938,14 @@ class ServicesStateTest extends ResponsibleVMapUser {
 
     private void mockMigratorsOnly() {
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
-        ServicesState.setVmFactory(vmf);
         ServicesState.setStakingInfoBuilder(stakingInfoBuilder);
         ServicesState.setMapToDiskMigration(mapToDiskMigration);
+        ServicesState.setVmFactory(vmf);
     }
 
     private void unmockMigrators() {
         ServicesState.setMapToDiskMigration(MapMigrationToDisk::migrateToDiskAsApropos);
-        ServicesState.setVmFactory(VirtualMapFactory::new);
         ServicesState.setStakingInfoBuilder(StakingInfoMapBuilder::buildStakingInfoMap);
+        ServicesState.setVmFactory(VirtualMapFactory::new);
     }
 }

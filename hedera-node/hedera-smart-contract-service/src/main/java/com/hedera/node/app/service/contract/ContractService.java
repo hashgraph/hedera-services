@@ -27,10 +27,12 @@ import java.util.ServiceLoader;
  */
 public interface ContractService extends Service {
 
+    String NAME = "ContractService";
+
     @NonNull
     @Override
     default String getServiceName() {
-        return ContractService.class.getSimpleName();
+        return NAME;
     }
 
     /**

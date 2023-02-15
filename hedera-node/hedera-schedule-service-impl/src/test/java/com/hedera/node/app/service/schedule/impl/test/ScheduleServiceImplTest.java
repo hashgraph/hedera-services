@@ -17,30 +17,13 @@ package com.hedera.node.app.service.schedule.impl.test;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    @Mock private States states;
-    @Mock private HederaAccountNumbers numbers;
-    @Mock private HederaFileNumbers fileNumbers;
-    @Mock private AccountKeyLookup keyLookup;
-    public PreHandleContext preHandleCtx;
-
-    @BeforeEach
-    void setUp() {
-        preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
-    }
 
     @Test
     void testsSpi() {

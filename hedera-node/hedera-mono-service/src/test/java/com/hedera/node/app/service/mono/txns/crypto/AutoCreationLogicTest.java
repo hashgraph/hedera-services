@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.keyAliasToEVMAddress;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
@@ -77,7 +78,6 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -166,7 +166,7 @@ class AutoCreationLogicTest {
     @Test
     void happyPathEDKeyAliasWithHbarChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 0))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownChange(edKeyAlias);
@@ -198,15 +198,14 @@ class AutoCreationLogicTest {
             throws InvalidProtocolBufferException, DecoderException {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         final var key = Key.parseFrom(ecdsaKeyBytes);
+        final var pretendAddress = keyAliasToEVMAddress(ecKeyAlias);
         final var evmAddress =
                 ByteString.copyFrom(
                         EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
 
-        given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
+        given(syntheticTxnFactory.createAccount(ecKeyAlias, key, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
-        final var pretendAddress = Address.BLS12_G2MUL.toArray();
-        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -377,7 +376,7 @@ class AutoCreationLogicTest {
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownTokenChange(edKeyAlias);
@@ -421,7 +420,8 @@ class AutoCreationLogicTest {
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var cryptoCreateAccount =
                 TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(mockCryptoCreate.getAlias()).willReturn(edKeyAlias);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(cryptoCreateAccount);
 
         final var input = wellKnownTokenChange(edKeyAlias);
@@ -464,7 +464,7 @@ class AutoCreationLogicTest {
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 1))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownNftChange(edKeyAlias);
@@ -511,7 +511,7 @@ class AutoCreationLogicTest {
     void analyzesTokenTransfersInChangesForAutoCreation() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 2))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
 
         final var input1 = wellKnownTokenChange(edKeyAlias);
@@ -612,7 +612,7 @@ class AutoCreationLogicTest {
                         TransactionBody.newBuilder()
                                 .setCryptoCreateAccount(
                                         CryptoCreateTransactionBody.newBuilder()
-                                                .setEvmAddress(evmAddress)),
+                                                .setAlias(evmAddress)),
                         ExpirableTxnRecord.newBuilder(),
                         List.of()));
 
@@ -637,28 +637,6 @@ class AutoCreationLogicTest {
         subject.reclaimPendingAliases();
 
         verify(aliasManager).unlink(alias);
-    }
-
-    @Test
-    void reclaimClearsBothEvmAddressAndAlias() {
-        final var pendingCreations = subject.getPendingCreations();
-        final var evmAddress = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
-        final var alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE + 5]);
-        pendingCreations.add(
-                new InProgressChildRecord(
-                        1,
-                        TransactionBody.newBuilder()
-                                .setCryptoCreateAccount(
-                                        CryptoCreateTransactionBody.newBuilder()
-                                                .setEvmAddress(evmAddress)
-                                                .setAlias(alias)),
-                        ExpirableTxnRecord.newBuilder(),
-                        List.of()));
-
-        subject.reclaimPendingAliases();
-
-        verify(aliasManager).unlink(alias);
-        verify(aliasManager).unlink(evmAddress);
     }
 
     private final TransactionBody.Builder syntheticEDAliasCreation =

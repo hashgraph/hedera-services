@@ -1,22 +1,22 @@
 # Key files
 *.pem
-!test-clients/src/main/resource/genesis.pem
-!test-clients/yahcli/localhost/keys/*.pem
+!hedera-node/test-clients/src/main/resource/genesis.pem
+!hedera-node/test-clients/yahcli/localhost/keys/*.pem
 !hapi-utils/src/test/resources/vectors/genesis.pem
 !hedera-node/data/onboard/devGenesisKeypair.pem
 *.pass
-!test-clients/yahcli/localhost/keys/*.pass
+!hedera-node/test-clients/yahcli/localhost/keys/*.pass
 *.words
 *.hexed
 
 # Yahcli
-test-clients/yahcli/assets/yahcli.jar
-test-clients/yahcli/localhost/sysfiles
-test-clients/yahcli/localhost/accounts
-test-clients/yahcli/localhost/tokens
-test-clients/yahcli/localhost/topics
-test-clients/yahcli/cost-snapshots
-test-clients/yahcli/run/test/local/
+hedera-node/test-clients/yahcli/assets/yahcli.jar
+hedera-node/test-clients/yahcli/localhost/sysfiles
+hedera-node/test-clients/yahcli/localhost/accounts
+hedera-node/test-clients/yahcli/localhost/tokens
+hedera-node/test-clients/yahcli/localhost/topics
+hedera-node/test-clients/yahcli/cost-snapshots
+hedera-node/test-clients/yahcli/run/test/local/
 
 # VIM
 *.swp
@@ -32,8 +32,8 @@ compose-network/
 
 # Logs/crash data
 logs/
-test-clients/devops-utils/validation-scenarios/logs/
-test-clients/cost-snapshots
+hedera-node/test-clients/devops-utils/validation-scenarios/logs/
+hedera-node/test-clients/cost-snapshots
 *.log
 hs_err_pid*
 
@@ -43,21 +43,20 @@ hs_err_pid*
 # Local runtime assets
 hedera-node/swirlds-tmp
 
-test-clients/yahcli/*.jar
-test-clients/yahcli/assets/*.jar
+hedera-node/test-clients/yahcli/*.jar
+hedera-node/test-clients/yahcli/assets/*.jar
 
 *.sh
 !run/generate-changelog.sh
 !run/new-release-branch.sh
-!run/gcr-*.sh
 !run/reset-data-saved-from.sh
 !hapi-proto/add-copyright.sh
 !hapi-proto/gen-proto-docs.sh
 !hedera-node/data/backup/*.sh
 !hedera-node/configuration/compose/init.db/*.sh
-!test-clients/yahcli/run/*.sh
-!test-clients/yahcli/assets/*.sh
-!test-clients/yahcli/run/test/local/*.sh
+!hedera-node/test-clients/yahcli/run/*.sh
+!hedera-node/test-clients/yahcli/assets/*.sh
+!hedera-node/test-clients/yahcli/run/test/local/*.sh
 
 *.json
 !hapi-fees/src/main/resources/*.json
@@ -71,9 +70,9 @@ test-clients/yahcli/assets/*.jar
 !hedera-node/hedera-mono-service/src/test/resources/testfiles/expiry-throttle.json
 !hedera-node/hedera-mono-service/src/test/resources/R4FeeSchedule.json
 !hedera-node/configuration/**/*.json
-!test-clients/src/main/resource/FeeSchedule.json
-!test-clients/src/main/resource/testSystemFiles/*.json
-!test-clients/yahcli/run/test/local/assets/*.json
+!hedera-node/test-clients/src/main/resource/FeeSchedule.json
+!hedera-node/test-clients/src/main/resource/testSystemFiles/*.json
+!hedera-node/test-clients/yahcli/run/test/local/assets/*.json
 .circleci/*.yml-excerpt
 hedera-node/data/jasperdb/
 hedera-node/temp/
@@ -115,32 +114,32 @@ hedera-node/temp
 !hedera-node/forensics/start-investigation.py
 hapi-proto/target/
 hapi-proto/src/main/proto/doc/index.html
-test-clients/logs/
-test-clients/puv/*.jar
-test-clients/persistent-entities/
-test-clients/keys/
-test-clients/*.bin
-test-clients/output/
-test-clients/devops-utils/validation-scenarios/fees/
-test-clients/devops-utils/validation-scenarios/output/
-test-clients/devops-utils/validation-scenarios/cost-snapshots/
-test-clients/devops-utils/validation-scenarios/ValidationScenarios.jar
-test-clients/src/main/resource/TestnetStartupAccount.txt
-test-clients/src/main/resource/MainnetStartupAccount.txt
-test-clients/src/main/resource/StableTestnetStartupAccount.txt
-test-clients/src/main/resource/StableTestnetAccount50StartupAccount.txt
-test-clients/saved/
-test-clients/target/
-test-clients/record-snapshots/
-test-clients/remote-system-files/*.bin
-test-clients/remote-system-files/*.txt
-test-clients/src/main/resource/Mainnet*StartUp.txt
-test-clients/src/main/resource/MainNet*StartUp.txt
-test-clients/src/main/resource/TestNet*StartUp.txt
-test-clients/src/main/resource/testfiles/*.abi
-test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
-test-clients/devops-utils/validation-scenarios/files/*-application.properties
-test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
+hedera-node/test-clients/logs/
+hedera-node/test-clients/puv/*.jar
+hedera-node/test-clients/persistent-entities/
+hedera-node/test-clients/keys/
+hedera-node/test-clients/*.bin
+hedera-node/test-clients/output/
+hedera-node/test-clients/devops-utils/validation-scenarios/fees/
+hedera-node/test-clients/devops-utils/validation-scenarios/output/
+hedera-node/test-clients/devops-utils/validation-scenarios/cost-snapshots/
+hedera-node/test-clients/devops-utils/validation-scenarios/ValidationScenarios.jar
+hedera-node/test-clients/src/main/resource/TestnetStartupAccount.txt
+hedera-node/test-clients/src/main/resource/MainnetStartupAccount.txt
+hedera-node/test-clients/src/main/resource/StableTestnetStartupAccount.txt
+hedera-node/test-clients/src/main/resource/StableTestnetAccount50StartupAccount.txt
+hedera-node/test-clients/saved/
+hedera-node/test-clients/target/
+hedera-node/test-clients/record-snapshots/
+hedera-node/test-clients/remote-system-files/*.bin
+hedera-node/test-clients/remote-system-files/*.txt
+hedera-node/test-clients/src/main/resource/Mainnet*StartUp.txt
+hedera-node/test-clients/src/main/resource/MainNet*StartUp.txt
+hedera-node/test-clients/src/main/resource/TestNet*StartUp.txt
+hedera-node/test-clients/src/main/resource/testfiles/*.abi
+hedera-node/test-clients/devops-utils/validation-scenarios/files/*-api-permission.properties
+hedera-node/test-clients/devops-utils/validation-scenarios/files/*-application.properties
+hedera-node/test-clients/devops-utils/validation-scenarios/files/*-exchangeRates.json
 
 # Maven
 target
@@ -159,3 +158,10 @@ build
 
 /hedera-node/hapi/hedera-protobufs/
 /hedera-node/hapi/checkouts.bin
+
+# Docker setup
+!docker/*.sh
+/docker/.env
+.env
+Dockerfile
+.dockerignore

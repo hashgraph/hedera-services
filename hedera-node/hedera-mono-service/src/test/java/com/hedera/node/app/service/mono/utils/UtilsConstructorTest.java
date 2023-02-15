@@ -15,13 +15,14 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
+import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
+import com.hedera.node.app.service.evm.utils.ValidationUtils;
 import com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils;
 import com.hedera.node.app.service.mono.context.properties.PropUtils;
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaUtil;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
 import com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.node.app.service.mono.exceptions.ValidationUtils;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;
@@ -66,7 +67,6 @@ import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hedera.node.app.service.mono.stats.ServicesStatsConfig;
 import com.hedera.node.app.service.mono.stats.StatsModule;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.store.models.TopicConversion;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;

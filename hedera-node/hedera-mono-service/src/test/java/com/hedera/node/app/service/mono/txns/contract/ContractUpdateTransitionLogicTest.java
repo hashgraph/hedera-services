@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -65,7 +66,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -394,20 +394,24 @@ class ContractUpdateTransitionLogicTest {
     }
 
     @Test
-    void maxAutoAssociationsSetToZeroIfNotSupported() {
+    void rejectsTxnIfMaxAssociationsSetAndFlagNotEnabled() {
         givenValidTxnCtxWithMaxAssociations();
-        customizer = mock(HederaAccountCustomizer.class);
-        given(
-                        customizerFactory.customizerFor(
-                                contract, validator, contractUpdateTxn.getContractUpdateInstance()))
-                .willReturn(Pair.of(Optional.of(customizer), OK));
-        final Map<AccountProperty, Object> changes = new EnumMap<>(AccountProperty.class);
-        changes.put(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 5);
-        given(customizer.getChanges()).willReturn(changes);
 
-        subject.doStateTransition();
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
 
-        assertFalse(changes.containsKey(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS));
+        // expect:
+        assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(contractUpdateTxn));
+    }
+
+    @Test
+    void acceptsTxnWithMaxAssociationsIfFlagEnabled() {
+        givenValidTxnCtxWithMaxAssociations();
+
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(dynamicProperties.areContractAutoAssociationsEnabled()).willReturn(true);
+
+        // expect:
+        assertEquals(OK, subject.semanticCheck().apply(contractUpdateTxn));
     }
 
     @Test

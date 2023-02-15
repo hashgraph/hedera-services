@@ -23,9 +23,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,13 +47,12 @@ class ScheduleHandlerTestBase {
     protected AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
     protected AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
     protected TransactionBody scheduledTxn;
-    protected SigTransactionMetadata scheduledMeta;
+    protected TransactionMetadata scheduledMeta;
 
-    @Mock protected TransactionMetadata metaToHandle;
     @Mock protected AccountKeyLookup keyLookup;
     @Mock protected HederaKey schedulerKey;
     @Mock protected PreHandleDispatcher dispatcher;
-    @Mock protected States states;
+    @Mock protected ReadableStates states;
 
     protected void basicMetaAssertions(
             final TransactionMetadata meta,
@@ -63,6 +62,16 @@ class ScheduleHandlerTestBase {
         assertEquals(nonPayerKeysSize, meta.requiredNonPayerKeys().size());
         assertTrue(failed ? meta.failed() : !meta.failed());
         assertEquals(failureStatus, meta.status());
+    }
+
+    protected void basicContextAssertions(
+            final PreHandleContext context,
+            final int nonPayerKeysSize,
+            final boolean failed,
+            final ResponseCodeEnum failureStatus) {
+        assertEquals(nonPayerKeysSize, context.getRequiredNonPayerKeys().size());
+        assertTrue(failed ? context.failed() : !context.failed());
+        assertEquals(failureStatus, context.getStatus());
     }
 
     protected TransactionBody scheduleTxnNotRecognized() {
