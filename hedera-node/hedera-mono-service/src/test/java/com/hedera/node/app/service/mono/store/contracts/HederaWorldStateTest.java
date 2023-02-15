@@ -665,6 +665,25 @@ class HederaWorldStateTest {
     }
 
     @Test
+    void updaterCommitShouldNotTrackNewlyCreatedNonContractAccounts() {
+        givenNonNullWorldLedgers();
+        given(worldLedgers.aliases()).willReturn(aliases);
+        final var newAddress = contract.asEvmAddress();
+        given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(false);
+
+        // when:
+        final var actualSubject = subject.updater();
+        actualSubject.createAccount(newAddress, 0, Wei.of(balance));
+        actualSubject.commit();
+
+        // then:
+        var provisionalContractCreations = subject.getCreatedContractIds();
+        assertEquals(0, provisionalContractCreations.size());
+    }
+
+    @Test
     void updaterCorrectlyPopulatesStateChanges() {
         givenNonNullWorldLedgers();
         final var contractAddress = "0xffff";
