@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
@@ -95,8 +96,7 @@ public class ReadableTopicStore {
             long key,
             boolean isDeleted) {}
 
-    public record TopicMetaOrLookupFailureReason(
-            TopicMetadata metadata, ResponseCodeEnum failureReason) {
+    public record TopicMetaOrLookupFailureReason(TopicMetadata metadata, ResponseCodeEnum failureReason) {
         public boolean failed() {
             return failureReason != null;
         }

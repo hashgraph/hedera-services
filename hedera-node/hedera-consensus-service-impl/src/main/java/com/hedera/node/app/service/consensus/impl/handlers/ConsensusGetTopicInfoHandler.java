@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
@@ -24,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.*;
@@ -38,7 +40,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
-    //    private final NetworkInfo networkInfo;
     @Inject
     public ConsensusGetTopicInfoHandler() {}
 
@@ -65,8 +66,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if validation fails
      */
-    public ResponseCodeEnum validate(
-            @NonNull final Query query, final ReadableTopicStore topicStore)
+    public ResponseCodeEnum validate(@NonNull final Query query, final ReadableTopicStore topicStore)
             throws PreCheckException {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         if (op.hasTopicID()) {
@@ -85,25 +85,27 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
      *
-     * @param query the {@link Query} with the request
-     * @param header the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext
+     * @param query        the {@link Query} with the request
+     * @param header       the {@link ResponseHeader} that should be used, if the request was successful
+     * @param queryContext context for executing the query
      * @return a {@link Response} with the requested values
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public Response findResponse(
             @NonNull final Query query,
             @NonNull final ResponseHeader header,
-            @NonNull final ReadableTopicStore topicStore) {
+            @NonNull final ReadableTopicStore topicStore,
+            @NonNull QueryContext queryContext) {
         final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
-        final ConsensusGetTopicInfoResponse.Builder response =
-                ConsensusGetTopicInfoResponse.newBuilder();
+        final ConsensusGetTopicInfoResponse.Builder response = ConsensusGetTopicInfoResponse.newBuilder();
         response.setTopicID(op.getTopicID());
 
         final var responseType = op.getHeader().getResponseType();
         response.setHeader(header);
         if (header.getNodeTransactionPrecheckCode() == OK) {
             if (responseType != COST_ANSWER) {
-                final var optionalInfo = infoForTopic(op.getTopicID(), topicStore);
+                final var optionalInfo = infoForTopic(op.getTopicID(), topicStore, queryContext);
                 if (optionalInfo.isPresent()) {
                     response.setTopicInfo(optionalInfo.get());
                 }
@@ -124,7 +126,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     }
 
     private Optional<ConsensusTopicInfo> infoForTopic(
-            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore) {
+            @NonNull final TopicID topicID, @NonNull final ReadableTopicStore topicStore, QueryContext queryContext) {
         final var metaOrFailure = topicStore.getTopicMetadata(topicID);
         if (metaOrFailure.failed()) {
             return Optional.empty();
@@ -137,15 +139,12 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             info.setExpirationTime(meta.expirationTimestamp());
             meta.adminKey().ifPresent(key -> info.setAdminKey(asKeyUnchecked((JKey) key)));
             meta.submitKey().ifPresent(key -> info.setSubmitKey(asKeyUnchecked((JKey) key)));
-            info.setAutoRenewPeriod(
-                    Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
+            info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(meta.autoRenewDurationSeconds()));
             meta.autoRenewAccountId()
-                    .ifPresent(
-                            account ->
-                                    info.setAutoRenewAccount(
-                                            AccountID.newBuilder().setAccountNum(account)));
+                    .ifPresent(account ->
+                            info.setAutoRenewAccount(AccountID.newBuilder().setAccountNum(account)));
 
-            //                info.setLedgerId(networkInfo.ledgerId());
+            info.setLedgerId(queryContext.getLedgerId());
             return Optional.of(info.build());
         }
     }

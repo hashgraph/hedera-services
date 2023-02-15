@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
@@ -32,10 +33,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Interface for constructing {@link TransactionMetadata} by collecting information that is needed
- * when transactions are handled as part of "pre-handle" needed for signature verification.
+ * Context of a single {@code preHandle()}-call. Contains all information that needs to be exchanged
+ * between the pre-handle workflow and the {@code preHandle()}-method of a {@link
+ * com.hedera.node.app.spi.workflows.TransactionHandler}.
  */
-public class PrehandleHandlerContext {
+public class PreHandleContext {
 
     private final AccountKeyLookup keyLookup;
 
@@ -47,7 +49,7 @@ public class PrehandleHandlerContext {
     private HederaKey payerKey;
     private Object handlerMetadata;
 
-    public PrehandleHandlerContext(
+    public PreHandleContext(
             @NonNull final AccountKeyLookup keyLookup,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer) {
@@ -59,8 +61,7 @@ public class PrehandleHandlerContext {
         addToKeysOrFail(lookedUpPayerKey, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
-    public PrehandleHandlerContext(
-            @NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
+    public PreHandleContext(@NonNull final AccountKeyLookup keyLookup, @NonNull final TransactionBody txn) {
         this(keyLookup, txn, txn.getTransactionID().getAccountID());
     }
 
@@ -112,14 +113,14 @@ public class PrehandleHandlerContext {
     }
 
     /**
-     * Sets status on {@link TransactionMetadata}. It will be {@link ResponseCodeEnum#OK} if there
-     * is no failure.
+     * Sets status on {@link PreHandleContext}. It will be {@link ResponseCodeEnum#OK} if there is
+     * no failure.
      *
      * @param status status to be set on {@link TransactionMetadata}
      * @return {@code this} object
      */
     @NonNull
-    public PrehandleHandlerContext status(@NonNull final ResponseCodeEnum status) {
+    public PreHandleContext status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status);
         return this;
     }
@@ -150,7 +151,7 @@ public class PrehandleHandlerContext {
      * @return builder object
      */
     @NonNull
-    public PrehandleHandlerContext handlerMetadata(@NonNull final Object handlerMetadata) {
+    public PreHandleContext handlerMetadata(@NonNull final Object handlerMetadata) {
         this.handlerMetadata = handlerMetadata;
         return this;
     }
@@ -162,13 +163,13 @@ public class PrehandleHandlerContext {
      * @return {@code this} object
      */
     @NonNull
-    public PrehandleHandlerContext addAllReqKeys(@NonNull final List<HederaKey> keys) {
+    public PreHandleContext addAllReqKeys(@NonNull final List<HederaKey> keys) {
         requiredNonPayerKeys.addAll(requireNonNull(keys));
         return this;
     }
 
     /**
-     * Adds given key to required non-payer keys in {@link TransactionMetadata}. If the status is
+     * Adds given key to required non-payer keys in {@link PreHandleContext}. If the status is
      * already failed, or if the payer's key is not added, given keys will not be added to
      * requiredNonPayerKeys list. This method is used when the payer's key is already fetched, and
      * we want to add other keys from {@link TransactionBody} to required keys to sign.
@@ -177,7 +178,7 @@ public class PrehandleHandlerContext {
      * @return {@code this} object
      */
     @NonNull
-    public PrehandleHandlerContext addToReqNonPayerKeys(@NonNull final HederaKey key) {
+    public PreHandleContext addToReqNonPayerKeys(@NonNull final HederaKey key) {
         if (status == OK && payerKey != null) {
             requiredNonPayerKeys.add(requireNonNull(key));
         }
@@ -193,7 +194,7 @@ public class PrehandleHandlerContext {
      * @return {@code this} object
      */
     @NonNull
-    public PrehandleHandlerContext addNonPayerKey(@NonNull final AccountID id) {
+    public PreHandleContext addNonPayerKey(@NonNull final AccountID id) {
         return addNonPayerKey(id, null);
     }
 
@@ -208,7 +209,7 @@ public class PrehandleHandlerContext {
      * @return {@code this} object
      */
     @NonNull
-    public PrehandleHandlerContext addNonPayerKey(
+    public PreHandleContext addNonPayerKey(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
@@ -219,7 +220,7 @@ public class PrehandleHandlerContext {
     }
 
     @NonNull
-    public PrehandleHandlerContext addNonPayerKey(@NonNull final ContractID id) {
+    public PreHandleContext addNonPayerKey(@NonNull final ContractID id) {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
@@ -239,7 +240,7 @@ public class PrehandleHandlerContext {
      * @param failureStatusToUse failure status to be set if there is failure
      */
     @NonNull
-    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(
+    public PreHandleContext addNonPayerKeyIfReceiverSigRequired(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
@@ -250,8 +251,7 @@ public class PrehandleHandlerContext {
     }
 
     @NonNull
-    public PrehandleHandlerContext addNonPayerKeyIfReceiverSigRequired(
-            @NonNull final ContractID id) {
+    public PreHandleContext addNonPayerKeyIfReceiverSigRequired(@NonNull final ContractID id) {
         if (isNotNeeded(requireNonNull(id))) {
             return this;
         }
@@ -262,13 +262,13 @@ public class PrehandleHandlerContext {
 
     @Override
     public String toString() {
-        return "TransactionMetadataBuilder{"
-                + "requiredNonPayerKeys="
-                + requiredNonPayerKeys
-                + ", txn="
+        return "PreHandleContext{"
+                + "txn="
                 + txn
                 + ", payer="
                 + payer
+                + ", requiredNonPayerKeys="
+                + requiredNonPayerKeys
                 + ", status="
                 + status
                 + ", payerKey="
@@ -338,7 +338,7 @@ public class PrehandleHandlerContext {
 
     /**
      * Given a successful key lookup, adds its key to the required signers. Given a failed key
-     * lookup, sets this {@link TransactionMetadata}'s status to either the failure reason of the
+     * lookup, sets this {@link PreHandleContext}'s status to either the failure reason of the
      * lookup; or (if it is non-null), the requested failureStatus parameter.
      *
      * @param result key lookup result

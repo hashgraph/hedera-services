@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.query;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
@@ -35,10 +36,12 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.spi.meta.QueryContext;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -80,6 +83,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final QueryDispatcher dispatcher;
     private final HapiOpCounters opCounters;
     private final FeeAccumulator feeAccumulator;
+    private final QueryContext queryContext;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -105,7 +109,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryChecker checker,
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final HapiOpCounters opCounters,
-            @NonNull final FeeAccumulator feeAccumulator) {
+            @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final QueryContextImpl queryContext) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
@@ -115,6 +120,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.opCounters = requireNonNull(opCounters);
         this.feeAccumulator = requireNonNull(feeAccumulator);
+        this.queryContext = requireNonNull(queryContext);
     }
 
     @Override
@@ -138,9 +144,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             LOGGER.debug("Received query: {}", query);
         }
 
-        final var function =
-                MiscUtils.functionalityOfQuery(query)
-                        .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
+        final var function = MiscUtils.functionalityOfQuery(query)
+                .orElseThrow(() -> new StatusRuntimeException(Status.INVALID_ARGUMENT));
         opCounters.countReceived(function);
 
         final var handler = dispatcher.getHandler(query);
@@ -184,8 +189,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 checker.checkPermissions(payer, function);
 
                 // 3.iii Calculate costs
-                final var feeData =
-                        feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 // 3.iv Check account balances
@@ -197,18 +201,17 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 4. Check validity
-            final var validity = dispatcher.validate(state, query);
+            final var storeFactory = new StoreFactory(state);
+            final var validity = dispatcher.validate(storeFactory, query);
 
             // 5. Submit payment to platform
             if (paymentRequired) {
-                submissionManager.submit(
-                        txBody, allegedPayment.toByteArray(), session.txBodyParser());
+                submissionManager.submit(txBody, allegedPayment.toByteArray(), session.txBodyParser());
             }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData =
-                        feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
+                final var feeData = feeAccumulator.computePayment(function, query, asTimestamp(Instant.now()));
                 fee = totalFee(feeData);
 
                 final var header = createResponseHeader(responseType, validity, fee);
@@ -216,14 +219,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             } else {
                 // 6.ii Find response
                 final var header = createResponseHeader(responseType, validity, fee);
-                response = dispatcher.getResponse(state, query, header);
+                response = dispatcher.getResponse(storeFactory, query, header, queryContext);
             }
 
             opCounters.countAnswered(function);
 
         } catch (InsufficientBalanceException e) {
-            final var header =
-                    createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
+            final var header = createResponseHeader(responseType, e.responseCode(), e.getEstimatedFee());
             response = handler.createEmptyResponse(header);
         } catch (PreCheckException e) {
             final var header = createResponseHeader(responseType, e.responseCode(), fee);
@@ -238,9 +240,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     }
 
     private static ResponseHeader createResponseHeader(
-            @NonNull final ResponseType type,
-            @NonNull final ResponseCodeEnum responseCode,
-            final long fee) {
+            @NonNull final ResponseType type, @NonNull final ResponseCodeEnum responseCode, final long fee) {
         return ResponseHeader.newBuilder()
                 .setResponseType(type)
                 .setNodeTransactionPrecheckCode(responseCode)

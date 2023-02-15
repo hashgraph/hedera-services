@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -51,7 +52,6 @@ public class MonoFeeAccumulator implements FeeAccumulator {
     @Override
     public FeeObject computePayment(HederaFunctionality functionality, Query query, Timestamp now) {
         final var usagePrices = resourceCosts.defaultPricesGiven(functionality, now);
-        return feeCalculator.computePayment(
-                query, usagePrices, stateView.get(), now, new HashMap());
+        return feeCalculator.computePayment(query, usagePrices, stateView.get(), now, new HashMap());
     }
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.exports;
 
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
@@ -102,7 +103,7 @@ public class FileSignTool {
     private static final String ALIAS_PROPERTY = "alias";
     private static final String PASSWORD_PROPERTY = "password";
     private static final String DIR_PROPERTY = "dir";
-    private static final String APP_VERSION = "appVersion";
+    private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
     private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("FILE_SIGN");
@@ -148,12 +149,9 @@ public class FileSignTool {
      * @throws SignatureException thrown if this signature object is not initialized properly
      */
     public static byte[] sign(final byte[] data, final KeyPair sigKeyPair)
-            throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException,
-                    SignatureException {
+            throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
         final Signature signature;
-        signature =
-                Signature.getInstance(
-                        SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
+        signature = Signature.getInstance(SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
@@ -174,17 +172,14 @@ public class FileSignTool {
      * @param alias alias of the key
      * @return a KeyPair
      */
-    public static KeyPair loadPfxKey(
-            final String keyFileName, final String password, final String alias) {
+    public static KeyPair loadPfxKey(final String keyFileName, final String password, final String alias) {
         KeyPair sigKeyPair = null;
         try (final FileInputStream fis = new FileInputStream(keyFileName)) {
             final KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
             keyStore.load(fis, password.toCharArray());
 
-            sigKeyPair =
-                    new KeyPair(
-                            keyStore.getCertificate(alias).getPublicKey(),
-                            (PrivateKey) keyStore.getKey(alias, password.toCharArray()));
+            sigKeyPair = new KeyPair(keyStore.getCertificate(alias).getPublicKey(), (PrivateKey)
+                    keyStore.getKey(alias, password.toCharArray()));
             LOGGER.info(MARKER, "keypair has loaded successfully from file {}", keyFileName);
         } catch (final NoSuchAlgorithmException
                 | KeyStoreException
@@ -219,10 +214,7 @@ public class FileSignTool {
      * @param streamType type of the stream file
      */
     public static void signSingleFile(
-            final KeyPair sigKeyPair,
-            final File streamFile,
-            final File destDir,
-            final StreamType streamType) {
+            final KeyPair sigKeyPair, final File streamFile, final File destDir, final StreamType streamType) {
         final String destSigFilePath = buildDestSigFilePath(destDir, streamFile);
         try {
             if (streamType.getExtension().equalsIgnoreCase(RECORD_STREAM_EXTENSION)) {
@@ -267,8 +259,8 @@ public class FileSignTool {
         }
     }
 
-    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
-            final String fileLoc) throws IOException {
+    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
+            throws IOException {
         try (final FileInputStream fin = new FileInputStream(fileLoc)) {
             final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
             final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
@@ -282,14 +274,12 @@ public class FileSignTool {
 
     private static SignatureObject generateSignatureObject(
             final String relatedRecordStreamFile, final byte[] hash, final KeyPair sigKeyPair)
-            throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException,
-                    InvalidKeyException {
+            throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException, InvalidKeyException {
         final byte[] signature = sign(hash, sigKeyPair);
         return SignatureObject.newBuilder()
                 .setType(SHA_384_WITH_RSA)
                 .setLength(signature.length)
-                .setChecksum(
-                        101 - signature.length) // simple checksum to detect if at wrong place in
+                .setChecksum(101 - signature.length) // simple checksum to detect if at wrong place in
                 // the stream
                 .setSignature(wrapUnsafely(signature))
                 .setHashObject(toProto(hash))
@@ -309,55 +299,48 @@ public class FileSignTool {
             final StreamType streamType,
             final KeyPair sigKeyPair,
             final String destSigFilePath)
-            throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException,
-                    InvalidKeyException {
+            throws NoSuchAlgorithmException, SignatureException, NoSuchProviderException, InvalidKeyException {
 
         int[] fileHeader = streamType.getFileHeader();
 
         // extract latest app version from system property if available
-        final String appVersionString = System.getProperty(APP_VERSION);
+        final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         if (appVersionString != null) {
-            final String[] versions =
-                    appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
+            final String[] versions = appVersionString.replace("-SNAPSHOT", "").split(Pattern.quote("."));
             if (versions.length >= 3) {
                 try {
-                    fileHeader =
-                            new int[] {
-                                DEFAULT_RECORD_STREAM_VERSION,
-                                Integer.parseInt(versions[0]),
-                                Integer.parseInt(versions[1]),
-                                Integer.parseInt(versions[2]),
-                            };
+                    fileHeader = new int[] {
+                        DEFAULT_RECORD_STREAM_VERSION,
+                        Integer.parseInt(versions[0]),
+                        Integer.parseInt(versions[1]),
+                        Integer.parseInt(versions[2]),
+                    };
                 } catch (final NumberFormatException e) {
-                    LOGGER.error(
-                            MARKER,
-                            "Error when parsing app version string {}",
-                            appVersionString,
-                            e);
+                    LOGGER.error(MARKER, "Error when parsing app version string {}", appVersionString, e);
                 }
             }
         }
         LOGGER.info(MARKER, "Record stream file header is {}", Arrays.toString(fileHeader));
 
         try (final SerializableDataOutputStream dosMeta =
-                        new SerializableDataOutputStream(
-                                new HashingOutputStream(metadataStreamDigest));
-                final SerializableDataOutputStream dos =
-                        new SerializableDataOutputStream(
-                                new BufferedOutputStream(new HashingOutputStream(streamDigest)))) {
+                        new SerializableDataOutputStream(new HashingOutputStream(metadataStreamDigest));
+                final SerializableDataOutputStream dos = new SerializableDataOutputStream(
+                        new BufferedOutputStream(new HashingOutputStream(streamDigest)))) {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
-                    readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
-            final byte[] startRunningHash =
-                    recordResult
-                            .getValue()
-                            .get()
-                            .getStartObjectRunningHash()
-                            .getHash()
-                            .toByteArray();
-            final byte[] endRunningHash =
-                    recordResult.getValue().get().getEndObjectRunningHash().getHash().toByteArray();
+            final byte[] startRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getStartObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
+            final byte[] endRunningHash = recordResult
+                    .getValue()
+                    .get()
+                    .getEndObjectRunningHash()
+                    .getHash()
+                    .toByteArray();
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
@@ -382,18 +365,14 @@ public class FileSignTool {
 
         final SignatureObject metadataSignature =
                 generateSignatureObject(recordFile, metadataStreamDigest.digest(), sigKeyPair);
-        final SignatureObject fileSignature =
-                generateSignatureObject(recordFile, streamDigest.digest(), sigKeyPair);
+        final SignatureObject fileSignature = generateSignatureObject(recordFile, streamDigest.digest(), sigKeyPair);
         final SignatureFile.Builder signatureFile =
-                SignatureFile.newBuilder()
-                        .setFileSignature(fileSignature)
-                        .setMetadataSignature(metadataSignature);
+                SignatureFile.newBuilder().setFileSignature(fileSignature).setMetadataSignature(metadataSignature);
 
         // create signature file
         final String sigFilePath = recordFile + "_sig";
         try (final FileOutputStream fos =
-                new FileOutputStream(
-                        destSigFilePath + File.separator + (new File(sigFilePath)).getName())) {
+                new FileOutputStream(destSigFilePath + File.separator + (new File(sigFilePath)).getName())) {
             // version in signature files is 1 byte, compared to 4 in record files
             fos.write(streamType.getSigFileHeader()[0]);
             signatureFile.build().writeTo(fos);
@@ -435,10 +414,9 @@ public class FileSignTool {
         }
 
         final String logConfigPath = System.getProperty(LOG_CONFIG_PROPERTY);
-        final File logConfigFile =
-                logConfigPath == null
-                        ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
-                        : new File(logConfigPath);
+        final File logConfigFile = logConfigPath == null
+                ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
+                : new File(logConfigPath);
         if (logConfigFile.exists()) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());
@@ -478,30 +456,24 @@ public class FileSignTool {
      * @param sigKeyPair the signing key pair
      */
     public static void signAllFiles(
-            final String sourceDir,
-            final String destDir,
-            final StreamType streamType,
-            final KeyPair sigKeyPair)
+            final String sourceDir, final String destDir, final StreamType streamType, final KeyPair sigKeyPair)
             throws IOException {
         // create directory if necessary
-        final File destDirFile = new File(Files.createDirectories(Paths.get(destDir)).toUri());
+        final File destDirFile =
+                new File(Files.createDirectories(Paths.get(destDir)).toUri());
 
         final File folder = new File(sourceDir);
         final File[] streamFiles = folder.listFiles((dir, name) -> streamType.isStreamFile(name));
-        final File[] accountBalanceFiles =
-                folder.listFiles(
-                        (dir, name) -> {
-                            final String lowerCaseName = name.toLowerCase();
-                            return lowerCaseName.endsWith(CSV_EXTENSION)
-                                    || lowerCaseName.endsWith(ACCOUNT_BALANCE_EXTENSION);
-                        });
+        final File[] accountBalanceFiles = folder.listFiles((dir, name) -> {
+            final String lowerCaseName = name.toLowerCase();
+            return lowerCaseName.endsWith(CSV_EXTENSION) || lowerCaseName.endsWith(ACCOUNT_BALANCE_EXTENSION);
+        });
         Arrays.sort(streamFiles); // sort by file names and timestamps
         Arrays.sort(accountBalanceFiles);
 
         final List<File> totalList = new ArrayList<>();
         totalList.addAll(Arrays.asList(Optional.ofNullable(streamFiles).orElse(new File[0])));
-        totalList.addAll(
-                Arrays.asList(Optional.ofNullable(accountBalanceFiles).orElse(new File[0])));
+        totalList.addAll(Arrays.asList(Optional.ofNullable(accountBalanceFiles).orElse(new File[0])));
         for (final File item : totalList) {
             signSingleFile(sigKeyPair, item, destDirFile, streamType);
         }

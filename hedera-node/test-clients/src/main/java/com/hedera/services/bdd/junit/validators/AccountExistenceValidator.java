@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit.validators;
 
 import static com.hedera.services.bdd.junit.BalanceReconciliationValidator.streamOfItemsFrom;
@@ -39,24 +40,16 @@ public class AccountExistenceValidator implements RecordStreamValidator {
     }
 
     @Override
-    public void validate(final List<RecordWithSidecars> recordFiles) {
+    public void validateRecordsAndSidecars(final List<RecordWithSidecars> recordFiles) {
         final var accountExists = new AtomicBoolean();
-        streamOfItemsFrom(recordFiles)
-                .filter(this::isAtConsensusTime)
-                .forEach(
-                        item -> {
-                            final var receipt = item.getRecord().getReceipt();
-                            if (receipt.hasAccountID()) {
-                                accountExists.set(true);
-                            }
-                        });
+        streamOfItemsFrom(recordFiles).filter(this::isAtConsensusTime).forEach(item -> {
+            final var receipt = item.getRecord().getReceipt();
+            if (receipt.hasAccountID()) {
+                accountExists.set(true);
+            }
+        });
         if (!accountExists.get()) {
-            Assertions.fail(
-                    "Expected '"
-                            + name
-                            + "' to be created at "
-                            + consensusTimestamp
-                            + ", but it was not");
+            Assertions.fail("Expected '" + name + "' to be created at " + consensusTimestamp + ", but it was not");
         }
     }
 

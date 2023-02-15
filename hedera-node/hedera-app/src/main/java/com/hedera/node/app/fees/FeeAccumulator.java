@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -25,6 +26,5 @@ import com.hederahashgraph.api.proto.java.Timestamp;
  * will be enhanced to be used for transactions as well in the future.
  */
 public interface FeeAccumulator {
-    FeeObject computePayment(
-            final HederaFunctionality functionality, final Query query, Timestamp now);
+    FeeObject computePayment(final HederaFunctionality functionality, final Query query, Timestamp now);
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,8 +29,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class QueryComponentTest {
-    @Mock private Platform platform;
-    @Mock private HederaApp app;
+    @Mock
+    private Platform platform;
+
+    @Mock
+    private HederaApp app;
 
     @Test
     void objectGraphRootsAreAvailable() {

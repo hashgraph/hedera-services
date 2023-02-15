@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,22 +48,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
 
-    // TODO: Intermediate solution until we find a better way to get the service-key
-    private static final String TOKEN_SERVICE_KEY = new TokenServiceImpl().getServiceName();
-
     /**
      * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
      * thread local, because we do not have control over the thread pool used by the underlying gRPC
      * server.
      */
     private static final ThreadLocal<SessionContext> SESSION_CONTEXT_THREAD_LOCAL =
-            ThreadLocal.withInitial(
-                    () ->
-                            new SessionContext(
-                                    Query.parser(),
-                                    Transaction.parser(),
-                                    SignedTransaction.parser(),
-                                    TransactionBody.parser()));
+            ThreadLocal.withInitial(() -> new SessionContext(
+                    Query.parser(), Transaction.parser(), SignedTransaction.parser(), TransactionBody.parser()));
 
     private final WorkflowOnset onset;
     private final TransactionDispatcher dispatcher;
@@ -122,8 +115,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private TransactionMetadata preHandle(
-            final HederaState state,
-            final com.swirlds.common.system.transaction.Transaction platformTx) {
+            final HederaState state, final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
         AccountID payerID = null;
         try {
@@ -137,11 +129,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var statesTracker = new ReadableStatesTracker(state);
-            final var tokenStates = statesTracker.getReadableStates(TOKEN_SERVICE_KEY);
-            final var accountStore = new ReadableAccountStore(tokenStates);
-            final var handlerContext = new PrehandleHandlerContext(accountStore, txBody);
-            dispatcher.dispatchPreHandle(statesTracker, handlerContext);
+            final var storeFactory = new StoreFactory(state);
+            final var accountStore = storeFactory.getAccountStore();
+            final var handlerContext = new PreHandleContext(accountStore, txBody);
+            dispatcher.dispatchPreHandle(storeFactory, handlerContext);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented
@@ -150,47 +141,53 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // TODO: Verify signature via the platform once this functionality was implemented
 
             // 5. Return TransactionMetadata
-            return createTransactionMetadata(statesTracker.getUsedStates(), handlerContext);
+            return createTransactionMetadata(storeFactory.getUsedStates(), handlerContext);
 
         } catch (PreCheckException preCheckException) {
-            return new TransactionMetadata(txBody, payerID, preCheckException.responseCode());
+            return createInvalidTransactionMetadata(txBody, payerID, preCheckException.responseCode());
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return new TransactionMetadata(txBody, payerID, ResponseCodeEnum.UNKNOWN);
+            return createInvalidTransactionMetadata(txBody, payerID, ResponseCodeEnum.UNKNOWN);
         }
     }
 
+    @NonNull
     private static TransactionMetadata createTransactionMetadata(
-            @NonNull final Map<String, ReadableStates> usedStates,
-            @NonNull final PrehandleHandlerContext context) {
+            @NonNull final Map<String, ReadableStates> usedStates, @NonNull final PreHandleContext context) {
         final List<TransactionMetadata.ReadKeys> readKeys = extractAllReadKeys(usedStates);
         return new TransactionMetadata(context, readKeys);
+    }
+
+    @NonNull
+    private static TransactionMetadata createInvalidTransactionMetadata(
+            @Nullable final TransactionBody txBody,
+            @Nullable final AccountID payerID,
+            @NonNull final ResponseCodeEnum responseCode) {
+        return new TransactionMetadata(txBody, payerID, responseCode);
     }
 
     private static List<TransactionMetadata.ReadKeys> extractAllReadKeys(
             @NonNull final Map<String, ReadableStates> usedStates) {
         return usedStates.entrySet().stream()
-                .flatMap(
-                        entry -> {
-                            final String statesKey = entry.getKey();
-                            final ReadableStates readableStates = entry.getValue();
-                            return extractReadKeysFromReadableStates(statesKey, readableStates);
-                        })
+                .flatMap(entry -> {
+                    final String statesKey = entry.getKey();
+                    final ReadableStates readableStates = entry.getValue();
+                    return extractReadKeysFromReadableStates(statesKey, readableStates);
+                })
                 .toList();
     }
 
     private static Stream<TransactionMetadata.ReadKeys> extractReadKeysFromReadableStates(
             @NonNull final String statesKey, @NonNull final ReadableStates readableStates) {
         return readableStates.stateKeys().stream()
-                .map(
-                        stateKey -> {
-                            final Set<? extends Comparable<?>> readKeys =
-                                    readableStates.get(stateKey).readKeys();
-                            return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
-                        })
+                .map(stateKey -> {
+                    final Set<? extends Comparable<?>> readKeys =
+                            readableStates.get(stateKey).readKeys();
+                    return new TransactionMetadata.ReadKeys(statesKey, stateKey, readKeys);
+                })
                 .filter(listEntry -> !listEntry.readKeys().isEmpty());
     }
 }

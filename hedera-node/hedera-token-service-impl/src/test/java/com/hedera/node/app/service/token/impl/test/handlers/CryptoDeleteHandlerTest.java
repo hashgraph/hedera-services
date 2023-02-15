@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -26,7 +27,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,8 +42,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private final Long deleteAccountNum = deleteAccountId.getAccountNum();
     private final Long transferAccountNum = transferAccountId.getAccountNum();
 
-    @Mock private MerkleAccount deleteAccount;
-    @Mock private MerkleAccount transferAccount;
+    @Mock
+    private MerkleAccount deleteAccount;
+
+    @Mock
+    private MerkleAccount transferAccount;
 
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
@@ -58,7 +62,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -79,7 +83,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -92,7 +96,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(payer, payer);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -110,7 +114,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, payer);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -129,7 +133,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(payer, transferAccountId);
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -149,7 +153,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
 
-        final var context1 = new PrehandleHandlerContext(store, txn, payer);
+        final var context1 = new PreHandleContext(store, txn, payer);
         subject.preHandle(context1);
         basicMetaAssertions(context1, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertNull(context1.getPayerKey());
@@ -161,7 +165,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(accounts.get(deleteAccountNum)).willReturn(null);
         given(accounts.get(transferAccountNum)).willReturn(transferAccount);
 
-        final var context2 = new PrehandleHandlerContext(store, txn, payer);
+        final var context2 = new PreHandleContext(store, txn, payer);
         subject.preHandle(context2);
 
         basicMetaAssertions(context2, 0, true, INVALID_ACCOUNT_ID);
@@ -173,7 +177,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(accounts.get(transferAccountNum)).willReturn(null);
 
-        final var context3 = new PrehandleHandlerContext(store, txn, payer);
+        final var context3 = new PreHandleContext(store, txn, payer);
         subject.preHandle(context3);
 
         basicMetaAssertions(context3, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
@@ -190,7 +194,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
 
-        final var context = new PrehandleHandlerContext(store, txn, payer);
+        final var context = new PreHandleContext(store, txn, payer);
         subject.preHandle(context);
 
         assertEquals(txn, context.getTxn());
@@ -207,13 +211,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var deleteTxBody =
-                CryptoDeleteTransactionBody.newBuilder()
-                        .setDeleteAccountID(deleteAccountId)
-                        .setTransferAccountID(transferAccountId);
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
+                .setDeleteAccountID(deleteAccountId)
+                .setTransferAccountID(transferAccountId);
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.MISC_ADMIN_KT;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateWithAdminKey() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -57,7 +58,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeOnly() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_ONLY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -66,9 +67,8 @@ class ContractUpdateHandlerParityTest {
 
     @Test
     void getsContractUpdateWithDeprecatedAdminKey() {
-        final var theTxn =
-                txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_DEPRECATED_CID_ADMIN_KEY_SCENARIO);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -78,7 +78,7 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndAdminKey() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_ADMIN_KEY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -90,57 +90,51 @@ class ContractUpdateHandlerParityTest {
     @Test
     void getsContractUpdateNewExpirationTimeAndProxy() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndAutoRenew() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_AUTORENEW_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndFile() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
     void getsContractUpdateNewExpirationTimeAndMemo() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
     }
 
     @Test
     void getsContractUpdateNewAutoRenewAccount() {
         final var theTxn = txnFrom(CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO);
-        final var context = new PrehandleHandlerContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

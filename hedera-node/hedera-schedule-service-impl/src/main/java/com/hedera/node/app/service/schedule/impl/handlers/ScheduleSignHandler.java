@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
@@ -20,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.meta.PrehandleHandlerContext;
+import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,15 +42,15 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
      * required signing keys.
      *
-     * @param context the {@link PrehandleHandlerContext} which collects all information that will
-     *     be passed to {@link #handle(TransactionMetadata)}
+     * @param context the {@link PreHandleContext} which collects all information that will be
+     *     passed to {@link #handle(TransactionMetadata)}
      * @param scheduleStore the {@link ReadableScheduleStore} to use for schedule resolution
      * @param dispatcher the {@link PreHandleDispatcher} that can be used to pre-handle the inner
      *     txn
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void preHandle(
-            @NonNull final PrehandleHandlerContext context,
+            @NonNull final PreHandleContext context,
             @NonNull final ReadableScheduleStore scheduleStore,
             @NonNull final PreHandleDispatcher dispatcher) {
         requireNonNull(context);

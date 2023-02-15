@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.throttle;
 
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
@@ -42,8 +43,7 @@ public class MonoThrottleAccumulator implements ThrottleAccumulator {
     }
 
     @Override
-    public boolean shouldThrottleQuery(
-            final @NonNull HederaFunctionality functionality, final @NonNull Query query) {
+    public boolean shouldThrottleQuery(final @NonNull HederaFunctionality functionality, final @NonNull Query query) {
         return hapiThrottling.shouldThrottleQuery(functionality, query);
     }
 }

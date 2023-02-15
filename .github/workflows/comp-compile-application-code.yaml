@@ -13,42 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
+
 name: "ZComponent: Compile"
 on:
   workflow_call:
     inputs:
       enable-javadoc:
-        description: "Javadoc Enabled:"
+        description: "Javadoc Enabled"
         type: boolean
         required: false
         default: true
       enable-unit-tests:
-        description: "Unit Testing Enabled:"
+        description: "Unit Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-e2e-tests:
-        description: "End to End Testing Enabled:"
+        description: "End to End Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-integration-tests:
-        description: "Integration Testing Enabled:"
+        description: "Integration Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-sonar-analysis:
-        description: "Sonar Analysis Enabled:"
+        description: "Sonar Analysis Enabled"
         type: boolean
         required: false
         default: false
-      enable-fossa-scan:
-        description: "FOSSA Scan Enabled"
-        type: boolean
-        required: false
-        default: false
-      enable-fossa-test:
-        description: "FOSSA Test Enabled"
+      enable-spotless-check:
+        description: "Spotless Check Enabled"
         type: boolean
         required: false
         default: false
@@ -85,9 +81,6 @@ on:
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
         required: false
-      fossa-api-token:
-        description: "The FOSSA API access token used to run FOSSA scan and test features."
-        required: false
 
 defaults:
   run:
@@ -104,13 +97,13 @@ permissions:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # pin@v3
 
       - name: Expand Shallow Clone for SonarQube and Spotless
-        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests) && !cancelled() }}
+        if: ${{ (inputs.enable-sonar-analysis || inputs.enable-unit-tests || inputs.enable-spotless-check) && !cancelled() }}
         run: |
           git fetch --unshallow --no-recurse-submodules
 
@@ -143,6 +136,13 @@ jobs:
         with:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: javadoc --scan
+
+      - name: Spotless Check
+        uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
+        if: ${{ inputs.enable-spotless-check && !cancelled() }}
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: spotlessCheck --scan
 
       - name: Unit Testing
         id: gradle-test
