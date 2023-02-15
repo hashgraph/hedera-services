@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -97,7 +98,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<Boolean> freezeDefault = Optional.empty();
     private Optional<String> autoRenewAccount = Optional.empty();
     private Optional<Consumer<String>> createdIdObs = Optional.empty();
-    @Nullable private Consumer<Address> createdAddressObs;
+
+    @Nullable
+    private Consumer<Address> createdAddressObs;
+
     private Optional<Function<HapiSpec, String>> symbolFn = Optional.empty();
     private Optional<Function<HapiSpec, String>> nameFn = Optional.empty();
     private final List<Function<HapiSpec, CustomFee>> feeScheduleSuppliers = new ArrayList<>();
@@ -261,16 +265,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
-            throws Throwable {
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
         final var txnSubType = getTxnSubType(CommonUtils.extractTransactionBody(txn));
         return spec.fees()
                 .forActivityBasedOp(
-                        HederaFunctionality.TokenCreate,
-                        txnSubType,
-                        this::usageEstimate,
-                        txn,
-                        numPayerKeys);
+                        HederaFunctionality.TokenCreate, txnSubType, this::usageEstimate, txn, numPayerKeys);
     }
 
     private SubType getTxnSubType(final TransactionBody txn) {
@@ -278,13 +277,9 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         final SubType chosenType;
         final var usesCustomFees = op.hasFeeScheduleKey() || op.getCustomFeesCount() > 0;
         if (op.getTokenType() == NON_FUNGIBLE_UNIQUE) {
-            chosenType =
-                    usesCustomFees
-                            ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES
-                            : TOKEN_NON_FUNGIBLE_UNIQUE;
+            chosenType = usesCustomFees ? TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES : TOKEN_NON_FUNGIBLE_UNIQUE;
         } else {
-            chosenType =
-                    usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
+            chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
         }
         return chosenType;
     }
@@ -292,10 +287,10 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
         final var accumulator = new UsageAccumulator();
         final var tokenCreateMeta = TOKEN_OPS_USAGE_UTILS.tokenCreateUsageFrom(txn);
-        final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
+        final var baseTransactionMeta =
+                new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
-        tokenOpsUsage.tokenCreateUsage(
-                suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator);
+        tokenOpsUsage.tokenCreateUsage(suFrom(svo), baseTransactionMeta, tokenCreateMeta, accumulator);
         return AdapterUtils.feeDataFrom(accumulator);
     }
 
@@ -307,76 +302,60 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         if (nameFn.isPresent()) {
             name = Optional.of(nameFn.get().apply(spec));
         }
-        final TokenCreateTransactionBody opBody =
-                spec.txns()
-                        .<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
-                                TokenCreateTransactionBody.class,
-                                b -> {
-                                    tokenType.ifPresent(b::setTokenType);
-                                    supplyType.ifPresent(b::setSupplyType);
-                                    symbol.ifPresent(b::setSymbol);
-                                    name.ifPresent(b::setName);
-                                    entityMemo.ifPresent(s -> b.setMemo(s));
-                                    initialSupply.ifPresent(b::setInitialSupply);
-                                    maxSupply.ifPresent(b::setMaxSupply);
-                                    decimals.ifPresent(b::setDecimals);
-                                    freezeDefault.ifPresent(b::setFreezeDefault);
-                                    adminKey.ifPresent(
-                                            k -> b.setAdminKey(spec.registry().getKey(k)));
-                                    freezeKey.ifPresent(
-                                            k -> b.setFreezeKey(spec.registry().getKey(k)));
-                                    supplyKey.ifPresent(
-                                            k -> b.setSupplyKey(spec.registry().getKey(k)));
-                                    feeScheduleKey.ifPresent(
-                                            k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
-                                    pauseKey.ifPresent(
-                                            k -> b.setPauseKey(spec.registry().getKey(k)));
-                                    if (autoRenewAccount.isPresent()) {
-                                        final var id = TxnUtils.asId(autoRenewAccount.get(), spec);
-                                        b.setAutoRenewAccount(id);
-                                        final long secs =
-                                                autoRenewPeriod.orElse(
-                                                        spec.setup()
-                                                                .defaultAutoRenewPeriod()
-                                                                .getSeconds());
-                                        b.setAutoRenewPeriod(
-                                                Duration.newBuilder().setSeconds(secs).build());
-                                    }
-                                    if (autoRenewPeriod.isEmpty()) {
-                                        expiry.ifPresent(
-                                                t ->
-                                                        b.setExpiry(
-                                                                Timestamp.newBuilder()
-                                                                        .setSeconds(t)
-                                                                        .build()));
-                                    }
-                                    wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
-                                    kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
-                                    treasury.ifPresent(
-                                            a -> {
-                                                final var treasuryId = TxnUtils.asId(a, spec);
-                                                b.setTreasury(treasuryId);
-                                            });
-                                    if (!feeScheduleSuppliers.isEmpty()) {
-                                        for (final var supplier : feeScheduleSuppliers) {
-                                            b.addCustomFees(supplier.apply(spec));
-                                        }
-                                    }
-                                });
+        final TokenCreateTransactionBody opBody = spec.txns()
+                .<TokenCreateTransactionBody, TokenCreateTransactionBody.Builder>body(
+                        TokenCreateTransactionBody.class, b -> {
+                            tokenType.ifPresent(b::setTokenType);
+                            supplyType.ifPresent(b::setSupplyType);
+                            symbol.ifPresent(b::setSymbol);
+                            name.ifPresent(b::setName);
+                            entityMemo.ifPresent(s -> b.setMemo(s));
+                            initialSupply.ifPresent(b::setInitialSupply);
+                            maxSupply.ifPresent(b::setMaxSupply);
+                            decimals.ifPresent(b::setDecimals);
+                            freezeDefault.ifPresent(b::setFreezeDefault);
+                            adminKey.ifPresent(
+                                    k -> b.setAdminKey(spec.registry().getKey(k)));
+                            freezeKey.ifPresent(
+                                    k -> b.setFreezeKey(spec.registry().getKey(k)));
+                            supplyKey.ifPresent(
+                                    k -> b.setSupplyKey(spec.registry().getKey(k)));
+                            feeScheduleKey.ifPresent(
+                                    k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
+                            pauseKey.ifPresent(
+                                    k -> b.setPauseKey(spec.registry().getKey(k)));
+                            if (autoRenewAccount.isPresent()) {
+                                final var id = TxnUtils.asId(autoRenewAccount.get(), spec);
+                                b.setAutoRenewAccount(id);
+                                final long secs = autoRenewPeriod.orElse(
+                                        spec.setup().defaultAutoRenewPeriod().getSeconds());
+                                b.setAutoRenewPeriod(
+                                        Duration.newBuilder().setSeconds(secs).build());
+                            }
+                            if (autoRenewPeriod.isEmpty()) {
+                                expiry.ifPresent(t -> b.setExpiry(
+                                        Timestamp.newBuilder().setSeconds(t).build()));
+                            }
+                            wipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
+                            kycKey.ifPresent(k -> b.setKycKey(spec.registry().getKey(k)));
+                            treasury.ifPresent(a -> {
+                                final var treasuryId = TxnUtils.asId(a, spec);
+                                b.setTreasury(treasuryId);
+                            });
+                            if (!feeScheduleSuppliers.isEmpty()) {
+                                for (final var supplier : feeScheduleSuppliers) {
+                                    b.addCustomFees(supplier.apply(spec));
+                                }
+                            }
+                        });
         return b -> b.setTokenCreation(opBody);
     }
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         final List<Function<HapiSpec, Key>> signers =
-                new ArrayList<>(
-                        List.of(
-                                spec -> spec.registry().getKey(effectivePayer(spec)),
-                                spec ->
-                                        spec.registry()
-                                                .getKey(
-                                                        treasury.orElseGet(
-                                                                spec.setup()::defaultPayerName))));
+                new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
+                        .getKey(treasury.orElseGet(spec.setup()::defaultPayerName))));
         adminKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
         freezeKey.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
         autoRenewAccount.ifPresent(k -> signers.add(spec -> spec.registry().getKey(k)));
@@ -401,8 +380,7 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         registry.saveTokenId(token, tokenID);
         registry.saveTreasury(token, treasury.orElse(spec.setup().defaultPayerName()));
         createdIdObs.ifPresent(obs -> obs.accept(HapiPropertySource.asTokenString(tokenID)));
-        Optional.ofNullable(createdAddressObs)
-                .ifPresent(obs -> obs.accept(idAsHeadlongAddress(tokenID)));
+        Optional.ofNullable(createdAddressObs).ifPresent(obs -> obs.accept(idAsHeadlongAddress(tokenID)));
 
         try {
             final var submittedBody = CommonUtils.extractTransactionBody(txnSubmitted);
@@ -432,12 +410,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
         }
 
         if (advertiseCreation) {
-            final String banner =
-                    "\n\n"
-                            + bannerWith(
-                                    String.format(
-                                            "Created token '%s' with id '0.0.%d'.",
-                                            token, tokenID.getTokenNum()));
+            final String banner = "\n\n"
+                    + bannerWith(String.format("Created token '%s' with id '0.0.%d'.", token, tokenID.getTokenNum()));
             log.info(banner);
         }
         if (asCallableContract) {
@@ -454,13 +428,11 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         final MoreObjects.ToStringHelper helper = super.toStringHelper().add("token", token);
-        Optional.ofNullable(lastReceipt)
-                .ifPresent(
-                        receipt -> {
-                            if (receipt.getTokenID().getTokenNum() != 0) {
-                                helper.add("created", receipt.getTokenID().getTokenNum());
-                            }
-                        });
+        Optional.ofNullable(lastReceipt).ifPresent(receipt -> {
+            if (receipt.getTokenID().getTokenNum() != 0) {
+                helper.add("created", receipt.getTokenID().getTokenNum());
+            }
+        });
         return helper;
     }
 }
