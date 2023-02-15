@@ -27,10 +27,12 @@ import javax.inject.Inject;
  */
 public class QueryContextImpl implements QueryContext {
     private final NetworkInfo networkInfo;
+
     @Inject
     public QueryContextImpl(final NetworkInfo networkInfo) {
         this.networkInfo = networkInfo;
     }
+
     @Override
     public ByteString getLedgerId() {
         return networkInfo.ledgerId();
