@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountI
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -133,6 +134,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -175,7 +177,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 hollowAccountCreationChargesExpectedFees(),
                 lazyCreateViaEthereumCryptoTransfer(),
                 hollowAccountCompletionWithSimultaniousPropertiesUpdate(),
-                contractDeployAfterEthereumTransferLazyCreate());
+                contractDeployAfterEthereumTransferLazyCreate(),
+                contractCallAfterEthereumTransferLazyCreate());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -1064,7 +1067,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                         .maxGasAllowance(FIVE_HBARS)
                                                         .gasLimit(2_000_000L)
                                                         .via(lazyCreateTxn)
-                                                        .hasKnownStatus(SUCCESS))))
+                                                        .hasKnownStatus(SUCCESS),
+                                                getTxnRecord(lazyCreateTxn).logged())))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1085,6 +1089,74 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .logged();
 
                                     allRunFor(spec, contractCreateTxn, expectedTxnRecord);
+                                }));
+    }
+
+    private HapiSpec contractCallAfterEthereumTransferLazyCreate() {
+        final var RECIPIENT_KEY = "lazyAccountRecipient";
+        final var lazyCreateTxn = "payTxn";
+        return propertyPreservingHapiSpec("contractCallAfterEthereumTransferLazyCreate")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROP,
+                                "298",
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "true",
+                                CONTRACTS_EVM_VERSION_PROP,
+                                "v0.34"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via(AUTO_ACCOUNT),
+                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
+                        uploadInitCode(FACTORY_MIRROR_CONTRACT),
+                        contractCreate(FACTORY_MIRROR_CONTRACT).via("createTX").balance(20))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(0L)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(2_000_000L)
+                                                        .via(lazyCreateTxn)
+                                                        .hasKnownStatus(SUCCESS),
+                                                getTxnRecord(lazyCreateTxn).logged())))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var contractCallTxn =
+                                            contractCall(
+                                                            FACTORY_MIRROR_CONTRACT,
+                                                            "createChild",
+                                                            BigInteger.TEN)
+                                                    .via("callTX");
+
+                                    final var expectedContractCallRecord =
+                                            getTxnRecord("callTX")
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            ContractFnResultAsserts
+                                                                                    .resultWith()
+                                                                                    .createdContractIdsCount(
+                                                                                            1)))
+                                                    .logged();
+
+                                    allRunFor(spec, contractCallTxn, expectedContractCallRecord);
                                 }));
     }
 
