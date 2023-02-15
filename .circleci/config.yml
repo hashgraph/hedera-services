@@ -1535,7 +1535,7 @@ jobs:
             
             # Build JRS 
             cd /swirlds-platform/regression
-            git checkout 03171-slf4j-not-logging 
+            git checkout 03132-disable-freeze-bug-test
 
             ./gradlew assemble --scan --parallel
 
