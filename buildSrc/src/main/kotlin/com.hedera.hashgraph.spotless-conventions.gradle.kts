@@ -21,7 +21,7 @@ plugins {
 spotless {
     // Disable the automatic application of Spotless to all source sets when the check task is run.
     isEnforceCheck = false
-    
+
     // optional: limit format enforcement to just the files changed by this feature branch
     ratchetFrom("origin/develop")
 
