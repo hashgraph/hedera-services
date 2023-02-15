@@ -79,7 +79,7 @@ permissions:
 jobs:
   Artifact:
     name: ${{ inputs.custom-job-label || 'Artifact' }}
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Install Semantic Version Tools
         run: |
