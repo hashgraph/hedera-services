@@ -141,7 +141,7 @@ Based on the given definitions a module folder in the project looks like this:
 
 The following questions are currently not answered by the doc
 
-- Should it be `src/eet/java` or `src/eetest/java`?
+- Should it be `src/eet/java` or `src/eetest/java` or `src/e2e/java`?
 - Should e-2-e tests run on the classpath or the module path?
 - Should benchmarks run on the classpath or the module path?
 
