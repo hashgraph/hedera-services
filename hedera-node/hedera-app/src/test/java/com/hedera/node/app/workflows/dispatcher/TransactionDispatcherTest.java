@@ -603,7 +603,7 @@ class TransactionDispatcherTest {
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.tokenUpdateHandler()).preHandle(meta)),
+                                        verify(handlers.tokenUpdateHandler()).preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
