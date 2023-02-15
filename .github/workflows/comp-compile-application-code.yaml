@@ -18,37 +18,32 @@ on:
   workflow_call:
     inputs:
       enable-javadoc:
-        description: "Javadoc Enabled:"
+        description: "Javadoc Enabled"
         type: boolean
         required: false
         default: true
       enable-unit-tests:
-        description: "Unit Testing Enabled:"
+        description: "Unit Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-e2e-tests:
-        description: "End to End Testing Enabled:"
+        description: "End to End Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-integration-tests:
-        description: "Integration Testing Enabled:"
+        description: "Integration Testing Enabled"
         type: boolean
         required: false
         default: false
       enable-sonar-analysis:
-        description: "Sonar Analysis Enabled:"
+        description: "Sonar Analysis Enabled"
         type: boolean
         required: false
         default: false
-      enable-fossa-scan:
-        description: "FOSSA Scan Enabled"
-        type: boolean
-        required: false
-        default: false
-      enable-fossa-test:
-        description: "FOSSA Test Enabled"
+      enable-spotless-check:
+        description: "Spotless Check Enabled"
         type: boolean
         required: false
         default: false
@@ -84,9 +79,6 @@ on:
         required: true
       sonar-token:
         description: "The SonarCloud access token used by the SonarQube agent to report an analysis."
-        required: false
-      fossa-api-token:
-        description: "The FOSSA API access token used to run FOSSA scan and test features."
         required: false
 
 defaults:
