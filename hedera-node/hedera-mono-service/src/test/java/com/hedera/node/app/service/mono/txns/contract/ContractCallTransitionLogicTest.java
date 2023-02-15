@@ -291,7 +291,6 @@ class ContractCallTransitionLogicTest {
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
-        verify(worldState, never()).getCreatedContractIds();
         verify(txnCtx).setTargetedContract(IdUtils.asContract("0.0." + 666L));
     }
 

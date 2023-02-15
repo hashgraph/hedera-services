@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.doAnswer;
@@ -44,9 +45,12 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
@@ -87,6 +91,8 @@ class HederaWorldStateTest {
     @Mock private UsageLimits usageLimits;
     @Mock NodeLocalProperties properties;
     @Mock private FunctionalityThrottling handleThrottling;
+
+    @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
     private CodeCache codeCache;
 
@@ -310,6 +316,8 @@ class HederaWorldStateTest {
         final var tbdAddress = asTypedEvmAddress(tbd);
         givenNonNullWorldLedgers();
         given(worldLedgers.aliases()).willReturn(aliases);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
 
         /* Please note that the subject of this test is the actual inner updater class */
         var actualSubject = subject.updater();
@@ -466,6 +474,8 @@ class HederaWorldStateTest {
         final var tbdAddress = contract.asEvmAddress();
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
 
         final var updater = subject.updater();
         updater.deleteAccount(tbdAddress);
@@ -486,6 +496,8 @@ class HederaWorldStateTest {
         final var tbdAddress = contract.asEvmAddress();
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(dynamicProperties.shouldEnforceAccountCreationThrottleForContracts())
                 .willReturn(true);
 
@@ -510,6 +522,8 @@ class HederaWorldStateTest {
         final var tbdAddress = contract.asEvmAddress();
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
         given(handleThrottling.shouldThrottleNOfUnscaled(1, HederaFunctionality.CryptoCreate))
                 .willReturn(true);
 
@@ -622,6 +636,8 @@ class HederaWorldStateTest {
         given(worldLedgers.aliases()).willReturn(aliases);
         final var newAddress = contract.asEvmAddress();
         given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
 
         final var actualSubject = subject.updater();
         final var evmAccount = actualSubject.createAccount(newAddress, 0, Wei.of(balance));
@@ -686,6 +702,8 @@ class HederaWorldStateTest {
     void onlyStoresCodeIfUpdated() {
         givenNonNullWorldLedgers();
         final var someAddress = contract.asEvmAddress();
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
 
         final var actualSubject = subject.updater();
 
@@ -704,6 +722,8 @@ class HederaWorldStateTest {
         final var newAddress = contract.asEvmAddress();
         given(worldLedgers.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(newAddress)).willReturn(newAddress);
+        given(worldLedgers.accounts()).willReturn(accounts);
+        given(accounts.get(any(), eq(AccountProperty.IS_SMART_CONTRACT))).willReturn(true);
 
         final var actualSubject = subject.updater();
         actualSubject.createAccount(newAddress, 0, Wei.of(balance));
