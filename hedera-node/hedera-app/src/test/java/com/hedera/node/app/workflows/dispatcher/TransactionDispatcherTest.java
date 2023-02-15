@@ -658,7 +658,7 @@ class TransactionDispatcherTest {
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenGrantKycToAccountHandler())
-                                                .preHandle(meta)),
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenRevokeKyc(
