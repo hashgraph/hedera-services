@@ -53,7 +53,7 @@ public class RecordBlockNumberTool {
     private static final String DIR_PROPERTY = "dir";
     private static final String HAPI_PROTOBUF_VERSION = "hapiProtoVersion";
 
-    private static final Logger LOGGER = LogManager.getLogger(FileSignTool.class);
+    private static final Logger LOGGER = LogManager.getLogger(RecordBlockNumberTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("BLOCK_NUMBER");
     private static final int BYTES_COUNT_IN_INT = 4;
     /** default log4j2 file name */
