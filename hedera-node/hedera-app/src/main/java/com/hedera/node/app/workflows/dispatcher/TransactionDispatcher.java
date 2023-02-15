@@ -178,7 +178,7 @@ public class TransactionDispatcher {
             final var accountStore = storeFactory.getAccountStore();
             final var handlerContext = new PreHandleContext(accountStore, innerTxn, innerPayer);
             dispatchPreHandle(storeFactory, handlerContext);
-            return new TransactionMetadata(handlerContext, List.of());
+            return new TransactionMetadata(handlerContext, null, List.of(), List.of());
         };
     }
 }

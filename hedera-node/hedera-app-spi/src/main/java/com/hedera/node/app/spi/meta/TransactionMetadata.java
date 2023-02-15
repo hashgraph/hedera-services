@@ -21,6 +21,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -38,6 +39,9 @@ import java.util.Set;
  * @param payerKey payer key required to sign the transaction. It is null if payer is missing
  * @param requiredNonPayerKeys list of keys that are required to sign the transaction, in addition
  *     to payer key
+ * @param handlerMetadata arbitrary data that a handler can pass between pre-handle and handle
+ * @param payerSignature {@link TransactionSignature} of the payer
+ * @param otherSignatures lit {@link TransactionSignature} of other keys that need to sign
  * @param readKeys the keys that were read during pre-handle
  */
 public record TransactionMetadata(
@@ -47,16 +51,22 @@ public record TransactionMetadata(
         @Nullable HederaKey payerKey,
         @NonNull List<HederaKey> requiredNonPayerKeys,
         @Nullable Object handlerMetadata,
+        @Nullable TransactionSignature payerSignature,
+        @NonNull List<TransactionSignature> otherSignatures,
         @NonNull List<ReadKeys> readKeys) {
 
     public TransactionMetadata {
         requireNonNull(status);
         requireNonNull(requiredNonPayerKeys);
+        requireNonNull(otherSignatures);
         requireNonNull(readKeys);
     }
 
     public TransactionMetadata(
-            @NonNull final PreHandleContext context, @NonNull final List<ReadKeys> readKeys) {
+            @NonNull final PreHandleContext context,
+            @Nullable final TransactionSignature payerSignature,
+            @NonNull final List<TransactionSignature> otherSignatures,
+            @NonNull final List<ReadKeys> readKeys) {
         this(
                 requireNonNull(context).getTxn(),
                 context.getPayer(),
@@ -64,6 +74,8 @@ public record TransactionMetadata(
                 context.getPayerKey(),
                 context.getRequiredNonPayerKeys(),
                 context.getHandlerMetadata(),
+                payerSignature,
+                otherSignatures,
                 readKeys);
     }
 
@@ -71,7 +83,7 @@ public record TransactionMetadata(
             @Nullable final TransactionBody txBody,
             @Nullable final AccountID payerID,
             @NonNull final ResponseCodeEnum status) {
-        this(txBody, payerID, status, null, List.of(), null, List.of());
+        this(txBody, payerID, status, null, List.of(), null, null, List.of(), List.of());
     }
 
     /**
@@ -88,8 +100,8 @@ public record TransactionMetadata(
      *
      * <p>Each entry in the list consists of the {@code statesKey} (which identifies the {@link
      * com.hedera.node.app.spi.state.ReadableStates}), the {@code stateKey} (which identifies the
-     * {@link com.hedera.node.app.spi.state.ReadableKVState}, and the {@link Set} of keys, that were
-     * read.
+     * {@link com.hedera.node.app.spi.state.ReadableKVState}), and the {@link Set} of keys, that
+     * were read.
      *
      * @param statesKey index that identifies the {@link
      *     com.hedera.node.app.spi.state.ReadableStates}

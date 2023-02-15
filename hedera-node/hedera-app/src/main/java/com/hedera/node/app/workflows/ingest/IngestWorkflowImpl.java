@@ -35,7 +35,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -143,7 +142,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 checker.checkTransactionSemantics(txBody, functionality);
 
                 // 4. Get payer account
-                final AccountID payerID = txBody.getTransactionID().getAccountID();
+                final var payerID = txBody.getTransactionID().getAccountID();
                 final var tokenStates = state.createReadableStates(TokenService.NAME);
                 final var accountStore = storeSupplier.apply(tokenStates);
                 final var payer =
@@ -152,19 +151,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                                 .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
                 // 5. Check payer's signature
-                checker.checkPayerSignature(txBody, signatureMap, payer);
+                checker.checkPayerSignature(state, requestBuffer, signatureMap, payerID);
 
                 // 6. Check account balance
                 checker.checkSolvency(txBody, functionality, payer);
 
                 // 7. Submit to platform
-                final byte[] byteArray;
-                if (requestBuffer.hasArray()) {
-                    byteArray = requestBuffer.array();
-                } else {
-                    byteArray = new byte[requestBuffer.limit()];
-                    requestBuffer.get(byteArray);
-                }
+                final var byteArray = checker.extractByteArray(requestBuffer);
                 submissionManager.submit(txBody, byteArray, ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
@@ -176,7 +169,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             }
         }
 
-        // 8. Return PreCheck code and evtl. estimated fee
+        // 8. Return PreCheck code and eventually estimated fee
         final var transactionResponse =
                 TransactionResponse.newBuilder()
                         .setNodeTransactionPrecheckCode(result)

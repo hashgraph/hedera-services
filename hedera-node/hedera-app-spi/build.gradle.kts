@@ -45,4 +45,5 @@ dependencies {
 
     testFixturesCompileOnly(libs.spotbugs.annotations)
     testFixturesCompileOnly(testLibs.assertj.core)
+    testFixturesApi(libs.swirlds.common)
 }

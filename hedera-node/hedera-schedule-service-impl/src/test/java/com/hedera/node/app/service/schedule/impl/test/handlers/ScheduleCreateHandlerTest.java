@@ -63,6 +63,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
@@ -103,6 +105,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
@@ -135,6 +139,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
 
@@ -160,6 +166,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(eq(scheduledTxn), any())).willReturn(scheduledMeta);
         given(keyLookup.getKey(scheduler))
@@ -193,6 +201,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
 
         given(keyLookup.getKey(scheduler))
@@ -230,6 +240,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
         given(dispatcher.dispatch(any(), any())).willReturn(scheduledMeta);
 

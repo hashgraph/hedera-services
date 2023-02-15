@@ -94,7 +94,15 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         givenSetupForScheduleSign(txn);
         scheduledMeta =
                 new TransactionMetadata(
-                        scheduledTxn, payer, OK, adminKey, List.of(), null, List.of());
+                        scheduledTxn,
+                        payer,
+                        OK,
+                        adminKey,
+                        List.of(),
+                        null,
+                        null,
+                        List.of(),
+                        List.of());
 
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
@@ -173,6 +181,8 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
         given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(schedule);
         given(keyLookup.getKey(scheduler))

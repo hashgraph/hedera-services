@@ -114,6 +114,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
                         schedulerKey,
                         List.of(),
                         null,
+                        null,
+                        List.of(),
                         List.of());
     }
 

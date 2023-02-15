@@ -20,6 +20,7 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -102,6 +103,28 @@ public class TransactionMetadataAssert
             failWithMessage(
                     "Expected TransactionMetadata's handlerMetadata to be <%s> but was <%s>",
                     handlerMetadata, actual.handlerMetadata());
+        }
+        return this;
+    }
+
+    public TransactionMetadataAssert hasPayerSignature(
+            @Nullable final TransactionSignature payerSignature) {
+        isNotNull();
+        if (!Objects.equals(actual.payerSignature(), payerSignature)) {
+            failWithMessage(
+                    "Expected TransactionMetadata's payerSignature to be <%s> but was <%s>",
+                    payerSignature, actual.payerSignature());
+        }
+        return this;
+    }
+
+    public TransactionMetadataAssert hasOtherSignatures(
+            @Nullable final List<TransactionSignature> otherSignature) {
+        isNotNull();
+        if (!Objects.equals(actual.otherSignatures(), otherSignature)) {
+            failWithMessage(
+                    "Expected TransactionMetadata's otherSignature to be <%s> but was <%s>",
+                    otherSignature, actual.otherSignatures());
         }
         return this;
     }

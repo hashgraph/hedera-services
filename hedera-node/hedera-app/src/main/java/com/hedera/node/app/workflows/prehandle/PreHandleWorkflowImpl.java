@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.prehandle;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.signature.SignaturePreparer;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -27,6 +28,8 @@ import com.hedera.node.app.workflows.dispatcher.StoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -63,6 +66,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private final WorkflowOnset onset;
     private final TransactionDispatcher dispatcher;
+    private final SignaturePreparer signaturePreparer;
+    private final Cryptography cryptography;
     private final Function<Supplier<?>, CompletableFuture<?>> runner;
 
     /**
@@ -72,16 +77,21 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param dispatcher the {@link TransactionDispatcher} that will call transaction-specific
      *     {@code preHandle()}-methods
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
+     * @param signaturePreparer the {@link SignaturePreparer} to prepare signatures
+     * @param cryptography the {@link Cryptography} component used to verify signatures
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final WorkflowOnset onset) {
+            @NonNull final WorkflowOnset onset,
+            @NonNull final SignaturePreparer signaturePreparer,
+            @NonNull final Cryptography cryptography) {
         requireNonNull(exe);
-
         this.dispatcher = requireNonNull(dispatcher);
         this.onset = requireNonNull(onset);
+        this.signaturePreparer = requireNonNull(signaturePreparer);
+        this.cryptography = requireNonNull(cryptography);
         this.runner = supplier -> CompletableFuture.supplyAsync(supplier, exe);
     }
 
@@ -89,9 +99,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     PreHandleWorkflowImpl(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final WorkflowOnset onset,
+            @NonNull final SignaturePreparer signaturePreparer,
+            @NonNull final Cryptography cryptography,
             @NonNull final Function<Supplier<?>, CompletableFuture<?>> runner) {
         this.dispatcher = requireNonNull(dispatcher);
         this.onset = requireNonNull(onset);
+        this.signaturePreparer = requireNonNull(signaturePreparer);
+        this.cryptography = requireNonNull(cryptography);
         this.runner = requireNonNull(runner);
     }
 
@@ -136,17 +150,32 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // keys, and prefetch required data
             final var storeFactory = new StoreFactory(state);
             final var accountStore = storeFactory.getAccountStore();
-            final var handlerContext = new PreHandleContext(accountStore, txBody);
-            dispatcher.dispatchPreHandle(storeFactory, handlerContext);
+            final var context = new PreHandleContext(accountStore, txBody);
+            dispatcher.dispatchPreHandle(storeFactory, context);
 
             // 3. Prepare signature-data
-            // TODO: Prepare signature-data once this functionality was implemented
+            final var payerSignature =
+                    context.getPayerKey() == null
+                            ? null
+                            : signaturePreparer.prepareSignature(
+                                    state, txBytes, onsetResult.signatureMap(), context.getPayer());
+            final var otherSignatures =
+                    signaturePreparer.prepareSignatures(
+                            state,
+                            txBytes,
+                            onsetResult.signatureMap(),
+                            context.getRequiredNonPayerKeys());
 
             // 4. Verify signatures
-            // TODO: Verify signature via the platform once this functionality was implemented
+            // This is done synchronously, because preHandle() is already executed asynchronously
+            if (payerSignature != null) {
+                cryptography.verifySync(payerSignature);
+            }
+            cryptography.verifySync(otherSignatures);
 
             // 5. Return TransactionMetadata
-            return createTransactionMetadata(storeFactory.getUsedStates(), handlerContext);
+            return createTransactionMetadata(
+                    context, payerSignature, otherSignatures, storeFactory.getUsedStates());
 
         } catch (PreCheckException preCheckException) {
             return createInvalidTransactionMetadata(
@@ -162,10 +191,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     @NonNull
     private static TransactionMetadata createTransactionMetadata(
-            @NonNull final Map<String, ReadableStates> usedStates,
-            @NonNull final PreHandleContext context) {
+            @NonNull final PreHandleContext context,
+            @Nullable final TransactionSignature payerSignature,
+            @NonNull final List<TransactionSignature> otherSignatures,
+            @NonNull final Map<String, ReadableStates> usedStates) {
         final List<TransactionMetadata.ReadKeys> readKeys = extractAllReadKeys(usedStates);
-        return new TransactionMetadata(context, readKeys);
+        return new TransactionMetadata(context, payerSignature, otherSignatures, readKeys);
     }
 
     @NonNull
@@ -176,6 +207,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         return new TransactionMetadata(txBody, payerID, responseCode);
     }
 
+    @NonNull
     private static List<TransactionMetadata.ReadKeys> extractAllReadKeys(
             @NonNull final Map<String, ReadableStates> usedStates) {
         return usedStates.entrySet().stream()
@@ -188,6 +220,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 .toList();
     }
 
+    @NonNull
     private static Stream<TransactionMetadata.ReadKeys> extractReadKeysFromReadableStates(
             @NonNull final String statesKey, @NonNull final ReadableStates readableStates) {
         return readableStates.stateKeys().stream()
