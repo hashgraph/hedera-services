@@ -156,7 +156,7 @@ public class FileSignTool {
                         SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.info(MARKER, "data is being signed = {}", hex(data));
+            LOGGER.info(MARKER, "data being signed = {}", hex(data));
         }
 
         signature.update(data);
@@ -358,23 +358,23 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
-            LOGGER.info(MARKER, "Writting file header is {}", Arrays.toString(fileHeader));
+            LOGGER.info(MARKER, "Writing file header {}", Arrays.toString(fileHeader));
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            LOGGER.info(MARKER, "Writting start running hash {}", hex(startRunningHash));
+            LOGGER.info(MARKER, "Writing start running hash {}", hex(startRunningHash));
             dosMeta.write(startRunningHash);
-            LOGGER.info(MARKER, "Writting end running hash {}", hex(endRunningHash));
+            LOGGER.info(MARKER, "Writing end running hash {}", hex(endRunningHash));
             dosMeta.write(endRunningHash);
-            LOGGER.info(MARKER, "Writting block number {}", blockNumber);
+            LOGGER.info(MARKER, "Writing block number {}", blockNumber);
             dosMeta.writeLong(blockNumber);
             dosMeta.flush();
 
             // update stream digest
-            LOGGER.info(MARKER, "Writting version {}", version);
+            LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
-            LOGGER.info(MARKER, "Writting serializedBytes {}", hex(serializedBytes).substring(0, 32));
+            LOGGER.info(MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
             dos.write(serializedBytes);
             dos.flush();
 
@@ -475,7 +475,7 @@ public class FileSignTool {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
         } else {
-            throw new RuntimeException("Could not find log4j2 configuratoin file " + logConfigFile);
+            throw new RuntimeException("Could not find log4j2 configuration file " + logConfigFile);
         }
     }
 
