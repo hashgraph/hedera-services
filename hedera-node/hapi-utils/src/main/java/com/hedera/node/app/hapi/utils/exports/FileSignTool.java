@@ -245,9 +245,7 @@ public class FileSignTool {
      */
     public static StreamType loadStreamTypeFromJson(final String jsonPath) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
-
         final File file = new File(jsonPath);
-
         return objectMapper.readValue(file, StreamTypeFromJson.class);
     }
 
