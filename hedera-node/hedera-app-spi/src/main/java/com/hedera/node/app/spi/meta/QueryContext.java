@@ -18,6 +18,9 @@ package com.hedera.node.app.spi.meta;
 
 import com.google.protobuf.ByteString;
 
+/**
+ * Provides context for query processing.
+ */
 public interface QueryContext {
     ByteString getLedgerId();
 }

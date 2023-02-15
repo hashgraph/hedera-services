@@ -21,14 +21,16 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.spi.meta.QueryContext;
 import javax.inject.Inject;
 
+/**
+ * Provides context for query processing.Currently, it only has {@link NetworkInfo} but it might be
+ * extended to provide more context for other queries in the future.
+ */
 public class QueryContextImpl implements QueryContext {
     private final NetworkInfo networkInfo;
-
     @Inject
     public QueryContextImpl(final NetworkInfo networkInfo) {
         this.networkInfo = networkInfo;
     }
-
     @Override
     public ByteString getLedgerId() {
         return networkInfo.ledgerId();

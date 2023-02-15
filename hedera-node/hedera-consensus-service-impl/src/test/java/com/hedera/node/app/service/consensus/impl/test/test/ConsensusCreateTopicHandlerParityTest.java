@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.handlers.test;
+package com.hedera.node.app.service.consensus.impl.test.test;
 
-import static com.hedera.node.app.service.consensus.impl.handlers.test.ConsensusCreateTopicHandlerTest.assertOkResponse;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO;
 import static com.hedera.test.factories.scenarios.ConsensusCreateTopicScenarios.CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO;
@@ -62,7 +61,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertDefaultPayer(context);
         Assertions.assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
@@ -77,7 +76,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertCustomPayer(context);
         Assertions.assertThat(context.getRequiredNonPayerKeys()).isEmpty();
     }
@@ -92,7 +91,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertDefaultPayer(context);
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
@@ -108,7 +107,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertCustomPayer(context);
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
@@ -124,7 +123,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertDefaultPayer(context);
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
@@ -140,7 +139,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertCustomPayer(context);
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey(), MISC_ACCOUNT_KT.asKey());
@@ -156,7 +155,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         Assertions.assertThat(sanityRestored(context.getPayerKey())).isEqualTo(CUSTOM_PAYER_ACCOUNT_KT.asKey());
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
@@ -172,7 +171,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertCustomPayer(context);
         // Note: DEFAULT_PAYER_KT in this case doesn't function as the payer - the payer is
         // CUSTOM_PAYER_ACCOUNT - but instead is in the required keys list because
@@ -191,7 +190,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(context);
 
         // then:
-        assertOkResponse(context);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(context);
         assertCustomPayer(context);
         Assertions.assertThat(sanityRestored(context.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
@@ -207,7 +206,7 @@ class ConsensusCreateTopicHandlerParityTest {
         subject.preHandle(result);
 
         // then:
-        assertOkResponse(result);
+        ConsensusCreateTopicHandlerTest.assertOkResponse(result);
         assertCustomPayer(result);
         Assertions.assertThat(sanityRestored(result.getRequiredNonPayerKeys()))
                 .containsExactly(SIMPLE_TOPIC_ADMIN_KEY.asKey());
