@@ -111,7 +111,7 @@ public class TransactionDispatcher {
             case TOKENCREATION -> handlers.tokenCreateHandler().preHandle(handlerContext);
             case TOKENUPDATE -> handlers.tokenUpdateHandler().preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENMINT -> handlers.tokenMintHandler().preHandle(handlerContext, storeFactory.getTokenStore());
-            case TOKENBURN -> handlers.tokenBurnHandler().preHandle(handlerContext);
+            case TOKENBURN -> handlers.tokenBurnHandler().preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENDELETION -> handlers.tokenDeleteHandler().preHandle(handlerContext, storeFactory.getTokenStore());
             case TOKENWIPE -> handlers.tokenAccountWipeHandler().preHandle(handlerContext);
             case TOKENFREEZE -> handlers.tokenFreezeAccountHandler()
