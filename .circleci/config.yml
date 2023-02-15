@@ -1535,7 +1535,7 @@ jobs:
             ./gradlew assemble --scan
             
             # Build JRS
-            cd /swirlds-platform/regression; git checkout test-block-numbers;
+            cd /swirlds-platform/regression; git checkout 03190-D-add-blocknumber-validator;
             ./gradlew assemble --scan --parallel
 
 
