@@ -92,7 +92,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
+        return List.of(new HapiSpec[] {
                 renewsUsingContractFundsIfNoAutoRenewAccount(),
                 renewalFeeDistributedToStakingAccounts(),
                 renewsUsingAutoRenewAccountIfSet(),
@@ -102,7 +102,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
                 autoRenewWorksAsExpected(),
                 autoRenewInGracePeriodIfEnoughBalance(),
-                storageRentChargedOnlyAfterInitialFreePeriodIsComplete());
+                storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
+        });
     }
 
     private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
@@ -784,9 +785,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(aFungibleToken, aFungibleAmount),
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
-                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY)
+                        getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY),
                         // TODO: re-enable after expiry throttling is fixed
-                        // getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2)
+                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2)
                         );
     }
 
