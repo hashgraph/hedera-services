@@ -100,7 +100,7 @@ public class RecordBlockNumberTool {
                     currentBlockNumber,
                     prevBlockNumber);
         }
-        LOGGER.error(MARKER, "Block number = {}", currentBlockNumber);
+        LOGGER.info(MARKER, "Block number = {}", currentBlockNumber);
         prevBlockNumber = currentBlockNumber;
     }
 
