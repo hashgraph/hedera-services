@@ -117,8 +117,6 @@ public class FileSignTool {
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
-    private static long prevBlockNumber = 0;
-
     /**
      * a messageDigest object for digesting entire stream file and generating entire record stream
      * file hash
@@ -158,10 +156,7 @@ public class FileSignTool {
                         SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(
-                    MARKER,
-                    "data is being signed, publicKey={}",
-                    hex(sigKeyPair.getPublic().getEncoded()));
+            LOGGER.info(MARKER, "data being signed = {}", hex(data));
         }
 
         signature.update(data);
@@ -306,19 +301,6 @@ public class FileSignTool {
                 .build();
     }
 
-    private static void trackBlockNumber(final long currentBlockNumber) {
-        if (currentBlockNumber <= prevBlockNumber) {
-            LOGGER.error(
-                    MARKER,
-                    "Found new block number is equal or less than the prevous one, current {} vs"
-                            + " prev {}",
-                    currentBlockNumber,
-                    prevBlockNumber);
-        }
-        LOGGER.error(MARKER, "Block number = {}", currentBlockNumber);
-        prevBlockNumber = currentBlockNumber;
-    }
-
     private static void createSignatureFileForRecordFile(
             final String recordFile,
             final StreamType streamType,
@@ -364,9 +346,6 @@ public class FileSignTool {
             final Pair<Integer, Optional<RecordStreamFile>> recordResult =
                     readUncompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
-
-            trackBlockNumber(blockNumber);
-
             final byte[] startRunningHash =
                     recordResult
                             .getValue()
@@ -379,23 +358,34 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
+            LOGGER.info(MARKER, "Writing file header {}", Arrays.toString(fileHeader));
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
             }
+            LOGGER.info(MARKER, "Writing start running hash {}", hex(startRunningHash));
             dosMeta.write(startRunningHash);
+            LOGGER.info(MARKER, "Writing end running hash {}", hex(endRunningHash));
             dosMeta.write(endRunningHash);
+            LOGGER.info(MARKER, "Writing block number {}", blockNumber);
             dosMeta.writeLong(blockNumber);
             dosMeta.flush();
 
             // update stream digest
+            LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
+            LOGGER.info(MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
             dos.write(serializedBytes);
             dos.flush();
 
         } catch (final IOException e) {
+            final String message =
+                    String.format(
+                            "Got IOException when reading record file %s, error = %s",
+                            recordFile, e);
             Thread.currentThread().interrupt();
-            LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            LOGGER.error(MARKER, message);
+            throw new RuntimeException(message);
         }
 
         final SignatureObject metadataSignature =
@@ -484,6 +474,8 @@ public class FileSignTool {
             } catch (final IOException e) {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
+        } else {
+            throw new RuntimeException("Could not find log4j2 configuration file " + logConfigFile);
         }
     }
 
