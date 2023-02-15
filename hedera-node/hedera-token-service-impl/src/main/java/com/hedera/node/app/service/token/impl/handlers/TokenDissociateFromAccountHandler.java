@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -35,11 +35,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public TokenDissociateFromAccountHandler() {}
 
     /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Typically, this method validates the {@link TransactionBody} semantically, gathers all
-     * required keys, warms the cache, and creates the {@link TransactionMetadata} that is used in
-     * the handle stage.
+     * Pre-handles a {@link
+     * com.hederahashgraph.api.proto.java.HederaFunctionality#TokenDissociateFromAccount}
+     * transaction, returning the metadata required to, at minimum, validate the signatures of all
+     * required signing keys.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.
@@ -50,7 +49,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+        final var op = context.getTxn().getTokenDissociate();
+        final var target = op.getAccount();
+
+        context.addNonPayerKey(target, INVALID_ACCOUNT_ID);
     }
 
     /**
