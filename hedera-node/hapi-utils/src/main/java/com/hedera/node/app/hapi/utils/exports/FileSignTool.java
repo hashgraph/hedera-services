@@ -475,7 +475,7 @@ public class FileSignTool {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
         } else {
-            System.out.println("Could not find log4j2 configuratoin file " + logConfigFile);
+            throw new RuntimeException("Could not find log4j2 configuratoin file " + logConfigFile);
         }
     }
 
