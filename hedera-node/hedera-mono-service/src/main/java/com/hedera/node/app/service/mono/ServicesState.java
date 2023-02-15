@@ -35,6 +35,7 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -98,6 +99,7 @@ import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -545,6 +547,55 @@ public class ServicesState extends PartialNaryMerkleInternal
         return getChild(StateChildIndices.CONTRACT_STORAGE);
     }
 
+    record NftStats(
+            Map<EntityNum, Integer> totalOwned,
+            Map<EntityNum, Integer> totalSupply,
+            Map<EntityNumPair, Integer> totalOwnedByType) {}
+
+    static NftStats countByOwnershipIn(
+            final UniqueTokenMapAdapter uniqueTokens,
+            final TokenRelStorageAdapter associations,
+            final MerkleMap<EntityNum, MerkleToken> tokens) {
+        final var stats = new NftStats(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        Objects.requireNonNull(uniqueTokens.getMerkleMap())
+                .forEach(
+                        (key, nft) -> {
+                            var owner = nft.getOwner();
+                            final var token = tokens.get(key.getHiOrderAsNum());
+                            if (token == null) {
+                                log.warn(
+                                        "Failed to find token 0.0.{} for NFT serial no {}",
+                                        key.getHiOrderAsLong(),
+                                        key.getLowOrderAsLong());
+                                return;
+                            }
+                            if (owner.num() == 0L) {
+                                owner = token.treasury();
+                            }
+                            if (token.isDeleted()) {
+                                // We only want to count ownership of NFT's from deleted
+                                // tokens *IF* they are still associated to the owner account
+                                final var association =
+                                        associations.get(
+                                                EntityNumPair.fromLongs(
+                                                        owner.num(), key.getHiOrderAsLong()));
+                                if (association == null) {
+                                    // Owner isn't associated, so we don't count this NFT
+                                    return;
+                                }
+                            }
+                            stats.totalOwned().merge(owner.asNum(), 1, Integer::sum);
+                            final var tokenNum = key.getHiOrderAsNum();
+                            final var numPair =
+                                    EntityNumPair.fromLongs(owner.num(), tokenNum.longValue());
+                            stats.totalOwnedByType().merge(numPair, 1, Integer::sum);
+                            if (!token.isDeleted()) {
+                                stats.totalSupply().merge(tokenNum, 1, Integer::sum);
+                            }
+                        });
+        return stats;
+    }
+
     public MerkleMap<EntityNum, MerkleStakingInfo> stakingInfo() {
         return getChild(StateChildIndices.STAKING_INFO);
     }
@@ -624,7 +675,122 @@ public class ServicesState extends PartialNaryMerkleInternal
         app.workingState().updatePrimitiveChildrenFrom(this);
         log.info("Finished migrations needed for deserialized version {}", deserializedVersion);
         logStateChildrenSizes();
+        final var nftStats = countByOwnershipIn(uniqueTokens(), tokenAssociations(), tokens());
+        logNftStats(nftStats, accounts(), tokenAssociations(), tokens());
         networkCtx().markPostUpgradeScanStatus();
+    }
+
+    static void logNftStats(
+            final NftStats stats,
+            final AccountStorageAdapter accounts,
+            final TokenRelStorageAdapter associations,
+            final MerkleMap<EntityNum, MerkleToken> tokens) {
+        accounts.forEach(
+                (num, account) -> {
+                    final var actualOwned = stats.totalOwned().getOrDefault(num, 0);
+                    if (actualOwned > 0) {
+                        // We'll scan this account's NFTs in the next block
+                        return;
+                    }
+                    if (account.getNftsOwned() != 0) {
+                        stats.totalOwned().put(num, 0);
+                    }
+                });
+        associations
+                .getInMemoryRels()
+                .forEach(
+                        (pair, rel) -> {
+                            final var tokenNum = pair.getLowOrderAsNum();
+                            final var token = tokens.get(tokenNum);
+                            if (token == null) {
+                                log.warn(
+                                        "Account 0.0.{} associated to missing token 0.0.{}",
+                                        pair.getHiOrderAsLong(),
+                                        pair.getLowOrderAsLong());
+                            } else if (token.tokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+                                final var actualOwned =
+                                        stats.totalOwnedByType().getOrDefault(pair, 0);
+                                if (actualOwned > 0) {
+                                    // We'll scan this account's NFTs owned by type in the next
+                                    // block
+                                    return;
+                                }
+                                if (rel.getBalance() != 0) {
+                                    stats.totalOwnedByType.put(pair, 0);
+                                }
+                            }
+                        });
+        stats.totalOwned().keySet().stream()
+                .sorted()
+                .forEach(
+                        accountNum -> {
+                            final var account = accounts.get(accountNum);
+                            final var totalOwned = stats.totalOwned().get(accountNum);
+                            if (account != null) {
+                                if (account.getNftsOwned() != totalOwned) {
+                                    log.info(
+                                            "Account 0.0.{} owns {} NFTs (was: {})",
+                                            accountNum.longValue(),
+                                            totalOwned,
+                                            account.getNftsOwned());
+                                    accounts.getForModify(accountNum).setNftsOwned(totalOwned);
+                                }
+                            } else {
+                                log.warn(
+                                        "Missing account 0.0.{} owns {} NFTs",
+                                        accountNum.longValue(),
+                                        totalOwned);
+                            }
+                        });
+        stats.totalSupply().keySet().stream()
+                .sorted()
+                .forEach(
+                        tokenNum -> {
+                            final var token = tokens.get(tokenNum);
+                            final var totalSupply = stats.totalSupply().get(tokenNum);
+                            if (token != null) {
+                                if (token.totalSupply() != totalSupply) {
+                                    log.info(
+                                            "Token 0.0.{} has {} total supply (was: {})",
+                                            tokenNum.longValue(),
+                                            totalSupply,
+                                            token.totalSupply());
+                                    tokens.getForModify(tokenNum).setTotalSupply(totalSupply);
+                                }
+                            } else {
+                                log.warn(
+                                        "Missing token 0.0.{} has total supply {}",
+                                        tokenNum.longValue(),
+                                        totalSupply);
+                            }
+                        });
+        stats.totalOwnedByType().keySet().stream()
+                .sorted()
+                .forEach(
+                        accountTokenNums -> {
+                            final var association = associations.get(accountTokenNums);
+                            final var totalOwnedByType =
+                                    stats.totalOwnedByType().get(accountTokenNums);
+                            if (association != null) {
+                                if (association.getBalance() != totalOwnedByType) {
+                                    log.info(
+                                            "Association 0.0.{}-0.0.{} has balance {} (was: {})",
+                                            accountTokenNums.getHiOrderAsLong(),
+                                            accountTokenNums.getLowOrderAsLong(),
+                                            totalOwnedByType,
+                                            association.getBalance());
+                                    associations
+                                            .getForModify(accountTokenNums)
+                                            .setBalance(totalOwnedByType);
+                                }
+                            } else {
+                                log.warn(
+                                        "Missing association 0.0.{}-0.0.{} has balance {}",
+                                        accountTokenNums.getHiOrderAsLong(),
+                                        accountTokenNums.getLowOrderAsLong(),
+                                        totalOwnedByType);
+                            }
+                        });
     }
 
     boolean shouldMigrateNfts() {
