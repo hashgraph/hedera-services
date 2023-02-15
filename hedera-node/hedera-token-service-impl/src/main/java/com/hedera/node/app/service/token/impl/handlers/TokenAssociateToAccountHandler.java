@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.meta.PreHandleContext;
@@ -50,7 +51,11 @@ public class TokenAssociateToAccountHandler implements TransactionHandler {
      */
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        throw new UnsupportedOperationException("Not implemented");
+
+        final var op = context.getTxn().getTokenAssociate();
+        final var target = op.getAccount();
+
+        context.addNonPayerKey(target, INVALID_ACCOUNT_ID);
     }
 
     /**
