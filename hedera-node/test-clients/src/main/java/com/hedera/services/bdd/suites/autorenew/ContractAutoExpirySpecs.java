@@ -85,6 +85,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
     private static final String UPDATE_TXN = "updateTxn";
     private static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
             "ledger.autoRenewPeriod.minDuration";
+
     public static void main(String... args) {
         new ContractAutoExpirySpecs().runSuiteSync();
     }
@@ -101,8 +102,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
                 autoRenewWorksAsExpected(),
                 autoRenewInGracePeriodIfEnoughBalance(),
-                storageRentChargedOnlyAfterInitialFreePeriodIsComplete()
-                );
+                storageRentChargedOnlyAfterInitialFreePeriodIsComplete());
     }
 
     private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
@@ -160,7 +160,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(AUTO_RENEW_ACCOUNT).logged();
+                                    final var lookup =
+                                            getAccountBalance(AUTO_RENEW_ACCOUNT).logged();
                                     allRunFor(spec, lookup);
                                     renewalFeeWithoutStorage.set(
                                             initBalance
@@ -183,7 +184,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         withOpContext(
                                 (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(AUTO_RENEW_ACCOUNT).logged();
+                                    final var lookup =
+                                            getAccountBalance(AUTO_RENEW_ACCOUNT).logged();
                                     allRunFor(spec, lookup);
                                     renewalFeeWithStorage.set(
                                             initBalance
@@ -273,7 +275,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     allRunFor(spec, lookup);
 
                                     final var responseRecord = lookup.getResponseRecord();
-                                    final var birth = responseRecord.getConsensusTimestamp().getSeconds();
+                                    final var birth =
+                                            responseRecord.getConsensusTimestamp().getSeconds();
                                     currentExpiry.set(birth + minimalLifetime);
                                     expectedExpiryPostRenew.set(
                                             birth
@@ -862,7 +865,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(INIT_CODE)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(CONTRACT_TO_RENEW, List.of(aFungibleToken, nonFungibleToken)),
+                        tokenAssociate(
+                                CONTRACT_TO_RENEW, List.of(aFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
                                 moving(aFungibleAmount, aFungibleToken)
                                         .between(TOKEN_TREASURY, CONTRACT_TO_RENEW),
