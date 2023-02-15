@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -381,6 +382,7 @@ class ContractCreateTransitionLogicTest {
 
     @Test
     void usesContractKeyWhenEmptyAdminKeySetInOp() {
+        final var inOrder = inOrder(worldState);
         final var op =
                 ContractCreateTransactionBody.newBuilder()
                         .setFileID(bytecodeSrc)
@@ -441,6 +443,8 @@ class ContractCreateTransitionLogicTest {
                         balance,
                         Bytes.fromHexString(contractByteCodeString),
                         txnCtx.consensusTime());
+        inOrder.verify(worldState).clearProvisionalContractCreations();
+        inOrder.verify(worldState).getCreatedContractIds();
     }
 
     @Test

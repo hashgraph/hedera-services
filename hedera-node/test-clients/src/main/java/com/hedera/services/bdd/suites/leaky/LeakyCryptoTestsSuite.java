@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.leaky;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyPropertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -1072,7 +1073,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                         .gasLimit(2_000_000L)
                                                         .via(lazyCreateTxn)
                                                         .hasKnownStatus(SUCCESS),
-                                                getTxnRecord(lazyCreateTxn).logged())))
+                                                getTxnRecord(lazyCreateTxn)
+                                                        .andAllChildRecords()
+                                                        .logged())))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1099,7 +1102,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private HapiSpec contractCallAfterEthereumTransferLazyCreate() {
         final var RECIPIENT_KEY = LAZY_ACCOUNT_RECIPIENT;
         final var lazyCreateTxn = PAY_TXN;
-        return propertyPreservingHapiSpec("contractCallAfterEthereumTransferLazyCreate")
+        return onlyPropertyPreservingHapiSpec("contractCallAfterEthereumTransferLazyCreate")
                 .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(

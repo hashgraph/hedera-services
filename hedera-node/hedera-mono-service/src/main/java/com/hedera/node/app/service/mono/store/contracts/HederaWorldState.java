@@ -49,6 +49,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -57,6 +59,8 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @Singleton
 public class HederaWorldState extends HederaEvmWorldState implements HederaMutableWorldState {
+    private static final Logger log = LogManager.getLogger(HederaWorldState.class);
+
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EntityAccess entityAccess;
@@ -109,6 +113,12 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
 
     /** {@inheritDoc} */
     @Override
+    public void clearProvisionalContractCreations() {
+        provisionalContractCreations.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setHapiSenderCustomizer(final ContractCustomizer customizer) {
         hapiSenderCustomizer = customizer;
     }
@@ -121,8 +131,11 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
 
     @Override
     public List<ContractID> getCreatedContractIds() {
+        // We MUST return a copy of the list, and not the list itself,
+        // because we might immediately clear the list after returning
+        // it for use in the transaction record (in case the next
+        // transaction we handle is also a contract operation)
         final var copy = new ArrayList<>(provisionalContractCreations);
-        provisionalContractCreations.clear();
         copy.sort(CONTRACT_ID_COMPARATOR);
         return copy;
     }
@@ -298,10 +311,15 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
             }
         }
 
-        private void trackIfNewlyCreated(
+        void trackIfNewlyCreated(
                 final AccountID accountId,
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalContractCreations) {
+            final var accounts = trackingAccounts();
+            if (!accounts.contains(accountId)) {
+                log.error("Account {} missing in tracking ledgers", accountId);
+                return;
+            }
             final var isSmartContract =
                     (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
             if (Boolean.TRUE.equals(isSmartContract)
