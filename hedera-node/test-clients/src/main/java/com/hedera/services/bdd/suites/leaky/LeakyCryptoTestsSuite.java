@@ -152,6 +152,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
 
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
+    public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
+    public static final String AUTO_ACCOUNT = "autoAccount";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -1026,14 +1028,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var lazyCreateTxn = "payTxn";
         return propertyPreservingHapiSpec("contractDeployAfterEthereumTransferLazyCreate")
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",
-                                "contracts.evm.version",
+                                CONTRACTS_EVM_VERSION_PROP,
                                 "v0.34"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
@@ -1041,8 +1043,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
+                                .via(AUTO_ACCOUNT),
+                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
                         uploadInitCode(FACTORY_MIRROR_CONTRACT))
                 .when(
                         withOpContext(
@@ -1091,14 +1093,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final var lazyCreateTxn = "payTxn";
         final var failedLazyCreateTxn = "failedLazyCreateTxn";
         return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
                                 CHAIN_ID_PROP,
                                 "298",
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",
-                                "contracts.evm.version",
+                                CONTRACTS_EVM_VERSION_PROP,
                                 "v0.34"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
@@ -1106,8 +1108,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords())
+                                .via(AUTO_ACCOUNT),
+                        getTxnRecord(AUTO_ACCOUNT).andAllChildRecords())
                 .when(
                         withOpContext(
                                 (spec, opLog) ->

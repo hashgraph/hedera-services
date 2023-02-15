@@ -304,7 +304,8 @@ public class HederaWorldState extends HederaEvmWorldState implements HederaMutab
                 final List<ContractID> provisionalContractCreations) {
             final var isSmartContract =
                     (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
-            if (isSmartContract && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+            if (Boolean.TRUE.equals(isSmartContract)
+                    && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
             }
         }
