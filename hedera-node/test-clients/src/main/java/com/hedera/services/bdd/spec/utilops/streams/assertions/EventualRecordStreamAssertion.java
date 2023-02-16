@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
@@ -48,43 +49,40 @@ import org.junit.jupiter.api.Assertions;
 public class EventualRecordStreamAssertion extends EventualAssertion {
     private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
     private final Function<HapiSpec, RecordStreamAssertion> assertionFactory;
-    @Nullable private RecordStreamAssertion assertion;
+
+    @Nullable
+    private RecordStreamAssertion assertion;
 
     private Runnable unsubscribe;
 
-    public EventualRecordStreamAssertion(
-            final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
+    public EventualRecordStreamAssertion(final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
         this.assertionFactory = assertionFactory;
     }
 
     public EventualRecordStreamAssertion(
-            final Function<HapiSpec, RecordStreamAssertion> assertionFactory,
-            final Duration timeout) {
+            final Function<HapiSpec, RecordStreamAssertion> assertionFactory, final Duration timeout) {
         super(timeout);
         this.assertionFactory = assertionFactory;
     }
 
     @Override
     protected boolean submitOp(final HapiSpec spec) throws Throwable {
-        final var locToUse =
-                HapiSpec.isRunningInCi()
-                        ? TEST_CONTAINER_NODE0_STREAMS
-                        : spec.setup().defaultRecordLoc();
+        final var locToUse = HapiSpec.isRunningInCi()
+                ? TEST_CONTAINER_NODE0_STREAMS
+                : spec.setup().defaultRecordLoc();
         final var validatingListener = RECORD_STREAM_ACCESS.getValidatingListener(locToUse);
         assertion = Objects.requireNonNull(assertionFactory.apply(spec));
-        unsubscribe =
-                validatingListener.subscribe(
-                        item -> {
-                            if (assertion.isApplicableTo(item)) {
-                                try {
-                                    if (assertion.test(item)) {
-                                        result.pass();
-                                    }
-                                } catch (final AssertionError e) {
-                                    result.fail(e.getMessage());
-                                }
-                            }
-                        });
+        unsubscribe = validatingListener.subscribe(item -> {
+            if (assertion.isApplicableTo(item)) {
+                try {
+                    if (assertion.test(item)) {
+                        result.pass();
+                    }
+                } catch (final AssertionError e) {
+                    result.fail(e.getMessage());
+                }
+            }
+        });
         return false;
     }
 

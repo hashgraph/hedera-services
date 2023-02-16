@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.orderedRecordFilesFrom;
@@ -51,8 +52,7 @@ public enum RecordStreamAccess {
      * A map of record stream file locations to the listeners that are watching them. (In general we
      * only validate records from the single node0, but this could change?)
      */
-    private final Map<String, BroadcastingRecordStreamListener> validatingListeners =
-            new ConcurrentHashMap<>();
+    private final Map<String, BroadcastingRecordStreamListener> validatingListeners = new ConcurrentHashMap<>();
 
     /** A bit of infrastructure that runs the polling loop for all the listeners. */
     private final FileAlterationMonitor monitor = new FileAlterationMonitor(MONITOR_INTERVAL_MS);
@@ -64,10 +64,9 @@ public enum RecordStreamAccess {
      */
     public synchronized void stopMonitorIfNoSubscribers() {
         // Count the number of subscribers (could derive from more than one concurrent HapiSpec)
-        final var numSubscribers =
-                validatingListeners.values().stream()
-                        .mapToInt(BroadcastingRecordStreamListener::numListeners)
-                        .sum();
+        final var numSubscribers = validatingListeners.values().stream()
+                .mapToInt(BroadcastingRecordStreamListener::numListeners)
+                .sum();
         if (numSubscribers == 0) {
             try {
                 // Will throw ISE if already stopped, ignore that
@@ -85,17 +84,13 @@ public enum RecordStreamAccess {
      * @return the listener for the given location
      * @throws Exception if there is an error starting the listener
      */
-    public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc)
-            throws Exception {
+    public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc) throws Exception {
         if (!validatingListeners.containsKey(loc)) {
             // In most cases should let us run HapiSpec#main() from both the root and test-clients/
             // directories
-            var fAtLoc =
-                    relocatedIfNotPresentWithCurrentPathPrefix(
-                            new File(loc), "..", TEST_CLIENTS_PREFIX);
+            var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
             if (!fAtLoc.exists()) {
-                throw new IllegalArgumentException(
-                        "No such record stream file location: " + fAtLoc.getAbsolutePath());
+                throw new IllegalArgumentException("No such record stream file location: " + fAtLoc.getAbsolutePath());
             }
             validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
         }
@@ -111,9 +106,7 @@ public enum RecordStreamAccess {
      * @throws IOException if there is an error reading the files
      */
     public Data readStreamDataFrom(String loc, final String relativeSidecarLoc) throws IOException {
-        final var fAtLoc =
-                relocatedIfNotPresentWithCurrentPathPrefix(
-                        new File(loc), "..", TEST_CLIENTS_PREFIX);
+        final var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
         loc = fAtLoc.getAbsolutePath();
         final var recordFiles = orderedRecordFilesFrom(loc);
         final var sidecarLoc = loc + File.separator + relativeSidecarLoc;
@@ -123,32 +116,23 @@ public enum RecordStreamAccess {
         } else {
             sidecarFiles = List.of();
         }
-        final var sidecarFilesByRecordFile =
-                sidecarFiles.stream()
-                        .collect(
-                                Collectors.groupingBy(
-                                        f ->
-                                                parseSidecarFileConsensusTimeAndSequenceNo(f)
-                                                        .getLeft(),
-                                        Collectors.toList()));
+        final var sidecarFilesByRecordFile = sidecarFiles.stream()
+                .collect(Collectors.groupingBy(
+                        f -> parseSidecarFileConsensusTimeAndSequenceNo(f).getLeft(), Collectors.toList()));
         final List<RecordStreamFile> fullRecordFiles = new ArrayList<>();
-        final var recordsWithSideCars =
-                recordFiles.stream()
-                        .map(
-                                f -> {
-                                    final var recordFile = ensurePresentRecordFile(f);
-                                    fullRecordFiles.add(recordFile);
-                                    return new RecordWithSidecars(
-                                            recordFile,
-                                            sidecarFilesByRecordFile
-                                                    .getOrDefault(
-                                                            parseRecordFileConsensusTime(f),
-                                                            Collections.emptyList())
-                                                    .stream()
-                                                    .map(this::ensurePresentSidecarFile)
-                                                    .toList());
-                                })
-                        .toList();
+        final var recordsWithSideCars = recordFiles.stream()
+                .map(f -> {
+                    final var recordFile = ensurePresentRecordFile(f);
+                    fullRecordFiles.add(recordFile);
+                    return new RecordWithSidecars(
+                            recordFile,
+                            sidecarFilesByRecordFile
+                                    .getOrDefault(parseRecordFileConsensusTime(f), Collections.emptyList())
+                                    .stream()
+                                    .map(this::ensurePresentSidecarFile)
+                                    .toList());
+                })
+                .toList();
         return new Data(recordsWithSideCars, fullRecordFiles);
     }
 
@@ -172,8 +156,7 @@ public enum RecordStreamAccess {
         }
     }
 
-    private BroadcastingRecordStreamListener newValidatingListener(final String loc)
-            throws Exception {
+    private BroadcastingRecordStreamListener newValidatingListener(final String loc) throws Exception {
         final var observer = new FileAlterationObserver(loc);
         final var listener = new BroadcastingRecordStreamListener();
         observer.addListener(listener);

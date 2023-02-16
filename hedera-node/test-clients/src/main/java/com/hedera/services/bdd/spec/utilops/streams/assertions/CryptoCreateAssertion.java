@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,8 +34,11 @@ public class CryptoCreateAssertion implements RecordStreamAssertion {
     private final HapiSpec spec;
     private final String account;
 
-    @Nullable private String expectedMemo;
-    @Nullable private Long expectedBalance;
+    @Nullable
+    private String expectedMemo;
+
+    @Nullable
+    private Long expectedBalance;
 
     public CryptoCreateAssertion(final HapiSpec spec, final String account) {
         this.spec = spec;
@@ -72,10 +76,8 @@ public class CryptoCreateAssertion implements RecordStreamAssertion {
             assertEquals(expectedMemo, actualMemo, "Wrong memo");
         }
         if (expectedBalance != null) {
-            final var actualBalance =
-                    amountCredited(
-                            item.getRecord().getTransferList(),
-                            spec.registry().getAccountID(account));
+            final var actualBalance = amountCredited(
+                    item.getRecord().getTransferList(), spec.registry().getAccountID(account));
             assertEquals(expectedBalance, actualBalance, "Wrong balance");
         }
         return true;

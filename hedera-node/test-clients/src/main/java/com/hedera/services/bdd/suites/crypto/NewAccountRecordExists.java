@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -48,8 +49,7 @@ public class NewAccountRecordExists extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                newAccountIsReflectedInRecordStream(), newAccountIsReflectedInRecordStreamV2());
+        return List.of(newAccountIsReflectedInRecordStream(), newAccountIsReflectedInRecordStreamV2());
     }
 
     private HapiSpec newAccountIsReflectedInRecordStream() {
@@ -69,19 +69,10 @@ public class NewAccountRecordExists extends HapiSuite {
                                 .via(creation),
                         getTxnRecord(creation)
                                 .exposingTo(
-                                        protoRecord ->
-                                                consensusTime.set(
-                                                        asInstant(
-                                                                        protoRecord
-                                                                                .getConsensusTimestamp())
-                                                                .plusNanos(0))))
-                .then(
-                        sourcing(
-                                () ->
-                                        assertEventuallyPasses(
-                                                new AccountExistenceValidator(
-                                                        account, consensusTime.get()),
-                                                Duration.ofMillis(2_100))));
+                                        protoRecord -> consensusTime.set(asInstant(protoRecord.getConsensusTimestamp())
+                                                .plusNanos(0))))
+                .then(sourcing(() -> assertEventuallyPasses(
+                        new AccountExistenceValidator(account, consensusTime.get()), Duration.ofMillis(2_100))));
     }
 
     private HapiSpec newAccountIsReflectedInRecordStreamV2() {
@@ -89,10 +80,8 @@ public class NewAccountRecordExists extends HapiSuite {
         final var memo = "It was the best of times";
         final var account = "novel";
         return onlyDefaultHapiSpec("NewAccountIsReflectedInRecordStreamV2")
-                .given(
-                        streamMustInclude(
-                                recordedCryptoCreate(
-                                        account, a -> a.withMemo(memo).withBalance(balance))))
+                .given(streamMustInclude(
+                        recordedCryptoCreate(account, a -> a.withMemo(memo).withBalance(balance))))
                 .when(cryptoCreate(account).balance(balance).memo(memo))
                 .then(awaitStreamAssertions());
     }

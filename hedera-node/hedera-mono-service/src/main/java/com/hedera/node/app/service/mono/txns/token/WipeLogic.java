@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.token;
 
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -48,10 +49,7 @@ public class WipeLogic {
     }
 
     public void wipe(
-            final Id targetTokenId,
-            final Id targetAccountId,
-            final long amount,
-            List<Long> serialNumbersList) {
+            final Id targetTokenId, final Id targetAccountId, final long amount, List<Long> serialNumbersList) {
         // De-duplicate serial numbers
         serialNumbersList = new ArrayList<>(new LinkedHashSet<>(serialNumbersList));
 

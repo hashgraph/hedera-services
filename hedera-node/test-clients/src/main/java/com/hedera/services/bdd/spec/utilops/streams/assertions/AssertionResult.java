@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import com.hedera.services.bdd.spec.utilops.streams.AssertionOutcome;
@@ -20,10 +21,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 
 public class AssertionResult {
-    private static final AssertionResult SUCCESS =
-            new AssertionResult(null, AssertionOutcome.SUCCESS);
+    private static final AssertionResult SUCCESS = new AssertionResult(null, AssertionOutcome.SUCCESS);
 
-    @Nullable private final String errorDetails;
+    @Nullable
+    private final String errorDetails;
+
     private final AssertionOutcome outcome;
 
     public AssertionResult(final @Nullable String errorDetails, final AssertionOutcome outcome) {

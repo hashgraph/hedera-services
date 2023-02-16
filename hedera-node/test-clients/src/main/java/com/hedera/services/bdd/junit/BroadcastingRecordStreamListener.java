@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isRecordFile;
@@ -50,9 +51,7 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
         if (!isRecordFile(file.getName())) {
             return;
         }
-        log.info(
-                "Providing validators with access to record stream file {}",
-                file.getAbsolutePath());
+        log.info("Providing validators with access to record stream file {}", file.getAbsolutePath());
         final var contents = RecordStreamAccess.ensurePresentRecordFile(file.getAbsolutePath());
         contents.getRecordStreamItemsList().forEach(item -> listeners.forEach(l -> l.accept(item)));
     }
