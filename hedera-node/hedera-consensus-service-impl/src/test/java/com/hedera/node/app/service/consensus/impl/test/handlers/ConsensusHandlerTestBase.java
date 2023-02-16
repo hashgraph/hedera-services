@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.consensus.impl.test.test.handlers;
+package com.hedera.node.app.service.consensus.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
