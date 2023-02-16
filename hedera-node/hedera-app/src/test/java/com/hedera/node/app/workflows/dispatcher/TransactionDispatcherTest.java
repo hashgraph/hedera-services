@@ -603,7 +603,8 @@ class TransactionDispatcherTest {
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.tokenUpdateHandler()).preHandle(meta)),
+                                        verify(handlers.tokenUpdateHandler())
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenMint(TokenMintTransactionBody.getDefaultInstance())
@@ -625,7 +626,8 @@ class TransactionDispatcherTest {
                                 .build(),
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
-                                        verify(handlers.tokenDeleteHandler()).preHandle(meta)),
+                                        verify(handlers.tokenDeleteHandler())
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
@@ -658,7 +660,7 @@ class TransactionDispatcherTest {
                         (BiConsumer<TransactionHandlers, PreHandleContext>)
                                 (handlers, meta) ->
                                         verify(handlers.tokenGrantKycToAccountHandler())
-                                                .preHandle(meta)),
+                                                .preHandle(eq(meta), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .setTokenRevokeKyc(

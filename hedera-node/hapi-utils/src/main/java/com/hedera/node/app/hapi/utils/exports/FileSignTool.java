@@ -156,10 +156,7 @@ public class FileSignTool {
                         SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
         signature.initSign(sigKeyPair.getPrivate());
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(
-                    MARKER,
-                    "data is being signed, publicKey={}",
-                    hex(sigKeyPair.getPublic().getEncoded()));
+            LOGGER.info(MARKER, "data being signed = {}", hex(data));
         }
 
         signature.update(data);
@@ -248,9 +245,7 @@ public class FileSignTool {
      */
     public static StreamType loadStreamTypeFromJson(final String jsonPath) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
-
         final File file = new File(jsonPath);
-
         return objectMapper.readValue(file, StreamTypeFromJson.class);
     }
 
@@ -361,23 +356,35 @@ public class FileSignTool {
             final int version = recordResult.getKey();
             final byte[] serializedBytes = recordResult.getValue().get().toByteArray();
 
+            LOGGER.info(MARKER, "Writing file header {}", Arrays.toString(fileHeader));
             // update meta digest
             for (final int value : fileHeader) {
                 dosMeta.writeInt(value);
             }
+            LOGGER.info(MARKER, "Writing start running hash {}", hex(startRunningHash));
             dosMeta.write(startRunningHash);
+            LOGGER.info(MARKER, "Writing end running hash {}", hex(endRunningHash));
             dosMeta.write(endRunningHash);
+            LOGGER.info(MARKER, "Writing block number {}", blockNumber);
             dosMeta.writeLong(blockNumber);
             dosMeta.flush();
 
             // update stream digest
+            LOGGER.info(MARKER, "Writing version {}", version);
             dos.writeInt(version);
+            LOGGER.info(
+                    MARKER, "Writing serializedBytes {}", hex(serializedBytes).substring(0, 32));
             dos.write(serializedBytes);
             dos.flush();
 
         } catch (final IOException e) {
+            final String message =
+                    String.format(
+                            "Got IOException when reading record file %s, error = %s",
+                            recordFile, e);
             Thread.currentThread().interrupt();
-            LOGGER.error(MARKER, "Got IOException when reading record file {}", recordFile, e);
+            LOGGER.error(MARKER, message);
+            throw new RuntimeException(message);
         }
 
         final SignatureObject metadataSignature =
@@ -466,6 +473,8 @@ public class FileSignTool {
             } catch (final IOException e) {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
+        } else {
+            throw new RuntimeException("Could not find log4j2 configuration file " + logConfigFile);
         }
     }
 
