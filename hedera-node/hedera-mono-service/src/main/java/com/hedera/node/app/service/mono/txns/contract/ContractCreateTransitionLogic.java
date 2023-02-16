@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
@@ -150,12 +151,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final Id relayerId,
             final long maxGasAllowance,
             final BigInteger userOfferedGasPrice) {
+        worldState.clearProvisionalContractCreations();
+
         // --- Translate from gRPC types ---
         final var op = contractCreateTxn.getContractCreateInstance();
-        var key =
-                op.hasAdminKey()
-                        ? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
-                        : STANDIN_CONTRACT_ID_KEY;
+
+        var key = op.hasAdminKey()
+                ? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
+                : STANDIN_CONTRACT_ID_KEY;
         // Standardize immutable contract key format; c.f.
         // https://github.com/hashgraph/hedera-services/issues/3037
         if (key.isEmpty()) {
@@ -165,8 +168,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (op.hasAutoRenewAccountId()) {
             final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccountId());
             final var autoRenewAccount =
-                    accountStore.loadAccountOrFailWith(
-                            autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
+                    accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
             validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
         }
 
@@ -196,29 +198,27 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         TransactionProcessingResult result;
         try {
             if (relayerId == null) {
-                result =
-                        evmTxProcessor.execute(
-                                sender,
-                                newContractAddress,
-                                op.getGas(),
-                                op.getInitialBalance(),
-                                codeWithConstructorArgs,
-                                consensusTime);
+                result = evmTxProcessor.execute(
+                        sender,
+                        newContractAddress,
+                        op.getGas(),
+                        op.getInitialBalance(),
+                        codeWithConstructorArgs,
+                        consensusTime);
             } else {
                 sender.incrementEthereumNonce();
                 accountStore.commitAccount(sender);
 
-                result =
-                        evmTxProcessor.executeEth(
-                                sender,
-                                newContractAddress,
-                                op.getGas(),
-                                op.getInitialBalance(),
-                                codeWithConstructorArgs,
-                                consensusTime,
-                                accountStore.loadAccount(relayerId),
-                                userOfferedGasPrice,
-                                maxGasAllowance);
+                result = evmTxProcessor.executeEth(
+                        sender,
+                        newContractAddress,
+                        op.getGas(),
+                        op.getInitialBalance(),
+                        codeWithConstructorArgs,
+                        consensusTime,
+                        accountStore.loadAccount(relayerId),
+                        userOfferedGasPrice,
+                        maxGasAllowance);
             }
         } finally {
             worldState.resetHapiSenderCustomizer();
@@ -244,20 +244,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final var newEvmAddress = newContractAddress.toArrayUnsafe();
             final var newEvmAddressResolved = aliasManager.resolveForEvm(newContractAddress);
             final var newContractId = contractIdFromEvmAddress(newEvmAddressResolved);
-            final var contractBytecodeSidecar =
-                    op.getInitcodeSourceCase() != INITCODE
-                            ? SidecarUtils.createContractBytecodeSidecarFrom(
-                                    newContractId,
-                                    codeWithConstructorArgs.toArrayUnsafe(),
-                                    result.getOutput().toArrayUnsafe())
-                            : SidecarUtils.createContractBytecodeSidecarFrom(
-                                    newContractId, result.getOutput().toArrayUnsafe());
+            final var contractBytecodeSidecar = op.getInitcodeSourceCase() != INITCODE
+                    ? SidecarUtils.createContractBytecodeSidecarFrom(
+                            newContractId,
+                            codeWithConstructorArgs.toArrayUnsafe(),
+                            result.getOutput().toArrayUnsafe())
+                    : SidecarUtils.createContractBytecodeSidecarFrom(
+                            newContractId, result.getOutput().toArrayUnsafe());
             if (createSyntheticRecord) {
-                recordSyntheticOperation(
-                        newContractId,
-                        newEvmAddress,
-                        hapiSenderCustomizer,
-                        contractBytecodeSidecar);
+                recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer, contractBytecodeSidecar);
                 // bytecode sidecar is already externalized if needed in {@link
                 // #recordSyntheticOperation}
                 // so call {@link #externalizeSuccessfulEvmCreate} without contract bytecode sidecar
@@ -265,8 +260,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
                 recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
             } else {
                 if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)) {
-                    recordService.externalizeSuccessfulEvmCreate(
-                            result, newEvmAddress, contractBytecodeSidecar);
+                    recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress, contractBytecodeSidecar);
                 } else {
                     recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
                 }
@@ -274,15 +268,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             txnCtx.setTargetedContract(newContractId);
             sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
             if (relayerId != null) {
-                sigImpactHistorian.markAliasChanged(
-                        ByteStringUtils.wrapUnsafely(newContractAddress.toArrayUnsafe()));
+                sigImpactHistorian.markAliasChanged(ByteStringUtils.wrapUnsafely(newContractAddress.toArrayUnsafe()));
             }
         } else {
             if (properties.enabledSidecars().contains(SidecarType.CONTRACT_BYTECODE)
                     && op.getInitcodeSourceCase() != INITCODE) {
-                final var bytecodeSidecar =
-                        SidecarUtils.createContractBytecodeSidecarForFailedCreate(
-                                codeWithConstructorArgs.toArrayUnsafe());
+                final var bytecodeSidecar = SidecarUtils.createContractBytecodeSidecarForFailedCreate(
+                        codeWithConstructorArgs.toArrayUnsafe());
                 recordService.externalizeUnsuccessfulEvmCreate(result, bytecodeSidecar);
             } else {
                 recordService.externalizeUnsuccessfulEvmCreate(result);
@@ -318,16 +310,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
-        if (op.getMaxAutomaticTokenAssociations() > 0
-                && !properties.areContractAutoAssociationsEnabled()) {
+        if (op.getMaxAutomaticTokenAssociations() > 0 && !properties.areContractAutoAssociationsEnabled()) {
             return NOT_SUPPORTED;
         }
         if (properties.areTokenAssociationsLimited()
                 && op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {
             return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
-        if (op.hasProxyAccountID()
-                && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
+        if (op.hasProxyAccountID() && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
         }
         final var stakedIdCase = op.getStakedIdCase().name();
@@ -337,11 +327,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
         if (electsStakingId
                 && !validator.isValidStakedId(
-                        stakedIdCase,
-                        op.getStakedAccountId(),
-                        op.getStakedNodeId(),
-                        accounts.get(),
-                        nodeInfo)) {
+                        stakedIdCase, op.getStakedAccountId(), op.getStakedNodeId(), accounts.get(), nodeInfo)) {
             return INVALID_STAKING_ID;
         }
         return validator.memoCheck(op.getMemo());
@@ -356,9 +342,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             try {
                 bytecode = hfs.cat(bytecodeSrc);
             } catch (final IllegalArgumentException e) {
-                final var failureReason =
-                        TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage())
-                                .suggestedStatus();
+                final var failureReason = TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage())
+                        .suggestedStatus();
                 throw new InvalidTransactionException(failureReason);
             }
             validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
@@ -388,9 +373,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
         final var sideEffects = new SideEffectsTracker();
         sideEffects.trackNewContract(newContractId, Address.wrap(Bytes.wrap(newContractAddress)));
-        final var childRecord =
-                entityCreator.createSuccessfulSyntheticRecord(
-                        NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+        final var childRecord = entityCreator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 
         recordsHistorian.trackFollowingChildRecord(
                 childRecordId,
