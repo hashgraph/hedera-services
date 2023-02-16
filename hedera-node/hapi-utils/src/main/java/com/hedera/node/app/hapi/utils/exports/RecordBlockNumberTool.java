@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.exports;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
@@ -40,13 +41,6 @@ import org.apache.logging.log4j.core.LoggerContext;
  * increasing as expected
  */
 public class RecordBlockNumberTool {
-    /** next bytes are signature */
-    private static final byte TYPE_SIGNATURE = 3;
-    /** next 48 bytes are hash384 of content of the file to be signed */
-    private static final byte TYPE_FILE_HASH = 4;
-
-    private static final int DEFAULT_RECORD_STREAM_VERSION = 6;
-
     private static final String LOG_CONFIG_PROPERTY = "logConfig";
     private static final String FILE_NAME_PROPERTY = "fileName";
     private static final String DEST_DIR_PROPERTY = "destDir";
@@ -55,7 +49,6 @@ public class RecordBlockNumberTool {
 
     private static final Logger LOGGER = LogManager.getLogger(RecordBlockNumberTool.class);
     private static final Marker MARKER = MarkerManager.getMarker("BLOCK_NUMBER");
-    private static final int BYTES_COUNT_IN_INT = 4;
     /** default log4j2 file name */
     private static final String DEFAULT_LOG_CONFIG = "log4j2.xml";
     /** name of RecordStreamType */
@@ -74,8 +67,8 @@ public class RecordBlockNumberTool {
         registry.registerConstructables("com.hedera.services.stream");
     }
 
-    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
-            final String fileLoc) throws IOException {
+    private static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
+            throws IOException {
         try (final FileInputStream fin = new FileInputStream(fileLoc)) {
             final int recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
             final RecordStreamFile recordStreamFile = RecordStreamFile.parseFrom(fin);
@@ -87,8 +80,7 @@ public class RecordBlockNumberTool {
         if (currentBlockNumber <= prevBlockNumber) {
             LOGGER.error(
                     MARKER,
-                    "Found new block number is equal or less than the prevous one, current {} vs"
-                            + " prev {}",
+                    "Found new block number is equal or less than the prevous one, current {} vs" + " prev {}",
                     currentBlockNumber,
                     prevBlockNumber);
         }
@@ -109,8 +101,7 @@ public class RecordBlockNumberTool {
         final String appVersionString = System.getProperty(HAPI_PROTOBUF_VERSION);
         try {
             // parse record file
-            final Pair<Integer, Optional<RecordStreamFile>> recordResult =
-                    readUncompressedRecordStreamFile(recordFile);
+            final Pair<Integer, Optional<RecordStreamFile>> recordResult = readUncompressedRecordStreamFile(recordFile);
             final long blockNumber = recordResult.getValue().get().getBlockNumber();
 
             trackBlockNumber(blockNumber);
@@ -130,10 +121,9 @@ public class RecordBlockNumberTool {
         }
 
         final String logConfigPath = System.getProperty(LOG_CONFIG_PROPERTY);
-        final File logConfigFile =
-                logConfigPath == null
-                        ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
-                        : new File(logConfigPath);
+        final File logConfigFile = logConfigPath == null
+                ? getAbsolutePath().resolve(DEFAULT_LOG_CONFIG).toFile()
+                : new File(logConfigPath);
         if (logConfigFile.exists()) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             context.setConfigLocation(logConfigFile.toURI());
@@ -151,7 +141,7 @@ public class RecordBlockNumberTool {
                 LOGGER.error(MARKER, "Got IOException", e);
             }
         } else {
-            System.out.println("Log4j2 configuratoin file did not exist : " + logConfigFile);
+            throw new RuntimeException("Could not find log4j2 configuration file " + logConfigFile);
         }
     }
 
@@ -162,8 +152,7 @@ public class RecordBlockNumberTool {
      */
     public static void readAllFiles(final String sourceDir) throws IOException {
         final File folder = new File(sourceDir);
-        final File[] streamFiles =
-                folder.listFiles(f -> f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
+        final File[] streamFiles = folder.listFiles(f -> f.getAbsolutePath().endsWith(RECORD_STREAM_EXTENSION));
         Arrays.sort(streamFiles); // sort by file names and timestamps
 
         final List<File> totalList = new ArrayList<>();
