@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -41,8 +42,11 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private final Long deleteAccountNum = deleteAccountId.getAccountNum();
     private final Long transferAccountNum = transferAccountId.getAccountNum();
 
-    @Mock private MerkleAccount deleteAccount;
-    @Mock private MerkleAccount transferAccount;
+    @Mock
+    private MerkleAccount deleteAccount;
+
+    @Mock
+    private MerkleAccount transferAccount;
 
     private CryptoDeleteHandler subject = new CryptoDeleteHandler();
 
@@ -207,13 +211,10 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private TransactionBody deleteAccountTransaction(
             final AccountID deleteAccountId, final AccountID transferAccountId) {
         final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer)
-                        .setTransactionValidStart(consensusTimestamp);
-        final var deleteTxBody =
-                CryptoDeleteTransactionBody.newBuilder()
-                        .setDeleteAccountID(deleteAccountId)
-                        .setTransferAccountID(transferAccountId);
+                TransactionID.newBuilder().setAccountID(payer).setTransactionValidStart(consensusTimestamp);
+        final var deleteTxBody = CryptoDeleteTransactionBody.newBuilder()
+                .setDeleteAccountID(deleteAccountId)
+                .setTransferAccountID(transferAccountId);
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

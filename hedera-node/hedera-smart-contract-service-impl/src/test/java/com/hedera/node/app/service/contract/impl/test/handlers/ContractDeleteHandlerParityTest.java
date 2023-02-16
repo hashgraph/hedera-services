@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.DILIGENT_SIGNING_PAYER_KT;
@@ -74,8 +75,7 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
         assertEquals(INVALID_TRANSFER_ACCOUNT_ID, context.getStatus());
     }
 
@@ -86,8 +86,7 @@ class ContractDeleteHandlerParityTest {
         subject.preHandle(context);
 
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ADMIN_KT.asKey()));
         assertEquals(INVALID_CONTRACT_ID, context.getStatus());
     }
 

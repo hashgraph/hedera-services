@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
@@ -92,22 +93,17 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoSigReqWithFallbackWhenReceiverIsTreasury() {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(NO_RECEIVER_SIG_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(NO_RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -133,9 +129,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -166,9 +160,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -191,8 +183,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         // THEN
         //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
         // NOW
-        assertContextFailedWithReqPayerKeyAnd(
-                context, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
+        assertContextFailedWithReqPayerKeyAnd(context, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
@@ -220,9 +211,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(RECEIVER_SIG_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -231,9 +220,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(RECEIVER_SIG_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -250,9 +237,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(SECOND_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -261,15 +246,12 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() {
-        final var theTxn =
-                txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
+        final var theTxn = txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
@@ -286,10 +268,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -297,8 +276,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
-        assertContextFailedWithReqPayerKeyAnd(
-                context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
+        assertContextFailedWithReqPayerKeyAnd(context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
@@ -307,9 +285,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -318,9 +294,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -331,10 +305,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -343,70 +314,54 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqButRoyaltyFeeWithFallbackTriggered() {
-        final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
+        final var theTxn = txnFrom(
+                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
                 sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        NO_RECEIVER_SIG_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoSigReqWithFallbackTriggeredButSenderIsTreasury() {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToHbar() {
-        final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
+        final var theTxn = txnFrom(
+                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToFt() {
         final var theTxn =
-                txnFrom(
-                        TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
+                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() {
-        final var theTxn =
-                txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
+        final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
         assertContextFailedWithReqPayerKeyAnd(context, INVALID_TOKEN_ID);
@@ -425,8 +380,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
         final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, keyLookup, readableTokenStore);
-        assertContextFailedWithReqPayerKeyAnd(
-                context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
+        assertContextFailedWithReqPayerKeyAnd(context, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
@@ -474,9 +428,7 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
     }
 
     private void assertContextFailedWithReqPayerKeyAnd(
-            final PreHandleContext context,
-            final ResponseCodeEnum expectedFailure,
-            final Key aNonPayerKey) {
+            final PreHandleContext context, final ResponseCodeEnum expectedFailure, final Key aNonPayerKey) {
         assertTrue(context.failed());
         assertEquals(expectedFailure, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());

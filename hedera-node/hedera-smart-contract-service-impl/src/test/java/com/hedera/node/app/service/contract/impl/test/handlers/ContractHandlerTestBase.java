@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
@@ -51,8 +52,11 @@ public class ContractHandlerTestBase {
     protected final ContractID targetContract =
             ContractID.newBuilder().setContractNum(9_999L).build();
 
-    @Mock protected MerkleAccount payerAccount;
-    @Mock protected AccountKeyLookup keyLookup;
+    @Mock
+    protected MerkleAccount payerAccount;
+
+    @Mock
+    protected AccountKeyLookup keyLookup;
 
     @BeforeEach
     void commonSetUp() {
@@ -70,9 +74,7 @@ public class ContractHandlerTestBase {
     }
 
     protected void setUpPayer() {
-        lenient()
-                .when(keyLookup.getKey(payer))
-                .thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        lenient().when(keyLookup.getKey(payer)).thenReturn(KeyOrLookupFailureReason.withKey(payerKey));
         lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
     }
 }
