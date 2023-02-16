@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
@@ -160,20 +161,14 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             linkedRefs.link(id.getScheduleNum());
         }
         final var schedule =
-                stateChildren
-                        .schedules()
-                        .byId()
-                        .get(new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
+                stateChildren.schedules().byId().get(new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
         if (schedule == null) {
             return SafeLookupResult.failure(MISSING_SCHEDULE);
         } else {
-            final var scheduleMeta =
-                    new ScheduleSigningMetadata(
-                            schedule.adminKey(),
-                            schedule.ordinaryViewOfScheduledTxn(),
-                            schedule.hasExplicitPayer()
-                                    ? Optional.of(schedule.payer().toGrpcAccountId())
-                                    : Optional.empty());
+            final var scheduleMeta = new ScheduleSigningMetadata(
+                    schedule.adminKey(),
+                    schedule.ordinaryViewOfScheduledTxn(),
+                    schedule.hasExplicitPayer() ? Optional.of(schedule.payer().toGrpcAccountId()) : Optional.empty());
             return new SafeLookupResult<>(scheduleMeta);
         }
     }
@@ -181,10 +176,9 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     @Override
     public SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
             final ContractID idOrAlias, final @Nullable LinkedRefs linkedRefs) {
-        final var id =
-                (linkedRefs == null)
-                        ? unaliased(idOrAlias, aliasManager)
-                        : unaliased(idOrAlias, aliasManager, linkedRefs::link);
+        final var id = (linkedRefs == null)
+                ? unaliased(idOrAlias, aliasManager)
+                : unaliased(idOrAlias, aliasManager, linkedRefs::link);
         return (id == MISSING_NUM)
                 ? SafeLookupResult.failure(INVALID_CONTRACT)
                 : lookupContractByNumber(id, linkedRefs);
@@ -203,8 +197,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
                 return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
             } else {
-                return new SafeLookupResult<>(
-                        new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
+                return new SafeLookupResult<>(new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
             }
         }
     }
@@ -232,21 +225,17 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                 if (accountAlias.isEmpty()) {
                     return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
                 } else {
-                    return new SafeLookupResult<>(
-                            new AccountSigningMetadata(
-                                    new JHollowKey(
-                                            ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
-                                    account.isReceiverSigRequired()));
+                    return new SafeLookupResult<>(new AccountSigningMetadata(
+                            new JHollowKey(ByteStringUtils.unwrapUnsafelyIfPossible(accountAlias)),
+                            account.isReceiverSigRequired()));
                 }
             }
             return new SafeLookupResult<>(
-                    new AccountSigningMetadata(
-                            account.getAccountKey(), account.isReceiverSigRequired()));
+                    new AccountSigningMetadata(account.getAccountKey(), account.isReceiverSigRequired()));
         }
     }
 
-    private static final FileSigningMetadata SPECIAL_FILE_META =
-            new FileSigningMetadata(EMPTY_WACL);
+    private static final FileSigningMetadata SPECIAL_FILE_META = new FileSigningMetadata(EMPTY_WACL);
     private static final SafeLookupResult<FileSigningMetadata> SPECIAL_FILE_RESULT =
             new SafeLookupResult<>(SPECIAL_FILE_META);
 }

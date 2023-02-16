@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.order;
 
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
@@ -357,8 +358,7 @@ public class SigRequirementsTest {
             };
         }
 
-        public static TopicSigMetaLookup withSafe(
-                Function<TopicID, SafeLookupResult<TopicSigningMetadata>> fn) {
+        public static TopicSigMetaLookup withSafe(Function<TopicID, SafeLookupResult<TopicSigningMetadata>> fn) {
             return fn::apply;
         }
     }
@@ -372,8 +372,7 @@ public class SigRequirementsTest {
     }
 
     private static class AccountAdapter {
-        public static AccountSigMetaLookup withSafe(
-                Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn) {
+        public static AccountSigMetaLookup withSafe(Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn) {
             return new AccountSigMetaLookup() {
                 @Override
                 public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
@@ -381,8 +380,7 @@ public class SigRequirementsTest {
                 }
 
                 @Override
-                public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(
-                        AccountID idOrAlias) {
+                public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(AccountID idOrAlias) {
                     return fn.apply(idOrAlias);
                 }
 
@@ -402,42 +400,23 @@ public class SigRequirementsTest {
     }
 
     private static final Function<ContractSigMetaLookup, SigMetadataLookup> EXC_LOOKUP_FN =
-            contractSigMetaLookup ->
-                    new DelegatingSigMetadataLookup(
-                            FileAdapter.throwingUoe(),
-                            AccountAdapter.withSafe(
-                                    id ->
-                                            SafeLookupResult.failure(
-                                                    KeyOrderingFailure.MISSING_FILE)),
-                            contractSigMetaLookup,
-                            TopicAdapter.withSafe(
-                                    id ->
-                                            SafeLookupResult.failure(
-                                                    KeyOrderingFailure.MISSING_FILE)),
-                            id -> null,
-                            id -> null);
-    private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP =
-            EXC_LOOKUP_FN.apply(
-                    ContractAdapter.withSafe(
-                            id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
-    private static final SigMetadataLookup INVALID_CONTRACT_THROWING_LOOKUP =
-            EXC_LOOKUP_FN.apply(
-                    ContractAdapter.withSafe(
-                            id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
-    private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP =
-            EXC_LOOKUP_FN.apply(
-                    ContractAdapter.withSafe(
-                            id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
-    private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP =
-            EXC_LOOKUP_FN.apply(
-                    ContractAdapter.withSafe(
-                            id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)));
-    private static final SigMetadataLookup INVALID_AUTO_RENEW_ACCOUNT_EXC =
-            EXC_LOOKUP_FN.apply(
-                    ContractAdapter.withSafe(
-                            id ->
-                                    SafeLookupResult.failure(
-                                            KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT)));
+            contractSigMetaLookup -> new DelegatingSigMetadataLookup(
+                    FileAdapter.throwingUoe(),
+                    AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+                    contractSigMetaLookup,
+                    TopicAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+                    id -> null,
+                    id -> null);
+    private static final SigMetadataLookup EXCEPTION_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+            ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
+    private static final SigMetadataLookup INVALID_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+            ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
+    private static final SigMetadataLookup IMMUTABLE_CONTRACT_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+            ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)));
+    private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
+            ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)));
+    private static final SigMetadataLookup INVALID_AUTO_RENEW_ACCOUNT_EXC = EXC_LOOKUP_FN.apply(
+            ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT)));
 
     private HederaFs hfs;
     private TokenStore tokenStore;
@@ -452,8 +431,7 @@ public class SigRequirementsTest {
     private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
     private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
     private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-    private SignatureWaivers mockSignatureWaivers =
-            new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+    private SignatureWaivers mockSignatureWaivers = new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
     @Test
     void forwardsCallsWithoutLinkedRefs() {
@@ -478,12 +456,8 @@ public class SigRequirementsTest {
         mockSummaryFactory();
         final var mockSubject = mock(SigRequirements.class);
 
-        doCallRealMethod()
-                .when(mockSubject)
-                .keysForPayer(mockTxn, mockSummaryFactory, mockLinkedRefs);
-        doCallRealMethod()
-                .when(mockSubject)
-                .keysForOtherParties(mockTxn, mockSummaryFactory, mockLinkedRefs);
+        doCallRealMethod().when(mockSubject).keysForPayer(mockTxn, mockSummaryFactory, mockLinkedRefs);
+        doCallRealMethod().when(mockSubject).keysForOtherParties(mockTxn, mockSummaryFactory, mockLinkedRefs);
 
         mockSubject.keysForPayer(mockTxn, mockSummaryFactory, mockLinkedRefs);
         mockSubject.keysForOtherParties(mockTxn, mockSummaryFactory, mockLinkedRefs);
@@ -535,14 +509,11 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO);
         final var linkedRefs = new LinkedRefs();
 
-        final var summary =
-                subject.keysForPayer(txn, summaryFactory, linkedRefs, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForPayer(txn, summaryFactory, linkedRefs, CUSTOM_PAYER_ACCOUNT);
 
         assertEquals(PRETEND_SIGNING_TIME, linkedRefs.getSourceSignedAt());
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -564,8 +535,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -580,8 +550,7 @@ public class SigRequirementsTest {
         final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
 
         assertThat(payerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
         assertFalse(nonPayerSummary.hasErrorReport());
         assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
     }
@@ -590,20 +559,14 @@ public class SigRequirementsTest {
     void getsCryptoTransferReceiverNoSigReqViaAliasWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO);
 
-        final var payerSummary =
-                subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
-        final var nonPayerSummary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var payerSummary = subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(payerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertFalse(nonPayerSummary.hasErrorReport());
         assertThat(nonPayerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(nonPayerSummary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey()));
+        assertThat(sanityRestored(nonPayerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
@@ -616,8 +579,7 @@ public class SigRequirementsTest {
         final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
         assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
     }
 
@@ -627,20 +589,14 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var payerSummary =
-                subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
-        final var nonPayerSummary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var payerSummary = subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(payerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertThat(nonPayerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(nonPayerSummary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey()));
+        assertThat(sanityRestored(nonPayerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
@@ -653,11 +609,8 @@ public class SigRequirementsTest {
         final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-        assertThat(
-                sanityRestored(nonPayerSummary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+        assertThat(sanityRestored(nonPayerSummary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -666,16 +619,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_TRANSFER_CUSTOM_PAYER_SENDER_SCENARIO);
 
         // when:
-        final var payerSummary =
-                subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
-        final var nonPayerSummary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var payerSummary = subject.keysForPayer(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(payerSummary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(payerSummary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
     }
 
@@ -689,12 +638,10 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void doesntAddOwnerSigWhenAllowanceGrantedToPayerForHbarTransferWithCustomPayer()
-            throws Throwable {
+    void doesntAddOwnerSigWhenAllowanceGrantedToPayerForHbarTransferWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
 
-        final var nonPayerSummary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
     }
@@ -709,12 +656,10 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransferWithCustomPayer()
-            throws Throwable {
+    void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransferWithCustomPayer() throws Throwable {
         setupFor(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
 
-        final var nonPayerSummary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
     }
@@ -748,14 +693,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -778,14 +721,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -798,8 +739,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -808,13 +748,11 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -824,20 +762,17 @@ public class SigRequirementsTest {
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void getsNftOwnerChangeUsingAliasWithCustomPayer() throws Throwable {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -859,8 +794,7 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -886,8 +820,7 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -904,11 +837,9 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
-        assertTrue(
-                sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
+        assertTrue(sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
         assertTrue(sanityRestored(summary.getOrderedKeys()).contains(RECEIVER_SIG_KT.asKey()));
-        assertTrue(
-                sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertTrue(sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
@@ -918,16 +849,13 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(4));
-        assertTrue(
-                sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
+        assertTrue(sanityRestored(summary.getOrderedKeys()).contains(SECOND_TOKEN_SENDER_KT.asKey()));
         assertTrue(sanityRestored(summary.getOrderedKeys()).contains(RECEIVER_SIG_KT.asKey()));
-        assertTrue(
-                sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertTrue(sanityRestored(summary.getOrderedKeys()).contains(FIRST_TOKEN_SENDER_KT.asKey()));
         assertTrue(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
@@ -941,8 +869,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -951,20 +878,17 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void getsNftOwnerChangeWithNoReceiverSigReqButFallbackFeeTriggered() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -972,38 +896,27 @@ public class SigRequirementsTest {
         // then:
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        NO_RECEIVER_SIG_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
-    void getsNftOwnerChangeWithNoReceiverSigReqButFallbackFeeTriggeredWithCustomPayer()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoReceiverSigReqButFallbackFeeTriggeredWithCustomPayer() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        NO_RECEIVER_SIG_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
-    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButSenderIsTreasury()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButSenderIsTreasury() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1014,15 +927,12 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButSenderIsTreasuryWithCustomPayer()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButSenderIsTreasuryWithCustomPayer() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -1030,27 +940,22 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToHbar()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToHbar() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
-    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButReceiverIsTreasury()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoSigReqAndFallbackFeeTriggeredButReceiverIsTreasury() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -1061,53 +966,42 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToHbarWithCustomPayer()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToHbarWithCustomPayer() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
-    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToFt()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToFt() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
-    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToFtWithCustomPayer()
-            throws Throwable {
+    void getsNftOwnerChangeWithNoReceiverSigReqAndFallbackFeeNotTriggeredDueToFtWithCustomPayer() throws Throwable {
         // given:
-        setupFor(
-                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
+        setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1129,8 +1023,7 @@ public class SigRequirementsTest {
         setupFor(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -1151,8 +1044,7 @@ public class SigRequirementsTest {
     void getsMissingAliasCannotBeSenderWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -1166,20 +1058,17 @@ public class SigRequirementsTest {
         final var keys = summary.getOrderedKeys();
 
         assertThat(keys, iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void getsMissingAliasCanBeReceiverWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1216,21 +1105,18 @@ public class SigRequirementsTest {
 
         assertFalse(summary.hasErrorReport());
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void allowsTransferToImmutableReceiverWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertFalse(summary.hasErrorReport());
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -1287,8 +1173,7 @@ public class SigRequirementsTest {
     void rejectsTransferFromImmutableSenderWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.hasErrorReport());
         assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -1298,8 +1183,7 @@ public class SigRequirementsTest {
     void rejectsFungibleTokenTransferToImmutableReceiver() throws Throwable {
         setupFor(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.hasErrorReport());
         assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -1312,12 +1196,8 @@ public class SigRequirementsTest {
                 CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
                 new DelegatingSigMetadataLookup(
                         FileAdapter.throwingUoe(),
-                        AccountAdapter.withSafe(
-                                id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-                        ContractAdapter.withSafe(
-                                id ->
-                                        SafeLookupResult.failure(
-                                                KeyOrderingFailure.INVALID_CONTRACT)),
+                        AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+                        ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
                         TopicAdapter.throwingUoe(),
                         id -> null,
                         id -> null));
@@ -1341,12 +1221,8 @@ public class SigRequirementsTest {
                 CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO,
                 new DelegatingSigMetadataLookup(
                         FileAdapter.throwingUoe(),
-                        AccountAdapter.withSafe(
-                                id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
-                        ContractAdapter.withSafe(
-                                id ->
-                                        SafeLookupResult.failure(
-                                                KeyOrderingFailure.INVALID_CONTRACT)),
+                        AccountAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)),
+                        ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
                         TopicAdapter.throwingUoe(),
                         id -> null,
                         id -> null));
@@ -1372,26 +1248,19 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey()));
+                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
     }
 
     @Test
     void getsCryptoApproveAllowanceVanillaWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_ALLOWANCE_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey()));
+                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1407,16 +1276,12 @@ public class SigRequirementsTest {
     void getsCryptoApproveAllowanceSelfOwnerWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_ALLOWANCE_SELF_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        DEFAULT_PAYER_KT.asKey(),
-                        DEFAULT_PAYER_KT.asKey()));
+                contains(DEFAULT_PAYER_KT.asKey(), DEFAULT_PAYER_KT.asKey(), DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
@@ -1437,26 +1302,19 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey(),
-                        DELEGATING_SPENDER_KT.asKey()));
+                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), DELEGATING_SPENDER_KT.asKey()));
     }
 
     @Test
     void getsCryptoApproveAllowanceUsingDelegatingSpenderWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        OWNER_ACCOUNT_KT.asKey(),
-                        OWNER_ACCOUNT_KT.asKey(),
-                        DELEGATING_SPENDER_KT.asKey()));
+                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), DELEGATING_SPENDER_KT.asKey()));
     }
 
     @Test
@@ -1467,21 +1325,18 @@ public class SigRequirementsTest {
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
     }
 
     @Test
     void getsCryptoApproveAllowanceWithSomeSpecificOwnersWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1495,12 +1350,10 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoApproveAllowanceMissingOwnerInFungibleTokenAllowanceWithCustomPayer()
-            throws Throwable {
+    void getsCryptoApproveAllowanceMissingOwnerInFungibleTokenAllowanceWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
@@ -1520,8 +1373,7 @@ public class SigRequirementsTest {
     void getsCryptoApproveAllowanceMissingOwnerInCryptoAllowanceWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
@@ -1541,8 +1393,7 @@ public class SigRequirementsTest {
     void getsCryptoApproveAllowanceMissingOwnerInNftAllowanceWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
@@ -1559,12 +1410,10 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoApproveAllowanceMissingDelegatingSpenderInNftAllowanceWithCustomPayer()
-            throws Throwable {
+    void getsCryptoApproveAllowanceMissingDelegatingSpenderInNftAllowanceWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_DELEGATING_SPENDER, summary.getErrorReport());
@@ -1584,8 +1433,7 @@ public class SigRequirementsTest {
     void getsCryptoDeleteAllowanceVanillaWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_DELETE_ALLOWANCE_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(OWNER_ACCOUNT_KT.asKey()));
@@ -1604,8 +1452,7 @@ public class SigRequirementsTest {
     void getsCryptoDeleteAllowanceSelfWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_DELETE_ALLOWANCE_SELF_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
@@ -1634,8 +1481,7 @@ public class SigRequirementsTest {
     void getsCryptoDeleteAllowanceMissingOwnerInNftAllowanceWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         assertTrue(summary.getOrderedKeys().isEmpty());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
@@ -1651,9 +1497,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1662,14 +1506,11 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1692,16 +1533,13 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_SELF_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1721,21 +1559,18 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoUpdateNewKeyCustomPayerPaidReturnsJustTheNewKeyWithCustomPayer()
-            throws Throwable {
+    void getsCryptoUpdateNewKeyCustomPayerPaidReturnsJustTheNewKeyWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_UPDATE_WITH_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(NEW_ACCOUNT_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1747,9 +1582,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1757,14 +1590,11 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1784,8 +1614,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -1808,14 +1637,11 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1834,8 +1660,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -1847,9 +1672,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -1872,14 +1695,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1887,9 +1708,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -1913,8 +1732,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -1937,14 +1755,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -1956,20 +1772,16 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
-    void getsCryptoUpdateNoNewKeyCustomPayerPaidReturnsEmptyKeyListWithCustomPayer()
-            throws Throwable {
+    void getsCryptoUpdateNoNewKeyCustomPayerPaidReturnsEmptyKeyListWithCustomPayer() throws Throwable {
         setupFor(CRYPTO_UPDATE_NO_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2028,8 +1840,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2049,25 +1860,21 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoDeleteNoTransferSigRequiredSelfPaidWillReturnEmptyKeyListWithCustomPayer()
-            throws Throwable {
+    void getsCryptoDeleteNoTransferSigRequiredSelfPaidWillReturnEmptyKeyListWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
-    void getsCryptoDeleteNoTransferSigRequiredCustomPayerPaidWillReturnEmptyKeyList()
-            throws Throwable {
+    void getsCryptoDeleteNoTransferSigRequiredCustomPayerPaidWillReturnEmptyKeyList() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO);
 
@@ -2076,21 +1883,17 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
-    void getsCryptoDeleteNoTransferSigRequiredCustomPayerPaidWillReturnEmptyKeyListWithCustomPayer()
-            throws Throwable {
+    void getsCryptoDeleteNoTransferSigRequiredCustomPayerPaidWillReturnEmptyKeyListWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2115,8 +1918,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.hasErrorReport());
@@ -2142,8 +1944,7 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_DELETE_MISSING_TARGET);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.hasErrorReport());
@@ -2161,8 +1962,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -2171,14 +1971,12 @@ public class SigRequirementsTest {
         setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -2196,14 +1994,12 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoDeleteTransferSigRequiredPaidByReceiverReturnsJustAccountKeyWithCustomPayer()
-            throws Throwable {
+    void getsCryptoDeleteTransferSigRequiredPaidByReceiverReturnsJustAccountKeyWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2226,27 +2022,22 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoDeleteTransferSigRequiredSelfPaidReturnsJustReceiverKeyWithCustomPayer()
-            throws Throwable {
+    void getsCryptoDeleteTransferSigRequiredSelfPaidReturnsJustReceiverKeyWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
-    void getsCryptoDeleteTransferSigRequiredCustomPayerPaidReturnsJustReceiverKey()
-            throws Throwable {
+    void getsCryptoDeleteTransferSigRequiredCustomPayerPaidReturnsJustReceiverKey() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO);
 
@@ -2262,21 +2053,18 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsCryptoDeleteTransferSigRequiredCustomPayerPaidReturnsJustReceiverKeyWithCustomPayer()
-            throws Throwable {
+    void getsCryptoDeleteTransferSigRequiredCustomPayerPaidReturnsJustReceiverKeyWithCustomPayer() throws Throwable {
         // given:
         setupFor(CRYPTO_DELETE_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
         assertThat(sanityRestored(summary.getOrderedKeys()), contains(RECEIVER_SIG_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -2311,8 +2099,7 @@ public class SigRequirementsTest {
         setupFor(VANILLA_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2337,8 +2124,7 @@ public class SigRequirementsTest {
         setupFor(SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2351,8 +2137,7 @@ public class SigRequirementsTest {
         setupFor(SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -2376,8 +2161,7 @@ public class SigRequirementsTest {
         setupFor(IMMUTABLE_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2401,8 +2185,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2415,9 +2198,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2441,8 +2222,7 @@ public class SigRequirementsTest {
         setupFor(MASTER_SYS_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2455,8 +2235,7 @@ public class SigRequirementsTest {
         setupFor(MASTER_SYS_FILE_APPEND_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2480,8 +2259,7 @@ public class SigRequirementsTest {
         setupFor(MASTER_SYS_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -2496,8 +2274,7 @@ public class SigRequirementsTest {
         setupFor(MASTER_SYS_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2521,8 +2298,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -2537,9 +2313,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2598,8 +2372,7 @@ public class SigRequirementsTest {
         setupFor(VANILLA_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2624,8 +2397,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2638,9 +2410,7 @@ public class SigRequirementsTest {
         setupFor(TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2664,8 +2434,7 @@ public class SigRequirementsTest {
         setupFor(IMMUTABLE_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -2690,8 +2459,7 @@ public class SigRequirementsTest {
         setupFor(VANILLA_FILE_UPDATE_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -2719,8 +2487,7 @@ public class SigRequirementsTest {
         setupFor(FILE_UPDATE_NEW_WACL_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -2735,9 +2502,7 @@ public class SigRequirementsTest {
         setupFor(FILE_UPDATE_NEW_WACL_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -2765,8 +2530,7 @@ public class SigRequirementsTest {
         setupFor(FILE_UPDATE_MISSING_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.hasErrorReport());
@@ -2779,9 +2543,7 @@ public class SigRequirementsTest {
         setupFor(FILE_UPDATE_MISSING_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(summary.hasErrorReport());
@@ -2866,8 +2628,7 @@ public class SigRequirementsTest {
     @Test
     void getsContractDeleteNonsense() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONTRACT_DELETE_IMMUTABLE_SCENARIO, NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP);
+        setupForNonStdLookup(CONTRACT_DELETE_IMMUTABLE_SCENARIO, NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -2880,8 +2641,7 @@ public class SigRequirementsTest {
     @Test
     void getInvalidAutoRenewAccountDuringUpdate() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO, INVALID_AUTO_RENEW_ACCOUNT_EXC);
+        setupForNonStdLookup(CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO, INVALID_AUTO_RENEW_ACCOUNT_EXC);
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -2940,8 +2700,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -2979,8 +2738,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ADMIN_KT.asKey(), SIMPLE_NEW_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -3050,8 +2808,7 @@ public class SigRequirementsTest {
     @Test
     void reportsInvalidContract() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
+        setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, INVALID_CONTRACT_THROWING_LOOKUP);
         // and:
         mockSummaryFactory();
         // and:
@@ -3069,8 +2826,7 @@ public class SigRequirementsTest {
     @Test
     void reportsImmutableContract() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
+        setupForNonStdLookup(CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO, IMMUTABLE_CONTRACT_THROWING_LOOKUP);
         // and:
         mockSummaryFactory();
         // and:
@@ -3095,9 +2851,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ADMIN_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -3188,9 +2942,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -3203,8 +2955,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
     }
 
     @Test
@@ -3213,13 +2964,11 @@ public class SigRequirementsTest {
         setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
     }
 
     @Test
@@ -3243,8 +2992,7 @@ public class SigRequirementsTest {
         setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3263,20 +3011,17 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer()
-            throws Throwable {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3302,21 +3047,17 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsConsensusCreateTopicAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(CONSENSUS_CREATE_TOPIC_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO);
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SIMPLE_TOPIC_ADMIN_KEY.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -3370,17 +3111,14 @@ public class SigRequirementsTest {
     @Test
     void getsConsensusSubmitMessageWithSubmitKey() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_SUBMIT_MESSAGE_SCENARIO,
-                hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
+        setupForNonStdLookup(CONSENSUS_SUBMIT_MESSAGE_SCENARIO, hcsMetadataLookup(null, MISC_TOPIC_SUBMIT_KT.asJKey()));
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_TOPIC_SUBMIT_KT.asKey()));
     }
 
     @Test
@@ -3416,9 +3154,7 @@ public class SigRequirementsTest {
     @Test
     void getsConsensusDeleteTopicWithAdminKey() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_DELETE_TOPIC_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+        setupForNonStdLookup(CONSENSUS_DELETE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -3464,8 +3200,7 @@ public class SigRequirementsTest {
         setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -3474,9 +3209,7 @@ public class SigRequirementsTest {
     @Test
     void getsConsensusUpdateTopicWithExistingAdminKey() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -3489,13 +3222,10 @@ public class SigRequirementsTest {
     @Test
     void getsConsensusUpdateTopicWithExistingAdminKeyWithCustomPayer() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -3506,8 +3236,7 @@ public class SigRequirementsTest {
     void getsConsensusUpdateTopicExpiryOnly() throws Throwable {
         // given:
         setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+                CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -3520,12 +3249,10 @@ public class SigRequirementsTest {
     void getsConsensusUpdateTopicExpiryOnlyWithCustomPayer() throws Throwable {
         // given:
         setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+                CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -3533,8 +3260,7 @@ public class SigRequirementsTest {
 
     @Test
     void reportsConsensusUpdateTopicMissingTopic() throws Throwable {
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
         // and:
         mockSummaryFactory();
         // and:
@@ -3551,8 +3277,7 @@ public class SigRequirementsTest {
 
     @Test
     void reportsConsensusUpdateTopicMissingTopicWithCustomPayer() throws Throwable {
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_TOPIC_SCENARIO, hcsMetadataLookup(null, null));
         // and:
         mockSummaryFactory();
         // and:
@@ -3570,9 +3295,7 @@ public class SigRequirementsTest {
     @Test
     void invalidAutoRenewAccountOnConsensusUpdateTopicThrows() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO,
-                hcsMetadataLookup(null, null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
         // and:
         mockSummaryFactory();
         // and:
@@ -3590,9 +3313,7 @@ public class SigRequirementsTest {
     @Test
     void invalidAutoRenewAccountOnConsensusUpdateTopicThrowsWithCustomPayer() throws Throwable {
         // given:
-        setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO,
-                hcsMetadataLookup(null, null));
+        setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO, hcsMetadataLookup(null, null));
         // and:
         mockSummaryFactory();
         // and:
@@ -3611,8 +3332,7 @@ public class SigRequirementsTest {
     void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
         // given:
         setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+                CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
         final var summary = subject.keysForOtherParties(txn, summaryFactory);
@@ -3628,12 +3348,10 @@ public class SigRequirementsTest {
     void getsConsensusUpdateTopicNewAdminKeyWithCustomPayer() throws Throwable {
         // given:
         setupForNonStdLookup(
-                CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO,
-                hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+                CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3656,10 +3374,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        MISC_TOPIC_ADMIN_KT.asKey(),
-                        UPDATE_TOPIC_ADMIN_KT.asKey(),
-                        MISC_ACCOUNT_KT.asKey()));
+                contains(MISC_TOPIC_ADMIN_KT.asKey(), UPDATE_TOPIC_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -3670,17 +3385,13 @@ public class SigRequirementsTest {
                 hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        MISC_TOPIC_ADMIN_KT.asKey(),
-                        UPDATE_TOPIC_ADMIN_KT.asKey(),
-                        MISC_ACCOUNT_KT.asKey()));
+                contains(MISC_TOPIC_ADMIN_KT.asKey(), UPDATE_TOPIC_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -3702,16 +3413,14 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer()
-            throws Throwable {
+    void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccountAsPayerWithCustomPayer() throws Throwable {
         // given:
         setupForNonStdLookup(
                 CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO,
                 hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertTrue(summary.hasErrorReport());
@@ -3736,24 +3445,21 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsConsensusUpdateTopicNewAdminKeyAndAutoRenewAccountAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupForNonStdLookup(
                 CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO,
                 hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
         // when:
-        final var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+        final var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
                 contains(MISC_TOPIC_ADMIN_KT.asKey(), UPDATE_TOPIC_ADMIN_KT.asKey()));
-        assertFalse(
-                sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertFalse(sanityRestored(summary.getOrderedKeys()).contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
@@ -3768,8 +3474,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -3783,8 +3488,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -3848,9 +3552,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -3902,8 +3604,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -3917,8 +3618,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test
@@ -3963,8 +3663,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcardWithCustomPayer()
-            throws Throwable {
+    void getsTokenCreateCustomFixedFeeNoCollectorSigReqButDenomWildcardWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
@@ -3989,8 +3688,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4004,8 +3702,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4023,8 +3720,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayerWithCustomPayer()
-            throws Throwable {
+    void getsTokenCreateCustomFixedFeeAndCollectorSigReqAndAsPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
@@ -4051,8 +3747,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReqWithCustomPayer()
-            throws Throwable {
+    void getsTokenCreateCustomRoyaltyFeeNoFallbackAndNoCollectorSigReqWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
@@ -4075,8 +3770,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4090,8 +3784,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4105,13 +3798,11 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
-    void getsTokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReqWithCustomPayer()
-            throws Throwable {
+    void getsTokenCreateCustomRoyaltyFeeFallbackNoWildcardButSigReqWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
@@ -4121,8 +3812,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4247,8 +3937,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(SECOND_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(SECOND_TOKEN_SENDER_KT.asKey()));
         assertFalse(sanityRestored(summary.getOrderedKeys()).contains(DEFAULT_PAYER_KT.asKey()));
     }
 
@@ -4307,8 +3996,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -4321,8 +4009,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
@@ -4361,10 +4048,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4379,10 +4063,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(FIRST_TOKEN_SENDER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
     }
 
     @Test
@@ -4486,14 +4167,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
-    void getsAssociateWithCustomPayerPaidKnownTargetGivesEmptyKeyListWithCustomPayer()
-            throws Throwable {
+    void getsAssociateWithCustomPayerPaidKnownTargetGivesEmptyKeyListWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
@@ -4589,14 +4267,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(CUSTOM_PAYER_ACCOUNT_KT.asKey()));
     }
 
     @Test
-    void getsDissociateWithCustomPayerPaidKnownTargetGivesEmptyKeyListWithCustomPayer()
-            throws Throwable {
+    void getsDissociateWithCustomPayerPaidKnownTargetGivesEmptyKeyListWithCustomPayer() throws Throwable {
         // given:
         setupFor(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
@@ -4946,8 +4621,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
     }
 
     @Test
@@ -4961,8 +4635,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), TOKEN_TREASURY_KT.asKey()));
     }
 
     @Test
@@ -4989,8 +4662,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), DEFAULT_PAYER_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
@@ -5058,8 +4730,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
     }
 
     @Test
@@ -5073,8 +4744,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), TOKEN_REPLACE_KT.asKey()));
     }
 
     @Test
@@ -5138,8 +4808,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -5153,8 +4822,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_TREASURY_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -5251,9 +4919,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -5266,9 +4932,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
     }
 
     @Test
@@ -5295,8 +4959,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(TOKEN_ADMIN_KT.asKey(), DEFAULT_PAYER_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_ADMIN_KT.asKey(), DEFAULT_PAYER_KT.asKey()));
     }
 
     @Test
@@ -5391,8 +5054,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorSigReqWithCustomPayer()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorSigReqWithCustomPayer() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
 
@@ -5405,8 +5067,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOn()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOn() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -5421,9 +5082,8 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayer()
-                    throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -5438,9 +5098,8 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayerAsReceiver()
-                    throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayerAsReceiver()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -5449,13 +5108,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOff()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOff() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -5464,14 +5121,12 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayer()
-                    throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -5480,14 +5135,12 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayerAsReceiver()
-                    throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayerAsReceiver()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -5496,13 +5149,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqON()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqON() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
 
@@ -5517,9 +5168,8 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqONWithCustomPayer()
-                    throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqONWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
 
@@ -5534,8 +5184,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerSigReq()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerSigReq() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
@@ -5544,13 +5193,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerSigReqWithCustomPayer()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerSigReqWithCustomPayer() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
@@ -5574,13 +5221,11 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
-    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerWithCustomPayer()
-            throws Throwable {
+    void getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorAsPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
 
@@ -5589,8 +5234,7 @@ public class SigRequirementsTest {
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(1));
-        assertThat(
-                sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
+        assertThat(sanityRestored(summary.getOrderedKeys()), contains(TOKEN_FEE_SCHEDULE_KT.asKey()));
     }
 
     @Test
@@ -5659,8 +5303,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -5692,10 +5335,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        SCHEDULE_ADMIN_KT.asKey(),
-                        MISC_ACCOUNT_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(SCHEDULE_ADMIN_KT.asKey(), MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(2).isForScheduledTxn());
@@ -5856,10 +5496,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        SCHEDULE_ADMIN_KT.asKey(),
-                        DEFAULT_PAYER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(SCHEDULE_ADMIN_KT.asKey(), DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertFalse(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -5867,8 +5504,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminSenderAndDesignatedPayerAsSelfWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminSenderAndDesignatedPayerAsSelfWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_SELF);
 
@@ -5905,8 +5541,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminSenderAsSelfAndDesignatedPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminSenderAsSelfAndDesignatedPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_SELF_AND_PAYER);
 
@@ -5943,8 +5578,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminSenderAsCustomPayerAndDesignatedPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminSenderAsCustomPayerAndDesignatedPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_CUSTOM_PAYER_AND_PAYER);
 
@@ -5981,8 +5615,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminAndDesignatedPayerAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminAndDesignatedPayerAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_CUSTOM_PAYER);
 
@@ -6007,10 +5640,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        SCHEDULE_ADMIN_KT.asKey(),
-                        CUSTOM_PAYER_ACCOUNT_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(SCHEDULE_ADMIN_KT.asKey(), CUSTOM_PAYER_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertFalse(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -6018,8 +5648,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminSenderAndDesignatedPayerAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminSenderAndDesignatedPayerAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
@@ -6057,8 +5686,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminSelfSenderAndDesignatedPayerAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminSelfSenderAndDesignatedPayerAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SELF_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
@@ -6096,8 +5724,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateWithAdminCustomPayerSenderAndDesignatedPayerAsSelfWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateWithAdminCustomPayerSenderAndDesignatedPayerAsSelfWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_CUSTOM_PAYER_SENDER_AND_PAYER_AS_SELF);
 
@@ -6133,8 +5760,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateTreasuryUpdateWithTreasuryAsCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateTreasuryUpdateWithTreasuryAsCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER);
 
@@ -6148,15 +5774,12 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateTreasuryUpdateWithTreasuryAsCustomPayerWithTreasuryAsCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateTreasuryUpdateWithTreasuryAsCustomPayerWithTreasuryAsCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER);
 
         // when:
-        var summary =
-                subject.keysForOtherParties(
-                        txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
+        var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6183,8 +5806,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER);
 
@@ -6198,14 +5820,12 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerWithMasterPayerAsCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerWithMasterPayerAsCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER);
 
         // when:
-        var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
+        var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
         // then:
         assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6214,8 +5834,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayer()
-            throws Throwable {
+    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
@@ -6233,8 +5852,7 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithCustomPayer()
-            throws Throwable {
+    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithCustomPayer() throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
@@ -6248,15 +5866,13 @@ public class SigRequirementsTest {
     }
 
     @Test
-    void
-            getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithMasterPayerAsCustomPayer()
-                    throws Throwable {
+    void getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithMasterPayerAsCustomPayer()
+            throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
         // when:
-        var summary =
-                subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
+        var summary = subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -6280,10 +5896,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        DILIGENT_SIGNING_PAYER_KT.asKey(),
-                        MISC_ACCOUNT_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(DILIGENT_SIGNING_PAYER_KT.asKey(), MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -6302,10 +5915,7 @@ public class SigRequirementsTest {
         assertThat(summary.getOrderedKeys(), iterableWithSize(3));
         assertThat(
                 sanityRestored(summary.getOrderedKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        MISC_ACCOUNT_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
+                contains(DEFAULT_PAYER_KT.asKey(), MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -6336,8 +5946,7 @@ public class SigRequirementsTest {
         // then:
         assertThat(summary.getOrderedKeys(), iterableWithSize(2));
         assertThat(
-                sanityRestored(summary.getOrderedKeys()),
-                contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+                sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey(), RECEIVER_SIG_KT.asKey()));
         // and:
         assertTrue(summary.getOrderedKeys().get(0).isForScheduledTxn());
         assertTrue(summary.getOrderedKeys().get(1).isForScheduledTxn());
@@ -6397,8 +6006,8 @@ public class SigRequirementsTest {
         setupFor(scenario, Optional.empty(), mockSignatureWaivers);
     }
 
-    private void setupForNonStdLookup(
-            TxnHandlingScenario scenario, SigMetadataLookup sigMetadataLookup) throws Throwable {
+    private void setupForNonStdLookup(TxnHandlingScenario scenario, SigMetadataLookup sigMetadataLookup)
+            throws Throwable {
         setupFor(scenario, Optional.of(sigMetadataLookup), mockSignatureWaivers);
     }
 
@@ -6425,69 +6034,57 @@ public class SigRequirementsTest {
         given(aliasManager.lookupIdBy(TxnHandlingScenario.FIRST_TOKEN_SENDER_LITERAL_ALIAS))
                 .willReturn(EntityNum.fromAccountId(FIRST_TOKEN_SENDER));
 
-        subject =
-                new SigRequirements(
-                        sigMetaLookup.orElse(
-                                defaultLookupsFor(
-                                        aliasManager,
-                                        hfsSigMetaLookup,
-                                        () -> AccountStorageAdapter.fromInMemory(accounts),
-                                        () -> topics,
-                                        DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(
-                                                tokenStore),
-                                        DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY
-                                                .apply(scheduleStore))),
-                        signatureWaivers);
+        subject = new SigRequirements(
+                sigMetaLookup.orElse(defaultLookupsFor(
+                        aliasManager,
+                        hfsSigMetaLookup,
+                        () -> AccountStorageAdapter.fromInMemory(accounts),
+                        () -> topics,
+                        DelegatingSigMetadataLookup.REF_LOOKUP_FACTORY.apply(tokenStore),
+                        DelegatingSigMetadataLookup.SCHEDULE_REF_LOOKUP_FACTORY.apply(scheduleStore))),
+                signatureWaivers);
     }
 
     @SuppressWarnings("unchecked")
     private void mockSummaryFactory() {
-        mockSummaryFactory =
-                (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
+        mockSummaryFactory = (SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
     }
 
     private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
         return new DelegatingSigMetadataLookup(
                 FileAdapter.throwingUoe(),
-                AccountAdapter.withSafe(
-                        id -> {
-                            if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
-                                try {
-                                    return new SafeLookupResult<>(
-                                            new AccountSigningMetadata(
-                                                    MISC_ACCOUNT_KT.asJKey(), false));
-                                } catch (Exception e) {
-                                    throw new IllegalArgumentException(e);
-                                }
-                            } else {
-                                return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
-                            }
-                        }),
-                ContractAdapter.withSafe(
-                        id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
-                TopicAdapter.withSafe(
-                        id -> {
-                            if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
-                                return new SafeLookupResult<>(
-                                        new TopicSigningMetadata(adminKey, submitKey));
-                            } else {
-                                return SafeLookupResult.failure(KeyOrderingFailure.INVALID_TOPIC);
-                            }
-                        }),
+                AccountAdapter.withSafe(id -> {
+                    if (id.equals(asAccount(MISC_ACCOUNT_ID))) {
+                        try {
+                            return new SafeLookupResult<>(new AccountSigningMetadata(MISC_ACCOUNT_KT.asJKey(), false));
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    } else {
+                        return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
+                    }
+                }),
+                ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)),
+                TopicAdapter.withSafe(id -> {
+                    if (id.equals(asTopic(EXISTING_TOPIC_ID))) {
+                        return new SafeLookupResult<>(new TopicSigningMetadata(adminKey, submitKey));
+                    } else {
+                        return SafeLookupResult.failure(KeyOrderingFailure.INVALID_TOPIC);
+                    }
+                }),
                 id -> null,
                 id -> null);
     }
 
     public static List<Key> sanityRestored(List<? extends HederaKey> jKeys) {
         return jKeys.stream()
-                .map(
-                        jKey -> {
-                            try {
-                                return JKey.mapJKey((JKey) jKey);
-                            } catch (Exception ignore) {
-                            }
-                            throw new AssertionError("All keys should be mappable!");
-                        })
+                .map(jKey -> {
+                    try {
+                        return JKey.mapJKey((JKey) jKey);
+                    } catch (Exception ignore) {
+                    }
+                    throw new AssertionError("All keys should be mappable!");
+                })
                 .collect(toList());
     }
 }

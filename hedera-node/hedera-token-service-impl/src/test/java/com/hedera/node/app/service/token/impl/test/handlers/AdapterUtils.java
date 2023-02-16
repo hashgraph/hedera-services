@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -51,19 +52,15 @@ public class AdapterUtils {
      * @return the well-known account store
      */
     public static AccountKeyLookup wellKnownKeyLookupAt() {
-        return new TestFixturesKeyLookup(
-                mockStates(
-                        Map.of(
-                                ALIASES_KEY, wellKnownAliasState(),
-                                ACCOUNTS_KEY, wellKnownAccountsState())));
+        return new TestFixturesKeyLookup(mockStates(Map.of(
+                ALIASES_KEY, wellKnownAliasState(),
+                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableAccountStore wellKnownAccountStoreAt() {
-        return new ReadableAccountStore(
-                mockStates(
-                        Map.of(
-                                ALIASES_KEY, wellKnownAliasState(),
-                                ACCOUNTS_KEY, wellKnownAccountsState())));
+        return new ReadableAccountStore(mockStates(Map.of(
+                ALIASES_KEY, wellKnownAliasState(),
+                ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
     public static ReadableStates mockStates(final Map<String, ReadableKVState> keysToMock) {
@@ -73,21 +70,18 @@ public class AdapterUtils {
     }
 
     private static ReadableKVState<Long, ? extends HederaAccount> wellKnownAccountsState() {
-        final var wrappedState =
-                new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
+        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, TxnHandlingScenario.wellKnownAccounts());
         return new StateKeyAdapter<>(wrappedState, EntityNum::fromLong);
     }
 
     private static MapReadableKVState<String, Long> wellKnownAliasState() {
-        final Map<String, Long> wellKnownAliases =
-                Map.ofEntries(
-                        Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
-                        Map.entry(
-                                NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
-                        Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
-                        Map.entry(
-                                FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
-                                fromAccountId(FIRST_TOKEN_SENDER).longValue()));
+        final Map<String, Long> wellKnownAliases = Map.ofEntries(
+                Map.entry(CURRENTLY_UNUSED_ALIAS, MISSING_NUM.longValue()),
+                Map.entry(NO_RECEIVER_SIG_ALIAS, fromAccountId(NO_RECEIVER_SIG).longValue()),
+                Map.entry(RECEIVER_SIG_ALIAS, fromAccountId(RECEIVER_SIG).longValue()),
+                Map.entry(
+                        FIRST_TOKEN_SENDER_LITERAL_ALIAS.toStringUtf8(),
+                        fromAccountId(FIRST_TOKEN_SENDER).longValue()));
         return new MapReadableKVState<>(ALIASES_KEY, wellKnownAliases);
     }
 

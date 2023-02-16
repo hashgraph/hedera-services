@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult.failure;
@@ -54,36 +55,27 @@ import java.util.function.Supplier;
  */
 public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
     public static final Instant PRETEND_SIGNING_TIME = Instant.ofEpochSecond(1_234_567L, 890);
-    public static final Function<
-                    TokenStore, Function<TokenID, SafeLookupResult<TokenSigningMetadata>>>
-            REF_LOOKUP_FACTORY =
-                    tokenStore ->
-                            ref -> {
-                                TokenID id;
-                                return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
-                                        ? failure(MISSING_TOKEN)
-                                        : new SafeLookupResult<>(
-                                                signingMetaFrom(tokenStore.get(id)));
-                            };
-    public static final Function<
-                    ScheduleStore, Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>>
-            SCHEDULE_REF_LOOKUP_FACTORY =
-                    scheduleStore ->
-                            ref -> {
-                                ScheduleID id;
-                                return ScheduleStore.MISSING_SCHEDULE.equals(
-                                                id = scheduleStore.resolve(ref))
-                                        ? failure(MISSING_SCHEDULE)
-                                        : new SafeLookupResult<>(from(scheduleStore.get(id)));
-                            };
+    public static final Function<TokenStore, Function<TokenID, SafeLookupResult<TokenSigningMetadata>>>
+            REF_LOOKUP_FACTORY = tokenStore -> ref -> {
+        TokenID id;
+        return TokenStore.MISSING_TOKEN.equals(id = tokenStore.resolve(ref))
+                ? failure(MISSING_TOKEN)
+                : new SafeLookupResult<>(signingMetaFrom(tokenStore.get(id)));
+    };
+    public static final Function<ScheduleStore, Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>>
+            SCHEDULE_REF_LOOKUP_FACTORY = scheduleStore -> ref -> {
+        ScheduleID id;
+        return ScheduleStore.MISSING_SCHEDULE.equals(id = scheduleStore.resolve(ref))
+                ? failure(MISSING_SCHEDULE)
+                : new SafeLookupResult<>(from(scheduleStore.get(id)));
+    };
     private final FileSigMetaLookup fileSigMetaLookup;
     private final AccountSigMetaLookup accountSigMetaLookup;
     private final ContractSigMetaLookup contractSigMetaLookup;
     private final TopicSigMetaLookup topicSigMetaLookup;
 
     private final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup;
-    private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>
-            scheduleSigMetaLookup;
+    private final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup;
 
     public static DelegatingSigMetadataLookup defaultLookupsFor(
             final AliasManager aliasManager,
@@ -107,8 +99,7 @@ public final class DelegatingSigMetadataLookup implements SigMetadataLookup {
             final ContractSigMetaLookup contractSigMetaLookup,
             final TopicSigMetaLookup topicSigMetaLookup,
             final Function<TokenID, SafeLookupResult<TokenSigningMetadata>> tokenSigMetaLookup,
-            final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>>
-                    scheduleSigMetaLookup) {
+            final Function<ScheduleID, SafeLookupResult<ScheduleSigningMetadata>> scheduleSigMetaLookup) {
         this.fileSigMetaLookup = fileSigMetaLookup;
         this.accountSigMetaLookup = accountSigMetaLookup;
         this.contractSigMetaLookup = contractSigMetaLookup;

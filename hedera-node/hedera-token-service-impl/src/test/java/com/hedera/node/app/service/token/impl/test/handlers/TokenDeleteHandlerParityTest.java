@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
@@ -48,9 +49,7 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
         assertEquals(OK, context.getStatus());
         assertEquals(sanityRestored(context.getPayerKey()), DEFAULT_PAYER_KT.asKey());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(
-                sanityRestored(context.getRequiredNonPayerKeys()),
-                contains(TOKEN_ADMIN_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_ADMIN_KT.asKey()));
     }
 
     @Test

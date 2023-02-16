@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
@@ -89,31 +90,61 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateChildrenSigMetadataLookupTest {
-    @Mock private MutableStateChildren stateChildren;
-    @Mock private MerkleTopic topic;
-    @Mock private MerkleToken token;
-    @Mock private ScheduleVirtualValue schedule;
-    @Mock private MerkleAccount account;
-    @Mock private TokenSigningMetadata tokenMeta;
-    @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
-    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
-    @Mock private Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
-    @Mock private AccountStorageAdapter accounts;
-    @Mock private MerkleScheduledTransactions schedules;
-    @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
-    @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private GlobalDynamicProperties properties;
-    @Mock private AliasManager aliasManager;
+    @Mock
+    private MutableStateChildren stateChildren;
+
+    @Mock
+    private MerkleTopic topic;
+
+    @Mock
+    private MerkleToken token;
+
+    @Mock
+    private ScheduleVirtualValue schedule;
+
+    @Mock
+    private MerkleAccount account;
+
+    @Mock
+    private TokenSigningMetadata tokenMeta;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleToken> tokens;
+
+    @Mock
+    private MerkleMap<EntityNum, MerkleTopic> topics;
+
+    @Mock
+    private Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform;
+
+    @Mock
+    private AccountStorageAdapter accounts;
+
+    @Mock
+    private MerkleScheduledTransactions schedules;
+
+    @Mock
+    private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> schedulesById;
+
+    @Mock
+    private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+
+    @Mock
+    private FCHashMap<ByteString, EntityNum> aliases;
+
+    @Mock
+    private GlobalDynamicProperties properties;
+
+    @Mock
+    private AliasManager aliasManager;
+
     private FileNumbers fileNumbers = new MockFileNumbers();
 
     private StateChildrenSigMetadataLookup subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new StateChildrenSigMetadataLookup(
-                        fileNumbers, stateChildren, tokenMetaTransform, properties);
+        subject = new StateChildrenSigMetadataLookup(fileNumbers, stateChildren, tokenMetaTransform, properties);
     }
 
     @Test
@@ -138,9 +169,7 @@ class StateChildrenSigMetadataLookupTest {
         final var literalId = AccountID.newBuilder().setAccountNum(1234).build();
         final var linkedRefs = new LinkedRefs();
         assertEquals(EntityNum.fromLong(1234), subject.unaliasedAccount(literalId, linkedRefs));
-        assertEquals(
-                EntityNum.MISSING_NUM,
-                subject.unaliasedAccount(AccountID.getDefaultInstance(), linkedRefs));
+        assertEquals(EntityNum.MISSING_NUM, subject.unaliasedAccount(AccountID.getDefaultInstance(), linkedRefs));
         assertTrue(linkedRefs.linkedAliases().isEmpty());
     }
 
@@ -149,7 +178,8 @@ class StateChildrenSigMetadataLookupTest {
         final byte[] mockAddr = unhex("0000000000000000000000009abcdefabcdefbbb");
         final var num = Longs.fromByteArray(java.util.Arrays.copyOfRange(mockAddr, 12, 20));
         final var expectedId = EntityNum.fromLong(num);
-        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var input =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
         final var linkedRefs = new LinkedRefs();
 
         assertEquals(expectedId, subject.unaliasedAccount(input, linkedRefs));
@@ -160,10 +190,10 @@ class StateChildrenSigMetadataLookupTest {
     void returnsResolvedAccountIdIfNonMirror() {
         final byte[] mockAddr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
         final var extantNum = EntityNum.fromLong(1_234_567L);
-        final var input = AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
+        final var input =
+                AccountID.newBuilder().setAlias(ByteString.copyFrom(mockAddr)).build();
         given(stateChildren.aliases()).willReturn(aliases);
-        given(aliases.getOrDefault(ByteString.copyFrom(mockAddr), MISSING_NUM))
-                .willReturn(extantNum);
+        given(aliases.getOrDefault(ByteString.copyFrom(mockAddr), MISSING_NUM)).willReturn(extantNum);
 
         final var linkedRefs = new LinkedRefs();
         final var unaliasedId = subject.unaliasedAccount(input, linkedRefs);
@@ -173,10 +203,9 @@ class StateChildrenSigMetadataLookupTest {
 
     @Test
     void recognizesScheduleWithoutExplicitPayer() {
-        final var mockTxn =
-                TransactionBody.newBuilder()
-                        .setContractCall(ContractCallTransactionBody.getDefaultInstance())
-                        .build();
+        final var mockTxn = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.getDefaultInstance())
+                .build();
 
         given(stateChildren.schedules()).willReturn(schedules);
         given(schedules.byId()).willReturn(schedulesById);
@@ -196,10 +225,9 @@ class StateChildrenSigMetadataLookupTest {
     @Test
     void recognizesScheduleWithExplicitPayer() {
         final var explicitPayer = new EntityId(0, 0, 5678);
-        final var mockTxn =
-                TransactionBody.newBuilder()
-                        .setContractCall(ContractCallTransactionBody.getDefaultInstance())
-                        .build();
+        final var mockTxn = TransactionBody.newBuilder()
+                .setContractCall(ContractCallTransactionBody.getDefaultInstance())
+                .build();
 
         given(stateChildren.schedules()).willReturn(schedules);
         given(schedules.byId()).willReturn(schedulesById);
@@ -336,8 +364,7 @@ class StateChildrenSigMetadataLookupTest {
 
         assertTrue(result.succeeded());
         assertTrue(linkedRefs.linkedAliases().isEmpty());
-        assertTrue(
-                Arrays.contains(linkedRefs.linkedNumbers(), fileNumbers.applicationProperties()));
+        assertTrue(Arrays.contains(linkedRefs.linkedNumbers(), fileNumbers.applicationProperties()));
         assertFalse(result.metadata().receiverSigRequired());
         assertEquals(knownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
         assertArrayEquals(
@@ -429,8 +456,7 @@ class StateChildrenSigMetadataLookupTest {
         given(account.isReceiverSigRequired()).willReturn(true);
 
         final var linkedRefs = new LinkedRefs();
-        final var result =
-                subject.aliasableContractSigningMetaFor(mirrorAddressContract, linkedRefs);
+        final var result = subject.aliasableContractSigningMetaFor(mirrorAddressContract, linkedRefs);
 
         assertTrue(result.succeeded());
         assertTrue(linkedRefs.linkedAliases().isEmpty());
@@ -593,8 +619,7 @@ class StateChildrenSigMetadataLookupTest {
         given(stateChildren.storage()).willReturn(storage);
     }
 
-    private void givenFile(
-            final FileID fid, final boolean isDeleted, final long expiry, final JKey wacl)
+    private void givenFile(final FileID fid, final boolean isDeleted, final long expiry, final JKey wacl)
             throws IOException {
         final var meta = new HFileMeta(isDeleted, wacl, expiry);
         final var num = EntityNum.fromLong(fid.getFileNum());
@@ -610,17 +635,15 @@ class StateChildrenSigMetadataLookupTest {
     private static final TokenID knownToken = IdUtils.asToken("0.0.1111");
     private static final TokenID unknownToken = IdUtils.asToken("0.0.2222");
     private static final long expiry = 1_234_567L;
-    private static final JKey simple =
-            new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+    private static final JKey simple = new JEd25519Key("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
     private static final JKeyList wacl =
-            new JKeyList(
-                    List.of(new JECDSASecp256k1Key("012345789012345789012345789012".getBytes())));
+            new JKeyList(List.of(new JECDSASecp256k1Key("012345789012345789012345789012".getBytes())));
     private static final JContractIDKey contract = new JContractIDKey(0, 0, 1234);
-    private static final AccountID alias =
-            AccountID.newBuilder().setAlias(asKeyUnchecked(simple).toByteString()).build();
+    private static final AccountID alias = AccountID.newBuilder()
+            .setAlias(asKeyUnchecked(simple).toByteString())
+            .build();
     private static final EntityNum knownId = EntityNum.fromLong(1234);
-    private static final ByteString knownMirrorAddress =
-            ByteString.copyFrom(knownId.toRawEvmAddress());
+    private static final ByteString knownMirrorAddress = ByteString.copyFrom(knownId.toRawEvmAddress());
     private static final AccountID knownAccount = IdUtils.asAccount("0.0.1234");
     private static final AccountID mirrorAccount =
             AccountID.newBuilder().setAlias(knownMirrorAddress).build();
@@ -630,14 +653,10 @@ class StateChildrenSigMetadataLookupTest {
     private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");
     private static final ScheduleID knownSchedule = IdUtils.asSchedule("0.0.1234");
     private static final ScheduleID unknownSchedule = IdUtils.asSchedule("0.0.4321");
-    private static final ContractID aliasedContract =
-            ContractID.newBuilder()
-                    .setEvmAddress(
-                            ByteString.copyFrom(
-                                    CommonUtils.unhex("abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde")))
-                    .build();
-    private static final ContractID mirrorAddressContract =
-            ContractID.newBuilder()
-                    .setEvmAddress(ByteString.copyFrom(EntityIdUtils.asEvmAddress(knownContract)))
-                    .build();
+    private static final ContractID aliasedContract = ContractID.newBuilder()
+            .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex("abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde")))
+            .build();
+    private static final ContractID mirrorAddressContract = ContractID.newBuilder()
+            .setEvmAddress(ByteString.copyFrom(EntityIdUtils.asEvmAddress(knownContract)))
+            .build();
 }

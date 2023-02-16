@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
@@ -26,20 +27,15 @@ import java.time.Instant;
  * (account, smart contract, file, topic, or token).
  */
 public interface SigMetadataLookup {
-    SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(
-            FileID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<FileSigningMetadata> fileSigningMetaFor(FileID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(
-            TopicID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<TopicSigningMetadata> topicSigningMetaFor(TopicID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(
-            TokenID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<TokenSigningMetadata> tokenSigningMetaFor(TokenID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(
-            AccountID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<AccountSigningMetadata> accountSigningMetaFor(AccountID id, @Nullable LinkedRefs linkedRefs);
 
-    SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(
-            ScheduleID id, @Nullable LinkedRefs linkedRefs);
+    SafeLookupResult<ScheduleSigningMetadata> scheduleSigningMetaFor(ScheduleID id, @Nullable LinkedRefs linkedRefs);
 
     SafeLookupResult<ContractSigningMetadata> aliasableContractSigningMetaFor(
             ContractID idOrAlias, @Nullable LinkedRefs linkedRefs);
