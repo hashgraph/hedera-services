@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.junit;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -62,13 +63,11 @@ public class ExpiryRecordsValidator implements RecordStreamValidator {
                 if (transfers.getAccountID().getAccountNum() == expiredNum) {
                     assertTrue(
                             transfers.getAmount() < 0,
-                            "Transfer amount in transfer list "
-                                    + "from expired entity should be negative");
+                            "Transfer amount in transfer list " + "from expired entity should be negative");
                 } else {
                     assertTrue(
                             transfers.getAmount() > 0,
-                            "Transfer amount in transfer list to other"
-                                    + " entities should be positive");
+                            "Transfer amount in transfer list to other" + " entities should be positive");
                 }
             }
 
@@ -77,13 +76,11 @@ public class ExpiryRecordsValidator implements RecordStreamValidator {
                     if (transfer.getAccountID().getAccountNum() == expiredNum) {
                         assertTrue(
                                 transfer.getAmount() < 0,
-                                "Transfer amount in token "
-                                        + "transfer list from expired entity should be negative");
+                                "Transfer amount in token " + "transfer list from expired entity should be negative");
                     } else {
                         assertTrue(
                                 transfer.getAmount() > 0,
-                                "Transfer amount in token "
-                                        + "transfer list to other entities should be positive");
+                                "Transfer amount in token " + "transfer list to other entities should be positive");
                     }
                 }
                 for (final var transfer : list.getNftTransfersList()) {
@@ -149,14 +146,14 @@ public class ExpiryRecordsValidator implements RecordStreamValidator {
     }
 
     private Long getEntityNumFromAutoRenewalMemo(final String memo) {
-        final var entity =
-                memo.substring(memo.indexOf("0.0."), memo.indexOf(AUTO_RENEWAL_MEMO)).substring(4);
+        final var entity = memo.substring(memo.indexOf("0.0."), memo.indexOf(AUTO_RENEWAL_MEMO))
+                .substring(4);
         return Long.valueOf(entity);
     }
 
     private Long getEntityNumFromAutoExpiryMemo(final String memo) {
-        final var entity =
-                memo.substring(memo.indexOf("0.0."), memo.indexOf(AUTO_EXPIRY_MEMO)).substring(4);
+        final var entity = memo.substring(memo.indexOf("0.0."), memo.indexOf(AUTO_EXPIRY_MEMO))
+                .substring(4);
         return Long.valueOf(entity);
     }
 }

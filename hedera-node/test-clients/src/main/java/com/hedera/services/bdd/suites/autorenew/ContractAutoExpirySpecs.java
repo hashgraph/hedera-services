@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -121,13 +122,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         tokenCreate(nonFungibleToken)
                                 .initialSupply(0)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .withCustom(
-                                        royaltyFeeWithFallback(
-                                                1,
-                                                2,
-                                                fixedHtsFeeInheritingRoyaltyCollector(
-                                                        1, aFungibleToken),
-                                                HTS_COLLECTOR))
+                                .withCustom(royaltyFeeWithFallback(
+                                        1, 2, fixedHtsFeeInheritingRoyaltyCollector(1, aFungibleToken), HTS_COLLECTOR))
                                 .supplyKey(supplyKey)
                                 .treasury(TOKEN_TREASURY),
                         mintToken(
@@ -143,16 +139,11 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(initcode)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(
-                                contractToRemove,
-                                List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
+                        tokenAssociate(contractToRemove, List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
-                                moving(aFungibleAmount, aFungibleToken)
-                                        .between(TOKEN_TREASURY, contractToRemove),
-                                moving(bFungibleAmount, bFungibleToken)
-                                        .between(TOKEN_TREASURY, contractToRemove),
-                                movingUnique(nonFungibleToken, 1L, 2L)
-                                        .between(TOKEN_TREASURY, contractToRemove)),
+                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, contractToRemove),
+                                moving(bFungibleAmount, bFungibleToken).between(TOKEN_TREASURY, contractToRemove),
+                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, contractToRemove)),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
@@ -162,8 +153,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         // Now the contract is gone
-                        getContractInfo(contractToRemove)
-                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
+                        getContractInfo(contractToRemove).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
                         // And the fungible units were returned to the treasury
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
@@ -210,10 +200,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime),
                         tokenAssociate(contractToRemove, List.of(aFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
-                                moving(aFungibleAmount, aFungibleToken)
-                                        .between(TOKEN_TREASURY, contractToRemove),
-                                movingUnique(nonFungibleToken, 1L, 2L)
-                                        .between(TOKEN_TREASURY, contractToRemove)),
+                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, contractToRemove),
+                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, contractToRemove)),
                         getAccountBalance(contractToRemove)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
                                 .hasTokenBalance(nonFungibleToken, 2),
@@ -250,12 +238,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
         return defaultHapiSpec("validateStreams")
                 .given()
                 .when()
-                .then(
-                        sourcing(
-                                () ->
-                                        assertEventuallyPasses(
-                                                new ExpiryRecordsValidator(),
-                                                Duration.ofMillis(2_100))));
+                .then(sourcing(() -> assertEventuallyPasses(new ExpiryRecordsValidator(), Duration.ofMillis(2_100))));
     }
 
     private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
@@ -274,27 +257,24 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         uploadInitCode(contract),
                         cryptoCreate(autoRenewAccount).balance(initBalance),
                         /* This contract has 0 key/value mappings at creation */
-                        contractCreate(contract)
-                                .autoRenewSecs(minimalLifetime)
-                                .autoRenewAccountId(autoRenewAccount),
+                        contractCreate(contract).autoRenewSecs(minimalLifetime).autoRenewAccountId(autoRenewAccount),
 
                         /* Now we update the per-contract limit to 10 mappings */
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                INDIVIDUAL_KV_LIMIT_PROP,
-                                                "10",
-                                                CONS_MAX_GAS_PROP,
-                                                "100_000_000",
-                                                STORAGE_PRICE_TIERS_PROP,
-                                                "0til20",
-                                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
-                                                "0",
-                                                STAKING_FEES_STAKING_REWARD_PERCENTAGE,
-                                                "0",
-                                                "contracts.freeStorageTierLimit",
-                                                "10")))
+                                .overridingProps(Map.of(
+                                        INDIVIDUAL_KV_LIMIT_PROP,
+                                        "10",
+                                        CONS_MAX_GAS_PROP,
+                                        "100_000_000",
+                                        STORAGE_PRICE_TIERS_PROP,
+                                        "0til20",
+                                        STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                                        "0",
+                                        STAKING_FEES_STAKING_REWARD_PERCENTAGE,
+                                        "0",
+                                        "contracts.freeStorageTierLimit",
+                                        "10")))
                 .when(
                         /* The first call to insert adds 5 mappings */
                         contractCall(contract, INSERT_ABI, BigInteger.ONE, BigInteger.ONE)
@@ -306,25 +286,26 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .gas(gasToOffer),
 
                         /* Confirm the storage size didn't change */
-                        getContractInfo(contract).has(contractWith().numKvPairs(8)).logged(),
-                        getAccountBalance(autoRenewAccount).hasTinyBars(initBalance).logged(),
+                        getContractInfo(contract)
+                                .has(contractWith().numKvPairs(8))
+                                .logged(),
+                        getAccountBalance(autoRenewAccount)
+                                .hasTinyBars(initBalance)
+                                .logged(),
                         sleepFor(minimalLifetime * 1_000L + 500L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         sleepFor(2_000L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
-                                    allRunFor(spec, lookup);
-                                    renewalFeeWithoutStorage.set(
-                                            initBalance
-                                                    - lookup.getResponse()
-                                                            .getCryptogetAccountBalance()
-                                                            .getBalance());
-                                    opLog.info(
-                                            "Renewal fee without storage: {}",
-                                            renewalFeeWithoutStorage.get());
-                                }))
+                        withOpContext((spec, opLog) -> {
+                            final var lookup =
+                                    getAccountBalance(autoRenewAccount).logged();
+                            allRunFor(spec, lookup);
+                            renewalFeeWithoutStorage.set(initBalance
+                                    - lookup.getResponse()
+                                            .getCryptogetAccountBalance()
+                                            .getBalance());
+                            opLog.info("Renewal fee without storage: {}", renewalFeeWithoutStorage.get());
+                        }))
                 .then(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -335,23 +316,18 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         sleepFor(2_000L),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getAccountBalance(autoRenewAccount).logged();
-                                    allRunFor(spec, lookup);
-                                    renewalFeeWithStorage.set(
-                                            initBalance
-                                                    - lookup.getResponse()
-                                                            .getCryptogetAccountBalance()
-                                                            .getBalance()
-                                                    - renewalFeeWithoutStorage.get());
-                                    opLog.info(
-                                            "Renewal fee with storage: {}",
-                                            renewalFeeWithStorage.get());
-                                    assertTrue(
-                                            renewalFeeWithStorage.get()
-                                                    > renewalFeeWithoutStorage.get());
-                                }));
+                        withOpContext((spec, opLog) -> {
+                            final var lookup =
+                                    getAccountBalance(autoRenewAccount).logged();
+                            allRunFor(spec, lookup);
+                            renewalFeeWithStorage.set(initBalance
+                                    - lookup.getResponse()
+                                            .getCryptogetAccountBalance()
+                                            .getBalance()
+                                    - renewalFeeWithoutStorage.get());
+                            opLog.info("Renewal fee with storage: {}", renewalFeeWithStorage.get());
+                            assertTrue(renewalFeeWithStorage.get() > renewalFeeWithoutStorage.get());
+                        }));
     }
 
     private HapiSpec autoRenewWorksAsExpected() {
@@ -400,9 +376,10 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .has(contractWith().isNotDeleted())
                                 .logged(),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
-                        getContractInfo(contractToRenew).has(contractWith().isDeleted()).logged(),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                        getContractInfo(contractToRenew)
+                                .has(contractWith().isDeleted())
+                                .logged(),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec autoRenewInGracePeriodIfEnoughBalance() {
@@ -429,35 +406,24 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewAccountId(autoRenewAccount)
                                 .balance(0L)
                                 .via(creation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
-                                    allRunFor(spec, lookup);
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(creation);
+                            allRunFor(spec, lookup);
 
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
-                                    currentExpiry.set(birth + minimalLifetime);
-                                    expectedExpiryPostRenew.set(
-                                            birth
-                                                    + minimalLifetime
-                                                    + minimalLifetime
-                                                    + minimalLifetime);
-                                    opLog.info(
-                                            "Expecting post-renewal expiry of {}, current expiry"
-                                                    + " {}",
-                                            expectedExpiryPostRenew.get(),
-                                            currentExpiry.get());
-                                    final var info =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .isNotDeleted()
-                                                                    .approxExpiry(
-                                                                            currentExpiry.get(), 1))
-                                                    .logged();
+                            final var record = lookup.getResponseRecord();
+                            final var birth = record.getConsensusTimestamp().getSeconds();
+                            currentExpiry.set(birth + minimalLifetime);
+                            expectedExpiryPostRenew.set(birth + minimalLifetime + minimalLifetime + minimalLifetime);
+                            opLog.info(
+                                    "Expecting post-renewal expiry of {}, current expiry" + " {}",
+                                    expectedExpiryPostRenew.get(),
+                                    currentExpiry.get());
+                            final var info = getContractInfo(contractToRenew)
+                                    .has(contractWith().isNotDeleted().approxExpiry(currentExpiry.get(), 1))
+                                    .logged();
 
-                                    allRunFor(spec, info);
-                                }),
+                            allRunFor(spec, info);
+                        }),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
@@ -469,22 +435,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
                         getAccountBalance(autoRenewAccount).logged(),
                         sleepFor(minimalLifetime * 1_000L + 500L),
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookup =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            expectedExpiryPostRenew
-                                                                                    .get(),
-                                                                            2))
-                                                    .logged();
+                        assertionsHold((spec, opLog) -> {
+                            final var lookup = getContractInfo(contractToRenew)
+                                    .has(contractWith().approxExpiry(expectedExpiryPostRenew.get(), 2))
+                                    .logged();
 
-                                    allRunFor(spec, lookup);
-                                }),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                            allRunFor(spec, lookup);
+                        }),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec renewalFeeDistributedToStakingAccounts() {
@@ -500,10 +458,9 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "staking.fees.stakingRewardPercentage", "10",
-                                                "staking.fees.nodeRewardPercentage", "20")),
+                                .overridingProps(Map.of(
+                                        "staking.fees.stakingRewardPercentage", "10",
+                                        "staking.fees.nodeRewardPercentage", "20")),
                         createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(contractToRenew),
@@ -514,18 +471,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
                                 .via(creation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
-                                    allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
-                                    expectedExpiryPostRenew.set(
-                                            birth + minimalLifetime + standardLifetime);
-                                    opLog.info(
-                                            "Expecting post-renewal expiry of {}",
-                                            expectedExpiryPostRenew.get());
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(creation);
+                            allRunFor(spec, lookup);
+                            final var record = lookup.getResponseRecord();
+                            final var birth = record.getConsensusTimestamp().getSeconds();
+                            expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
+                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                        }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
@@ -538,49 +491,33 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)).via("trigger"),
                         getTxnRecord("trigger").andAllChildRecords().logged())
                 .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookup =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            expectedExpiryPostRenew
-                                                                                    .get(),
-                                                                            5))
-                                                    .logged();
+                        assertionsHold((spec, opLog) -> {
+                            final var lookup = getContractInfo(contractToRenew)
+                                    .has(contractWith().approxExpiry(expectedExpiryPostRenew.get(), 5))
+                                    .logged();
 
-                                    allRunFor(spec, lookup);
-                                    final var balance =
-                                            lookup.getResponse()
-                                                    .getContractGetInfo()
-                                                    .getContractInfo()
-                                                    .getBalance();
-                                    final var renewalFee = initBalance - balance;
-                                    final long stakingAccountFee = (long) (renewalFee * 0.1);
-                                    final long nodeAccountFee = (long) (renewalFee * 0.3);
-                                    final long fundingAccountFee = (long) (renewalFee * 0.7);
-                                    final var canonicalUsdFee = 0.026;
-                                    assertTinybarAmountIsApproxUsd(
-                                            spec, canonicalUsdFee, renewalFee, 5.0);
-                                    getAccountBalance("0.0.98")
-                                            .hasTinyBars(
-                                                    changeFromSnapshot(
-                                                            "fundingBefore", fundingAccountFee))
-                                            .logged();
-                                    getAccountBalance("0.0.800")
-                                            .hasTinyBars(
-                                                    changeFromSnapshot(
-                                                            "stakingReward", stakingAccountFee))
-                                            .logged();
-                                    getAccountBalance("0.0.801")
-                                            .hasTinyBars(
-                                                    changeFromSnapshot(
-                                                            "nodeReward", nodeAccountFee))
-                                            .logged();
-                                }),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                            allRunFor(spec, lookup);
+                            final var balance = lookup.getResponse()
+                                    .getContractGetInfo()
+                                    .getContractInfo()
+                                    .getBalance();
+                            final var renewalFee = initBalance - balance;
+                            final long stakingAccountFee = (long) (renewalFee * 0.1);
+                            final long nodeAccountFee = (long) (renewalFee * 0.3);
+                            final long fundingAccountFee = (long) (renewalFee * 0.7);
+                            final var canonicalUsdFee = 0.026;
+                            assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+                            getAccountBalance("0.0.98")
+                                    .hasTinyBars(changeFromSnapshot("fundingBefore", fundingAccountFee))
+                                    .logged();
+                            getAccountBalance("0.0.800")
+                                    .hasTinyBars(changeFromSnapshot("stakingReward", stakingAccountFee))
+                                    .logged();
+                            getAccountBalance("0.0.801")
+                                    .hasTinyBars(changeFromSnapshot("nodeReward", nodeAccountFee))
+                                    .logged();
+                        }),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
@@ -609,65 +546,50 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewAccountId(autoRenewAccount)
                                 .balance(initBalance)
                                 .via(creation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
-                                    allRunFor(spec, lookup);
-                                    final var responseRecord = lookup.getResponseRecord();
-                                    final var birth =
-                                            responseRecord.getConsensusTimestamp().getSeconds();
-                                    expectedExpiryPostRenew.set(
-                                            birth + minimalLifetime + standardLifetime);
-                                    opLog.info(
-                                            "Expecting post-renewal expiry of {}",
-                                            expectedExpiryPostRenew.get());
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(creation);
+                            allRunFor(spec, lookup);
+                            final var responseRecord = lookup.getResponseRecord();
+                            final var birth =
+                                    responseRecord.getConsensusTimestamp().getSeconds();
+                            expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
+                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                        }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L).via("updateTxn"),
                         sleepFor(minimalLifetime * 1_000L + 500L),
                         getTxnRecord("updateTxn").logged())
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookupContract =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            expectedExpiryPostRenew
-                                                                                    .get(),
-                                                                            5))
-                                                    .logged();
-                                    final var lookupAccount =
-                                            getAccountBalance(autoRenewAccount).logged();
-                                    allRunFor(spec, lookupContract, lookupAccount);
+                        assertionsHold((spec, opLog) -> {
+                            final var lookupContract = getContractInfo(contractToRenew)
+                                    .has(contractWith().approxExpiry(expectedExpiryPostRenew.get(), 5))
+                                    .logged();
+                            final var lookupAccount =
+                                    getAccountBalance(autoRenewAccount).logged();
+                            allRunFor(spec, lookupContract, lookupAccount);
 
-                                    final var contractBalance =
-                                            lookupContract
-                                                    .getResponse()
-                                                    .getContractGetInfo()
-                                                    .getContractInfo()
-                                                    .getBalance();
-                                    final var accountBalance =
-                                            lookupAccount
-                                                    .getResponse()
-                                                    .getCryptogetAccountBalance()
-                                                    .getBalance();
-                                    opLog.info(
-                                            "AutoRenew account balance {}, contract balance {}",
-                                            accountBalance,
-                                            contractBalance);
+                            final var contractBalance = lookupContract
+                                    .getResponse()
+                                    .getContractGetInfo()
+                                    .getContractInfo()
+                                    .getBalance();
+                            final var accountBalance = lookupAccount
+                                    .getResponse()
+                                    .getCryptogetAccountBalance()
+                                    .getBalance();
+                            opLog.info(
+                                    "AutoRenew account balance {}, contract balance {}",
+                                    accountBalance,
+                                    contractBalance);
 
-                                    assertEquals(0, accountBalance);
-                                    assertTrue(contractBalance < initBalance);
-                                    final var renewalFee = initBalance - contractBalance;
-                                    opLog.info("Renewal fees actual {}", renewalFee);
-                                    final var canonicalUsdFee = 0.026;
-                                    assertTinybarAmountIsApproxUsd(
-                                            spec, canonicalUsdFee, renewalFee, 5.0);
-                                }),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                            assertEquals(0, accountBalance);
+                            assertTrue(contractBalance < initBalance);
+                            final var renewalFee = initBalance - contractBalance;
+                            opLog.info("Renewal fees actual {}", renewalFee);
+                            final var canonicalUsdFee = 0.026;
+                            assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+                        }),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec renewsUsingAutoRenewAccountIfSet() {
@@ -696,64 +618,49 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewAccountId(autoRenewAccount)
                                 .balance(initBalance)
                                 .via(creation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
-                                    allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
-                                    expectedExpiryPostRenew.set(
-                                            birth + minimalLifetime + standardLifetime);
-                                    opLog.info(
-                                            "Expecting post-renewal expiry of {}",
-                                            expectedExpiryPostRenew.get());
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(creation);
+                            allRunFor(spec, lookup);
+                            final var record = lookup.getResponseRecord();
+                            final var birth = record.getConsensusTimestamp().getSeconds();
+                            expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
+                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                        }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L).via("updateTxn"),
                         sleepFor(minimalLifetime * 1_000L + 500L),
                         getTxnRecord("updateTxn").logged())
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookupContract =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            expectedExpiryPostRenew
-                                                                                    .get(),
-                                                                            5))
-                                                    .logged();
-                                    final var lookupAccount =
-                                            getAccountBalance(autoRenewAccount).logged();
-                                    allRunFor(spec, lookupContract, lookupAccount);
+                        assertionsHold((spec, opLog) -> {
+                            final var lookupContract = getContractInfo(contractToRenew)
+                                    .has(contractWith().approxExpiry(expectedExpiryPostRenew.get(), 5))
+                                    .logged();
+                            final var lookupAccount =
+                                    getAccountBalance(autoRenewAccount).logged();
+                            allRunFor(spec, lookupContract, lookupAccount);
 
-                                    final var contractBalance =
-                                            lookupContract
-                                                    .getResponse()
-                                                    .getContractGetInfo()
-                                                    .getContractInfo()
-                                                    .getBalance();
-                                    final var accountBalance =
-                                            lookupAccount
-                                                    .getResponse()
-                                                    .getCryptogetAccountBalance()
-                                                    .getBalance();
-                                    opLog.info(
-                                            "AutoRenew account balance {}, contract balance {}",
-                                            accountBalance,
-                                            contractBalance);
+                            final var contractBalance = lookupContract
+                                    .getResponse()
+                                    .getContractGetInfo()
+                                    .getContractInfo()
+                                    .getBalance();
+                            final var accountBalance = lookupAccount
+                                    .getResponse()
+                                    .getCryptogetAccountBalance()
+                                    .getBalance();
+                            opLog.info(
+                                    "AutoRenew account balance {}, contract balance {}",
+                                    accountBalance,
+                                    contractBalance);
 
-                                    assertEquals(initBalance, contractBalance);
-                                    assertTrue(accountBalance < renewAccountBalance);
-                                    final var renewalFee = renewAccountBalance - accountBalance;
-                                    opLog.info("Renewal fees actual {}", renewalFee);
-                                    final var canonicalUsdFee = 0.026;
-                                    assertTinybarAmountIsApproxUsd(
-                                            spec, canonicalUsdFee, renewalFee, 5.0);
-                                }),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                            assertEquals(initBalance, contractBalance);
+                            assertTrue(accountBalance < renewAccountBalance);
+                            final var renewalFee = renewAccountBalance - accountBalance;
+                            opLog.info("Renewal fees actual {}", renewalFee);
+                            final var canonicalUsdFee = 0.026;
+                            assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+                        }),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     private HapiSpec storageExpiryWorksAtTheExpectedInterval() {
@@ -795,16 +702,11 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .bytecode(initcode)
                                 .balance(0)
                                 .autoRenewSecs(minimalLifetime),
-                        tokenAssociate(
-                                contractToRemove,
-                                List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
+                        tokenAssociate(contractToRemove, List.of(aFungibleToken, bFungibleToken, nonFungibleToken)),
                         cryptoTransfer(
-                                moving(aFungibleAmount, aFungibleToken)
-                                        .between(TOKEN_TREASURY, contractToRemove),
-                                moving(bFungibleAmount, bFungibleToken)
-                                        .between(TOKEN_TREASURY, contractToRemove),
-                                movingUnique(nonFungibleToken, 1L, 2L)
-                                        .between(TOKEN_TREASURY, contractToRemove)),
+                                moving(aFungibleAmount, aFungibleToken).between(TOKEN_TREASURY, contractToRemove),
+                                moving(bFungibleAmount, bFungibleToken).between(TOKEN_TREASURY, contractToRemove),
+                                movingUnique(nonFungibleToken, 1L, 2L).between(TOKEN_TREASURY, contractToRemove)),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
@@ -814,8 +716,7 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)))
                 .then(
                         // Now the contract is gone
-                        getContractInfo(contractToRemove)
-                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
+                        getContractInfo(contractToRemove).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
                         // And the fungible units were returned to the treasury
                         getAccountBalance(TOKEN_TREASURY)
                                 .hasTokenBalance(aFungibleToken, aFungibleAmount)
@@ -852,18 +753,14 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .autoRenewSecs(minimalLifetime)
                                 .balance(initBalance)
                                 .via(creation),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getTxnRecord(creation);
-                                    allRunFor(spec, lookup);
-                                    final var record = lookup.getResponseRecord();
-                                    final var birth = record.getConsensusTimestamp().getSeconds();
-                                    expectedExpiryPostRenew.set(
-                                            birth + minimalLifetime + standardLifetime);
-                                    opLog.info(
-                                            "Expecting post-renewal expiry of {}",
-                                            expectedExpiryPostRenew.get());
-                                }),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(creation);
+                            allRunFor(spec, lookup);
+                            final var record = lookup.getResponseRecord();
+                            final var birth = record.getConsensusTimestamp().getSeconds();
+                            expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
+                            opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
+                        }),
                         contractUpdate(contractToRenew).newAutoRenew(7776000L),
                         sleepFor(minimalLifetime * 1_000L + 500L))
                 .when(
@@ -878,43 +775,27 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                 .then(
                         getTxnRecord(failingCall)
-                                .exposingTo(
-                                        failureRecord ->
-                                                parentConsTime.set(
-                                                        failureRecord.getConsensusTimestamp())),
-                        sourcing(
-                                () ->
-                                        childRecordsCheck(
-                                                failingCall,
-                                                CONTRACT_REVERT_EXECUTED,
-                                                recordWith()
-                                                        .status(ResponseCodeEnum.INSUFFICIENT_GAS)
-                                                        .consensusTimeImpliedByNonce(
-                                                                parentConsTime.get(), 1))),
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var lookup =
-                                            getContractInfo(contractToRenew)
-                                                    .has(
-                                                            contractWith()
-                                                                    .approxExpiry(
-                                                                            expectedExpiryPostRenew
-                                                                                    .get(),
-                                                                            5))
-                                                    .logged();
-                                    allRunFor(spec, lookup);
-                                    final var balance =
-                                            lookup.getResponse()
-                                                    .getContractGetInfo()
-                                                    .getContractInfo()
-                                                    .getBalance();
-                                    final var renewalFee = initBalance - balance;
-                                    final var canonicalUsdFee = 0.026;
-                                    assertTinybarAmountIsApproxUsd(
-                                            spec, canonicalUsdFee, renewalFee, 5.0);
-                                }),
-                        overriding(
-                                "ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
+                                .exposingTo(failureRecord -> parentConsTime.set(failureRecord.getConsensusTimestamp())),
+                        sourcing(() -> childRecordsCheck(
+                                failingCall,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(ResponseCodeEnum.INSUFFICIENT_GAS)
+                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))),
+                        assertionsHold((spec, opLog) -> {
+                            final var lookup = getContractInfo(contractToRenew)
+                                    .has(contractWith().approxExpiry(expectedExpiryPostRenew.get(), 5))
+                                    .logged();
+                            allRunFor(spec, lookup);
+                            final var balance = lookup.getResponse()
+                                    .getContractGetInfo()
+                                    .getContractInfo()
+                                    .getBalance();
+                            final var renewalFee = initBalance - balance;
+                            final var canonicalUsdFee = 0.026;
+                            assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+                        }),
+                        overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod));
     }
 
     @Override

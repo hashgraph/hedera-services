@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
@@ -47,7 +48,9 @@ class AllIntegrationTests extends IntegrationTestBase {
     @Order(1)
     @TestFactory
     Collection<DynamicContainer> sequentialSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.all()).map(this::extractSpecsFromSuite).toList();
+        return Arrays.stream(SequentialSuites.all())
+                .map(this::extractSpecsFromSuite)
+                .toList();
     }
 
     @Tag("integration")
@@ -70,11 +73,10 @@ class AllIntegrationTests extends IntegrationTestBase {
     @Order(4)
     @TestFactory
     List<DynamicTest> recordStreamValidation() {
-        return List.of(
-                recordStreamValidation(
-                        "build/network/itest/records/node_0",
-                        new BalanceReconciliationValidator(),
-                        new ExpiryRecordsValidator(),
-                        new BlockNoValidator()));
+        return List.of(recordStreamValidation(
+                "build/network/itest/records/node_0",
+                new BalanceReconciliationValidator(),
+                new ExpiryRecordsValidator(),
+                new BlockNoValidator()));
     }
 }
