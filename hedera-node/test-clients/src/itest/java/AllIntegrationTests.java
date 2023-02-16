@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import com.hedera.services.bdd.junit.BalanceReconciliationValidator;
 import com.hedera.services.bdd.junit.validators.BlockNoValidator;
 import java.util.Arrays;
@@ -42,11 +43,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @SuppressWarnings("java:S2699")
 class AllIntegrationTests extends IntegrationTestBase {
+    private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
+
     @Tag("integration")
     @Order(1)
     @TestFactory
     Collection<DynamicContainer> sequentialSpecsBySuite() {
-        return Arrays.stream(SequentialSuites.all()).map(this::extractSpecsFromSuite).toList();
+        return Arrays.stream(SequentialSuites.all())
+                .map(this::extractSpecsFromSuite)
+                .toList();
     }
 
     @Tag("integration")
@@ -69,10 +74,7 @@ class AllIntegrationTests extends IntegrationTestBase {
     @Order(4)
     @TestFactory
     List<DynamicTest> recordStreamValidation() {
-        return List.of(
-                recordStreamValidation(
-                        "build/network/itest/records/node_0",
-                        new BalanceReconciliationValidator(),
-                        new BlockNoValidator()));
+        return List.of(recordStreamValidation(
+                TEST_CONTAINER_NODE0_STREAMS, new BalanceReconciliationValidator(), new BlockNoValidator()));
     }
 }
