@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.hapi.utils.exports.recordstreaming;
 
 import static java.util.Comparator.comparing;
@@ -45,14 +46,14 @@ public class RecordStreamingUtils {
 
     private RecordStreamingUtils() {}
 
-    public static Pair<Integer, Optional<RecordStreamFile>> readMaybeCompressedRecordStreamFile(
-            final String loc) throws IOException {
+    public static Pair<Integer, Optional<RecordStreamFile>> readMaybeCompressedRecordStreamFile(final String loc)
+            throws IOException {
         final var isCompressed = loc.endsWith(V6_GZ_FILE_EXT);
         return isCompressed ? readRecordStreamFile(loc) : readUncompressedRecordStreamFile(loc);
     }
 
-    public static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(
-            final String fileLoc) throws IOException {
+    public static Pair<Integer, Optional<RecordStreamFile>> readUncompressedRecordStreamFile(final String fileLoc)
+            throws IOException {
         try (final var fin = new FileInputStream(fileLoc)) {
             final var recordFileVersion = ByteBuffer.wrap(fin.readNBytes(4)).getInt();
             final var recordStreamFile = RecordStreamFile.parseFrom(fin);
@@ -60,20 +61,17 @@ public class RecordStreamingUtils {
         }
     }
 
-    public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(
-            final String fileLoc) throws IOException {
-        final var uncompressedFileContents =
-                FileCompressionUtils.readUncompressedFileBytes(fileLoc);
-        final var recordFileVersion = ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
-        final var recordStreamFile =
-                RecordStreamFile.parseFrom(
-                        ByteBuffer.wrap(
-                                uncompressedFileContents, 4, uncompressedFileContents.length - 4));
+    public static Pair<Integer, Optional<RecordStreamFile>> readRecordStreamFile(final String fileLoc)
+            throws IOException {
+        final var uncompressedFileContents = FileCompressionUtils.readUncompressedFileBytes(fileLoc);
+        final var recordFileVersion =
+                ByteBuffer.wrap(uncompressedFileContents, 0, 4).getInt();
+        final var recordStreamFile = RecordStreamFile.parseFrom(
+                ByteBuffer.wrap(uncompressedFileContents, 4, uncompressedFileContents.length - 4));
         return Pair.of(recordFileVersion, Optional.ofNullable(recordStreamFile));
     }
 
-    public static Pair<Integer, Optional<SignatureFile>> readSignatureFile(final String fileLoc)
-            throws IOException {
+    public static Pair<Integer, Optional<SignatureFile>> readSignatureFile(final String fileLoc) throws IOException {
         try (final var fin = new FileInputStream(fileLoc)) {
             final var recordFileVersion = fin.read();
             final var recordStreamSignatureFile = SignatureFile.parseFrom(fin);
@@ -108,26 +106,21 @@ public class RecordStreamingUtils {
         }
     }
 
-    public static Pair<Instant, Integer> parseSidecarFileConsensusTimeAndSequenceNo(
-            final String sidecarFile) {
+    public static Pair<Instant, Integer> parseSidecarFileConsensusTimeAndSequenceNo(final String sidecarFile) {
         final var s = sidecarFile.lastIndexOf("/");
         final var n = sidecarFile.indexOf(SIDECAR_ONLY_TOKEN, s);
         // Note we assume the sidecar sequence file number is always two digits
         return Pair.of(
-                parseInstantFrom(sidecarFile, s + 1, n + 1),
-                Integer.parseInt(sidecarFile.substring(n + 2, n + 4)));
+                parseInstantFrom(sidecarFile, s + 1, n + 1), Integer.parseInt(sidecarFile.substring(n + 2, n + 4)));
     }
 
-    private static Instant parseInstantFrom(
-            final String recordOrSidecarFile, final int start, final int end) {
+    private static Instant parseInstantFrom(final String recordOrSidecarFile, final int start, final int end) {
         return Instant.parse(recordOrSidecarFile.substring(start, end).replace("_", ":"));
     }
 
     @SuppressWarnings("java:S2095")
     public static List<String> filteredFilesFrom(
-            final String streamDir,
-            final Predicate<String> criteria,
-            final Comparator<String> order)
+            final String streamDir, final Predicate<String> criteria, final Comparator<String> order)
             throws IOException {
         return Files.walk(Path.of(streamDir))
                 .map(Path::toString)
@@ -145,9 +138,7 @@ public class RecordStreamingUtils {
 
     public static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
-                streamDir,
-                RecordStreamingUtils::isSidecarFile,
-                RecordStreamingUtils::compareSidecarFiles);
+                streamDir, RecordStreamingUtils::isSidecarFile, RecordStreamingUtils::compareSidecarFiles);
     }
 
     public static boolean isRecordFile(final String file) {
