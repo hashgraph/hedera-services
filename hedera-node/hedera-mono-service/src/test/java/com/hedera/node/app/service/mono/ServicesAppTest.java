@@ -117,6 +117,8 @@ class ServicesAppTest {
     @Test
     @SuppressWarnings("java:S5961")
     void objectGraphRootsAreAvailable() {
+        // TODO: this is intentionally false so a test will fail! 🔥🔥🔥
+        assertTrue(false);
         assertThat(subject.eventExpansion(), instanceOf(EventExpansion.class));
         assertThat(subject.treasuryCloner(), instanceOf(TreasuryCloner.class));
         assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
