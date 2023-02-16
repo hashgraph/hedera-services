@@ -35,7 +35,7 @@ class TokenFreezeAccountHandlerTest extends ParityTestBase {
     void tokenFreezeWithExtantTokenScenario() {
         final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
