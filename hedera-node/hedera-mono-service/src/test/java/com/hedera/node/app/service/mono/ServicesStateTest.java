@@ -825,6 +825,73 @@ class ServicesStateTest extends ResponsibleVMapUser {
     }
 
     @Test
+    void fixesNftsOwnedForAccountsWithActuallyZeroNfts() {
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+        final var rels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+        final var nftsAdapter = UniqueTokenMapAdapter.wrap(nfts);
+
+        final var account = new MerkleAccount();
+        account.setNftsOwned(2L);
+        final var accountWithExtraNftsOwned = EntityNum.fromLong(1234L);
+        accounts.put(accountWithExtraNftsOwned, account);
+
+        // Must be empty, no NFT's are in the given state
+        final var stats = ServicesState.countByOwnershipIn(nftsAdapter, rels, tokens);
+        ServicesState.logNftStats(
+                stats, AccountStorageAdapter.fromInMemory(accounts), rels, tokens);
+        final var updatedAccount = accounts.get(accountWithExtraNftsOwned);
+        assertEquals(0, updatedAccount.getNftsOwned());
+    }
+
+    @Test
+    void fixesNftsOwnedByTypeForRelsWithActuallyZeroNfts() {
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts = new MerkleMap<>();
+        final var rels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+        final var nftsAdapter = UniqueTokenMapAdapter.wrap(nfts);
+        final var ownerNum = EntityNum.fromLong(1234L);
+
+        final var nftNum = EntityNum.fromLong(2345l);
+        final var nonFungibleToken = new MerkleToken();
+        nonFungibleToken.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+        tokens.put(nftNum, nonFungibleToken);
+
+        final var ftNum = EntityNum.fromLong(3456L);
+        final var fungibleToken = new MerkleToken();
+        fungibleToken.setTokenType(TokenType.FUNGIBLE_COMMON);
+        tokens.put(ftNum, fungibleToken);
+
+        final var missingNum = EntityNum.fromLong(4567L);
+
+        final var nftRel = new MerkleTokenRelStatus();
+        nftRel.setBalance(2L);
+        final var nftRelKey = EntityNumPair.fromNums(ownerNum, nftNum);
+        rels.put(nftRelKey, nftRel);
+
+        final var ftRel = new MerkleTokenRelStatus();
+        ftRel.setBalance(2L);
+        final var ftRelKey = EntityNumPair.fromNums(ownerNum, ftNum);
+        rels.put(ftRelKey, ftRel);
+
+        final var invalidRel = new MerkleTokenRelStatus();
+        invalidRel.setBalance(2L);
+        final var invalidRelKey = EntityNumPair.fromNums(ownerNum, missingNum);
+        rels.put(invalidRelKey, invalidRel);
+
+        // Must be empty, no NFT's are in the given state
+        final var stats = ServicesState.countByOwnershipIn(nftsAdapter, rels, tokens);
+        ServicesState.logNftStats(
+                stats, AccountStorageAdapter.fromInMemory(accounts), rels, tokens);
+        final var updatedFtRel = rels.get(ftRelKey);
+        assertEquals(2, updatedFtRel.getBalance());
+        final var updatedNftRel = rels.get(nftRelKey);
+        assertEquals(0, updatedNftRel.getBalance());
+    }
+
+    @Test
     void stillCountsOwnershipForNftsOfDeletedTokensIfOwnerRemainsAssociated() {
         // Set up a token with a deleted NFT, and an account that owns that NFT
         // and is still associated with the token
