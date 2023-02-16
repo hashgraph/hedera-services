@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##
-name: "ZXC: Release Branching"
+name: "Z-Node XC: Release Branching"
 on:
   schedule:
     - cron: '*/10 * * * *'

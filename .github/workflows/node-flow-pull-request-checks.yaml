@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "PR Checks"
+name: "Node: PR Checks"
 on:
   workflow_dispatch:
   pull_request:

@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "Build Application"
+name: "Node: Build Application"
 on:
   workflow_dispatch:
     inputs:
