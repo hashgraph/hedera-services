@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -53,19 +54,14 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
     public ContractFnResultAsserts resultThruAbi(
             String abi, Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
-        registerProvider(
-                (spec, o) -> {
-                    Object[] actualObjs =
-                            viaAbi(
-                                    abi,
-                                    ((ContractFunctionResult) o)
-                                            .getContractCallResult()
-                                            .toByteArray());
-                    Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
-                    if (error.isPresent()) {
-                        throw error.get();
-                    }
-                });
+        registerProvider((spec, o) -> {
+            Object[] actualObjs = viaAbi(
+                    abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+            Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+            if (error.isPresent()) {
+                throw error.get();
+            }
+        });
         return this;
     }
 
@@ -78,25 +74,19 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
             final String contractName,
             final Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
         final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
-        registerProvider(
-                (spec, o) -> {
-                    Object[] actualObjs =
-                            viaAbi(
-                                    abi,
-                                    ((ContractFunctionResult) o)
-                                            .getContractCallResult()
-                                            .toByteArray());
-                    Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
-                    if (error.isPresent()) {
-                        throw error.get();
-                    }
-                });
+        registerProvider((spec, o) -> {
+            Object[] actualObjs = viaAbi(
+                    abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+            Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+            if (error.isPresent()) {
+                throw error.get();
+            }
+        });
         return this;
     }
 
     public static Object[] viaAbi(String abi, byte[] bytes) {
-        com.esaulpaugh.headlong.abi.Function function =
-                com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+        com.esaulpaugh.headlong.abi.Function function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
         return function.decodeReturn(bytes).toList().toArray();
     }
 
@@ -110,203 +100,166 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     }
 
     public ContractFnResultAsserts evmAddress(ByteString expected) {
-        registerProvider(
-                (spec, o) -> {
-                    final var result = (ContractFunctionResult) o;
-                    Assertions.assertTrue(
-                            result.hasEvmAddress(), "Missing EVM address, expected " + expected);
-                    final var actual = result.getEvmAddress().getValue();
-                    Assertions.assertEquals(expected, actual, "Bad EVM address");
-                });
+        registerProvider((spec, o) -> {
+            final var result = (ContractFunctionResult) o;
+            Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
+            final var actual = result.getEvmAddress().getValue();
+            Assertions.assertEquals(expected, actual, "Bad EVM address");
+        });
         return this;
     }
 
-    public ContractFnResultAsserts create1EvmAddress(
-            final ByteString senderAddress, final long nonce) {
-        registerProvider(
-                (spec, o) -> {
-                    final var result = (ContractFunctionResult) o;
-                    final var expectedContractAddress =
-                            org.hyperledger.besu.datatypes.Address.contractAddress(
-                                    org.hyperledger.besu.datatypes.Address.wrap(
-                                            Bytes.wrap(senderAddress.toByteArray())),
-                                    nonce);
-                    final var expectedAddress =
-                            ByteString.copyFrom(expectedContractAddress.toArray());
-                    Assertions.assertTrue(
-                            result.hasEvmAddress(),
-                            "Missing EVM address, expected " + expectedAddress);
-                    final var actual = result.getEvmAddress().getValue();
-                    Assertions.assertEquals(expectedAddress, actual, "Bad EVM address");
-                });
+    public ContractFnResultAsserts create1EvmAddress(final ByteString senderAddress, final long nonce) {
+        registerProvider((spec, o) -> {
+            final var result = (ContractFunctionResult) o;
+            final var expectedContractAddress = org.hyperledger.besu.datatypes.Address.contractAddress(
+                    org.hyperledger.besu.datatypes.Address.wrap(Bytes.wrap(senderAddress.toByteArray())), nonce);
+            final var expectedAddress = ByteString.copyFrom(expectedContractAddress.toArray());
+            Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expectedAddress);
+            final var actual = result.getEvmAddress().getValue();
+            Assertions.assertEquals(expectedAddress, actual, "Bad EVM address");
+        });
         return this;
     }
 
     public ContractFnResultAsserts logs(ErroringAssertsProvider<List<ContractLoginfo>> provider) {
-        registerProvider(
-                (spec, o) -> {
-                    List<ContractLoginfo> logs = ((ContractFunctionResult) o).getLogInfoList();
-                    ErroringAsserts<List<ContractLoginfo>> asserts = provider.assertsFor(spec);
-                    List<Throwable> errors = asserts.errorsIn(logs);
-                    AssertUtils.rethrowSummaryError(log, "Bad logs!", errors);
-                });
+        registerProvider((spec, o) -> {
+            List<ContractLoginfo> logs = ((ContractFunctionResult) o).getLogInfoList();
+            ErroringAsserts<List<ContractLoginfo>> asserts = provider.assertsFor(spec);
+            List<Throwable> errors = asserts.errorsIn(logs);
+            AssertUtils.rethrowSummaryError(log, "Bad logs!", errors);
+        });
         return this;
     }
 
     public ContractFnResultAsserts error(String msg) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            msg,
-                            Optional.ofNullable(result.getErrorMessage()).orElse(""),
-                            "Wrong contract function error!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(
+                    msg, Optional.ofNullable(result.getErrorMessage()).orElse(""), "Wrong contract function error!");
+        });
         return this;
     }
 
-    public ContractFnResultAsserts approxGasUsed(
-            final long expected, final double allowedPercentDeviation) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    final var actual = result.getGasUsed();
-                    final var epsilon = allowedPercentDeviation * actual / 100.0;
-                    Assertions.assertEquals(
-                            expected, result.getGasUsed(), epsilon, "Wrong amount of gas used");
-                });
+    public ContractFnResultAsserts approxGasUsed(final long expected, final double allowedPercentDeviation) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            final var actual = result.getGasUsed();
+            final var epsilon = allowedPercentDeviation * actual / 100.0;
+            Assertions.assertEquals(expected, result.getGasUsed(), epsilon, "Wrong amount of gas used");
+        });
         return this;
     }
 
     public ContractFnResultAsserts gasUsed(long gasUsed) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            gasUsed, result.getGasUsed(), "Wrong amount of Gas was used!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(gasUsed, result.getGasUsed(), "Wrong amount of Gas was used!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts contractCallResult(ContractCallResult contractCallResult) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            ByteString.copyFrom(contractCallResult.getBytes().toArray()),
-                            result.getContractCallResult(),
-                            "Wrong contract call result!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(
+                    ByteString.copyFrom(contractCallResult.getBytes().toArray()),
+                    result.getContractCallResult(),
+                    "Wrong contract call result!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts gas(long gas) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(gas, result.getGas(), "Wrong amount of initial Gas!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(gas, result.getGas(), "Wrong amount of initial Gas!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts amount(long amount) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            amount, result.getAmount(), "Wrong amount of tinybars!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(amount, result.getAmount(), "Wrong amount of tinybars!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts functionParameters(Bytes functionParameters) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            ByteString.copyFrom(functionParameters.toArray()),
-                            result.getFunctionParameters(),
-                            "Wrong function parameters!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(
+                    ByteString.copyFrom(functionParameters.toArray()),
+                    result.getFunctionParameters(),
+                    "Wrong function parameters!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts senderId(AccountID senderId) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(senderId, result.getSenderId(), "Wrong senderID!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(senderId, result.getSenderId(), "Wrong senderID!");
+        });
         return this;
     }
 
     public ContractFnResultAsserts createdContractIdsCount(int n) {
-        registerProvider(
-                (spec, o) -> {
-                    ContractFunctionResult result = (ContractFunctionResult) o;
-                    Assertions.assertEquals(
-                            n,
-                            result.getCreatedContractIDsCount(), // NOSONAR
-                            "Wrong number of createdContractIds!");
-                });
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            Assertions.assertEquals(
+                    n,
+                    result.getCreatedContractIDsCount(), // NOSONAR
+                    "Wrong number of createdContractIds!");
+        });
         return this;
     }
 
     /* Helpers to create the provider for #resultThruAbi. */
     public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isContractWith(
             ContractInfoAsserts theExpectedInfo) {
-        return spec ->
-                actualObjs -> {
-                    try {
-                        Assertions.assertEquals(
-                                1, actualObjs.length, "Extra contract function return values!");
-                        String implicitContract = "contract" + rand.nextInt();
-                        ContractID contract =
-                                TxnUtils.asContractId(
-                                        Bytes.fromHexString(((Address) actualObjs[0]).toString())
-                                                .toArray());
-                        spec.registry().saveContractId(implicitContract, contract);
-                        HapiGetContractInfo op =
-                                getContractInfo(implicitContract).has(theExpectedInfo);
-                        Optional<Throwable> opError = op.execFor(spec);
-                        if (opError.isPresent()) {
-                            throw opError.get();
-                        }
-                    } catch (Throwable t) { // NOSONAR throw from 2 lines above must be caught
-                        return Optional.of(t);
-                    }
-                    return Optional.empty();
-                };
+        return spec -> actualObjs -> {
+            try {
+                Assertions.assertEquals(1, actualObjs.length, "Extra contract function return values!");
+                String implicitContract = "contract" + rand.nextInt();
+                ContractID contract = TxnUtils.asContractId(Bytes.fromHexString(((Address) actualObjs[0]).toString())
+                        .toArray());
+                spec.registry().saveContractId(implicitContract, contract);
+                HapiGetContractInfo op = getContractInfo(implicitContract).has(theExpectedInfo);
+                Optional<Throwable> opError = op.execFor(spec);
+                if (opError.isPresent()) {
+                    throw opError.get();
+                }
+            } catch (Throwable t) { // NOSONAR throw from 2 lines above must be caught
+                return Optional.of(t);
+            }
+            return Optional.empty();
+        };
     }
 
-    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(
-            Object[] objs) {
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralResult(Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, actualObjs);
     }
 
-    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(
-            Set<Object> values) {
-        return ignore ->
-                actualObjs -> {
-                    try {
-                        Assertions.assertEquals(1, actualObjs.length, "Expected a single object");
-                        Assertions.assertTrue(
-                                values.contains(actualObjs[0]),
-                                "Expected one of " + values + " but was " + actualObjs[0]);
-                    } catch (Exception e) {
-                        return Optional.of(e);
-                    }
-                    return Optional.empty();
-                };
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isOneOfLiteral(Set<Object> values) {
+        return ignore -> actualObjs -> {
+            try {
+                Assertions.assertEquals(1, actualObjs.length, "Expected a single object");
+                Assertions.assertTrue(
+                        values.contains(actualObjs[0]), "Expected one of " + values + " but was " + actualObjs[0]);
+            } catch (Exception e) {
+                return Optional.of(e);
+            }
+            return Optional.empty();
+        };
     }
 
-    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(
-            Object[] objs) {
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
         return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
     }
 
-    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(
-            Object[] objs) {
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
     }
 
@@ -330,8 +283,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return Optional.empty();
     }
 
-    private static Optional<Throwable> validateRandomResult(
-            final Object[] expecteds, final Object[] actuals) {
+    private static Optional<Throwable> validateRandomResult(final Object[] expecteds, final Object[] actuals) {
         try {
             for (int i = 0; i < Math.max(expecteds.length, actuals.length); i++) {
                 Object expected = expecteds[i];
@@ -342,17 +294,13 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                     int expectedLength = expectedBytes.length;
                     Assertions.assertEquals(expectedLength, ((byte[]) actual).length);
                     // reject all zero result as not random
-                    Assertions.assertFalse(
-                            Arrays.equals(new byte[expectedLength], (byte[]) actual));
+                    Assertions.assertFalse(Arrays.equals(new byte[expectedLength], (byte[]) actual));
                 } else if (expected instanceof Integer expectedInt) {
-                    Assertions.assertTrue(
-                            ((BigInteger) actual).intValue() >= 0
-                                    && ((BigInteger) actual).intValue() < expectedInt.intValue());
+                    Assertions.assertTrue(((BigInteger) actual).intValue() >= 0
+                            && ((BigInteger) actual).intValue() < expectedInt.intValue());
                 } else {
                     throw new Exception( // NOSONAR
-                            String.format(
-                                    "Invalid Random result, expected %s , actual %s",
-                                    expecteds[i], actuals[i]));
+                            String.format("Invalid Random result, expected %s , actual %s", expecteds[i], actuals[i]));
                 }
             }
         } catch (Exception e) {
