@@ -35,7 +35,7 @@ class TokenGrantKycToAccountHandlerTest extends ParityTestBase {
     void tokenValidGrantWithExtantTokenScenario() {
         final var theTxn = txnFrom(VALID_GRANT_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());

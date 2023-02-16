@@ -41,7 +41,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -56,7 +56,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithSelfPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -68,7 +68,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithCustomPaidKnownTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertFalse(context.failed());
@@ -83,7 +83,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithImmutableTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertTrue(context.failed());
@@ -95,7 +95,7 @@ class TokenAssociateToAccountHandlerTest extends ParityTestBase {
     void tokenAssociateWithMissingTargetScenario() {
         final var theTxn = txnFrom(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context);
 
         assertTrue(context.failed());

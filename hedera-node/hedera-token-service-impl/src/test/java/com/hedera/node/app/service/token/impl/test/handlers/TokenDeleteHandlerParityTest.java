@@ -41,7 +41,7 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
     void tokenDeletionWithValidTokenScenario() {
         final var theTxn = txnFrom(DELETE_WITH_KNOWN_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
@@ -57,7 +57,7 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
     void tokenDeletionWithMissingTokenScenario() {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertTrue(context.failed());
@@ -70,7 +70,7 @@ class TokenDeleteHandlerParityTest extends ParityTestBase {
     void tokenDeletionWithTokenWithoutAnAdminKeyScenario() {
         final var theTxn = txnFrom(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new PreHandleContext(readableAccountStore, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
