@@ -16,32 +16,31 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
-import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
+import static com.hedera.test.factories.scenarios.TokenFreezeScenarios.VALID_FREEZE_WITH_EXTANT_TOKEN;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.utils.KeyUtils.sanityRestored;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
 import com.hedera.node.app.spi.meta.PreHandleContext;
 import org.junit.jupiter.api.Test;
 
-class TokenGrantKycToAccountHandlerTest extends ParityTestBase {
-    private final TokenGrantKycToAccountHandler subject = new TokenGrantKycToAccountHandler();
+class TokenFreezeAccountHandlerTest extends ParityTestBase {
+    TokenFreezeAccountHandler subject = new TokenFreezeAccountHandler();
 
     @Test
-    void tokenValidGrantWithExtantTokenScenario() {
-        final var theTxn = txnFrom(VALID_GRANT_WITH_EXTANT_TOKEN);
+    void tokenFreezeWithExtantTokenScenario() {
+        final var theTxn = txnFrom(VALID_FREEZE_WITH_EXTANT_TOKEN);
 
-        final var context = new PreHandleContext(readableAccountStore, theTxn);
+        final var context = new PreHandleContext(keyLookup, theTxn);
         subject.preHandle(context, readableTokenStore);
 
         assertFalse(context.failed());
         assertEquals(OK, context.getStatus());
         assertEquals(1, context.getRequiredNonPayerKeys().size());
-        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_KYC_KT.asKey()));
+        assertThat(sanityRestored(context.getRequiredNonPayerKeys()), contains(TOKEN_FREEZE_KT.asKey()));
     }
 }
