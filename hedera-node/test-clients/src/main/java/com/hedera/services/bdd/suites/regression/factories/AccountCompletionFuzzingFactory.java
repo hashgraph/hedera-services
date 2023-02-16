@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.BiasedDelegatingProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount;
+import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountDeletion;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCall;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowContractCreate;
@@ -107,7 +108,10 @@ public class AccountCompletionFuzzingFactory {
                             intPropOrElse("randomContractCreate.bias", 0, props))
                     .withOp(
                             new RandomHollowContractCall(spec.registry(), accounts),
-                            intPropOrElse("randomContractCall.bias", 0, props));
+                            intPropOrElse("randomContractCall.bias", 0, props))
+                    .withOp(
+                            new RandomAccountDeletion(accounts),
+                            intPropOrElse("randomAccountDeletion.bias", 0, props));
         };
     }
 }

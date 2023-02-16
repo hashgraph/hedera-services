@@ -40,8 +40,8 @@ public class RandomHollowContractCreate extends RandomOperationSignedByHollowAcc
         return contractCreate(CONTRACT)
                 .payingWith(keyName)
                 .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
-                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, BUSY)
-                .hasKnownStatusFrom(SUCCESS, INSUFFICIENT_PAYER_BALANCE)
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
                 .noLogging();
     }
 }

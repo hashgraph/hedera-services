@@ -28,8 +28,12 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class RandomHollowTokenAssociate extends RandomOperationSignedByHollowAccount {
+    protected final ResponseCodeEnum[] permissibleOutcomes =
+            standardOutcomesAnd(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+
 
     public RandomHollowTokenAssociate(
             HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {
@@ -41,9 +45,8 @@ public class RandomHollowTokenAssociate extends RandomOperationSignedByHollowAcc
         return tokenAssociate(keyName + ACCOUNT_SUFFIX, VANILLA_TOKEN)
                 .payingWith(keyName)
                 .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
-                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE)
-                .hasKnownStatusFrom(
-                        SUCCESS, INSUFFICIENT_PAYER_BALANCE, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
                 .noLogging();
     }
 }

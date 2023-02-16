@@ -16,18 +16,30 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow;
 
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.hollow.RandomHollowAccount.ACCOUNT_SUFFIX;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
 import java.util.Optional;
 
 abstract class RandomOperationSignedByHollowAccount implements OpProvider {
     private final HapiSpecRegistry registry;
 
     private final RegistrySourcedNameProvider<AccountID> accounts;
+
+    protected final ResponseCodeEnum[] permissiblePrechecks =
+            standardPrechecksAnd(BUSY, PAYER_ACCOUNT_NOT_FOUND);
+    protected final ResponseCodeEnum[] permissibleOutcomes = STANDARD_PERMISSIBLE_OUTCOMES;
 
     protected RandomOperationSignedByHollowAccount(
             HapiSpecRegistry registry, RegistrySourcedNameProvider<AccountID> accounts) {

@@ -41,8 +41,8 @@ public class RandomHollowTransfer extends RandomOperationSignedByHollowAccount {
         return cryptoTransfer(tinyBarsFromTo(LAZY_CREATE_SPONSOR, CRYPTO_TRANSFER_RECEIVER, 1))
                 .payingWith(keyName)
                 .sigMapPrefixes(uniqueWithFullPrefixesFor(keyName))
-                .hasPrecheckFrom(OK, INSUFFICIENT_PAYER_BALANCE, BUSY)
-                .hasKnownStatusFrom(SUCCESS, INSUFFICIENT_PAYER_BALANCE)
+                .hasPrecheckFrom(permissiblePrechecks)
+                .hasKnownStatusFrom(permissibleOutcomes)
                 .noLogging();
     }
 }
