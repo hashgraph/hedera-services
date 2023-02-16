@@ -92,18 +92,17 @@ public class ContractAutoExpirySpecs extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            renewsUsingContractFundsIfNoAutoRenewAccount(),
-            renewalFeeDistributedToStakingAccounts(),
-            renewsUsingAutoRenewAccountIfSet(),
-            chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
-            verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging(),
-            storageExpiryWorksAtTheExpectedInterval(),
-            receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
-            autoRenewWorksAsExpected(),
-            autoRenewInGracePeriodIfEnoughBalance(),
-            storageRentChargedOnlyAfterInitialFreePeriodIsComplete(),
-        });
+        return List.of(
+                renewsUsingContractFundsIfNoAutoRenewAccount(),
+                renewalFeeDistributedToStakingAccounts(),
+                renewsUsingAutoRenewAccountIfSet(),
+                chargesContractFundsWhenAutoRenewAccountHasZeroBalance(),
+                verifyNonFungibleTokenTransferredBackToTreasuryWithoutCharging(),
+                storageExpiryWorksAtTheExpectedInterval(),
+                receiverSigReqBypassedForTreasuryAtEndOfGracePeriod(),
+                autoRenewWorksAsExpected(),
+                autoRenewInGracePeriodIfEnoughBalance(),
+                storageRentChargedOnlyAfterInitialFreePeriodIsComplete());
     }
 
     private HapiSpec storageRentChargedOnlyAfterInitialFreePeriodIsComplete() {
@@ -448,14 +447,13 @@ public class ContractAutoExpirySpecs extends HapiSuite {
         final var minimalLifetime = 3;
         final var standardLifetime = 7776000L;
         final var expectedExpiryPostRenew = new AtomicLong();
-        final var renewAccountBalance = initBalance;
 
         return defaultHapiSpec("renewsUsingAutoRenewAccountIfSet")
                 .given(
                         createLargeFile(GENESIS, INIT_CODE, literalInitcodeFor(CONTRACT_TO_RENEW)),
                         enableContractAutoRenewWith(minimalLifetime, 0),
                         uploadInitCode(CONTRACT_TO_RENEW),
-                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(renewAccountBalance),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(initBalance),
                         getAccountBalance(AUTO_RENEW_ACCOUNT).logged(),
                         contractCreate(CONTRACT_TO_RENEW, BigInteger.valueOf(63))
                                 .gas(2_000_000)
@@ -502,8 +500,8 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                                     contractBalance);
 
                             assertEquals(initBalance, contractBalance);
-                            assertTrue(accountBalance < renewAccountBalance);
-                            final var renewalFee = renewAccountBalance - accountBalance;
+                            assertTrue(accountBalance < initBalance);
+                            final var renewalFee = initBalance - accountBalance;
                             opLog.info("Renewal fees actual {}", renewalFee);
                             final var canonicalUsdFee = 0.026;
                             assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
@@ -786,7 +784,6 @@ public class ContractAutoExpirySpecs extends HapiSuite {
                         // And the NFTs are now owned by the treasury
                         getTokenNftInfo(nonFungibleToken, 1L).hasAccountID(TOKEN_TREASURY),
                         getTokenNftInfo(nonFungibleToken, 2L).hasAccountID(TOKEN_TREASURY),
-                        // TODO: re-enable after expiry throttling is fixed
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(2));
     }
 
